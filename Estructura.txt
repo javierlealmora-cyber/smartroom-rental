@@ -1,0 +1,66 @@
+src/
+├── components/                 # Componentes UI reutilizables
+│   ├── Button.jsx
+│   ├── Badge.jsx
+│   ├── Input.jsx
+│   ├── Select.jsx
+│   ├── Toggle.jsx
+│   ├── Modal.jsx
+│   ├── Table.jsx
+│   ├── Card.jsx
+│   ├── Alert.jsx
+│   └── HeaderPage.jsx
+│
+├── layouts/                    # Estructuras de página
+│   └── MainLayout.jsx          # (antes Layout.jsx)
+│
+├── pages/                      # PANTALLAS (views reales)
+│
+│   ├── auth/                   # 🔐 Login común a TODOS
+│   │   └── Login.jsx
+│
+│   ├── superadmin/             # 👑 SmartRent Systems
+│   │   └── companies/
+│   │       ├── CompaniesList.jsx
+│   │       └── CompanyCreate.jsx   # ← la que vamos a hacer ahora
+│
+│   ├── admin/                  # 🏢 Cliente / Empresa
+│   │   ├── apartments/
+│   │   │   ├── ApartmentsList.jsx
+│   │   │   └── ApartmentCreate.jsx
+│   │   │
+│   │   ├── company/
+│   │   │   └── CompanyProfile.jsx
+│   │   │
+│   │   └── users/
+│   │       └── CompanyUsers.jsx     # Admin + API
+│
+│   ├── api/                    # ⚙️ Usuario operativo (API)
+│   │   └── students/
+│   │       └── StudentsList.jsx
+│
+│   └── student/                # 🎓 Inquilino
+│       └── PortalHome.jsx
+│
+├── router/                     # 🚦 Definición de rutas
+│   ├── auth.routes.jsx
+│   ├── superadmin.routes.jsx
+│   ├── admin.routes.jsx
+│   ├── api.routes.jsx
+│   └── student.routes.jsx
+│
+├── providers/                  # Contextos globales
+│   ├── AuthProvider.jsx
+│   ├── ThemeProvider.jsx
+│   └── UserContextProvider.jsx
+│
+├── services/                   # Llamadas a backend
+│   ├── supabaseClient.js
+│   ├── auth.service.js
+│   └── companies.service.js
+│
+├── utils/
+│   └── permissions.js
+│
+├── App.jsx                     # Entry point + Router raíz
+└── main.jsx
