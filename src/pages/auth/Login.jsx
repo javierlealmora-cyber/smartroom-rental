@@ -4,6 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabaseClient";
 import { useAuth } from "../../providers/AuthProvider";
 
+// ✅ IMAGEN DE LOGIN (fuera del componente para evitar recalcular)
+const CACHE_BUSTER = "v4-inputs-glass-" + Date.now();
+const HERO_IMG = `https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/login-welcome-2560.webp?t=${CACHE_BUSTER}`;
+
 export default function Login() {
   const nav = useNavigate();
   const { user, profile, loading } = useAuth();
@@ -13,12 +17,8 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  // ✅ NUEVA IMAGEN (la del monitor con cajas blancas)
-  const HERO_IMG =
-    "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/login-welcome-2560.webp";
-
   const redirectByRole = (role) => {
-    if (role === "superadmin") return "/superadmin/companies";
+    if (role === "superadmin") return "/superadmin/dashboard";
     if (role === "admin") return "/admin";
     if (role === "api") return "/api";
     return "/student";
@@ -67,49 +67,48 @@ export default function Login() {
    */
   const UI = useMemo(
     () => ({
-      // 1) Rectángulo (en %) donde está LA PANTALLA del monitor dentro de la foto
-      //    (ajusta hasta que coincida perfecto)
+      // 1) Rectángulo (en %) donde están los elementos de login (superior derecha)
       anchor: {
-        leftPct: 52, // mueve el “marco” de referencia en X
-        topPct: 18, // mueve el “marco” de referencia en Y
-        widthPct: 42, // ancho del área de pantalla
-        heightPct: 56, // alto del área de pantalla
+        leftPct: 65, // muy a la derecha
+        topPct: 8, // parte superior
+        widthPct: 30, // ancho del área de login
+        heightPct: 40, // alto del área de login
       },
 
       // 2) Email input (posición dentro del anchor)
       email: {
-        leftPct: 14,
-        topPct: 37,
-        widthPct: 55,
-        heightPx: 44,
+        leftPct: 0,
+        topPct: 0,
+        widthPct: 100,
+        heightPx: 48,
       },
 
       // 3) Password input
       password: {
-        leftPct: 14,
-        topPct: 47.5,
-        widthPct: 55,
-        heightPx: 44,
+        leftPct: 0,
+        topPct: 20,
+        widthPct: 100,
+        heightPx: 48,
       },
 
-      // 4) Botón Log In (SIN TEXTO, click encima del botón de la foto)
+      // 4) Botón Log In - más pequeño y proporcionado
       loginBtn: {
-        leftPct: 10,
-        topPct: 62,
-        widthPct: 78,
-        heightPx: 52,
+        leftPct: 0,
+        topPct: 45,
+        widthPct: 100,
+        heightPx: 48,
       },
 
-      // 5) Botón Forgot password? (SIN TEXTO)
+      // 5) Botón Forgot password? - más pequeño
       forgotBtn: {
-        leftPct: 34,
-        topPct: 76,
-        widthPct: 40,
-        heightPx: 26,
+        leftPct: 20,
+        topPct: 70,
+        widthPct: 60,
+        heightPx: 32,
       },
 
-      // 6) Estilo “plomo” para texto/caret (para que se vea sobre el fondo claro)
-      textColor: "#374151", // gris plomo
+      // 6) Texto blanco para contrastar con el fondo glassmorphism
+      textColor: "#FFFFFF", // blanco
     }),
     []
   );
@@ -117,28 +116,39 @@ export default function Login() {
   const styles = {
     page: {
       position: "relative",
+      width: "100vw",
+      height: "100vh",
       minHeight: "100vh",
       overflow: "hidden",
       background: "#000",
+      margin: 0,
+      padding: 0,
       fontFamily:
         "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji",
     },
 
     bg: {
-      position: "absolute",
-      inset: 0,
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
       backgroundImage: `url(${HERO_IMG})`,
       backgroundSize: "cover",
-      backgroundPosition: "center",
+      backgroundPosition: "center top",
       backgroundRepeat: "no-repeat",
       filter: "none",
       opacity: 1,
+      zIndex: 0,
     },
 
     // Capa para colocar overlays encima
     overlay: {
       position: "relative",
+      width: "100vw",
+      height: "100vh",
       minHeight: "100vh",
+      zIndex: 1,
     },
 
     // “Anchor” = el rectángulo donde está la pantalla del monitor
@@ -151,19 +161,24 @@ export default function Login() {
       // debug: "1px dashed rgba(255,0,0,0.4)", // <- activa si quieres ver el marco
     },
 
-    // Input transparente (sin borde/sombra)
+    // Input con efecto glassmorphism (fondo transparente tipo agua)
     input: {
       position: "absolute",
-      background: "transparent",
-      border: "none",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      backdropFilter: "blur(12px) saturate(180%)",
+      WebkitBackdropFilter: "blur(12px) saturate(180%)",
+      border: "1px solid rgba(255, 255, 255, 0.4)",
       outline: "none",
-      boxShadow: "none",
-      padding: "0 12px",
-      fontSize: 18,
+      boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+      borderRadius: "12px",
+      padding: "0 16px",
+      fontSize: 16,
       color: UI.textColor,
       width: "100%",
       height: "100%",
       caretColor: UI.textColor,
+      opacity: 1,
+      zIndex: 10,
     },
 
     // Wrapper para definir caja clicable/tamaño
@@ -175,17 +190,26 @@ export default function Login() {
       boxShadow: "none",
     },
 
-    // Botones invisibles (sin texto) para clicar encima de la imagen
+    // Botón Log In con efecto glassmorphism
     ghostButton: {
       width: "100%",
       height: "100%",
-      background: "transparent",
-      border: "none",
+      background: "rgba(255, 255, 255, 0.2)",
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.4)",
       outline: "none",
-      boxShadow: "none",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+      borderRadius: "12px",
       padding: 0,
       margin: 0,
       cursor: "pointer",
+      transition: "all 0.3s ease",
+      fontWeight: "600",
+      fontSize: "16px",
+      color: "white",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
     },
 
     // Error (si aparece, lo ponemos fuera del monitor para no romper la estética)
@@ -256,7 +280,7 @@ export default function Login() {
               />
             </div>
 
-            {/* LOG IN (botón invisible encima del botón de la foto) */}
+            {/* LOG IN (botón con texto visible) */}
             <div
               className="slot-login-btn"
               style={{
@@ -270,15 +294,19 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={busy || !email || !password}
+                className="login-button"
                 style={{
                   ...styles.ghostButton,
                   cursor: busy || !email || !password ? "not-allowed" : "pointer",
+                  opacity: busy || !email || !password ? 0.5 : 1,
                 }}
                 aria-label="Log in"
-              />
+              >
+                {busy ? "LOADING..." : "LOG IN"}
+              </button>
             </div>
 
-            {/* FORGOT PASSWORD? (botón invisible) */}
+            {/* FORGOT PASSWORD? (botón pequeño y sutil) */}
             <div
               className="slot-forgot-btn"
               style={{
@@ -296,9 +324,24 @@ export default function Login() {
                   // nav("/auth/forgot-password");
                   alert("TODO: forgot password");
                 }}
-                style={styles.ghostButton}
+                className="forgot-button"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: "rgba(255, 255, 255, 0.9)",
+                  textDecoration: "underline",
+                  fontWeight: "400",
+                  textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+                }}
                 aria-label="Forgot password"
-              />
+              >
+                Forgot password?
+              </button>
             </div>
           </div>
         </form>
@@ -324,25 +367,82 @@ export default function Login() {
  * Si prefieres ajustar por CSS, puedo pasarte las variables como :root (--x, --y, etc.)
  */
 const css = `
-  /* Placeholder gris plomo */
-  .login-page input::placeholder { color: rgba(55,65,81,0.60); }
+  /* Eliminar márgenes del body para pantalla completa */
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
 
-  /* En móviles, centramos el anchor un poco para que no se vaya fuera */
+  /* Placeholder blanco semi-transparente */
+  .login-page input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* Inputs con focus mejorado - efecto glassmorphism más brillante */
+  .login-page input:focus {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(14px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
+  }
+
+  /* Botón de login con hover - más brillante */
+  .login-button:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .login-button:not(:disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .login-button:disabled {
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.1) !important;
+    opacity: 0.5;
+  }
+
+  /* Forgot password - texto blanco */
+  .forgot-button {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .forgot-button:hover {
+    color: rgba(255, 255, 255, 1) !important;
+  }
+
+  /* En tablets, ajustamos la posición */
+  @media (max-width: 1200px) {
+    .login-anchor {
+      left: 60% !important;
+      width: 35% !important;
+      top: 10% !important;
+    }
+  }
+
+  /* En móviles, centramos el anchor */
   @media (max-width: 900px) {
-    .login-anchor { 
-      left: 50% !important; 
+    .login-anchor {
+      left: 50% !important;
       transform: translateX(-50%);
-      width: 92% !important;
-      top: 14% !important;
-      height: 62% !important;
+      width: 85% !important;
+      top: 25% !important;
+      height: 45% !important;
     }
   }
 
   @media (max-width: 520px) {
-    .login-anchor { 
-      top: 12% !important;
-      height: 66% !important;
+    .login-anchor {
+      width: 90% !important;
+      top: 20% !important;
+      height: 50% !important;
     }
-    .login-page input { font-size: 16px; }
+    .login-page input { font-size: 15px; }
+    .login-button { font-size: 14px; }
   }
 `;
