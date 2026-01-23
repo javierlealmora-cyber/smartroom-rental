@@ -5,7 +5,7 @@ import { supabase } from "../../services/supabaseClient";
 import { useAuth } from "../../providers/AuthProvider";
 
 // ✅ IMAGEN DE LOGIN (fuera del componente para evitar recalcular)
-const CACHE_BUSTER = "v5-glass-final-" + Date.now();
+const CACHE_BUSTER = "v6-force-glass-" + Date.now();
 const HERO_IMG = `https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/login-welcome-2560.webp?t=${CACHE_BUSTER}`;
 
 export default function Login() {
@@ -248,7 +248,7 @@ export default function Login() {
               }}
             >
               <input
-                className="login-email"
+                className="login-email glass-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
@@ -270,7 +270,7 @@ export default function Login() {
               }}
             >
               <input
-                className="login-password"
+                className="login-password glass-input"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -375,19 +375,43 @@ const css = `
     overflow: hidden;
   }
 
+  /* MÁXIMA ESPECIFICIDAD - FORZAR glassmorphism en inputs */
+  .login-page .login-anchor .glass-input,
+  .login-page .glass-input,
+  .glass-input,
+  input.glass-input {
+    background: rgba(255, 255, 255, 0.25) !important;
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    background-image: none !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
+    border-radius: 16px !important;
+    color: white !important;
+    font-weight: 500 !important;
+  }
+
   /* Placeholder blanco semi-transparente */
-  .login-page input::placeholder {
-    color: rgba(255, 255, 255, 0.65);
-    font-weight: 400;
+  .glass-input::placeholder,
+  input.glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.65) !important;
+    font-weight: 400 !important;
+    opacity: 1 !important;
   }
 
   /* Inputs con focus mejorado - efecto glassmorphism más brillante */
-  .login-page input:focus {
+  .glass-input:focus,
+  input.glass-input:focus {
+    background: rgba(255, 255, 255, 0.35) !important;
     background-color: rgba(255, 255, 255, 0.35) !important;
     border-color: rgba(255, 255, 255, 0.5) !important;
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(20px) saturate(200%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+    outline: none !important;
+    ring: 0 !important;
   }
 
   /* Botón de login con hover - más brillante */
