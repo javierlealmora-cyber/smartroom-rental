@@ -5,7 +5,7 @@ import { supabase } from "../../services/supabaseClient";
 import { useAuth } from "../../providers/AuthProvider";
 
 // ✅ IMAGEN DE LOGIN (fuera del componente para evitar recalcular)
-const CACHE_BUSTER = "v6-force-glass-" + Date.now();
+const CACHE_BUSTER = "v7-spacing-autofill-" + Date.now();
 const HERO_IMG = `https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/login-welcome-2560.webp?t=${CACHE_BUSTER}`;
 
 export default function Login() {
@@ -83,26 +83,26 @@ export default function Login() {
         heightPx: 48,
       },
 
-      // 3) Password input
+      // 3) Password input (más separado)
       password: {
         leftPct: 0,
-        topPct: 20,
+        topPct: 28,
         widthPct: 100,
         heightPx: 48,
       },
 
-      // 4) Botón Log In - más pequeño y proporcionado
+      // 4) Botón Log In (más separado)
       loginBtn: {
         leftPct: 0,
-        topPct: 45,
+        topPct: 58,
         widthPct: 100,
         heightPx: 48,
       },
 
-      // 5) Botón Forgot password? - más pequeño
+      // 5) Botón Forgot password? (más separado)
       forgotBtn: {
         leftPct: 20,
-        topPct: 70,
+        topPct: 82,
         widthPct: 60,
         heightPx: 32,
       },
@@ -379,18 +379,25 @@ const css = `
   .login-page .login-anchor .glass-input,
   .login-page .glass-input,
   .glass-input,
-  input.glass-input {
+  input.glass-input,
+  input.glass-input:-webkit-autofill,
+  input.glass-input:-webkit-autofill:hover,
+  input.glass-input:-webkit-autofill:focus,
+  input.glass-input:-webkit-autofill:active {
     background: rgba(255, 255, 255, 0.25) !important;
     background-color: rgba(255, 255, 255, 0.25) !important;
     background-image: none !important;
     backdrop-filter: blur(16px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.25) inset, 0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.25) inset, 0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
     border: 2px solid rgba(255, 255, 255, 0.3) !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
     border-radius: 16px !important;
     color: white !important;
+    -webkit-text-fill-color: white !important;
     font-weight: 500 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
   }
 
   /* Placeholder blanco semi-transparente */
@@ -403,15 +410,18 @@ const css = `
 
   /* Inputs con focus mejorado - efecto glassmorphism más brillante */
   .glass-input:focus,
-  input.glass-input:focus {
+  input.glass-input:focus,
+  input.glass-input:-webkit-autofill:focus {
     background: rgba(255, 255, 255, 0.35) !important;
     background-color: rgba(255, 255, 255, 0.35) !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.35) inset, 0 8px 32px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.35) inset, 0 8px 32px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
     border-color: rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(20px) saturate(200%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
     outline: none !important;
     ring: 0 !important;
+    -webkit-text-fill-color: white !important;
   }
 
   /* Botón de login con hover - más brillante */
