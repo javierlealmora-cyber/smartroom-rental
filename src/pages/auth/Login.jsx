@@ -5,7 +5,7 @@ import { supabase } from "../../services/supabaseClient";
 import { useAuth } from "../../providers/AuthProvider";
 
 // ✅ IMAGEN DE LOGIN (fuera del componente para evitar recalcular)
-const CACHE_BUSTER = "v4-inputs-glass-" + Date.now();
+const CACHE_BUSTER = "v5-glass-final-" + Date.now();
 const HERO_IMG = `https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/login-welcome-2560.webp?t=${CACHE_BUSTER}`;
 
 export default function Login() {
@@ -164,14 +164,14 @@ export default function Login() {
     // Input con efecto glassmorphism (fondo transparente tipo agua)
     input: {
       position: "absolute",
-      backgroundColor: "rgba(255, 255, 255, 0.2)",
-      backdropFilter: "blur(12px) saturate(180%)",
-      WebkitBackdropFilter: "blur(12px) saturate(180%)",
-      border: "1px solid rgba(255, 255, 255, 0.4)",
+      backgroundColor: "rgba(255, 255, 255, 0.25)",
+      backdropFilter: "blur(16px) saturate(180%)",
+      WebkitBackdropFilter: "blur(16px) saturate(180%)",
+      border: "2px solid rgba(255, 255, 255, 0.3)",
       outline: "none",
-      boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
-      borderRadius: "12px",
-      padding: "0 16px",
+      boxShadow: "0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4)",
+      borderRadius: "16px",
+      padding: "0 20px",
       fontSize: 16,
       color: UI.textColor,
       width: "100%",
@@ -179,6 +179,7 @@ export default function Login() {
       caretColor: UI.textColor,
       opacity: 1,
       zIndex: 10,
+      fontWeight: "500",
     },
 
     // Wrapper para definir caja clicable/tamaño
@@ -194,22 +195,22 @@ export default function Login() {
     ghostButton: {
       width: "100%",
       height: "100%",
-      background: "rgba(255, 255, 255, 0.2)",
-      backdropFilter: "blur(10px)",
-      WebkitBackdropFilter: "blur(10px)",
-      border: "1px solid rgba(255, 255, 255, 0.4)",
+      background: "rgba(255, 255, 255, 0.25)",
+      backdropFilter: "blur(16px) saturate(180%)",
+      WebkitBackdropFilter: "blur(16px) saturate(180%)",
+      border: "2px solid rgba(255, 255, 255, 0.3)",
       outline: "none",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-      borderRadius: "12px",
+      boxShadow: "0 8px 32px rgba(31, 38, 135, 0.37), inset 0 2px 4px rgba(255, 255, 255, 0.4)",
+      borderRadius: "16px",
       padding: 0,
       margin: 0,
       cursor: "pointer",
       transition: "all 0.3s ease",
-      fontWeight: "600",
+      fontWeight: "700",
       fontSize: "16px",
       color: "white",
       textTransform: "uppercase",
-      letterSpacing: "1px",
+      letterSpacing: "1.5px",
     },
 
     // Error (si aparece, lo ponemos fuera del monitor para no romper la estética)
@@ -376,34 +377,37 @@ const css = `
 
   /* Placeholder blanco semi-transparente */
   .login-page input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 400;
   }
 
   /* Inputs con focus mejorado - efecto glassmorphism más brillante */
   .login-page input:focus {
-    background-color: rgba(255, 255, 255, 0.3) !important;
-    border-color: rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-    backdrop-filter: blur(14px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(200%) !important;
+    background-color: rgba(255, 255, 255, 0.35) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(20px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
   }
 
   /* Botón de login con hover - más brillante */
   .login-button:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.3) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.35) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.5) !important;
   }
 
   .login-button:not(:disabled):active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(31, 38, 135, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
   }
 
   .login-button:disabled {
     cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.1) !important;
-    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.12) !important;
+    opacity: 0.6;
+    border-color: rgba(255, 255, 255, 0.2) !important;
   }
 
   /* Forgot password - texto blanco */
