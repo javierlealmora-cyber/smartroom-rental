@@ -70,7 +70,7 @@ export default function Login() {
       // 1) Rectángulo (en %) donde están los elementos de login (superior derecha)
       anchor: {
         leftPct: 65, // muy a la derecha
-        topPct: 8, // parte superior
+        topPct: 5, // parte superior (movido más arriba)
         widthPct: 30, // ancho del área de login
         heightPct: 40, // alto del área de login
       },
@@ -83,26 +83,26 @@ export default function Login() {
         heightPx: 48,
       },
 
-      // 3) Password input (más separado)
+      // 3) Password input (espaciado proporcional)
       password: {
         leftPct: 0,
-        topPct: 28,
+        topPct: 20, // reducido para estar más junto
         widthPct: 100,
         heightPx: 48,
       },
 
-      // 4) Botón Log In (más separado)
+      // 4) Botón Log In (espaciado proporcional)
       loginBtn: {
         leftPct: 0,
-        topPct: 58,
+        topPct: 40, // reducido para estar más junto
         widthPct: 100,
         heightPx: 48,
       },
 
-      // 5) Botón Forgot password? (más separado)
+      // 5) Botón Forgot password? (espaciado proporcional)
       forgotBtn: {
         leftPct: 20,
-        topPct: 82,
+        topPct: 60, // reducido para estar más junto
         widthPct: 60,
         heightPx: 32,
       },

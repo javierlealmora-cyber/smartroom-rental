@@ -20,8 +20,14 @@ const FN_DELETE = import.meta.env.VITE_FN_DELETE_COMPANY || "delete_company";
 export async function provisionCompany(payload) {
   const data = await invokeWithAuth(FN_PROVISION, { body: payload });
 
-  if (!data?.ok) {
-    const msg = data?.error ?? "Error creando empresa";
+  // Verificar que la respuesta sea válida
+  if (!data || typeof data !== 'object') {
+    throw new Error("Respuesta inválida de la función provision_company");
+  }
+
+  // Verificar éxito (diferentes formatos posibles)
+  if (!data.ok && !data.success) {
+    const msg = data?.error ?? data?.message ?? "Error creando empresa";
     const detail = data?.detail ? `: ${data.detail}` : "";
     throw new Error(`${msg}${detail}`);
   }
@@ -42,8 +48,14 @@ export async function updateCompany({ company_id, patch }) {
     body: { company_id, company: patch }, // <-- CLAVE
   });
 
-  if (!data?.ok) {
-    const msg = data?.error ?? "Error actualizando empresa";
+  // Verificar que la respuesta sea válida
+  if (!data || typeof data !== 'object') {
+    throw new Error("Respuesta inválida de la función update_company");
+  }
+
+  // Verificar éxito
+  if (!data.ok && !data.success) {
+    const msg = data?.error ?? data?.message ?? "Error actualizando empresa";
     const detail = data?.detail ? `: ${data.detail}` : "";
     throw new Error(`${msg}${detail}`);
   }
@@ -61,8 +73,14 @@ export async function deleteCompany({ company_id }) {
     body: { company_id },
   });
 
-  if (!data?.ok) {
-    const msg = data?.error ?? "Error eliminando empresa";
+  // Verificar que la respuesta sea válida
+  if (!data || typeof data !== 'object') {
+    throw new Error("Respuesta inválida de la función delete_company");
+  }
+
+  // Verificar éxito
+  if (!data.ok && !data.success) {
+    const msg = data?.error ?? data?.message ?? "Error eliminando empresa";
     const detail = data?.detail ? `: ${data.detail}` : "";
     throw new Error(`${msg}${detail}`);
   }
