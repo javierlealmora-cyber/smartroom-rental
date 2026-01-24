@@ -48,15 +48,15 @@ const styles = {
     width: 260,
     backgroundColor: "#FFFFFF",
     borderRight: "1px solid #E5E7EB",
-    padding: "24px 0",
+    padding: "16px 0",
     display: "flex",
     flexDirection: "column",
     flexShrink: 0,
   },
 
   sidebarTitle: {
-    padding: "0 20px 16px",
-    fontSize: 12,
+    padding: "0 16px 10px",
+    fontSize: 11,
     fontWeight: "700",
     color: "#6B7280",
     textTransform: "uppercase",
@@ -69,8 +69,8 @@ const styles = {
   },
 
   section: {
-    padding: "16px 20px 8px",
-    fontSize: 11,
+    padding: "12px 16px 4px",
+    fontSize: 10,
     fontWeight: "700",
     color: "#9CA3AF",
     textTransform: "uppercase",
@@ -80,22 +80,22 @@ const styles = {
   navItem: {
     backgroundColor: "transparent",
     border: "none",
-    padding: "12px 20px",
+    padding: "8px 16px",
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     cursor: "pointer",
     transition: "all 0.2s ease",
     textAlign: "left",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
     color: "#374151",
     borderLeft: "3px solid transparent",
   },
 
   navItemSub: {
-    paddingLeft: 40,
-    fontSize: 13,
+    paddingLeft: 36,
+    fontSize: 12,
   },
 
   navItemActive: {
@@ -106,11 +106,11 @@ const styles = {
   },
 
   navIcon: {
-    fontSize: 18,
+    fontSize: 16,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 20,
+    width: 18,
   },
 
   navLabel: {
