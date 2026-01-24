@@ -2,12 +2,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ViewApartmentModal from "../../../components/ViewApartmentModal";
+import Sidebar from "../../../components/Sidebar";
 
 export default function ApartmentsList() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  const sidebarItems = [
+    { label: "Visión General", path: "/alojamientos", icon: "👁️" },
+    { type: "section", label: "ALOJAMIENTO" },
+    { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
+    { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },
+    { label: "Historial de Ocupación", path: "/alojamientos/ocupacion", icon: "⏱", isSubItem: true },
+  ];
 
   // Datos dummy para la POC
   const apartments = [
@@ -21,12 +30,14 @@ export default function ApartmentsList() {
   );
 
   return (
-    <div style={styles.container}>
+    <div style={styles.pageContainer}>
+      <Sidebar items={sidebarItems} title="Alojamientos" />
+      <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Gestión de Alojamientos</h1>
         <button
           style={styles.addButton}
-          onClick={() => navigate("/admin/apartments/new")}
+          onClick={() => navigate("/alojamientos/gestion/nuevo")}
           onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
           onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
         >
@@ -122,15 +133,22 @@ export default function ApartmentsList() {
         }}
         apartment={selectedApartment}
       />
+      </div>
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+  },
+
   container: {
+    flex: 1,
     padding: 40,
-    maxWidth: 1200,
-    margin: "0 auto",
+    overflow: "auto",
   },
 
   header: {
