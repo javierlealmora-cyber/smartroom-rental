@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function SuperadminDashboard() {
   const navigate = useNavigate();
 
-  const cards = [
+  const clientCards = [
     {
       title: "Gestión de Empresas",
       description: "Creas, editar y gestionar todas las empresas",
@@ -25,6 +25,27 @@ export default function SuperadminDashboard() {
     },
   ];
 
+  const operationalCards = [
+    {
+      title: "Gestión de Alojamiento",
+      description: "Crea, edita y gestiona todos los alojamientos y sus habitaciones",
+      icon: "🏢",
+      path: "/admin/apartments",
+    },
+    {
+      title: "Gestión de Inquilinos",
+      description: "Gestiona el registro, la asignación y la baja de los inquilinos",
+      icon: "👥",
+      path: "/admin/tenants",
+    },
+    {
+      title: "Historial de Ocupación",
+      description: "Visualiza el historial de ocupación de las habitaciones por mes",
+      icon: "⏱",
+      path: "/admin/occupancy",
+    },
+  ];
+
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Visión General</h1>
@@ -33,7 +54,35 @@ export default function SuperadminDashboard() {
         <h2 style={styles.sectionTitle}>GESTIÓN DE CLIENTES</h2>
 
         <div style={styles.cardsGrid}>
-          {cards.map((card) => (
+          {clientCards.map((card) => (
+            <div
+              key={card.path}
+              style={styles.card}
+              onClick={() => navigate(card.path)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.05)";
+              }}
+            >
+              <div style={styles.cardIcon}>{card.icon}</div>
+              <div style={styles.cardContent}>
+                <h3 style={styles.cardTitle}>{card.title}</h3>
+                <p style={styles.cardDescription}>{card.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h2 style={styles.sectionTitle}>GESTIÓN OPERATIVA</h2>
+
+        <div style={styles.cardsGrid}>
+          {operationalCards.map((card) => (
             <div
               key={card.path}
               style={styles.card}
