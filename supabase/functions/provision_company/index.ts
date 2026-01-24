@@ -39,37 +39,47 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Crear cliente Supabase con contexto de admin
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Crear cliente Service Role para validar el usuario y realizar operaciones
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    // Obtener el JWT token desde el header
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
 
-    // 2. Verificar autenticación del usuario (debe ser superadmin)
-    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Missing authorization" }),
+        JSON.stringify({ ok: false, error: "Missing authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Verificar el JWT y obtener el usuario
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
-    if (authError || !user) {
+    if (userError || !user) {
+      console.error("Auth verification failed:", userError);
       return new Response(
-        JSON.stringify({ ok: false, error: "Invalid token" }),
+        JSON.stringify({
+          ok: false,
+          error: "Authentication failed",
+          detail: userError?.message || "Invalid token",
+        }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 3. Verificar que el usuario sea superadmin
+    console.log("User authenticated successfully:", user.id);
+
+    // Verificar que el usuario sea superadmin
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("role")
@@ -77,13 +87,14 @@ serve(async (req) => {
       .single();
 
     if (profileError || profile?.role !== "superadmin") {
+      console.error("Permission denied:", { userId: user.id, role: profile?.role });
       return new Response(
         JSON.stringify({ ok: false, error: "Forbidden: Only superadmin can provision companies" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 4. Parsear body
+    // Parsear body
     const body: RequestBody = await req.json();
     const { company, admin } = body;
 
@@ -95,7 +106,7 @@ serve(async (req) => {
       );
     }
 
-    // 5. Crear la empresa en la tabla companies
+    // Crear la empresa en la tabla companies
     const { data: newCompany, error: companyError } = await supabaseAdmin
       .from("companies")
       .insert({
@@ -112,14 +123,30 @@ serve(async (req) => {
 
     if (companyError) {
       console.error("Error creating company:", companyError);
+
+      // Detectar si es error de slug duplicado (unique constraint)
+      const isDuplicateSlug = companyError.message?.includes("duplicate key value") ||
+                              companyError.code === "23505";
+
+      const errorMessage = isDuplicateSlug
+        ? `El slug "${company.slug}" ya está en uso. Elige otro nombre para la empresa.`
+        : "Error al crear la empresa";
+
       return new Response(
-        JSON.stringify({ ok: false, error: "Error creating company", detail: companyError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          ok: false,
+          error: errorMessage,
+          detail: companyError.message
+        }),
+        {
+          status: isDuplicateSlug ? 400 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
       );
     }
 
-    // 6. Crear el usuario admin con Supabase Auth Admin API
-    const { data: newUser, error: userError } = await supabaseAdmin.auth.admin.createUser({
+    // Crear el usuario admin con Supabase Auth Admin API
+    const { data: newUser, error: userCreationError } = await supabaseAdmin.auth.admin.createUser({
       email: admin.email,
       email_confirm: false, // Requerirá confirmación por email
       user_metadata: {
@@ -127,19 +154,34 @@ serve(async (req) => {
       },
     });
 
-    if (userError) {
-      console.error("Error creating admin user:", userError);
+    if (userCreationError) {
+      console.error("Error creating admin user:", userCreationError);
 
       // Rollback: eliminar la empresa creada
       await supabaseAdmin.from("companies").delete().eq("id", newCompany.id);
 
+      // Detectar si es error de email duplicado
+      const isDuplicateEmail = userCreationError.message?.includes("already been registered") ||
+                               userCreationError.code === "email_exists";
+
+      const errorMessage = isDuplicateEmail
+        ? `El email ${admin.email} ya está registrado. Usa otro email para el administrador.`
+        : "Error al crear el usuario administrador";
+
       return new Response(
-        JSON.stringify({ ok: false, error: "Error creating admin user", detail: userError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          ok: false,
+          error: errorMessage,
+          detail: userCreationError.message
+        }),
+        {
+          status: isDuplicateEmail ? 400 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
       );
     }
 
-    // 7. Crear el perfil del admin en la tabla profiles
+    // Crear el perfil del admin en la tabla profiles
     const { error: profileInsertError } = await supabaseAdmin
       .from("profiles")
       .insert({
@@ -163,7 +205,7 @@ serve(async (req) => {
       );
     }
 
-    // 8. Respuesta exitosa
+    // Respuesta exitosa
     return new Response(
       JSON.stringify({
         ok: true,
@@ -176,11 +218,10 @@ serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("Unexpected error:", error);
     return new Response(
-      JSON.stringify({ ok: false, error: "Internal server error", detail: error.message }),
+      JSON.stringify({ ok: false, error: "Internal server error", detail: error?.message || String(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
