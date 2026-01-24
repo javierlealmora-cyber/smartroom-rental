@@ -8,8 +8,8 @@ const STORAGE_KEY = "srs_auth_event";
 
 function safeRedirectToLogin() {
   // Evita depender de useNavigate si este provider queda fuera del Router
-  if (window.location.pathname !== "/login") {
-    window.location.assign("/login");
+  if (window.location.pathname !== "/auth/login") {
+    window.location.assign("/auth/login");
   }
 }
 

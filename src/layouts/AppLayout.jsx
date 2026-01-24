@@ -56,7 +56,16 @@ export default function AppLayout() {
   const activeTab = getActiveTab();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      // La redirección la maneja el AuthProvider automáticamente
+      // pero agregamos navegación por si acaso
+      navigate("/auth/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      // Forzar redirección incluso si hay error
+      navigate("/auth/login");
+    }
   };
 
   const primaryColor = theme?.primaryColor || "#111827";
