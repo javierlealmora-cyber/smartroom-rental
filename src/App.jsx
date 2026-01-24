@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import SuperadminLayout from "./layouts/SuperadminLayout";
 import { superadminRoutes } from "./router/superadmin.routes";
+import { adminRoutes } from "./router/admin.routes";
 
 import RequireAuth from "./router/RequireAuth";
 import RequireRole from "./router/RequireRole";
@@ -28,9 +29,17 @@ export default function App() {
               </Route>
             </Route>
 
+            {/* Admin con MainLayout */}
+            <Route element={<RequireRole allow={["admin", "superadmin"]} />}>
+              <Route element={<MainLayout />}>
+                {adminRoutes.map((route) => (
+                  <Route key={route.path} path={route.path} element={route.element} />
+                ))}
+              </Route>
+            </Route>
+
             {/* Otras rutas con MainLayout */}
             <Route element={<MainLayout />}>
-              <Route path="/admin" element={<div style={{ padding: 40 }}>Admin (POC)</div>} />
               <Route path="/api" element={<div style={{ padding: 40 }}>API (POC)</div>} />
               <Route path="/student" element={<div style={{ padding: 40 }}>Student (POC)</div>} />
             </Route>
