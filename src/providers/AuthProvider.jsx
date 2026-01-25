@@ -168,6 +168,18 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Función de logout centralizada
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch (error) {
+      console.error("[AuthProvider] logout error:", error);
+    }
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+  };
+
   const value = useMemo(
     () => ({
       loading,
@@ -177,6 +189,7 @@ export function AuthProvider({ children }) {
       role: profile?.role ?? null,
       companyId: profile?.company_id ?? null,
       isAuthenticated: !!session,
+      logout,
     }),
     [loading, session, user, profile]
   );

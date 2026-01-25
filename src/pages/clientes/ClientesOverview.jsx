@@ -6,30 +6,31 @@ export default function ClientesOverview() {
   const navigate = useNavigate();
 
   const sidebarItems = [
-    { label: "Visión General", path: "/clientes", icon: "👁️" },
-    { label: "Gestión de Empresas", path: "/clientes/empresas", icon: "🏢" },
-    { label: "Planes de Empresas", path: "/clientes/planes", icon: "📋" },
-    { label: "Gestión de Servicios", path: "/clientes/servicios", icon: "⚙️" },
-    { label: "Configuración", path: "/clientes/configuracion", icon: "⚙️" },
+    { label: "Visión General", path: "/clientes", icon: "⊞" },
+    { type: "section", label: "CLIENTES" },
+    { label: "Gestión de Empresas", path: "/clientes/empresas", icon: "🏢", isSubItem: true },
+    { label: "Planes de Suscripción", path: "/clientes/planes", icon: "📋", isSubItem: true },
+    { label: "Catálogo de Servicios", path: "/clientes/servicios", icon: "🛠️", isSubItem: true },
+    { label: "Configuración", path: "/clientes/configuracion", icon: "⚙️", isSubItem: true },
   ];
 
   const cards = [
     {
       title: "Gestión de Empresas",
-      description: "Crea, edita y gestiona todas las empresas",
+      description: "Crea, edita y gestiona todas las empresas cliente",
       icon: "🏢",
       path: "/clientes/empresas",
     },
     {
-      title: "Planes de Empresas",
-      description: "Gestiona los planes y suscripciones",
+      title: "Planes de Suscripción",
+      description: "Define planes con límites, servicios y precios",
       icon: "📋",
       path: "/clientes/planes",
     },
     {
-      title: "Gestión de Servicios",
-      description: "Configura servicios disponibles",
-      icon: "⚙️",
+      title: "Catálogo de Servicios",
+      description: "Gestiona los servicios disponibles para los planes",
+      icon: "🛠️",
       path: "/clientes/servicios",
     },
   ];

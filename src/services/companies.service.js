@@ -96,7 +96,7 @@ export async function deleteCompany({ company_id }) {
 export async function getCompanies() {
   const { data, error } = await supabase
     .from("companies")
-    .select("id, name, slug, plan, status, start_date, created_at, theme_primary_color, logo_url")
+    .select("id, name, slug, plan, status, start_date, created_at, theme_primary_color, logo_url, contact_name, contact_email, contact_phone")
     .order("created_at", { ascending: false });
 
   if (error) throw error;

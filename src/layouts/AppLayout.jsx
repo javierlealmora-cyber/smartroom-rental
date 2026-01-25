@@ -1,16 +1,30 @@
 // src/layouts/AppLayout.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
 import { useTheme } from "../providers/ThemeProvider";
-import { supabase } from "../services/supabaseClient";
 
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Inyectar CSS para hover en los items del menú de usuario
+  useEffect(() => {
+    const styleId = "user-menu-hover-styles";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        .user-menu-item:hover {
+          background-color: #E5E7EB !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   const role = profile?.role;
 
@@ -23,20 +37,26 @@ export default function AppLayout() {
       tabs.push(
         { id: "clientes", label: "Clientes", path: "/clientes" },
         { id: "alojamientos", label: "Alojamientos", path: "/alojamientos" },
-        { id: "consumos", label: "Consumos", path: "/consumos" }
+        { id: "consumos", label: "Consumos", path: "/consumos" },
+        { id: "usuario", label: "Usuario", path: "/usuario" }
       );
     }
 
-    // ADMIN ve solo Alojamientos y Consumos
+    // ADMIN ve solo Alojamientos, Consumos y Usuario
     if (role === "admin") {
       tabs.push(
         { id: "alojamientos", label: "Alojamientos", path: "/alojamientos" },
-        { id: "consumos", label: "Consumos", path: "/consumos" }
+        { id: "consumos", label: "Consumos", path: "/consumos" },
+        { id: "usuario", label: "Usuario", path: "/usuario" }
       );
     }
 
-    // INQUILINO no ve tabs (solo el menú de usuario)
-    // Los tabs no se muestran para inquilino
+    // INQUILINO solo ve Usuario
+    if (role === "tenant") {
+      tabs.push(
+        { id: "usuario", label: "Usuario", path: "/usuario" }
+      );
+    }
 
     return tabs;
   };
@@ -55,17 +75,18 @@ export default function AppLayout() {
 
   const activeTab = getActiveTab();
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      // La redirección la maneja el AuthProvider automáticamente
-      // pero agregamos navegación por si acaso
-      navigate("/auth/login");
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-      // Forzar redirección incluso si hay error
-      navigate("/auth/login");
-    }
+  const handleLogout = () => {
+    // Cerrar menú inmediatamente
+    setShowUserMenu(false);
+
+    // Limpiar TODO el localStorage (simple y efectivo)
+    localStorage.clear();
+
+    // Limpiar sessionStorage también
+    sessionStorage.clear();
+
+    // Recargar la página desde cero - esto fuerza un nuevo bootstrap
+    window.location.href = "/auth/login";
   };
 
   const primaryColor = theme?.primaryColor || "#111827";
@@ -110,7 +131,7 @@ export default function AppLayout() {
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
             <span style={styles.userName}>
-              {profile?.full_name || profile?.email || "Usuario"}
+              {profile?.full_name || profile?.email || user?.email || "Usuario"}
             </span>
             <span style={styles.userIcon}>👤</span>
           </button>
@@ -119,19 +140,20 @@ export default function AppLayout() {
             <div style={styles.userMenu}>
               <div style={styles.userMenuHeader}>
                 <div style={styles.userAvatar}>
-                  {(profile?.full_name || "U").charAt(0).toUpperCase()}
+                  {(profile?.full_name || user?.email || "U").charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <div style={styles.userMenuName}>
-                    {profile?.full_name || "Usuario"}
+                    {profile?.full_name || user?.email || "Usuario"}
                   </div>
-                  <div style={styles.userMenuEmail}>{profile?.email}</div>
+                  <div style={styles.userMenuEmail}>{profile?.email || user?.email || ""}</div>
                 </div>
               </div>
 
               <div style={styles.userMenuDivider}></div>
 
               <button
+                className="user-menu-item"
                 style={styles.userMenuItem}
                 onClick={() => {
                   navigate("/usuario");
@@ -142,8 +164,9 @@ export default function AppLayout() {
                 <span>Visión General</span>
               </button>
 
-              {(role === "superadmin" || role === "admin") && (
+              {role === "admin" && (
                 <button
+                  className="user-menu-item"
                   style={styles.userMenuItem}
                   onClick={() => {
                     alert("Cambiar plan (pendiente)");
@@ -156,6 +179,7 @@ export default function AppLayout() {
               )}
 
               <button
+                className="user-menu-item"
                 style={styles.userMenuItem}
                 onClick={() => {
                   alert("Ayuda (pendiente)");
@@ -169,11 +193,9 @@ export default function AppLayout() {
               <div style={styles.userMenuDivider}></div>
 
               <button
+                className="user-menu-item"
                 style={styles.userMenuItem}
-                onClick={() => {
-                  handleLogout();
-                  setShowUserMenu(false);
-                }}
+                onClick={handleLogout}
               >
                 <span>🚪</span>
                 <span>Cerrar sesión</span>
@@ -297,7 +319,7 @@ const styles = {
     borderRadius: 12,
     boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
     minWidth: 280,
-    zIndex: 1000,
+    zIndex: 1001,
   },
 
   userMenuHeader: {

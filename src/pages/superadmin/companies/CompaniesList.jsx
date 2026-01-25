@@ -2,6 +2,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCompanies, updateCompany } from "../../../services/companies.service";
+import Sidebar from "../../../components/Sidebar";
+
+// Formatea fecha como dd-mm-yyyy
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 
 export default function CompaniesList() {
   const navigate = useNavigate();
@@ -10,6 +21,30 @@ export default function CompaniesList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+
+  // Estado para el modal de edición
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    slug: "",
+    plan: "",
+    primary_color: "",
+    logo_url: "",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const sidebarItems = [
+    { label: "Visión General", path: "/clientes", icon: "⊞" },
+    { type: "section", label: "CLIENTES" },
+    { label: "Gestión de Empresas", path: "/clientes/empresas", icon: "🏢", isSubItem: true },
+    { label: "Planes de Suscripción", path: "/clientes/planes", icon: "📋", isSubItem: true },
+    { label: "Catálogo de Servicios", path: "/clientes/servicios", icon: "🛠️", isSubItem: true },
+    { label: "Configuración", path: "/clientes/configuracion", icon: "⚙️", isSubItem: true },
+  ];
 
   const loadCompanies = useCallback(async () => {
     setLoading(true);
@@ -36,13 +71,71 @@ export default function CompaniesList() {
   });
 
   const handleView = (id) => {
-    console.log("Ver empresa:", id);
-    // TODO: Implementar vista de detalles
+    const company = companies.find((c) => c.id === id);
+    if (company) {
+      handleEdit(id); // Por ahora, ver abre el modal de edición
+    }
   };
 
   const handleEdit = (id) => {
-    console.log("Editar empresa:", id);
-    // TODO: Implementar edición
+    const company = companies.find((c) => c.id === id);
+    if (company) {
+      setEditingCompany(company);
+      setEditForm({
+        name: company.name || "",
+        slug: company.slug || "",
+        plan: company.plan || "Free",
+        primary_color: company.primary_color || "#111827",
+        logo_url: company.logo_url || "",
+        contact_name: company.contact_name || "",
+        contact_email: company.contact_email || "",
+        contact_phone: company.contact_phone || "",
+      });
+      setEditModalOpen(true);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditingCompany(null);
+    setEditForm({
+      name: "",
+      slug: "",
+      plan: "",
+      primary_color: "",
+      logo_url: "",
+      contact_name: "",
+      contact_email: "",
+      contact_phone: "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCompany) return;
+
+    setSaving(true);
+    try {
+      await updateCompany({
+        company_id: editingCompany.id,
+        patch: {
+          name: editForm.name,
+          slug: editForm.slug,
+          plan: editForm.plan,
+          primary_color: editForm.primary_color,
+          logo_url: editForm.logo_url || null,
+          contact_name: editForm.contact_name || null,
+          contact_email: editForm.contact_email,
+          contact_phone: editForm.contact_phone,
+        },
+      });
+      handleCloseEditModal();
+      loadCompanies();
+    } catch (error) {
+      console.error("Error updating company:", error);
+      alert("Error al actualizar la empresa");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleToggleStatus = async (company) => {
@@ -63,14 +156,19 @@ export default function CompaniesList() {
 
   if (loading) {
     return (
-      <div style={styles.loading}>
-        <div>Cargando empresas...</div>
+      <div style={styles.pageContainer}>
+        <Sidebar items={sidebarItems} title="Clientes" />
+        <div style={styles.loading}>
+          <div>Cargando empresas...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.pageContainer}>
+      <Sidebar items={sidebarItems} title="Clientes" />
+      <div style={styles.container}>
       <h1 style={styles.mainTitle}>Gestión de Empresas</h1>
 
       <div style={styles.card}>
@@ -79,7 +177,7 @@ export default function CompaniesList() {
           <h2 style={styles.cardTitle}>Listado de Empresas</h2>
           <button
             style={styles.addButton}
-            onClick={() => navigate("/superadmin/companies/new")}
+            onClick={() => navigate("/clientes/empresas/nueva")}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "#1F2937";
             }}
@@ -123,7 +221,9 @@ export default function CompaniesList() {
                 <th style={{ ...styles.tableHeader, ...styles.tableHeaderFirst }}>
                   Nombre <span style={styles.sortIcon}>↕</span>
                 </th>
+                <th style={styles.tableHeader}>Contacto</th>
                 <th style={styles.tableHeader}>Plan</th>
+                <th style={styles.tableHeader}>Fecha Alta</th>
                 <th style={styles.tableHeader}>Estado</th>
                 <th style={{ ...styles.tableHeader, textAlign: "center" }}>Acciones</th>
               </tr>
@@ -131,7 +231,7 @@ export default function CompaniesList() {
             <tbody>
               {filteredCompanies.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={styles.emptyState}>
+                  <td colSpan="6" style={styles.emptyState}>
                     {searchTerm
                       ? "No se encontraron empresas con ese criterio"
                       : "No hay empresas registradas aún"}
@@ -156,8 +256,24 @@ export default function CompaniesList() {
                       </div>
                     </td>
                     <td style={styles.tableCell}>
+                      <div>
+                        {company.contact_name && (
+                          <div style={styles.contactNameText}>{company.contact_name}</div>
+                        )}
+                        <div style={styles.contactEmail}>{company.contact_email || "-"}</div>
+                        {company.contact_phone && (
+                          <div style={styles.contactPhone}>{company.contact_phone}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td style={styles.tableCell}>
                       <span style={styles.planBadge}>
                         {company.plan || "Free"}
+                      </span>
+                    </td>
+                    <td style={styles.tableCell}>
+                      <span style={styles.dateText}>
+                        {formatDate(company.start_date || company.created_at)}
                       </span>
                     </td>
                     <td style={styles.tableCell}>
@@ -204,16 +320,171 @@ export default function CompaniesList() {
           </table>
         </div>
       </div>
+
+      {/* MODAL DE EDICIÓN */}
+      {editModalOpen && editingCompany && (
+        <div style={styles.modalOverlay} onClick={handleCloseEditModal}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Editar Empresa</h3>
+              <button style={styles.modalClose} onClick={handleCloseEditModal}>
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nombre de la empresa *</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  style={styles.input}
+                  placeholder="Nombre de la empresa"
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Slug (identificador único)</label>
+                <input
+                  type="text"
+                  value={editForm.slug}
+                  onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                  style={styles.input}
+                  placeholder="slug-empresa"
+                />
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Plan</label>
+                  <select
+                    value={editForm.plan}
+                    onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                    style={styles.input}
+                  >
+                    <option value="Free">Free</option>
+                    <option value="Basic">Basic</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Color primario</label>
+                  <div style={styles.colorInputWrapper}>
+                    <input
+                      type="color"
+                      value={editForm.primary_color}
+                      onChange={(e) => setEditForm({ ...editForm, primary_color: e.target.value })}
+                      style={styles.colorInput}
+                    />
+                    <input
+                      type="text"
+                      value={editForm.primary_color}
+                      onChange={(e) => setEditForm({ ...editForm, primary_color: e.target.value })}
+                      style={{ ...styles.input, flex: 1 }}
+                      placeholder="#111827"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>URL del Logo (opcional)</label>
+                <input
+                  type="url"
+                  value={editForm.logo_url}
+                  onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://ejemplo.com/logo.png"
+                />
+                {editForm.logo_url && (
+                  <div style={styles.logoPreview}>
+                    <img
+                      src={editForm.logo_url}
+                      alt="Vista previa del logo"
+                      style={styles.logoPreviewImg}
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nombre de contacto</label>
+                <input
+                  type="text"
+                  value={editForm.contact_name}
+                  onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
+                  style={styles.input}
+                  placeholder="Nombre del administrador"
+                />
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Email de contacto</label>
+                  <input
+                    type="email"
+                    value={editForm.contact_email}
+                    onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                    style={styles.input}
+                    placeholder="contacto@empresa.com"
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Teléfono de contacto</label>
+                  <input
+                    type="tel"
+                    value={editForm.contact_phone}
+                    onChange={(e) => setEditForm({ ...editForm, contact_phone: e.target.value })}
+                    style={styles.input}
+                    placeholder="+34 600 000 000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button
+                style={styles.cancelButton}
+                onClick={handleCloseEditModal}
+              >
+                Cancelar
+              </button>
+              <button
+                style={styles.saveButton}
+                onClick={handleSaveEdit}
+                disabled={saving || !editForm.name}
+              >
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+  },
+
   container: {
-    maxWidth: 1400,
+    flex: 1,
+    padding: 40,
+    overflow: "auto",
   },
 
   loading: {
+    flex: 1,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -400,6 +671,28 @@ const styles = {
     marginTop: 2,
   },
 
+  contactNameText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#111827",
+  },
+
+  contactEmail: {
+    fontSize: 13,
+    color: "#374151",
+  },
+
+  contactPhone: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+
+  dateText: {
+    fontSize: 13,
+    color: "#374151",
+  },
+
   planBadge: {
     display: "inline-block",
     padding: "4px 12px",
@@ -454,5 +747,149 @@ const styles = {
     textAlign: "center",
     color: "#9CA3AF",
     fontSize: 14,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+
+  modal: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    width: "100%",
+    maxWidth: 560,
+    maxHeight: "90vh",
+    overflow: "hidden",
+    boxShadow: "0 20px 50px rgba(0, 0, 0, 0.2)",
+  },
+
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "20px 24px",
+    borderBottom: "1px solid #E5E7EB",
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111827",
+    margin: 0,
+  },
+
+  modalClose: {
+    backgroundColor: "transparent",
+    border: "none",
+    fontSize: 20,
+    color: "#6B7280",
+    cursor: "pointer",
+    padding: 4,
+  },
+
+  modalBody: {
+    padding: 24,
+    overflowY: "auto",
+    maxHeight: "calc(90vh - 140px)",
+  },
+
+  modalFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 12,
+    padding: "16px 24px",
+    borderTop: "1px solid #E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
+
+  formGroup: {
+    marginBottom: 20,
+    flex: 1,
+  },
+
+  formRow: {
+    display: "flex",
+    gap: 16,
+  },
+
+  label: {
+    display: "block",
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+    marginBottom: 6,
+  },
+
+  input: {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #D1D5DB",
+    borderRadius: 8,
+    fontSize: 14,
+    outline: "none",
+    transition: "border-color 0.2s ease",
+    boxSizing: "border-box",
+  },
+
+  colorInputWrapper: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  colorInput: {
+    width: 44,
+    height: 38,
+    padding: 2,
+    border: "1px solid #D1D5DB",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+
+  cancelButton: {
+    padding: "10px 20px",
+    backgroundColor: "#FFFFFF",
+    color: "#374151",
+    border: "1px solid #D1D5DB",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    cursor: "pointer",
+  },
+
+  saveButton: {
+    padding: "10px 20px",
+    backgroundColor: "#111827",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    cursor: "pointer",
+  },
+
+  logoPreview: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    textAlign: "center",
+  },
+
+  logoPreviewImg: {
+    maxWidth: 120,
+    maxHeight: 60,
+    objectFit: "contain",
   },
 };
