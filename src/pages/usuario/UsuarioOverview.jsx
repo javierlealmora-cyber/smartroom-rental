@@ -10,21 +10,24 @@ export default function UsuarioOverview() {
 
   // Sidebar para inquilino
   const tenantSidebarItems = [
-    { label: "Visión General", path: "/usuario", icon: "👁️" },
-    { label: "Consumos", path: "/usuario/consumos", icon: "📊" },
-    { label: "Boletines", path: "/usuario/boletines", icon: "📄" },
-    { label: "Servicios", path: "/usuario/servicios", icon: "⚙️" },
-    { label: "Incidencias", path: "/usuario/incidencias", icon: "🔧" },
-    { label: "Encuestas", path: "/usuario/encuestas", icon: "📝" },
-    { type: "section", label: "" },
-    { label: "Configuración", path: "/usuario/configuracion", icon: "⚙️" },
-    { label: "Personalización", path: "/usuario/personalizacion", icon: "🎨" },
+    { label: "Visión General", path: "/usuario", icon: "⊞" },
+    { type: "section", label: "MI INFORMACIÓN" },
+    { label: "Consumos", path: "/usuario/consumos", icon: "📊", isSubItem: true },
+    { label: "Boletines", path: "/usuario/boletines", icon: "📄", isSubItem: true },
+    { label: "Servicios", path: "/usuario/servicios", icon: "⚙️", isSubItem: true },
+    { label: "Incidencias", path: "/usuario/incidencias", icon: "🔧", isSubItem: true },
+    { label: "Encuestas", path: "/usuario/encuestas", icon: "📝", isSubItem: true },
+    { type: "section", label: "MI CUENTA" },
+    { label: "Configuración", path: "/usuario/configuracion", icon: "⚙️", isSubItem: true },
+    { label: "Personalización", path: "/usuario/personalizacion", icon: "🎨", isSubItem: true },
   ];
 
-  // Sidebar para admin/superadmin (solo configuración y personalización)
+  // Sidebar para admin/superadmin
   const adminSidebarItems = [
-    { label: "Configuración", path: "/usuario/configuracion", icon: "⚙️" },
-    { label: "Personalización", path: "/usuario/personalizacion", icon: "🎨" },
+    { label: "Visión General", path: "/usuario", icon: "⊞" },
+    { type: "section", label: "MI CUENTA" },
+    { label: "Configuración", path: "/usuario/configuracion", icon: "⚙️", isSubItem: true },
+    { label: "Personalización", path: "/usuario/personalizacion", icon: "🎨", isSubItem: true },
   ];
 
   const sidebarItems = role === "tenant" ? tenantSidebarItems : adminSidebarItems;

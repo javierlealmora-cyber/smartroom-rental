@@ -94,11 +94,18 @@ export async function deleteCompany({ company_id }) {
  * -----------------------------
  */
 export async function getCompanies() {
+  console.log("[getCompanies] Fetching companies...");
+
   const { data, error } = await supabase
     .from("companies")
     .select("id, name, slug, plan, status, start_date, created_at, theme_primary_color, logo_url, contact_name, contact_email, contact_phone")
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error("[getCompanies] Error:", error);
+    throw error;
+  }
+
+  console.log("[getCompanies] Loaded", data?.length ?? 0, "companies:", data);
   return data ?? [];
 }

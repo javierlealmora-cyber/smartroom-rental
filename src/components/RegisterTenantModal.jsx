@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Modal from "./Modal";
 
-export default function RegisterTenantModal({ isOpen, onClose, onSubmit }) {
+export default function RegisterTenantModal({ isOpen, onClose, onSubmit, companyId }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName1: "",
@@ -14,12 +14,16 @@ export default function RegisterTenantModal({ isOpen, onClose, onSubmit }) {
     room: "",
   });
 
-  // Datos dummy
+  // TODO: En el futuro, cargar alojamientos filtrados por companyId desde la BD
+  // Por ahora usamos datos dummy
   const apartments = [
     { id: 1, name: "Edificio Central" },
     { id: 2, name: "Residencia Norte" },
     { id: 3, name: "Apartamento Sur" },
   ];
+
+  // Log para debug
+  console.log("[RegisterTenantModal] companyId:", companyId);
 
   // Habitaciones disponibles por alojamiento (dummy)
   const availableRoomsByApartment = {
@@ -43,8 +47,10 @@ export default function RegisterTenantModal({ isOpen, onClose, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Registrar inquilino:", formData);
-    onSubmit?.(formData);
+    // Incluir companyId en los datos enviados
+    const dataWithCompany = { ...formData, companyId };
+    console.log("Registrar inquilino:", dataWithCompany);
+    onSubmit?.(dataWithCompany);
     onClose();
     // Reset form
     setFormData({

@@ -1,12 +1,25 @@
 // src/pages/admin/apartments/ApartmentCreate.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "../../../components/Sidebar";
+import CompanySelector, { useCompanyId } from "../../../components/CompanySelector";
 
 export default function ApartmentCreate() {
   const navigate = useNavigate();
+  const { companyId: defaultCompanyId, isSuperadmin } = useCompanyId();
+
+  const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [apartmentName, setApartmentName] = useState("");
   const [numRooms, setNumRooms] = useState(1);
   const [rooms, setRooms] = useState([createEmptyRoom(1)]);
+
+  const sidebarItems = [
+    { label: "Visión General", path: "/alojamientos", icon: "⊞" },
+    { type: "section", label: "ALOJAMIENTO" },
+    { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
+    { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },
+    { label: "Historial de Ocupación", path: "/alojamientos/ocupacion", icon: "⏱", isSubItem: true },
+  ];
 
   function createEmptyRoom(number) {
     return {
@@ -45,18 +58,27 @@ export default function ApartmentCreate() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Crear alojamiento:", { apartmentName, numRooms, rooms });
+
+    // Validar que se haya seleccionado empresa (para superadmin)
+    if (isSuperadmin && !companyId) {
+      alert("Debes seleccionar una empresa");
+      return;
+    }
+
+    console.log("Crear alojamiento:", { companyId, apartmentName, numRooms, rooms });
     alert("Alojamiento creado (pendiente implementación backend)");
-    navigate("/admin/apartments");
+    navigate("/alojamientos/gestion");
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div style={styles.pageContainer}>
+      <Sidebar items={sidebarItems} title="Alojamientos" />
+      <div style={styles.container}>
+        <div style={styles.header}>
         <h1 style={styles.title}>Añadir Alojamiento</h1>
         <button
           style={styles.cancelButton}
-          onClick={() => navigate("/admin/apartments")}
+          onClick={() => navigate("/alojamientos/gestion")}
           type="button"
         >
           Cancelar
@@ -68,6 +90,14 @@ export default function ApartmentCreate() {
           <h2 style={styles.sectionTitle}>INFORMACIÓN GENERAL</h2>
 
           <div style={styles.formGrid}>
+            {/* Selector de empresa - visible como dropdown para superadmin, readonly para admin */}
+            <CompanySelector
+              value={companyId}
+              onChange={setCompanyId}
+              required={true}
+              label="Empresa"
+            />
+
             <div style={styles.formGroup}>
               <label style={styles.label}>Nombre del Alojamiento *</label>
               <input
@@ -204,15 +234,22 @@ export default function ApartmentCreate() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+  },
+
   container: {
+    flex: 1,
     padding: 40,
-    maxWidth: 1200,
-    margin: "0 auto",
+    overflow: "auto",
   },
 
   header: {

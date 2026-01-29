@@ -1,17 +1,50 @@
 // src/pages/admin/apartments/ApartmentsList.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ViewApartmentModal from "../../../components/ViewApartmentModal";
 import Sidebar from "../../../components/Sidebar";
+import { useAuth } from "../../../providers/AuthProvider";
+import { getCompanies } from "../../../services/companies.service";
 
 export default function ApartmentsList() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const role = profile?.role;
+  const userCompanyId = profile?.company_id;
+  const isSuperadmin = role === "superadmin";
+
+  // Estado para filtro de empresa (solo visible para superadmin)
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(userCompanyId || "");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
+  // Cargar lista de empresas para superadmin
+  useEffect(() => {
+    if (isSuperadmin) {
+      loadCompanies();
+    } else if (userCompanyId) {
+      setSelectedCompanyId(userCompanyId);
+    }
+  }, [isSuperadmin, userCompanyId]);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await getCompanies();
+      const activeCompanies = data.filter(c => c.status === "active");
+      setCompanies(activeCompanies);
+      if (activeCompanies.length > 0 && !selectedCompanyId) {
+        setSelectedCompanyId(activeCompanies[0].id);
+      }
+    } catch (err) {
+      console.error("[ApartmentsList] Error loading companies:", err);
+    }
+  };
+
   const sidebarItems = [
-    { label: "Visión General", path: "/alojamientos", icon: "👁️" },
+    { label: "Visión General", path: "/alojamientos", icon: "⊞" },
     { type: "section", label: "ALOJAMIENTO" },
     { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
     { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },
@@ -45,7 +78,23 @@ export default function ApartmentsList() {
         </button>
       </div>
 
-      <div style={styles.searchContainer}>
+      <div style={styles.filtersContainer}>
+        {/* Selector de empresa - solo visible para superadmin */}
+        {isSuperadmin && (
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            style={styles.select}
+          >
+            <option value="">-- Seleccionar empresa --</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        )}
+
         <input
           type="text"
           placeholder="Buscar por nombre..."
@@ -177,12 +226,28 @@ const styles = {
     transition: "opacity 0.2s ease",
   },
 
-  searchContainer: {
+  filtersContainer: {
+    display: "flex",
+    gap: 16,
     marginBottom: 24,
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+
+  select: {
+    padding: "12px 16px",
+    fontSize: 14,
+    border: "1px solid #E5E7EB",
+    borderRadius: 8,
+    outline: "none",
+    backgroundColor: "#FFFFFF",
+    cursor: "pointer",
+    minWidth: 220,
   },
 
   searchInput: {
-    width: "100%",
+    flex: 1,
+    minWidth: 250,
     maxWidth: 400,
     padding: "12px 16px",
     fontSize: 14,

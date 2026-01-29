@@ -6,7 +6,7 @@ export default function ConsumosOverview() {
   const navigate = useNavigate();
 
   const sidebarItems = [
-    { label: "Visión General", path: "/consumos", icon: "👁️" },
+    { label: "Visión General", path: "/consumos", icon: "⊞" },
     { type: "section", label: "CONSUMO DE USUARIOS" },
     { label: "Registros Estimados", path: "/consumos/registros", icon: "📊", isSubItem: true },
     { label: "Visor Consumo", path: "/consumos/visor", icon: "📈", isSubItem: true },

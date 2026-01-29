@@ -85,7 +85,7 @@ export default function CompaniesList() {
         name: company.name || "",
         slug: company.slug || "",
         plan: company.plan || "Free",
-        primary_color: company.primary_color || "#111827",
+        primary_color: company.theme_primary_color || "#111827",
         logo_url: company.logo_url || "",
         contact_name: company.contact_name || "",
         contact_email: company.contact_email || "",
@@ -121,11 +121,11 @@ export default function CompaniesList() {
           name: editForm.name,
           slug: editForm.slug,
           plan: editForm.plan,
-          primary_color: editForm.primary_color,
+          theme_primary_color: editForm.primary_color,
           logo_url: editForm.logo_url || null,
           contact_name: editForm.contact_name || null,
-          contact_email: editForm.contact_email,
-          contact_phone: editForm.contact_phone,
+          contact_email: editForm.contact_email || null,
+          contact_phone: editForm.contact_phone || null,
         },
       });
       handleCloseEditModal();

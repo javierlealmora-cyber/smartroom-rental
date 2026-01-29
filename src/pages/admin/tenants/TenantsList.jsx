@@ -1,15 +1,58 @@
 // src/pages/admin/tenants/TenantsList.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RegisterTenantModal from "../../../components/RegisterTenantModal";
 import DeactivateTenantModal from "../../../components/DeactivateTenantModal";
+import Sidebar from "../../../components/Sidebar";
+import { useAuth } from "../../../providers/AuthProvider";
+import { getCompanies } from "../../../services/companies.service";
 
 export default function TenantsList() {
+  const { profile } = useAuth();
+  const role = profile?.role;
+  const userCompanyId = profile?.company_id;
+  const isSuperadmin = role === "superadmin";
+
+  // Estado para filtro de empresa (solo visible para superadmin)
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(userCompanyId || "");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApartment, setSelectedApartment] = useState("all");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
+
+  // Cargar lista de empresas para superadmin
+  useEffect(() => {
+    if (isSuperadmin) {
+      loadCompanies();
+    } else if (userCompanyId) {
+      setSelectedCompanyId(userCompanyId);
+    }
+  }, [isSuperadmin, userCompanyId]);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await getCompanies();
+      const activeCompanies = data.filter(c => c.status === "active");
+      setCompanies(activeCompanies);
+      // Si hay empresas, seleccionar la primera por defecto
+      if (activeCompanies.length > 0 && !selectedCompanyId) {
+        setSelectedCompanyId(activeCompanies[0].id);
+      }
+    } catch (err) {
+      console.error("[TenantsList] Error loading companies:", err);
+    }
+  };
+
+  const sidebarItems = [
+    { label: "Visión General", path: "/alojamientos", icon: "⊞" },
+    { type: "section", label: "ALOJAMIENTO" },
+    { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
+    { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },
+    { label: "Historial de Ocupación", path: "/alojamientos/ocupacion", icon: "⏱", isSubItem: true },
+  ];
 
   // Datos dummy para POC
   const tenants = [
@@ -63,8 +106,10 @@ export default function TenantsList() {
   });
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div style={styles.pageContainer}>
+      <Sidebar items={sidebarItems} title="Alojamientos" />
+      <div style={styles.container}>
+        <div style={styles.header}>
         <h1 style={styles.title}>Gestión de Inquilinos</h1>
         <button
           style={styles.addButton}
@@ -77,6 +122,22 @@ export default function TenantsList() {
       </div>
 
       <div style={styles.filtersContainer}>
+        {/* Selector de empresa - solo visible para superadmin */}
+        {isSuperadmin && (
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            style={{ ...styles.select, minWidth: 220 }}
+          >
+            <option value="">-- Seleccionar empresa --</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        )}
+
         <input
           type="text"
           placeholder="Buscar por nombre o email..."
@@ -183,6 +244,7 @@ export default function TenantsList() {
       <RegisterTenantModal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
+        companyId={selectedCompanyId}
         onSubmit={(data) => {
           alert(`Inquilino registrado: ${data.firstName} ${data.lastName1}`);
         }}
@@ -199,14 +261,22 @@ export default function TenantsList() {
           alert(`Inquilino dado de baja: ${data.tenantId} - Fecha: ${data.exitDate}`);
         }}
       />
+      </div>
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+  },
+
   container: {
+    flex: 1,
     padding: 40,
-    maxWidth: 1200,
+    overflow: "auto",
     margin: "0 auto",
   },
 

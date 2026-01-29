@@ -1,9 +1,11 @@
 // src/components/Sidebar.jsx
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Sidebar({ items, title }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [hoveredIndex, setHoveredIndex] = useState(null);
 
   return (
     <aside style={styles.sidebar}>
@@ -14,6 +16,7 @@ export default function Sidebar({ items, title }) {
           const isActive = location.pathname === item.path;
           const isSection = item.type === "section";
           const isSubItem = item.isSubItem;
+          const isHovered = hoveredIndex === index;
 
           if (isSection) {
             return (
@@ -30,8 +33,11 @@ export default function Sidebar({ items, title }) {
                 ...styles.navItem,
                 ...(isSubItem ? styles.navItemSub : {}),
                 ...(isActive ? styles.navItemActive : {}),
+                ...(isHovered && !isActive ? styles.navItemHover : {}),
               }}
               onClick={() => navigate(item.path)}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
               {item.icon && <span style={styles.navIcon}>{item.icon}</span>}
               <span style={styles.navLabel}>{item.label}</span>
@@ -103,6 +109,11 @@ const styles = {
     borderLeftColor: "#111827",
     color: "#111827",
     fontWeight: "600",
+  },
+
+  navItemHover: {
+    backgroundColor: "#F9FAFB",
+    color: "#111827",
   },
 
   navIcon: {

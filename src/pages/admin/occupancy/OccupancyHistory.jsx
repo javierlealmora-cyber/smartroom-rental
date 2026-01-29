@@ -1,10 +1,52 @@
 // src/pages/admin/occupancy/OccupancyHistory.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Sidebar from "../../../components/Sidebar";
+import { useAuth } from "../../../providers/AuthProvider";
+import { getCompanies } from "../../../services/companies.service";
 
 export default function OccupancyHistory() {
+  const { profile } = useAuth();
+  const role = profile?.role;
+  const userCompanyId = profile?.company_id;
+  const isSuperadmin = role === "superadmin";
+
+  // Estado para filtro de empresa (solo visible para superadmin)
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(userCompanyId || "");
+
   const currentYear = new Date().getFullYear();
   const [selectedApartment, setSelectedApartment] = useState("1");
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+
+  // Cargar lista de empresas para superadmin
+  useEffect(() => {
+    if (isSuperadmin) {
+      loadCompanies();
+    } else if (userCompanyId) {
+      setSelectedCompanyId(userCompanyId);
+    }
+  }, [isSuperadmin, userCompanyId]);
+
+  const loadCompanies = async () => {
+    try {
+      const data = await getCompanies();
+      const activeCompanies = data.filter(c => c.status === "active");
+      setCompanies(activeCompanies);
+      if (activeCompanies.length > 0 && !selectedCompanyId) {
+        setSelectedCompanyId(activeCompanies[0].id);
+      }
+    } catch (err) {
+      console.error("[OccupancyHistory] Error loading companies:", err);
+    }
+  };
+
+  const sidebarItems = [
+    { label: "Visión General", path: "/alojamientos", icon: "⊞" },
+    { type: "section", label: "ALOJAMIENTO" },
+    { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
+    { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },
+    { label: "Historial de Ocupación", path: "/alojamientos/ocupacion", icon: "⏱", isSubItem: true },
+  ];
 
   // Datos dummy
   const apartments = [
@@ -89,10 +131,31 @@ export default function OccupancyHistory() {
   const selectedApartmentData = apartments.find((apt) => apt.id === selectedApartment);
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Historial de Ocupación</h1>
+    <div style={styles.pageContainer}>
+      <Sidebar items={sidebarItems} title="Alojamientos" />
+      <div style={styles.container}>
+        <h1 style={styles.title}>Historial de Ocupación</h1>
 
       <div style={styles.filtersContainer}>
+        {/* Selector de empresa - solo visible para superadmin */}
+        {isSuperadmin && (
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Empresa</label>
+            <select
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              style={styles.select}
+            >
+              <option value="">-- Seleccionar empresa --</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div style={styles.formGroup}>
           <label style={styles.label}>Alojamiento</label>
           <select
@@ -181,15 +244,22 @@ export default function OccupancyHistory() {
           <span>Libre</span>
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 const styles = {
+  pageContainer: {
+    display: "flex",
+    flex: 1,
+    overflow: "hidden",
+  },
+
   container: {
+    flex: 1,
     padding: 40,
-    maxWidth: 1400,
-    margin: "0 auto",
+    overflow: "auto",
   },
 
   title: {

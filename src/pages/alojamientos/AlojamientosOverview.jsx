@@ -6,7 +6,7 @@ export default function AlojamientosOverview() {
   const navigate = useNavigate();
 
   const sidebarItems = [
-    { label: "Visión General", path: "/alojamientos", icon: "👁️" },
+    { label: "Visión General", path: "/alojamientos", icon: "⊞" },
     { type: "section", label: "ALOJAMIENTO" },
     { label: "Gestión de Alojamiento", path: "/alojamientos/gestion", icon: "🏢", isSubItem: true },
     { label: "Gestión de Inquilinos", path: "/alojamientos/inquilinos", icon: "👥", isSubItem: true },

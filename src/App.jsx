@@ -4,6 +4,8 @@ import RequireAuth from "./router/RequireAuth";
 import RequireRole from "./router/RequireRole";
 import { AuthProvider } from "./providers/AuthProvider";
 import Login from "./pages/auth/Login";
+import ResetPassword from "./pages/auth/ResetPassword";
+import Logout from "./pages/auth/Logout";
 
 // Páginas de Visión General
 import ClientesOverview from "./pages/clientes/ClientesOverview";
@@ -14,6 +16,19 @@ import UsuarioOverview from "./pages/usuario/UsuarioOverview";
 // Páginas de Clientes (Superadmin)
 import CompaniesList from "./pages/superadmin/companies/CompaniesList";
 import CompanyCreate from "./pages/superadmin/companies/CompanyCreate";
+import ClientesConfig from "./pages/clientes/ClientesConfig";
+
+// Páginas de Planes (Superadmin)
+import PlansList from "./pages/clientes/planes/PlansList";
+import PlanCreate from "./pages/clientes/planes/PlanCreate";
+import PlanEdit from "./pages/clientes/planes/PlanEdit";
+import PlanDetail from "./pages/clientes/planes/PlanDetail";
+
+// Páginas de Servicios (Superadmin)
+import ServicesList from "./pages/clientes/servicios/ServicesList";
+import ServiceCreate from "./pages/clientes/servicios/ServiceCreate";
+import ServiceEdit from "./pages/clientes/servicios/ServiceEdit";
+import ServiceDetail from "./pages/clientes/servicios/ServiceDetail";
 
 // Páginas de Alojamientos
 import ApartmentsList from "./pages/admin/apartments/ApartmentsList";
@@ -21,13 +36,36 @@ import ApartmentCreate from "./pages/admin/apartments/ApartmentCreate";
 import TenantsList from "./pages/admin/tenants/TenantsList";
 import OccupancyHistory from "./pages/admin/occupancy/OccupancyHistory";
 
+// Páginas de Consumos
+import RegistrosEstimados from "./pages/consumos/RegistrosEstimados";
+import VisorConsumo from "./pages/consumos/VisorConsumo";
+import FacturasElectricas from "./pages/consumos/FacturasElectricas";
+import Liquidacion from "./pages/consumos/Liquidacion";
+import BoletinesConsumo from "./pages/consumos/BoletinesConsumo";
+import HuchaEnergetica from "./pages/consumos/HuchaEnergetica";
+import HuchaEnergia from "./pages/consumos/HuchaEnergia";
+import HuchaGas from "./pages/consumos/HuchaGas";
+import HuchaAgua from "./pages/consumos/HuchaAgua";
+import Fianzas from "./pages/consumos/Fianzas";
+
+// Páginas de Usuario
+import MisConsumos from "./pages/usuario/MisConsumos";
+import MisBoletines from "./pages/usuario/MisBoletines";
+import UsuarioServicios from "./pages/usuario/UsuarioServicios";
+import Incidencias from "./pages/usuario/Incidencias";
+import Encuestas from "./pages/usuario/Encuestas";
+import UsuarioConfig from "./pages/usuario/UsuarioConfig";
+import Personalizacion from "./pages/usuario/Personalizacion";
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Login */}
+          {/* Auth */}
           <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/logout" element={<Logout />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
 
           {/* Rutas protegidas */}
           <Route element={<RequireAuth />}>
@@ -37,18 +75,20 @@ export default function App() {
                 <Route path="/clientes" element={<ClientesOverview />} />
                 <Route path="/clientes/empresas" element={<CompaniesList />} />
                 <Route path="/clientes/empresas/nueva" element={<CompanyCreate />} />
-                <Route
-                  path="/clientes/planes"
-                  element={<div style={{ padding: 40 }}>Planes (próximamente)</div>}
-                />
-                <Route
-                  path="/clientes/servicios"
-                  element={<div style={{ padding: 40 }}>Servicios (próximamente)</div>}
-                />
-                <Route
-                  path="/clientes/configuracion"
-                  element={<div style={{ padding: 40 }}>Configuración (próximamente)</div>}
-                />
+
+                {/* Planes de Suscripción */}
+                <Route path="/clientes/planes" element={<PlansList />} />
+                <Route path="/clientes/planes/new" element={<PlanCreate />} />
+                <Route path="/clientes/planes/:id" element={<PlanDetail />} />
+                <Route path="/clientes/planes/:id/edit" element={<PlanEdit />} />
+
+                {/* Servicios */}
+                <Route path="/clientes/servicios" element={<ServicesList />} />
+                <Route path="/clientes/servicios/new" element={<ServiceCreate />} />
+                <Route path="/clientes/servicios/:id" element={<ServiceDetail />} />
+                <Route path="/clientes/servicios/:id/edit" element={<ServiceEdit />} />
+
+                <Route path="/clientes/configuracion" element={<ClientesConfig />} />
               </Route>
 
               {/* Rutas ALOJAMIENTOS - Superadmin y Admin */}
@@ -63,78 +103,27 @@ export default function App() {
               {/* Rutas CONSUMOS - Superadmin y Admin */}
               <Route element={<RequireRole allow={["superadmin", "admin"]} />}>
                 <Route path="/consumos" element={<ConsumosOverview />} />
-                <Route
-                  path="/consumos/registros"
-                  element={<div style={{ padding: 40 }}>Registros Estimados (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/visor"
-                  element={<div style={{ padding: 40 }}>Visor Consumo (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/facturas"
-                  element={<div style={{ padding: 40 }}>Facturas Eléctricas (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/liquidacion"
-                  element={<div style={{ padding: 40 }}>Liquidación (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/boletines"
-                  element={<div style={{ padding: 40 }}>Boletines (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/hucha-energetica"
-                  element={<div style={{ padding: 40 }}>Hucha Energética (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/hucha-energia"
-                  element={<div style={{ padding: 40 }}>Hucha de Energía (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/hucha-gas"
-                  element={<div style={{ padding: 40 }}>Hucha de Gas (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/hucha-agua"
-                  element={<div style={{ padding: 40 }}>Hucha de Agua (próximamente)</div>}
-                />
-                <Route
-                  path="/consumos/fianzas"
-                  element={<div style={{ padding: 40 }}>Fianzas (próximamente)</div>}
-                />
+                <Route path="/consumos/registros" element={<RegistrosEstimados />} />
+                <Route path="/consumos/visor" element={<VisorConsumo />} />
+                <Route path="/consumos/facturas" element={<FacturasElectricas />} />
+                <Route path="/consumos/liquidacion" element={<Liquidacion />} />
+                <Route path="/consumos/boletines" element={<BoletinesConsumo />} />
+                <Route path="/consumos/hucha-energetica" element={<HuchaEnergetica />} />
+                <Route path="/consumos/hucha-energia" element={<HuchaEnergia />} />
+                <Route path="/consumos/hucha-gas" element={<HuchaGas />} />
+                <Route path="/consumos/hucha-agua" element={<HuchaAgua />} />
+                <Route path="/consumos/fianzas" element={<Fianzas />} />
               </Route>
 
               {/* Rutas USUARIO - Todos los roles */}
               <Route path="/usuario" element={<UsuarioOverview />} />
-              <Route
-                path="/usuario/consumos"
-                element={<div style={{ padding: 40 }}>Mis Consumos (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/boletines"
-                element={<div style={{ padding: 40 }}>Mis Boletines (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/servicios"
-                element={<div style={{ padding: 40 }}>Servicios (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/incidencias"
-                element={<div style={{ padding: 40 }}>Incidencias (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/encuestas"
-                element={<div style={{ padding: 40 }}>Encuestas (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/configuracion"
-                element={<div style={{ padding: 40 }}>Configuración (próximamente)</div>}
-              />
-              <Route
-                path="/usuario/personalizacion"
-                element={<div style={{ padding: 40 }}>Personalización (próximamente)</div>}
-              />
+              <Route path="/usuario/consumos" element={<MisConsumos />} />
+              <Route path="/usuario/boletines" element={<MisBoletines />} />
+              <Route path="/usuario/servicios" element={<UsuarioServicios />} />
+              <Route path="/usuario/incidencias" element={<Incidencias />} />
+              <Route path="/usuario/encuestas" element={<Encuestas />} />
+              <Route path="/usuario/configuracion" element={<UsuarioConfig />} />
+              <Route path="/usuario/personalizacion" element={<Personalizacion />} />
             </Route>
           </Route>
 

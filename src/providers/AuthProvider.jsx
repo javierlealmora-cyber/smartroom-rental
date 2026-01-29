@@ -170,14 +170,37 @@ export function AuthProvider({ children }) {
 
   // Función de logout centralizada
   const logout = async () => {
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch (error) {
-      console.error("[AuthProvider] logout error:", error);
-    }
+    console.log("[AuthProvider] logout() llamado");
+
+    // 1. Limpiar estado de React primero
     setSession(null);
     setUser(null);
     setProfile(null);
+
+    // 2. Llamar a signOut de Supabase (scope: local no requiere red)
+    try {
+      console.log("[AuthProvider] Llamando supabase.auth.signOut...");
+      await supabase.auth.signOut({ scope: "local" });
+      console.log("[AuthProvider] signOut completado");
+    } catch (error) {
+      console.error("[AuthProvider] logout error:", error);
+    }
+
+    // 3. Limpiar localStorage relacionado con Supabase
+    // (por si signOut no lo limpió correctamente)
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith("sb-") || key.includes("supabase"))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => {
+      console.log("[AuthProvider] Eliminando localStorage key:", key);
+      localStorage.removeItem(key);
+    });
+
+    console.log("[AuthProvider] logout() completado");
   };
 
   const value = useMemo(

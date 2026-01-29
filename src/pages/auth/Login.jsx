@@ -14,8 +14,13 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   const redirectByRole = (role) => {
     if (role === "superadmin") return "/superadmin/dashboard";
@@ -55,6 +60,33 @@ export default function Login() {
   const onSubmit = (e) => {
     e.preventDefault();
     if (!busy) handleLogin();
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      setError("Por favor, introduce tu email");
+      return;
+    }
+    setError(null);
+    setForgotBusy(true);
+
+    const { error: err } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    setForgotBusy(false);
+    if (err) {
+      setError(err.message);
+    } else {
+      setForgotSent(true);
+    }
+  };
+
+  const closeForgotModal = () => {
+    setForgotMode(false);
+    setForgotEmail("");
+    setForgotSent(false);
+    setError(null);
   };
 
   /**
@@ -271,14 +303,45 @@ export default function Login() {
             >
               <input
                 className="login-password glass-input"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 autoComplete="current-password"
-                style={styles.input}
+                style={{ ...styles.input, paddingRight: "50px" }}
                 aria-label="Password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 11,
+                }}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
             </div>
 
             {/* LOG IN (botón con texto visible) */}
@@ -321,9 +384,8 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => {
-                  // Aquí enganchas tu flujo real de "forgot password"
-                  // nav("/auth/forgot-password");
-                  alert("TODO: forgot password");
+                  setForgotMode(true);
+                  setForgotEmail(email);
                 }}
                 className="forgot-button"
                 style={{
@@ -347,7 +409,137 @@ export default function Login() {
           </div>
         </form>
 
-        {error ? <div style={styles.error}>{error}</div> : null}
+        {error && !forgotMode ? <div style={styles.error}>{error}</div> : null}
+
+        {/* MODAL FORGOT PASSWORD */}
+        {forgotMode && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.7)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 100,
+            }}
+            onClick={closeForgotModal}
+          >
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(20px) saturate(180%)",
+                border: "2px solid rgba(255, 255, 255, 0.25)",
+                borderRadius: "24px",
+                padding: "32px",
+                maxWidth: "420px",
+                width: "90%",
+                boxShadow: "0 16px 64px rgba(0, 0, 0, 0.4)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {forgotSent ? (
+                <>
+                  <h2 style={{ color: "white", margin: "0 0 16px", fontSize: "22px", fontWeight: "600" }}>
+                    Email enviado
+                  </h2>
+                  <p style={{ color: "rgba(255,255,255,0.85)", margin: "0 0 24px", fontSize: "15px", lineHeight: "1.5" }}>
+                    Hemos enviado un enlace de recuperación a <strong>{forgotEmail}</strong>.
+                    Revisa tu bandeja de entrada y sigue las instrucciones.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={closeForgotModal}
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      background: "rgba(255, 255, 255, 0.25)",
+                      border: "2px solid rgba(255, 255, 255, 0.3)",
+                      borderRadius: "12px",
+                      color: "white",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Volver al login
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 style={{ color: "white", margin: "0 0 8px", fontSize: "22px", fontWeight: "600" }}>
+                    Recuperar contraseña
+                  </h2>
+                  <p style={{ color: "rgba(255,255,255,0.75)", margin: "0 0 24px", fontSize: "14px" }}>
+                    Introduce tu email y te enviaremos un enlace para restablecer tu contraseña.
+                  </p>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Email"
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      background: "rgba(255, 255, 255, 0.2)",
+                      border: "2px solid rgba(255, 255, 255, 0.25)",
+                      borderRadius: "12px",
+                      color: "white",
+                      fontSize: "15px",
+                      marginBottom: "16px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  {error && (
+                    <p style={{ color: "#ff6b6b", margin: "0 0 16px", fontSize: "13px" }}>
+                      {error}
+                    </p>
+                  )}
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <button
+                      type="button"
+                      onClick={closeForgotModal}
+                      style={{
+                        flex: 1,
+                        padding: "14px",
+                        background: "transparent",
+                        border: "2px solid rgba(255, 255, 255, 0.3)",
+                        borderRadius: "12px",
+                        color: "rgba(255, 255, 255, 0.8)",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={forgotBusy || !forgotEmail}
+                      style={{
+                        flex: 1,
+                        padding: "14px",
+                        background: "rgba(255, 255, 255, 0.25)",
+                        border: "2px solid rgba(255, 255, 255, 0.3)",
+                        borderRadius: "12px",
+                        color: "white",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        cursor: forgotBusy || !forgotEmail ? "not-allowed" : "pointer",
+                        opacity: forgotBusy || !forgotEmail ? 0.5 : 1,
+                      }}
+                    >
+                      {forgotBusy ? "Enviando..." : "Enviar enlace"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{css}</style>

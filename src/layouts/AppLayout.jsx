@@ -7,7 +7,7 @@ import { useTheme } from "../providers/ThemeProvider";
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, user } = useAuth();
+  const { profile, user, logout } = useAuth();
   const { theme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -75,17 +75,19 @@ export default function AppLayout() {
 
   const activeTab = getActiveTab();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Cerrar menú inmediatamente
     setShowUserMenu(false);
 
-    // Limpiar TODO el localStorage (simple y efectivo)
-    localStorage.clear();
+    console.log("[AppLayout] Iniciando logout...");
 
-    // Limpiar sessionStorage también
-    sessionStorage.clear();
+    // Usar la función logout centralizada del AuthProvider
+    // Esta usa scope: "local" que es más confiable (no requiere red)
+    await logout();
 
-    // Recargar la página desde cero - esto fuerza un nuevo bootstrap
+    console.log("[AppLayout] Logout completado, redirigiendo...");
+
+    // Forzar recarga completa para limpiar todo el estado de React
     window.location.href = "/auth/login";
   };
 
