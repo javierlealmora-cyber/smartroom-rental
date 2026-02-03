@@ -57,6 +57,27 @@ import Encuestas from "./pages/usuario/Encuestas";
 import UsuarioConfig from "./pages/usuario/UsuarioConfig";
 import Personalizacion from "./pages/usuario/Personalizacion";
 
+// =============================================
+// NUEVA ESTRUCTURA v2 (client_accounts)
+// NOTA: Rama paralela independiente - NO afecta a las rutas existentes
+// =============================================
+
+// v2 - Superadmin
+import DashboardSuperadminV2 from "./pages/v2/superadmin/DashboardSuperadmin";
+import ClientAccountsListV2 from "./pages/v2/superadmin/ClientAccountsList";
+import ClientAccountCreateV2 from "./pages/v2/superadmin/ClientAccountCreate";
+import ClientAccountDetailV2 from "./pages/v2/superadmin/ClientAccountDetail";
+
+// v2 - Admin
+import DashboardAdminV2 from "./pages/v2/admin/DashboardAdmin";
+import AccommodationsListV2 from "./pages/v2/admin/accommodations/AccommodationsList";
+import AccommodationCreateV2 from "./pages/v2/admin/accommodations/AccommodationCreate";
+import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
+import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
+
+// v2 - Student
+import StudentDashboardV2 from "./pages/v2/student/StudentDashboard";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -126,6 +147,35 @@ export default function App() {
               <Route path="/usuario/personalizacion" element={<Personalizacion />} />
             </Route>
           </Route>
+
+          {/* =============================================
+             RUTAS v2 - Nueva estructura con client_accounts
+             NOTA: Rama paralela independiente - NO afecta a las rutas existentes
+             ============================================= */}
+
+          {/* v2 - Superadmin */}
+          <Route path="/v2/superadmin" element={<DashboardSuperadminV2 />} />
+          <Route path="/v2/superadmin/cuentas" element={<ClientAccountsListV2 />} />
+          <Route path="/v2/superadmin/cuentas/nueva" element={<ClientAccountCreateV2 />} />
+          <Route path="/v2/superadmin/cuentas/:id" element={<ClientAccountDetailV2 />} />
+          <Route path="/v2/superadmin/cuentas/:id/editar" element={<ClientAccountDetailV2 />} />
+          <Route path="/v2/superadmin/cuentas/:id/usuarios" element={<ClientAccountDetailV2 />} />
+
+          {/* v2 - Admin */}
+          <Route path="/v2/admin" element={<DashboardAdminV2 />} />
+          <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
+          <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
+          <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
+          <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+
+          {/* v2 - Student/Inquilino */}
+          <Route path="/v2/student" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/consumo" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/boletines" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/servicios" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/encuestas" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/incidencias" element={<StudentDashboardV2 />} />
+          <Route path="/v2/student/perfil" element={<StudentDashboardV2 />} />
 
           {/* Root - Redirigir según rol */}
           <Route path="/" element={<Navigate to="/alojamientos" replace />} />
