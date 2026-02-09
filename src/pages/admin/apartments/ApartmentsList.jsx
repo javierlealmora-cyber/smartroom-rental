@@ -51,16 +51,74 @@ export default function ApartmentsList() {
     { label: "Historial de Ocupación", path: "/alojamientos/ocupacion", icon: "⏱", isSubItem: true },
   ];
 
-  // Datos dummy para la POC
+  // Estado para filtro de mostrar desactivados
+  const [showInactive, setShowInactive] = useState(false);
+
+  // Datos dummy para la POC (con campos según requisitos)
   const apartments = [
-    { id: 1, name: "Edificio Central", rooms: 12, status: "Activo" },
-    { id: 2, name: "Residencia Norte", rooms: 8, status: "Activo" },
-    { id: 3, name: "Apartamento Sur", rooms: 6, status: "Desactivado" },
+    {
+      id: 1,
+      name: "Edificio Central",
+      address_line1: "Calle Mayor 15",
+      city: "Madrid",
+      postal_code: "28001",
+      rooms: 12,
+      occupied: 8,
+      free: 3,
+      pending_checkout: 1,
+      status: "Activo"
+    },
+    {
+      id: 2,
+      name: "Residencia Norte",
+      address_line1: "Av. del Norte 42",
+      city: "Barcelona",
+      postal_code: "08001",
+      rooms: 8,
+      occupied: 6,
+      free: 2,
+      pending_checkout: 0,
+      status: "Activo"
+    },
+    {
+      id: 3,
+      name: "Apartamento Sur",
+      address_line1: "Plaza del Sol 8",
+      city: "Valencia",
+      postal_code: "46001",
+      rooms: 6,
+      occupied: 0,
+      free: 6,
+      pending_checkout: 0,
+      status: "Desactivado"
+    },
   ];
 
-  const filteredApartments = apartments.filter((apt) =>
-    apt.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrar alojamientos por búsqueda y estado
+  const filteredApartments = apartments.filter((apt) => {
+    // Filtrar por estado (mostrar desactivados)
+    if (!showInactive && apt.status === "Desactivado") {
+      return false;
+    }
+    // Filtrar por búsqueda (nombre, dirección, ciudad)
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        apt.name.toLowerCase().includes(search) ||
+        apt.address_line1?.toLowerCase().includes(search) ||
+        apt.city?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
+
+  // Handler para toggle de estado
+  const handleToggleStatus = (apt) => {
+    const newStatus = apt.status === "Activo" ? "Desactivado" : "Activo";
+    if (confirm(`¿Desea ${newStatus === "Activo" ? "activar" : "desactivar"} "${apt.name}"?`)) {
+      alert(`Estado cambiado a ${newStatus} (pendiente implementación)`);
+    }
+  };
 
   return (
     <div style={styles.pageContainer}>
@@ -97,11 +155,21 @@ export default function ApartmentsList() {
 
         <input
           type="text"
-          placeholder="Buscar por nombre..."
+          placeholder="Buscar por nombre, dirección o ciudad..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={styles.searchInput}
         />
+
+        <label style={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+            style={styles.checkbox}
+          />
+          Mostrar desactivados
+        </label>
       </div>
 
       <div style={styles.tableContainer}>
@@ -109,7 +177,9 @@ export default function ApartmentsList() {
           <thead>
             <tr>
               <th style={styles.th}>Nombre</th>
+              <th style={styles.th}>Dirección</th>
               <th style={styles.th}>Nº Habitaciones</th>
+              <th style={styles.th}>Ocupación</th>
               <th style={styles.th}>Estado</th>
               <th style={styles.th}>Acciones</th>
             </tr>
@@ -118,7 +188,31 @@ export default function ApartmentsList() {
             {filteredApartments.map((apt) => (
               <tr key={apt.id} style={styles.tr}>
                 <td style={styles.td}>{apt.name}</td>
+                <td style={styles.td}>
+                  <div>
+                    <div style={styles.addressLine}>{apt.address_line1}</div>
+                    <div style={styles.cityLine}>{apt.postal_code} {apt.city}</div>
+                  </div>
+                </td>
                 <td style={styles.td}>{apt.rooms}</td>
+                <td style={styles.td}>
+                  <div style={styles.occupancyInfo}>
+                    <span style={styles.occupancyItem}>
+                      <span style={{ ...styles.occupancyDot, backgroundColor: "#059669" }}></span>
+                      {apt.occupied} ocupadas
+                    </span>
+                    <span style={styles.occupancyItem}>
+                      <span style={{ ...styles.occupancyDot, backgroundColor: "#3B82F6" }}></span>
+                      {apt.free} libres
+                    </span>
+                    {apt.pending_checkout > 0 && (
+                      <span style={styles.occupancyItem}>
+                        <span style={{ ...styles.occupancyDot, backgroundColor: "#F59E0B" }}></span>
+                        {apt.pending_checkout} pendientes
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td style={styles.td}>
                   <span
                     style={{
@@ -138,21 +232,31 @@ export default function ApartmentsList() {
                         setSelectedApartment(apt);
                         setIsViewModalOpen(true);
                       }}
-                      title="Ver"
+                      title="Ver detalle"
                     >
                       👁️
                     </button>
                     <button
                       style={styles.actionButton}
-                      onClick={() => alert(`Editar alojamiento ${apt.id}`)}
+                      onClick={() => navigate(`/alojamientos/gestion/${apt.id}/editar`)}
                       title="Editar"
                     >
                       ✏️
                     </button>
                     <button
+                      style={{
+                        ...styles.actionButton,
+                        backgroundColor: apt.status === "Activo" ? "#FEF3C7" : "#D1FAE5",
+                      }}
+                      onClick={() => handleToggleStatus(apt)}
+                      title={apt.status === "Activo" ? "Desactivar" : "Activar"}
+                    >
+                      {apt.status === "Activo" ? "⏸️" : "▶️"}
+                    </button>
+                    <button
                       style={styles.actionButton}
                       onClick={() => {
-                        if (confirm(`¿Eliminar ${apt.name}?`)) {
+                        if (confirm(`¿Eliminar "${apt.name}"? Esta acción es irreversible.`)) {
                           alert("Eliminar (pendiente implementación)");
                         }
                       }}
@@ -318,5 +422,51 @@ const styles = {
     padding: 40,
     textAlign: "center",
     color: "#6B7280",
+  },
+
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 14,
+    color: "#374151",
+    cursor: "pointer",
+  },
+
+  checkbox: {
+    width: 16,
+    height: 16,
+    cursor: "pointer",
+  },
+
+  addressLine: {
+    fontSize: 14,
+    color: "#111827",
+  },
+
+  cityLine: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  occupancyInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+  },
+
+  occupancyItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12,
+    color: "#374151",
+  },
+
+  occupancyDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
   },
 };

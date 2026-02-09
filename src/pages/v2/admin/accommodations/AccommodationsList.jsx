@@ -4,10 +4,11 @@
 
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../../../components/Sidebar";
+import V2Layout from "../../../../layouts/V2Layout";
 import {
   mockAccommodations,
   mockRooms,
+  mockClientAccounts,
   ROOM_STATUS,
   STATUS,
   getStatusLabel,
@@ -18,18 +19,27 @@ import {
 // Simular cliente activo
 const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
 
+// Obtener branding de la empresa actual
+const getCurrentCompanyBranding = () => {
+  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
+  if (account) {
+    return {
+      name: account.name,
+      logoText: account.name.charAt(0),
+      logoUrl: account.logo_url,
+      primaryColor: account.theme_primary_color || "#111827",
+      secondaryColor: account.theme_secondary_color || "#3B82F6",
+    };
+  }
+  return null;
+};
+
 export default function AccommodationsList() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
 
-  const sidebarItems = [
-    { label: "Visión General", path: "/v2/admin", icon: "⊞" },
-    { type: "section", label: "ALOJAMIENTOS" },
-    { label: "Gestión de Alojamientos", path: "/v2/admin/alojamientos", icon: "🏢", isSubItem: true },
-    { label: "Gestión de Inquilinos", path: "/v2/admin/inquilinos", icon: "👥", isSubItem: true },
-    { label: "Historial de Ocupación", path: "/v2/admin/ocupacion", icon: "⏱", isSubItem: true },
-  ];
+  const companyBranding = getCurrentCompanyBranding();
 
   // Filtrar alojamientos
   const accommodations = useMemo(() => {
@@ -65,23 +75,36 @@ export default function AccommodationsList() {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <Sidebar items={sidebarItems} title="Alojamientos" />
-
-      <div style={styles.container}>
-        {/* Header */}
-        <div style={styles.header}>
+    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+      {/* Header */}
+      <div style={styles.header}>
           <div>
             <h1 style={styles.title}>Gestión de Alojamientos</h1>
             <p style={styles.subtitle}>
               {accommodations.length} alojamiento{accommodations.length !== 1 ? "s" : ""}
             </p>
           </div>
+        </div>
+
+        {/* Toolbar */}
+        <div style={styles.toolbar}>
           <button
-            style={styles.primaryButton}
+            style={styles.toolbarButton}
             onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
           >
-            + Añadir Alojamiento
+            <span style={styles.toolbarIcon}>+</span>
+            <span>Nuevo</span>
+            <span style={styles.toolbarBold}>Alojamiento</span>
+          </button>
+          <button
+            style={styles.toolbarButton}
+            onClick={() => {
+              setSearchTerm("");
+              setShowInactive(false);
+            }}
+          >
+            <span style={styles.toolbarIcon}>🔄</span>
+            <span>Limpiar Filtros</span>
           </button>
         </div>
 
@@ -214,21 +237,11 @@ export default function AccommodationsList() {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  pageContainer: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#F9FAFB",
-  },
-  container: {
-    flex: 1,
-    padding: 32,
-  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -245,6 +258,32 @@ const styles = {
     fontSize: 14,
     color: "#6B7280",
     marginTop: 4,
+  },
+  toolbar: {
+    display: "flex",
+    gap: 12,
+    marginBottom: 20,
+  },
+  toolbarButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 20px",
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E5E7EB",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  },
+  toolbarIcon: {
+    fontSize: 16,
+  },
+  toolbarBold: {
+    fontWeight: "700",
+    color: "#111827",
   },
   primaryButton: {
     backgroundColor: "#111827",

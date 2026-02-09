@@ -4,10 +4,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../../../components/Sidebar";
+import V2Layout from "../../../../layouts/V2Layout";
 import {
   mockAccommodations,
   mockRooms,
+  mockClientAccounts,
   ROOM_STATUS,
   getRoomStatusLabel,
   getRoomStatusColor,
@@ -15,6 +16,21 @@ import {
 
 // Simular cliente activo
 const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
+
+// Obtener branding de la empresa actual
+const getCurrentCompanyBranding = () => {
+  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
+  if (account) {
+    return {
+      name: account.name,
+      logoText: account.name.charAt(0),
+      logoUrl: account.logo_url,
+      primaryColor: account.theme_primary_color || "#111827",
+      secondaryColor: account.theme_secondary_color || "#3B82F6",
+    };
+  }
+  return null;
+};
 
 export default function TenantCreate() {
   const navigate = useNavigate();
@@ -36,12 +52,7 @@ export default function TenantCreate() {
     send_onboarding: true,
   });
 
-  const sidebarItems = [
-    { label: "Visión General", path: "/v2/admin", icon: "⊞" },
-    { type: "section", label: "ALOJAMIENTOS" },
-    { label: "Gestión de Alojamientos", path: "/v2/admin/alojamientos", icon: "🏢", isSubItem: true },
-    { label: "Gestión de Inquilinos", path: "/v2/admin/inquilinos", icon: "👥", isSubItem: true },
-  ];
+  const companyBranding = getCurrentCompanyBranding();
 
   useEffect(() => {
     // Cargar alojamientos del cliente
@@ -134,24 +145,8 @@ export default function TenantCreate() {
   const selectedAccommodation = accommodations.find((a) => a.id === formData.accommodation_id);
 
   return (
-    <div style={styles.pageContainer}>
-      <Sidebar items={sidebarItems} title="Alojamientos" />
-
-      <div style={styles.container}>
-        {/* Breadcrumb */}
-        <div style={styles.breadcrumb}>
-          <span style={styles.breadcrumbLink} onClick={() => navigate("/v2/admin")}>
-            Dashboard
-          </span>
-          <span style={styles.breadcrumbSeparator}>/</span>
-          <span style={styles.breadcrumbLink} onClick={() => navigate("/v2/admin/inquilinos")}>
-            Inquilinos
-          </span>
-          <span style={styles.breadcrumbSeparator}>/</span>
-          <span style={styles.breadcrumbCurrent}>Nuevo Inquilino</span>
-        </div>
-
-        {/* Header */}
+    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+      {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Registrar Inquilino</h1>
           <p style={styles.subtitle}>Complete los datos del nuevo inquilino y asigne una habitación</p>
@@ -399,38 +394,11 @@ export default function TenantCreate() {
             </div>
           </div>
         </form>
-      </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  pageContainer: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#F9FAFB",
-  },
-  container: {
-    flex: 1,
-    padding: 32,
-  },
-  breadcrumb: {
-    marginBottom: 16,
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  breadcrumbLink: {
-    color: "#3B82F6",
-    cursor: "pointer",
-  },
-  breadcrumbSeparator: {
-    margin: "0 8px",
-    color: "#9CA3AF",
-  },
-  breadcrumbCurrent: {
-    color: "#374151",
-    fontWeight: "500",
-  },
   header: {
     marginBottom: 24,
   },

@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import V2Layout from "../../../layouts/V2Layout";
 import {
   mockClientAccounts,
   mockLegalCompanies,
@@ -48,15 +49,17 @@ export default function ClientAccountDetail() {
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}>Cargando...</div>
-      </div>
+      <V2Layout role="superadmin" userName="Administrador">
+        <div style={styles.loadingContainer}>
+          <div style={styles.spinner}>Cargando...</div>
+        </div>
+      </V2Layout>
     );
   }
 
   if (!account) {
     return (
-      <div style={styles.container}>
+      <V2Layout role="superadmin" userName="Administrador">
         <div style={styles.errorCard}>
           <h2>Cuenta no encontrada</h2>
           <p>No se encontró ninguna cuenta con el ID especificado.</p>
@@ -67,7 +70,7 @@ export default function ClientAccountDetail() {
             Volver al listado
           </button>
         </div>
-      </div>
+      </V2Layout>
     );
   }
 
@@ -86,20 +89,15 @@ export default function ClientAccountDetail() {
   ];
 
   return (
-    <div style={styles.container}>
-      {/* Breadcrumb */}
-      <div style={styles.breadcrumb}>
-        <span style={styles.breadcrumbLink} onClick={() => navigate("/v2/superadmin")}>
-          Dashboard
-        </span>
-        <span style={styles.breadcrumbSeparator}>/</span>
-        <span style={styles.breadcrumbLink} onClick={() => navigate("/v2/superadmin/cuentas")}>
-          Cuentas Cliente
-        </span>
-        <span style={styles.breadcrumbSeparator}>/</span>
-        <span style={styles.breadcrumbCurrent}>{account.name}</span>
-      </div>
-
+    <V2Layout
+      role="superadmin"
+      userName="Administrador"
+      customBreadcrumbs={[
+        { label: "Dashboard", path: "/v2/superadmin" },
+        { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
+        { label: account.name, path: null },
+      ]}
+    >
       {/* Header con info de la cuenta */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
@@ -570,21 +568,16 @@ export default function ClientAccountDetail() {
           </div>
         )}
       </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  container: {
-    padding: 32,
-    backgroundColor: "#F9FAFB",
-    minHeight: "100vh",
-  },
   loadingContainer: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "100vh",
+    minHeight: "50vh",
   },
   spinner: {
     fontSize: 18,
@@ -597,23 +590,6 @@ const styles = {
     textAlign: "center",
     maxWidth: 400,
     margin: "100px auto",
-  },
-  breadcrumb: {
-    marginBottom: 16,
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  breadcrumbLink: {
-    color: "#3B82F6",
-    cursor: "pointer",
-  },
-  breadcrumbSeparator: {
-    margin: "0 8px",
-    color: "#9CA3AF",
-  },
-  breadcrumbCurrent: {
-    color: "#374151",
-    fontWeight: "500",
   },
   header: {
     display: "flex",

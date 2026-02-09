@@ -1,9 +1,14 @@
+// =============================================================================
 // src/pages/v2/superadmin/ClientAccountsList.jsx
-// Listado de Cuentas Cliente para Superadmin
+// =============================================================================
+// DBSU-VC-LI: Lista de Cuentas de Clientes
+// Pantalla para ver y gestionar todas las Cuentas Cliente
 // NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// =============================================================================
 
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import V2Layout from "../../../layouts/V2Layout";
 import {
   mockClientAccounts,
   PLANS,
@@ -113,19 +118,7 @@ export default function ClientAccountsList() {
   };
 
   return (
-    <div style={styles.container}>
-      {/* Breadcrumb */}
-      <div style={styles.breadcrumb}>
-        <span
-          style={styles.breadcrumbLink}
-          onClick={() => navigate("/v2/superadmin")}
-        >
-          Dashboard
-        </span>
-        <span style={styles.breadcrumbSeparator}>/</span>
-        <span style={styles.breadcrumbCurrent}>Cuentas Cliente</span>
-      </div>
-
+    <V2Layout role="superadmin" userName="Administrador">
       {/* Header */}
       <div style={styles.header}>
         <div>
@@ -134,11 +127,28 @@ export default function ClientAccountsList() {
             {filteredAccounts.length} de {mockClientAccounts.length} cuentas
           </p>
         </div>
+      </div>
+
+      {/* Toolbar */}
+      <div style={styles.toolbar}>
         <button
-          style={styles.primaryButton}
+          style={styles.toolbarButton}
           onClick={() => navigate("/v2/superadmin/cuentas/nueva")}
         >
-          + Nueva Cuenta Cliente
+          <span style={styles.toolbarIcon}>+</span>
+          <span>Nuevo</span>
+          <span style={styles.toolbarBold}>Cliente</span>
+        </button>
+        <button
+          style={styles.toolbarButton}
+          onClick={() => {
+            setSearchTerm("");
+            setFilterPlan("");
+            setFilterStatus("");
+          }}
+        >
+          <span style={styles.toolbarIcon}>🔄</span>
+          <span>Limpiar Filtros</span>
         </button>
       </div>
 
@@ -173,18 +183,6 @@ export default function ClientAccountsList() {
           <option value={STATUS.SUSPENDED}>Suspendido</option>
           <option value={STATUS.CANCELLED}>Cancelado</option>
         </select>
-        {(searchTerm || filterPlan || filterStatus) && (
-          <button
-            style={styles.clearButton}
-            onClick={() => {
-              setSearchTerm("");
-              setFilterPlan("");
-              setFilterStatus("");
-            }}
-          >
-            Limpiar filtros
-          </button>
-        )}
       </div>
 
       {/* Tabla */}
@@ -224,19 +222,24 @@ export default function ClientAccountsList() {
                   Habitaciones {getSortIcon("rooms")}
                 </th>
                 <th style={styles.th}>Ocupación</th>
+                {/* DBSU-VC-LI: Columnas de fechas */}
                 <th
                   style={{ ...styles.th, cursor: "pointer" }}
                   onClick={() => handleSort("created_at")}
                 >
                   Fecha Alta {getSortIcon("created_at")}
                 </th>
+                <th style={styles.th}>Fecha Inicio</th>
+                <th style={styles.th}>Fecha Fin</th>
+                {/* DBSU-VC-LI: Columna Branding */}
+                <th style={styles.th}>Branding</th>
                 <th style={styles.th}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={styles.emptyState}>
+                  <td colSpan={11} style={styles.emptyState}>
                     No se encontraron cuentas cliente con los filtros aplicados
                   </td>
                 </tr>
@@ -331,6 +334,26 @@ export default function ClientAccountsList() {
                         </div>
                       </td>
                       <td style={styles.td}>{formatDate(account.created_at)}</td>
+                      {/* DBSU-VC-LI: Fecha Inicio */}
+                      <td style={styles.td}>
+                        {formatDate(account.billing_start_date)}
+                      </td>
+                      {/* DBSU-VC-LI: Fecha Fin */}
+                      <td style={styles.td}>
+                        {account.end_date ? formatDate(account.end_date) : "-"}
+                      </td>
+                      {/* DBSU-VC-LI: Branding */}
+                      <td style={styles.td}>
+                        <span
+                          style={{
+                            ...styles.brandingBadge,
+                            backgroundColor: account.logo_url ? "#DCFCE7" : "#F3F4F6",
+                            color: account.logo_url ? "#166534" : "#6B7280",
+                          }}
+                        >
+                          {account.logo_url ? "Sí" : "No"}
+                        </span>
+                      </td>
                       <td style={styles.td}>
                         <div style={styles.actions}>
                           <button
@@ -387,33 +410,11 @@ export default function ClientAccountsList() {
           </table>
         </div>
       </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  container: {
-    padding: 32,
-    backgroundColor: "#F9FAFB",
-    minHeight: "100vh",
-  },
-  breadcrumb: {
-    marginBottom: 16,
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  breadcrumbLink: {
-    color: "#3B82F6",
-    cursor: "pointer",
-  },
-  breadcrumbSeparator: {
-    margin: "0 8px",
-    color: "#9CA3AF",
-  },
-  breadcrumbCurrent: {
-    color: "#374151",
-    fontWeight: "500",
-  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -441,6 +442,32 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "opacity 0.2s ease",
+  },
+  toolbar: {
+    display: "flex",
+    gap: 12,
+    marginBottom: 20,
+  },
+  toolbarButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 20px",
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E5E7EB",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  },
+  toolbarIcon: {
+    fontSize: 16,
+  },
+  toolbarBold: {
+    fontWeight: "700",
+    color: "#111827",
   },
   filters: {
     display: "flex",
@@ -594,5 +621,12 @@ const styles = {
     textAlign: "center",
     color: "#6B7280",
     fontSize: 14,
+  },
+  brandingBadge: {
+    display: "inline-block",
+    padding: "4px 10px",
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: "500",
   },
 };

@@ -71,7 +71,7 @@ export const ROLES = {
 export const mockClientAccounts = [
   {
     id: "ca-001",
-    name: "Residencias Universidad Madrid",
+    name: "Invesment Rent rooms SL.",
     slug: "residencias-madrid",
     plan: PLANS.BUSINESS,
     status: STATUS.ACTIVE,
@@ -868,6 +868,259 @@ export const mockUsers = [
     status: STATUS.ACTIVE,
   },
 ];
+
+// =============================================================================
+// PLANS CONFIGURATION (Planes de Cliente)
+// =============================================================================
+export const PLAN_STATUS = {
+  DRAFT: "draft",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  DEPRECATED: "deprecated",
+  DEACTIVATED: "deactivated",
+};
+
+export const BILLING_PERIOD = {
+  MONTHLY: "monthly",
+  ANNUAL: "annual",
+};
+
+export const mockPlans = [
+  {
+    id: "plan-001",
+    name: "Basic",
+    code: "basic",
+    description: "Plan básico para pequeños propietarios con hasta 3 alojamientos",
+    status: PLAN_STATUS.ACTIVE,
+    visible_for_new_accounts: true,
+    created_at: "2024-01-01T00:00:00Z",
+    start_date: "2024-01-01",
+    end_date: null,
+    deactivated_at: null,
+    deactivation_reason: null,
+    // Pricing
+    price_monthly: 29.99,
+    price_annual: 299.90, // 2 meses gratis
+    annual_discount_months: 2,
+    vat_applicable: true,
+    vat_percentage: 21,
+    // Límites
+    max_owners: 1,
+    max_accommodations: 3,
+    max_rooms: 20,
+    max_admin_users: 1,
+    max_associated_users: 0,
+    max_api_users: 0,
+    max_viewer_users: 0,
+    // Branding
+    branding_enabled: false,
+    logo_allowed: false,
+    theme_editable: false,
+    // Servicios incluidos
+    services_included: ["encuestas"],
+    // Reglas funcionales
+    allows_multi_owner: false,
+    allows_owner_change: false,
+    allows_receipt_upload: true,
+  },
+  {
+    id: "plan-002",
+    name: "Investor",
+    code: "investor",
+    description: "Plan para inversores con múltiples propiedades y empresas fiscales",
+    status: PLAN_STATUS.ACTIVE,
+    visible_for_new_accounts: true,
+    created_at: "2024-01-01T00:00:00Z",
+    start_date: "2024-01-01",
+    end_date: null,
+    deactivated_at: null,
+    deactivation_reason: null,
+    // Pricing
+    price_monthly: 79.99,
+    price_annual: 799.90,
+    annual_discount_months: 2,
+    vat_applicable: true,
+    vat_percentage: 21,
+    // Límites
+    max_owners: 5,
+    max_accommodations: 8,
+    max_rooms: 60,
+    max_admin_users: 2,
+    max_associated_users: 1,
+    max_api_users: 1,
+    max_viewer_users: 0,
+    // Branding
+    branding_enabled: true,
+    logo_allowed: true,
+    theme_editable: true,
+    // Servicios incluidos
+    services_included: ["encuestas", "lavanderia", "tickets_incidencias"],
+    // Reglas funcionales
+    allows_multi_owner: true,
+    allows_owner_change: false,
+    allows_receipt_upload: true,
+  },
+  {
+    id: "plan-003",
+    name: "Business",
+    code: "business",
+    description: "Plan empresarial con alojamientos ilimitados y servicios avanzados",
+    status: PLAN_STATUS.ACTIVE,
+    visible_for_new_accounts: true,
+    created_at: "2024-01-01T00:00:00Z",
+    start_date: "2024-01-01",
+    end_date: null,
+    deactivated_at: null,
+    deactivation_reason: null,
+    // Pricing
+    price_monthly: 149.99,
+    price_annual: 1499.90,
+    annual_discount_months: 2,
+    vat_applicable: true,
+    vat_percentage: 21,
+    // Límites
+    max_owners: 10,
+    max_accommodations: -1, // -1 = ilimitado
+    max_rooms: -1,
+    max_admin_users: 3,
+    max_associated_users: 2,
+    max_api_users: 3,
+    max_viewer_users: 0,
+    // Branding
+    branding_enabled: true,
+    logo_allowed: true,
+    theme_editable: true,
+    // Servicios incluidos
+    services_included: ["encuestas", "lavanderia", "limpieza", "tickets_incidencias", "informes_avanzados"],
+    // Reglas funcionales
+    allows_multi_owner: true,
+    allows_owner_change: false,
+    allows_receipt_upload: true,
+  },
+  {
+    id: "plan-004",
+    name: "Agencia",
+    code: "agency",
+    description: "Plan para agencias con gestión multi-empresa y cambio de propietarios",
+    status: PLAN_STATUS.ACTIVE,
+    visible_for_new_accounts: true,
+    created_at: "2024-01-01T00:00:00Z",
+    start_date: "2024-01-01",
+    end_date: null,
+    deactivated_at: null,
+    deactivation_reason: null,
+    // Pricing
+    price_monthly: 299.99,
+    price_annual: 2999.90,
+    annual_discount_months: 2,
+    vat_applicable: true,
+    vat_percentage: 21,
+    // Límites
+    max_owners: -1,
+    max_accommodations: -1,
+    max_rooms: -1,
+    max_admin_users: 3,
+    max_associated_users: 2,
+    max_api_users: 5,
+    max_viewer_users: -1,
+    // Branding
+    branding_enabled: true,
+    logo_allowed: true,
+    theme_editable: true,
+    // Servicios incluidos
+    services_included: ["encuestas", "lavanderia", "limpieza", "tickets_incidencias", "whatsapp_soporte", "informes_avanzados"],
+    // Reglas funcionales
+    allows_multi_owner: true,
+    allows_owner_change: true,
+    allows_receipt_upload: true,
+  },
+  {
+    id: "plan-005",
+    name: "Basic Legacy",
+    code: "basic_legacy",
+    description: "Plan básico anterior - solo para cuentas existentes",
+    status: PLAN_STATUS.DEPRECATED,
+    visible_for_new_accounts: false,
+    created_at: "2023-01-01T00:00:00Z",
+    start_date: "2023-01-01",
+    end_date: "2024-01-01",
+    deactivated_at: null,
+    deactivation_reason: "Reemplazado por el nuevo plan Basic",
+    // Pricing
+    price_monthly: 19.99,
+    price_annual: 199.90,
+    annual_discount_months: 2,
+    vat_applicable: true,
+    vat_percentage: 21,
+    // Límites
+    max_owners: 1,
+    max_accommodations: 2,
+    max_rooms: 10,
+    max_admin_users: 1,
+    max_associated_users: 0,
+    max_api_users: 0,
+    max_viewer_users: 0,
+    // Branding
+    branding_enabled: false,
+    logo_allowed: false,
+    theme_editable: false,
+    // Servicios incluidos
+    services_included: [],
+    // Reglas funcionales
+    allows_multi_owner: false,
+    allows_owner_change: false,
+    allows_receipt_upload: false,
+  },
+];
+
+// Servicios disponibles para planes
+export const AVAILABLE_SERVICES = [
+  { id: "lavanderia", name: "Lavandería", description: "Servicio de lavandería para inquilinos" },
+  { id: "encuestas", name: "Encuestas", description: "Sistema de encuestas de satisfacción" },
+  { id: "limpieza", name: "Limpieza", description: "Gestión del servicio de limpieza" },
+  { id: "tickets_incidencias", name: "Tickets de Incidencias", description: "Sistema de gestión de incidencias" },
+  { id: "whatsapp_soporte", name: "WhatsApp Soporte", description: "Canal de soporte por WhatsApp" },
+  { id: "informes_avanzados", name: "Informes Avanzados", description: "Informes y analytics avanzados" },
+];
+
+// Helper functions para planes
+export const getPlanById = (id) => {
+  return mockPlans.find((p) => p.id === id) || null;
+};
+
+export const getPlanByCode = (code) => {
+  return mockPlans.find((p) => p.code === code) || null;
+};
+
+export const getActivePlans = () => {
+  return mockPlans.filter((p) => p.status === PLAN_STATUS.ACTIVE && p.visible_for_new_accounts);
+};
+
+export const getPlanStatusLabel = (status) => {
+  const labels = {
+    [PLAN_STATUS.DRAFT]: "Borrador",
+    [PLAN_STATUS.ACTIVE]: "Activo",
+    [PLAN_STATUS.INACTIVE]: "Inactivo",
+    [PLAN_STATUS.DEPRECATED]: "Obsoleto",
+    [PLAN_STATUS.DEACTIVATED]: "Desactivado",
+  };
+  return labels[status] || status;
+};
+
+export const getPlanStatusColor = (status) => {
+  const colors = {
+    [PLAN_STATUS.DRAFT]: "#6B7280",
+    [PLAN_STATUS.ACTIVE]: "#059669",
+    [PLAN_STATUS.INACTIVE]: "#F59E0B",
+    [PLAN_STATUS.DEPRECATED]: "#9333EA",
+    [PLAN_STATUS.DEACTIVATED]: "#DC2626",
+  };
+  return colors[status] || "#6B7280";
+};
+
+export const formatLimit = (value) => {
+  return value === -1 ? "Ilimitado" : value.toString();
+};
 
 // =============================================================================
 // CONSUMPTION DATA (Datos de consumo - para gráficas)

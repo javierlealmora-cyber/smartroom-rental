@@ -10,6 +10,11 @@ export default function ApartmentCreate() {
 
   const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [apartmentName, setApartmentName] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("España");
   const [numRooms, setNumRooms] = useState(1);
   const [rooms, setRooms] = useState([createEmptyRoom(1)]);
 
@@ -65,7 +70,18 @@ export default function ApartmentCreate() {
       return;
     }
 
-    console.log("Crear alojamiento:", { companyId, apartmentName, numRooms, rooms });
+    const apartmentData = {
+      companyId,
+      name: apartmentName,
+      address_line1: addressLine1,
+      address_line2: addressLine2,
+      city,
+      postal_code: postalCode,
+      country,
+      numRooms,
+      rooms
+    };
+    console.log("Crear alojamiento:", apartmentData);
     alert("Alojamiento creado (pendiente implementación backend)");
     navigate("/alojamientos/gestion");
   };
@@ -108,6 +124,66 @@ export default function ApartmentCreate() {
                 style={styles.input}
                 placeholder="Ej: Edificio Central"
               />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Dirección Línea 1</label>
+              <input
+                type="text"
+                value={addressLine1}
+                onChange={(e) => setAddressLine1(e.target.value)}
+                style={styles.input}
+                placeholder="Ej: Calle Mayor 15"
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Dirección Línea 2</label>
+              <input
+                type="text"
+                value={addressLine2}
+                onChange={(e) => setAddressLine2(e.target.value)}
+                style={styles.input}
+                placeholder="Ej: Piso 3, Puerta A"
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Ciudad</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                style={styles.input}
+                placeholder="Ej: Madrid"
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Código Postal</label>
+              <input
+                type="text"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                style={styles.input}
+                placeholder="Ej: 28001"
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>País</label>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                style={styles.select}
+              >
+                <option value="España">España</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Francia">Francia</option>
+                <option value="Italia">Italia</option>
+                <option value="Alemania">Alemania</option>
+                <option value="Reino Unido">Reino Unido</option>
+              </select>
             </div>
 
             <div style={styles.formGroup}>

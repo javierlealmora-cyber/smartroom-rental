@@ -4,20 +4,36 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../../components/Sidebar";
+import V2Layout from "../../../layouts/V2Layout";
 import {
   mockAccommodations,
   mockRooms,
   mockTenants,
+  mockClientAccounts,
+  mockLegalCompanies,
+  mockInternalCompanies,
   ROOM_STATUS,
   TENANT_STATUS,
-  getRoomStatusLabel,
   getRoomStatusColor,
-  formatCurrency,
 } from "../../../mocks/clientAccountsData";
 
 // Simular cliente activo (ca-001 para demo)
 const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
+
+// Obtener branding de la empresa actual
+const getCurrentCompanyBranding = () => {
+  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
+  if (account) {
+    return {
+      name: account.name,
+      logoText: account.name.charAt(0),
+      logoUrl: account.logo_url,
+      primaryColor: account.theme_primary_color || "#111827",
+      secondaryColor: account.theme_secondary_color || "#3B82F6",
+    };
+  }
+  return null;
+};
 
 export default function DashboardAdmin() {
   const navigate = useNavigate();
@@ -29,6 +45,7 @@ export default function DashboardAdmin() {
     pendingCheckout: 0,
     activeTenants: 0,
     pendingTenants: 0,
+    totalEntities: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
@@ -52,6 +69,13 @@ export default function DashboardAdmin() {
       (t) => t.status === TENANT_STATUS.PENDING_CHECKOUT
     ).length;
 
+    const legalCount = mockLegalCompanies.filter(
+      (lc) => lc.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
+    ).length;
+    const internalCount = mockInternalCompanies.filter(
+      (ic) => ic.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
+    ).length;
+
     setStats({
       totalAccommodations: accommodations.length,
       totalRooms: rooms.length,
@@ -60,6 +84,7 @@ export default function DashboardAdmin() {
       pendingCheckout: pending,
       activeTenants,
       pendingTenants,
+      totalEntities: legalCount + internalCount,
     });
 
     // Simular actividad reciente
@@ -91,16 +116,7 @@ export default function DashboardAdmin() {
     ]);
   }, []);
 
-  const sidebarItems = [
-    { label: "Visión General", path: "/v2/admin", icon: "⊞" },
-    { type: "section", label: "ALOJAMIENTOS" },
-    { label: "Gestión de Alojamientos", path: "/v2/admin/alojamientos", icon: "🏢", isSubItem: true },
-    { label: "Gestión de Inquilinos", path: "/v2/admin/inquilinos", icon: "👥", isSubItem: true },
-    { label: "Historial de Ocupación", path: "/v2/admin/ocupacion", icon: "⏱", isSubItem: true },
-    { type: "section", label: "CONFIGURACIÓN" },
-    { label: "Empresas Fiscales", path: "/v2/admin/fiscales", icon: "📋", isSubItem: true },
-    { label: "Ajustes", path: "/v2/admin/ajustes", icon: "⚙️", isSubItem: true },
-  ];
+  const companyBranding = getCurrentCompanyBranding();
 
   const occupancyRate = stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
@@ -117,34 +133,28 @@ export default function DashboardAdmin() {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <Sidebar items={sidebarItems} title="Dashboard" />
-
-      <div style={styles.container}>
-        {/* Header */}
-        <div style={styles.header}>
+    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+      {/* Header */}
+      <div style={styles.header}>
           <div>
             <h1 style={styles.title}>Dashboard</h1>
             <p style={styles.subtitle}>Resumen de tu operación</p>
-          </div>
-          <div style={styles.headerActions}>
-            <button
-              style={styles.secondaryButton}
-              onClick={() => navigate("/v2/admin/inquilinos/nuevo")}
-            >
-              + Nuevo Inquilino
-            </button>
-            <button
-              style={styles.primaryButton}
-              onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
-            >
-              + Nuevo Alojamiento
-            </button>
           </div>
         </div>
 
         {/* KPIs principales */}
         <div style={styles.kpiGrid}>
+          <div style={{ ...styles.kpiCard, borderLeft: "4px solid #8B5CF6" }}>
+            <div style={styles.kpiHeader}>
+              <span style={styles.kpiIcon}>🏛️</span>
+              <span style={styles.kpiLabel}>Entidades Totales</span>
+            </div>
+            <div style={{ ...styles.kpiValue, color: "#8B5CF6" }}>{stats.totalEntities}</div>
+            <div style={styles.kpiDetail}>
+              <span style={{ color: "#6B7280" }}>Legal + Internas</span>
+            </div>
+          </div>
+
           <div style={styles.kpiCard}>
             <div style={styles.kpiHeader}>
               <span style={styles.kpiIcon}>🏠</span>
@@ -279,7 +289,30 @@ export default function DashboardAdmin() {
           <div style={styles.quickActionsGrid}>
             <button
               style={styles.quickAction}
+              onClick={() => alert("Gestión de Entidades (próximamente)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <span style={styles.quickActionIcon}>🏛️</span>
+              <span style={styles.quickActionLabel}>Gestión Entidades</span>
+            </button>
+            <button
+              style={styles.quickAction}
               onClick={() => navigate("/v2/admin/inquilinos/nuevo")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>👤</span>
               <span style={styles.quickActionLabel}>Registrar Inquilino</span>
@@ -287,6 +320,14 @@ export default function DashboardAdmin() {
             <button
               style={styles.quickAction}
               onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>🏠</span>
               <span style={styles.quickActionLabel}>Añadir Alojamiento</span>
@@ -294,6 +335,14 @@ export default function DashboardAdmin() {
             <button
               style={styles.quickAction}
               onClick={() => alert("Generar boletín (próximamente)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>📄</span>
               <span style={styles.quickActionLabel}>Generar Boletín</span>
@@ -301,6 +350,14 @@ export default function DashboardAdmin() {
             <button
               style={styles.quickAction}
               onClick={() => alert("Ver consumos (próximamente)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>⚡</span>
               <span style={styles.quickActionLabel}>Ver Consumos</span>
@@ -308,6 +365,14 @@ export default function DashboardAdmin() {
             <button
               style={styles.quickAction}
               onClick={() => navigate("/v2/admin/ocupacion")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>📅</span>
               <span style={styles.quickActionLabel}>Ver Ocupación</span>
@@ -315,27 +380,25 @@ export default function DashboardAdmin() {
             <button
               style={styles.quickAction}
               onClick={() => alert("Gestión de tickets (próximamente)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <span style={styles.quickActionIcon}>🎫</span>
               <span style={styles.quickActionLabel}>Tickets</span>
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  pageContainer: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#F9FAFB",
-  },
-  container: {
-    flex: 1,
-    padding: 32,
-  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -379,7 +442,7 @@ const styles = {
   },
   kpiGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateColumns: "repeat(5, 1fr)",
     gap: 20,
     marginBottom: 32,
   },
@@ -530,7 +593,7 @@ const styles = {
   },
   quickActionsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(6, 1fr)",
+    gridTemplateColumns: "repeat(7, 1fr)",
     gap: 12,
   },
   quickAction: {

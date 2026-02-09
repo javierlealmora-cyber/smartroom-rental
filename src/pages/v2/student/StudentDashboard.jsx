@@ -4,18 +4,38 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import V2Layout from "../../../layouts/V2Layout";
 import {
   mockTenants,
   mockConsumptionData,
   mockBulletins,
   mockSurveys,
   mockTickets,
+  mockClientAccounts,
   formatCurrency,
   formatDate,
 } from "../../../mocks/clientAccountsData";
 
 // Simular inquilino actual (tenant-001 para demo)
 const CURRENT_TENANT_ID = "tenant-001";
+
+// Simular cliente activo (la empresa donde vive el estudiante)
+const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
+
+// Obtener branding de la empresa actual
+const getCurrentCompanyBranding = () => {
+  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
+  if (account) {
+    return {
+      name: account.name,
+      logoText: account.name.charAt(0),
+      logoUrl: account.logo_url,
+      primaryColor: account.theme_primary_color || "#111827",
+      secondaryColor: account.theme_secondary_color || "#3B82F6",
+    };
+  }
+  return null;
+};
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -24,6 +44,8 @@ export default function StudentDashboard() {
   const [bulletins, setBulletins] = useState([]);
   const [surveys, setSurveys] = useState([]);
   const [tickets, setTickets] = useState([]);
+
+  const companyBranding = getCurrentCompanyBranding();
 
   useEffect(() => {
     // Cargar datos del inquilino actual
@@ -48,9 +70,9 @@ export default function StudentDashboard() {
 
   if (!tenant) {
     return (
-      <div style={styles.container}>
+      <V2Layout role="student" companyBranding={companyBranding} >
         <div style={styles.loading}>Cargando...</div>
-      </div>
+      </V2Layout>
     );
   }
 
@@ -58,7 +80,7 @@ export default function StudentDashboard() {
   const openTickets = tickets.filter((t) => t.status !== "resolved").length;
 
   return (
-    <div style={styles.container}>
+    <V2Layout role="student" companyBranding={companyBranding}  userName={tenant.full_name}>
       {/* Header de bienvenida */}
       <div style={styles.welcomeCard}>
         <div style={styles.welcomeContent}>
@@ -99,6 +121,14 @@ export default function StudentDashboard() {
         <button
           style={styles.quickNavItem}
           onClick={() => navigate("/v2/student/consumo")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <span style={styles.quickNavIcon}>⚡</span>
           Mi Consumo
@@ -106,6 +136,14 @@ export default function StudentDashboard() {
         <button
           style={styles.quickNavItem}
           onClick={() => navigate("/v2/student/boletines")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <span style={styles.quickNavIcon}>📄</span>
           Boletines
@@ -113,6 +151,14 @@ export default function StudentDashboard() {
         <button
           style={styles.quickNavItem}
           onClick={() => navigate("/v2/student/servicios")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <span style={styles.quickNavIcon}>🛎️</span>
           Servicios
@@ -120,6 +166,14 @@ export default function StudentDashboard() {
         <button
           style={styles.quickNavItem}
           onClick={() => navigate("/v2/student/encuestas")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <span style={styles.quickNavIcon}>📋</span>
           Encuestas
@@ -130,6 +184,14 @@ export default function StudentDashboard() {
         <button
           style={styles.quickNavItem}
           onClick={() => navigate("/v2/student/incidencias")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-4px)";
+            e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <span style={styles.quickNavIcon}>🎫</span>
           Incidencias
@@ -369,16 +431,11 @@ export default function StudentDashboard() {
           </button>
         </div>
       </div>
-    </div>
+    </V2Layout>
   );
 }
 
 const styles = {
-  container: {
-    padding: 32,
-    backgroundColor: "#F9FAFB",
-    minHeight: "100vh",
-  },
   loading: {
     textAlign: "center",
     padding: 60,

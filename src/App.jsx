@@ -33,6 +33,7 @@ import ServiceDetail from "./pages/clientes/servicios/ServiceDetail";
 // Páginas de Alojamientos
 import ApartmentsList from "./pages/admin/apartments/ApartmentsList";
 import ApartmentCreate from "./pages/admin/apartments/ApartmentCreate";
+import ApartmentEdit from "./pages/admin/apartments/ApartmentEdit";
 import TenantsList from "./pages/admin/tenants/TenantsList";
 import OccupancyHistory from "./pages/admin/occupancy/OccupancyHistory";
 
@@ -78,6 +79,17 @@ import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
 // v2 - Student
 import StudentDashboardV2 from "./pages/v2/student/StudentDashboard";
 
+// v2 - Superadmin Plans (DBSU-PC)
+import PlansListV2 from "./pages/v2/superadmin/plans/PlansList";
+import PlanCreateV2 from "./pages/v2/superadmin/plans/PlanCreate";
+import PlanDetailV2 from "./pages/v2/superadmin/plans/PlanDetail";
+
+// v2 - Superadmin Services (DBSU-GS)
+import ServicesListV2 from "./pages/v2/superadmin/services/ServicesList";
+
+// v2 - Autoregistro (RCCP)
+import SelfSignupV2 from "./pages/v2/autoregistro/SelfSignup";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -117,6 +129,7 @@ export default function App() {
                 <Route path="/alojamientos" element={<AlojamientosOverview />} />
                 <Route path="/alojamientos/gestion" element={<ApartmentsList />} />
                 <Route path="/alojamientos/gestion/nuevo" element={<ApartmentCreate />} />
+                <Route path="/alojamientos/gestion/:id/editar" element={<ApartmentEdit />} />
                 <Route path="/alojamientos/inquilinos" element={<TenantsList />} />
                 <Route path="/alojamientos/ocupacion" element={<OccupancyHistory />} />
               </Route>
@@ -153,6 +166,9 @@ export default function App() {
              NOTA: Rama paralela independiente - NO afecta a las rutas existentes
              ============================================= */}
 
+          {/* RCCP - Autoregistro (página pública) */}
+          <Route path="/registro" element={<SelfSignupV2 />} />
+
           {/* v2 - Superadmin */}
           <Route path="/v2/superadmin" element={<DashboardSuperadminV2 />} />
           <Route path="/v2/superadmin/cuentas" element={<ClientAccountsListV2 />} />
@@ -160,6 +176,15 @@ export default function App() {
           <Route path="/v2/superadmin/cuentas/:id" element={<ClientAccountDetailV2 />} />
           <Route path="/v2/superadmin/cuentas/:id/editar" element={<ClientAccountDetailV2 />} />
           <Route path="/v2/superadmin/cuentas/:id/usuarios" element={<ClientAccountDetailV2 />} />
+
+          {/* v2 - Superadmin Plans (DBSU-PC) */}
+          <Route path="/v2/superadmin/planes" element={<PlansListV2 />} />
+          <Route path="/v2/superadmin/planes/nuevo" element={<PlanCreateV2 />} />
+          <Route path="/v2/superadmin/planes/:id" element={<PlanDetailV2 />} />
+          <Route path="/v2/superadmin/planes/:id/editar" element={<PlanDetailV2 />} />
+
+          {/* v2 - Superadmin Services (DBSU-GS) */}
+          <Route path="/v2/superadmin/servicios" element={<ServicesListV2 />} />
 
           {/* v2 - Admin */}
           <Route path="/v2/admin" element={<DashboardAdminV2 />} />
