@@ -37,7 +37,7 @@ export default function SelfSignup() {
           <div style={styles.headerLeft}>
             <div style={styles.logoPlaceholder}>SR</div>
             <div style={styles.logoTextWrapper}>
-              <span style={styles.brandName}>SmartRent Systems</span>
+              <span style={styles.brandName}>SmartRoom Rental Platform</span>
               <span style={styles.brandTagline}>Registro de Cuenta</span>
             </div>
           </div>
@@ -56,7 +56,7 @@ export default function SelfSignup() {
       {/* Contenido principal */}
       <main style={styles.mainContent}>
         <div style={styles.welcomeSection}>
-          <h1 style={styles.pageTitle}>Crea tu cuenta en SmartRent</h1>
+          <h1 style={styles.pageTitle}>Crea tu cuenta en SmartRoom</h1>
           <p style={styles.pageSubtitle}>
             Completa los siguientes pasos para configurar tu cuenta y empezar a gestionar
             tus alojamientos de forma inteligente.
@@ -73,7 +73,7 @@ export default function SelfSignup() {
       {/* Footer */}
       <footer style={styles.footer}>
         <span style={styles.footerText}>
-          © {new Date().getFullYear()} SmartRent Systems. Todos los derechos reservados.
+          © {new Date().getFullYear()} SmartRoom Rental Platform. Todos los derechos reservados.
         </span>
       </footer>
     </div>

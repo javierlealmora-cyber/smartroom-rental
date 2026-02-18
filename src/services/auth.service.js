@@ -44,7 +44,7 @@ export async function signUp(email, password, metadata = {}) {
       password,
       options: {
         data: metadata,
-        // emailRedirectTo: window.location.origin + '/auth/confirm',
+        emailRedirectTo: window.location.origin + '/v2/auth/callback',
       },
     })
 
@@ -193,7 +193,7 @@ export async function updatePassword(newPassword) {
 export async function resetPasswordRequest(email) {
   try {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/auth/reset-password',
+      redirectTo: window.location.origin + '/v2/auth/reset-password',
     })
 
     if (error) return { data: null, error }

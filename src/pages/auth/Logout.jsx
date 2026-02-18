@@ -1,12 +1,24 @@
 // src/pages/auth/Logout.jsx
 // Página de logout manual - acceder a /auth/logout para forzar cierre de sesión
+// Soporta ?portal=manager|lodger|superadmin para redirigir al login correcto
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
+
+const LOGIN_ROUTES = {
+  manager: "/v2/manager/auth/login",
+  lodger: "/v2/lodger/auth/login",
+  superadmin: "/v2/auth/login",
+};
 
 export default function Logout() {
   const [status, setStatus] = useState("Cerrando sesión...");
 
   useEffect(() => {
+    // Leer portal antes de limpiar todo
+    const params = new URLSearchParams(window.location.search);
+    const portal = params.get("portal") || "";
+    const redirectTo = LOGIN_ROUTES[portal] || "/v2/auth/login";
+
     const doLogout = async () => {
       try {
         // 1. SignOut de Supabase (global = invalida en servidor)
@@ -48,9 +60,9 @@ export default function Logout() {
 
       setStatus("Sesión cerrada. Redirigiendo...");
 
-      // 6. Esperar un momento y redirigir
+      // 6. Esperar un momento y redirigir al login del portal correspondiente
       setTimeout(() => {
-        window.location.href = "/auth/login";
+        window.location.href = redirectTo;
       }, 1000);
     };
 

@@ -5,33 +5,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../../layouts/V2Layout";
+import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import {
   mockLegalCompanies,
-  mockClientAccounts,
   LEGAL_COMPANY_TYPES,
   ROOM_STATUS,
 } from "../../../../mocks/clientAccountsData";
 
-// Simular cliente activo
-const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
-
-// Obtener branding de la empresa actual
-const getCurrentCompanyBranding = () => {
-  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
-  if (account) {
-    return {
-      name: account.name,
-      logoText: account.name.charAt(0),
-      logoUrl: account.logo_url,
-      primaryColor: account.theme_primary_color || "#111827",
-      secondaryColor: account.theme_secondary_color || "#3B82F6",
-    };
-  }
-  return null;
-};
-
 export default function AccommodationCreate() {
   const navigate = useNavigate();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
   const [step, setStep] = useState(1); // 1: datos básicos, 2: habitaciones
   const [errors, setErrors] = useState({});
   const [fiscalCompanies, setFiscalCompanies] = useState([]);
@@ -51,8 +35,6 @@ export default function AccommodationCreate() {
 
   // Estado de las habitaciones (se generan dinámicamente)
   const [rooms, setRooms] = useState([]);
-
-  const companyBranding = getCurrentCompanyBranding();
 
   useEffect(() => {
     // Cargar empresas fiscales del cliente
@@ -129,7 +111,7 @@ export default function AccommodationCreate() {
   };
 
   return (
-    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+    <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Nuevo Alojamiento</h1>
@@ -298,69 +280,77 @@ export default function AccommodationCreate() {
 
             <div style={styles.roomsTable}>
               <div style={styles.roomsHeader}>
-                <span style={{ ...styles.roomsHeaderCell, width: 80 }}>Nº</span>
-                <span style={{ ...styles.roomsHeaderCell, width: 120 }}>Precio/mes</span>
-                <span style={{ ...styles.roomsHeaderCell, width: 80 }}>m²</span>
-                <span style={{ ...styles.roomsHeaderCell, width: 140 }}>Baño</span>
-                <span style={{ ...styles.roomsHeaderCell, width: 140 }}>Cocina</span>
-                <span style={{ ...styles.roomsHeaderCell, flex: 1 }}>Notas</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: "0 0 70px" }}>Nº</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: "0 0 120px" }}>Precio/mes</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: "0 0 90px" }}>m²</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: "0 0 150px" }}>Baño</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: "0 0 150px" }}>Cocina</span>
+                <span style={{ ...styles.roomsHeaderCell, flex: 1, minWidth: 120 }}>Notas</span>
               </div>
 
               <div style={styles.roomsList}>
                 {rooms.map((room, index) => (
                   <div key={room.id} style={styles.roomRow}>
-                    <input
-                      type="text"
-                      value={room.number}
-                      onChange={(e) => handleRoomChange(room.id, "number", e.target.value)}
-                      style={{ ...styles.roomInput, width: 80 }}
-                      placeholder={`${index + 1}`}
-                    />
-                    <div style={{ ...styles.roomInputWrapper, width: 120 }}>
+                    <div style={{ flex: "0 0 70px" }}>
+                      <input
+                        type="text"
+                        value={room.number}
+                        onChange={(e) => handleRoomChange(room.id, "number", e.target.value)}
+                        style={{ ...styles.roomInput, width: "100%" }}
+                        placeholder={`${index + 1}`}
+                      />
+                    </div>
+                    <div style={{ ...styles.roomInputWrapper, flex: "0 0 120px" }}>
                       <input
                         type="number"
                         value={room.monthly_rent}
                         onChange={(e) => handleRoomChange(room.id, "monthly_rent", e.target.value)}
-                        style={{ ...styles.roomInput, paddingRight: 24 }}
+                        style={{ ...styles.roomInput, width: "100%", paddingRight: 28 }}
                         placeholder="450"
                       />
                       <span style={styles.inputSuffix}>€</span>
                     </div>
-                    <div style={{ ...styles.roomInputWrapper, width: 80 }}>
+                    <div style={{ ...styles.roomInputWrapper, flex: "0 0 90px" }}>
                       <input
                         type="number"
                         value={room.square_meters}
                         onChange={(e) => handleRoomChange(room.id, "square_meters", e.target.value)}
-                        style={{ ...styles.roomInput, paddingRight: 28 }}
+                        style={{ ...styles.roomInput, width: "100%", paddingRight: 32 }}
                         placeholder="12"
                       />
                       <span style={styles.inputSuffix}>m²</span>
                     </div>
-                    <select
-                      value={room.bathroom_type}
-                      onChange={(e) => handleRoomChange(room.id, "bathroom_type", e.target.value)}
-                      style={{ ...styles.roomSelect, width: 140 }}
-                    >
-                      <option value="shared">Compartido</option>
-                      <option value="private">Privado</option>
-                      <option value="suite">Suite</option>
-                    </select>
-                    <select
-                      value={room.kitchen_type}
-                      onChange={(e) => handleRoomChange(room.id, "kitchen_type", e.target.value)}
-                      style={{ ...styles.roomSelect, width: 140 }}
-                    >
-                      <option value="shared">Compartida</option>
-                      <option value="private">Privada</option>
-                      <option value="suite">Suite</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={room.notes}
-                      onChange={(e) => handleRoomChange(room.id, "notes", e.target.value)}
-                      style={{ ...styles.roomInput, flex: 1 }}
-                      placeholder="Notas..."
-                    />
+                    <div style={{ flex: "0 0 150px" }}>
+                      <select
+                        value={room.bathroom_type}
+                        onChange={(e) => handleRoomChange(room.id, "bathroom_type", e.target.value)}
+                        style={{ ...styles.roomSelect, width: "100%" }}
+                      >
+                        <option value="shared">Compartido</option>
+                        <option value="private">Privado</option>
+                        <option value="suite">Suite</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: "0 0 150px" }}>
+                      <select
+                        value={room.kitchen_type}
+                        onChange={(e) => handleRoomChange(room.id, "kitchen_type", e.target.value)}
+                        style={{ ...styles.roomSelect, width: "100%" }}
+                      >
+                        <option value="shared">Compartida</option>
+                        <option value="private">Privada</option>
+                        <option value="suite">Suite</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 120 }}>
+                      <input
+                        type="text"
+                        value={room.notes}
+                        onChange={(e) => handleRoomChange(room.id, "notes", e.target.value)}
+                        style={{ ...styles.roomInput, width: "100%" }}
+                        placeholder="Notas..."
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -551,10 +541,11 @@ const styles = {
   },
   roomsHeader: {
     display: "flex",
-    gap: 8,
-    padding: "12px 16px",
+    gap: 16,
+    padding: "12px 20px",
     backgroundColor: "#F9FAFB",
     borderBottom: "1px solid #E5E7EB",
+    alignItems: "center",
   },
   roomsHeaderCell: {
     fontSize: 12,
@@ -568,17 +559,18 @@ const styles = {
   },
   roomRow: {
     display: "flex",
-    gap: 8,
-    padding: "12px 16px",
+    gap: 16,
+    padding: "10px 20px",
     borderBottom: "1px solid #F3F4F6",
     alignItems: "center",
   },
   roomInput: {
-    padding: "8px 10px",
+    padding: "8px 12px",
     fontSize: 14,
     border: "1px solid #E5E7EB",
     borderRadius: 6,
     outline: "none",
+    boxSizing: "border-box",
   },
   roomInputWrapper: {
     position: "relative",
@@ -592,12 +584,13 @@ const styles = {
     color: "#9CA3AF",
   },
   roomSelect: {
-    padding: "8px 10px",
+    padding: "8px 12px",
     fontSize: 14,
     border: "1px solid #E5E7EB",
     borderRadius: 6,
     outline: "none",
     backgroundColor: "#FFFFFF",
     cursor: "pointer",
+    boxSizing: "border-box",
   },
 };

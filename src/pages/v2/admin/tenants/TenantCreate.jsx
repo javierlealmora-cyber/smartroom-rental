@@ -5,35 +5,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../../layouts/V2Layout";
+import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import {
   mockAccommodations,
   mockRooms,
-  mockClientAccounts,
   ROOM_STATUS,
   getRoomStatusLabel,
   getRoomStatusColor,
 } from "../../../../mocks/clientAccountsData";
 
-// Simular cliente activo
-const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
-
-// Obtener branding de la empresa actual
-const getCurrentCompanyBranding = () => {
-  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
-  if (account) {
-    return {
-      name: account.name,
-      logoText: account.name.charAt(0),
-      logoUrl: account.logo_url,
-      primaryColor: account.theme_primary_color || "#111827",
-      secondaryColor: account.theme_secondary_color || "#3B82F6",
-    };
-  }
-  return null;
-};
-
 export default function TenantCreate() {
   const navigate = useNavigate();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
   const [errors, setErrors] = useState({});
   const [accommodations, setAccommodations] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -51,8 +35,6 @@ export default function TenantCreate() {
     billing_same_as_move_in: true,
     send_onboarding: true,
   });
-
-  const companyBranding = getCurrentCompanyBranding();
 
   useEffect(() => {
     // Cargar alojamientos del cliente
@@ -145,7 +127,7 @@ export default function TenantCreate() {
   const selectedAccommodation = accommodations.find((a) => a.id === formData.accommodation_id);
 
   return (
-    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+    <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Registrar Inquilino</h1>

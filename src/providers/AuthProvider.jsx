@@ -7,9 +7,20 @@ const AUTH_SYNC_CHANNEL = "srs-auth-sync";
 const STORAGE_KEY = "srs_auth_event";
 
 function safeRedirectToLogin() {
-  // Evita depender de useNavigate si este provider queda fuera del Router
-  if (window.location.pathname !== "/auth/login") {
-    window.location.assign("/auth/login");
+  const path = window.location.pathname;
+  // Ya estamos en una pagina de login/landing → no redirigir
+  if (path === "/v2" || path === "/" || path.includes("/auth/login") || path.includes("/auth/logout")) {
+    return;
+  }
+  // Redirigir al login del portal correspondiente segun la URL actual
+  if (path.startsWith("/v2/manager")) {
+    window.location.assign("/v2/manager/auth/login");
+  } else if (path.startsWith("/v2/lodger")) {
+    window.location.assign("/v2/lodger/auth/login");
+  } else if (path.startsWith("/v2/superadmin")) {
+    window.location.assign("/v2/auth/login");
+  } else {
+    window.location.assign("/v2/auth/login");
   }
 }
 
@@ -94,11 +105,27 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      const { data, error } = await supabase
+      console.log("[AuthProvider] loading profile for user:", user.id);
+
+      // Intentar con columnas v2 (client_account_id, etc.)
+      // Si la migracion 004 no se ha aplicado aun, hacer fallback a columnas legacy
+      let { data, error } = await supabase
         .from("profiles")
-        .select("id, role, company_id, full_name, email, phone, created_at")
+        .select("id, role, company_id, client_account_id, onboarding_status, is_primary_admin, full_name, email, phone, created_at")
         .eq("id", user.id)
         .maybeSingle();
+
+      // Fallback: si falla por columnas inexistentes, usar solo las legacy
+      if (error && error.message?.includes("does not exist")) {
+        console.warn("[AuthProvider] v2 columns not found, falling back to legacy SELECT");
+        const fallback = await supabase
+          .from("profiles")
+          .select("id, role, company_id, full_name, email, phone, created_at")
+          .eq("id", user.id)
+          .maybeSingle();
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (!mountedRef.current) return;
 
@@ -106,6 +133,12 @@ export function AuthProvider({ children }) {
         console.warn("[AuthProvider] profile load error:", error.message);
         setProfile(null);
         return;
+      }
+
+      if (!data) {
+        console.warn("[AuthProvider] profile NOT FOUND for user:", user.id, "— row may not exist in profiles table");
+      } else {
+        console.log("[AuthProvider] profile loaded:", { role: data.role, client_account_id: data.client_account_id, onboarding_status: data.onboarding_status });
       }
 
       setProfile(data ?? null);
@@ -168,6 +201,21 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Refrescar perfil manualmente (tras wizard_submit, etc.)
+  const refreshProfile = async () => {
+    if (!user?.id) return;
+    console.log("[AuthProvider] refreshProfile() called for user:", user.id);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, role, company_id, client_account_id, onboarding_status, is_primary_admin, full_name, email, phone, created_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (mountedRef.current && data) {
+      console.log("[AuthProvider] profile refreshed:", { role: data.role, client_account_id: data.client_account_id, onboarding_status: data.onboarding_status });
+      setProfile(data);
+    }
+  };
+
   // Función de logout centralizada
   const logout = async () => {
     console.log("[AuthProvider] logout() llamado");
@@ -203,19 +251,37 @@ export function AuthProvider({ children }) {
     console.log("[AuthProvider] logout() completado");
   };
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const _clientAccountId = profile?.client_account_id ?? null;
+    const _onboardingStatus = profile?.onboarding_status ?? "none";
+
+    // Computed tenant state:
+    // "none"            = sin client_account_id (tenant=0)
+    // "in_progress"     = wizard iniciado, no enviado
+    // "payment_pending" = wizard enviado, pago pendiente Stripe
+    // "active"          = tenant activo (tenant=1)
+    let _tenantState = "none";
+    if (_clientAccountId) {
+      _tenantState = _onboardingStatus === "active" ? "active" : (_onboardingStatus || "none");
+    }
+
+    return {
       loading,
       session,
       user,
       profile,
       role: profile?.role ?? null,
       companyId: profile?.company_id ?? null,
+      clientAccountId: _clientAccountId,
+      onboardingStatus: _onboardingStatus,
+      isPrimaryAdmin: profile?.is_primary_admin ?? false,
       isAuthenticated: !!session,
+      hasTenant: _tenantState === "active",
+      tenantState: _tenantState,
       logout,
-    }),
-    [loading, session, user, profile]
-  );
+      refreshProfile,
+    };
+  }, [loading, session, user, profile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

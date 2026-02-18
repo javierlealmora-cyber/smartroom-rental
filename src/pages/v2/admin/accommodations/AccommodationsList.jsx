@@ -5,10 +5,10 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../../layouts/V2Layout";
+import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import {
   mockAccommodations,
   mockRooms,
-  mockClientAccounts,
   ROOM_STATUS,
   STATUS,
   getStatusLabel,
@@ -16,30 +16,12 @@ import {
   getRoomStatusColor,
 } from "../../../../mocks/clientAccountsData";
 
-// Simular cliente activo
-const CURRENT_CLIENT_ACCOUNT_ID = "ca-001";
-
-// Obtener branding de la empresa actual
-const getCurrentCompanyBranding = () => {
-  const account = mockClientAccounts.find((a) => a.id === CURRENT_CLIENT_ACCOUNT_ID);
-  if (account) {
-    return {
-      name: account.name,
-      logoText: account.name.charAt(0),
-      logoUrl: account.logo_url,
-      primaryColor: account.theme_primary_color || "#111827",
-      secondaryColor: account.theme_secondary_color || "#3B82F6",
-    };
-  }
-  return null;
-};
-
 export default function AccommodationsList() {
   const navigate = useNavigate();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
-
-  const companyBranding = getCurrentCompanyBranding();
 
   // Filtrar alojamientos
   const accommodations = useMemo(() => {
@@ -75,7 +57,7 @@ export default function AccommodationsList() {
   };
 
   return (
-    <V2Layout role="admin" companyBranding={companyBranding} userName="Admin Usuario">
+    <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
       <div style={styles.header}>
           <div>

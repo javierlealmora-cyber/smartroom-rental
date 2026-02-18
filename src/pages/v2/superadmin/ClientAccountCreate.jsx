@@ -3,31 +3,40 @@
 // =============================================================================
 // RCCP – SuperAdmin crea Cuenta Cliente
 // Wrapper que usa el wizard compartido en modo "superadmin_create"
+// Conectado a Edge Function provision_client_account_superadmin
 // =============================================================================
 
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
 import ClientAccountWizard from "../../../components/wizards/ClientAccountWizard";
+import { callProvisionSuperadmin } from "../../../services/clientAccounts.service";
 
 export default function ClientAccountCreate() {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const handleFinalize = (formData, status) => {
-    console.log("Crear cuenta cliente (superadmin):", formData);
-    console.log("Estado:", status);
-    alert(
-      `Cuenta cliente "${formData.full_name}" creada como ${status} (mock).\n\n` +
-      `Plan: ${formData.plan_code}\n` +
-      `Admin: ${formData.admins[0].email}`
-    );
-    navigate("/v2/superadmin/cuentas");
-  };
+  const handleFinalize = useCallback(async (payload) => {
+    setSubmitting(true);
+    setSubmitError(null);
 
-  const handleCancel = () => {
-    if (confirm("¿Desea cancelar? Se perderán los datos no guardados.")) {
+    try {
+      const result = await callProvisionSuperadmin(payload);
+      console.log("[SuperAdmin] Cuenta creada:", result);
+      navigate("/v2/superadmin/cuentas");
+    } catch (err) {
+      console.error("[SuperAdmin] provision error:", err);
+      setSubmitError(err?.message || "Error al crear la cuenta. Intentalo de nuevo.");
+      setSubmitting(false);
+    }
+  }, [navigate]);
+
+  const handleCancel = useCallback(() => {
+    if (confirm("¿Desea cancelar? Se perderan los datos no guardados.")) {
       navigate("/v2/superadmin/cuentas");
     }
-  };
+  }, [navigate]);
 
   return (
     <V2Layout role="superadmin" userName="Administrador">
@@ -42,6 +51,8 @@ export default function ClientAccountCreate() {
         mode="superadmin_create"
         onFinalize={handleFinalize}
         onCancel={handleCancel}
+        submitting={submitting}
+        submitError={submitError}
       />
     </V2Layout>
   );

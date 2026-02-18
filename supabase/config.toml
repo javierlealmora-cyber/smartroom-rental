@@ -147,9 +147,9 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "http://localhost:5173"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = ["http://localhost:5173"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
@@ -372,6 +372,26 @@ verify_jwt = false
 # Edge Function: update_company
 # IMPORTANTE: verify_jwt = false porque la función maneja la autenticación internamente
 [functions.update_company]
+verify_jwt = false
+
+# Edge Function: whoami
+[functions.whoami]
+verify_jwt = false
+
+# Edge Function: wizard_init
+[functions.wizard_init]
+verify_jwt = false
+
+# Edge Function: wizard_submit
+[functions.wizard_submit]
+verify_jwt = false
+
+# Edge Function: stripe_webhook (no requiere JWT, usa firma Stripe)
+[functions.stripe_webhook]
+verify_jwt = false
+
+# Edge Function: provision_client_account_superadmin
+[functions.provision_client_account_superadmin]
 verify_jwt = false
 
 [analytics]

@@ -61,7 +61,7 @@ export const ROLES = {
   SUPERADMIN: "superadmin",
   ADMIN: "admin",
   API: "api",
-  STUDENT: "student",
+  LODGER: "lodger",
   VIEWER: "viewer",
 };
 
@@ -789,11 +789,11 @@ export const mockRoomOccupancies = [
 // USERS (Usuarios del sistema)
 // =============================================================================
 export const mockUsers = [
-  // Superadmin (SmartRent Systems)
+  // Superadmin (SmartRoom Rental Platform)
   {
     id: "user-superadmin",
-    email: "admin@smartrentsystems.com",
-    full_name: "Administrador SmartRent",
+    email: "admin@smartroomrental.com",
+    full_name: "Administrador SmartRoom",
     phone: "+34 900 123 456",
     role: ROLES.SUPERADMIN,
     client_account_id: null, // Superadmin no pertenece a ningún tenant

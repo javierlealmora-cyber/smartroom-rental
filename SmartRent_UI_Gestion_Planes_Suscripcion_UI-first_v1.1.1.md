@@ -1,6 +1,6 @@
 # SmartRent Systems — Gestion de Planes, Servicios, Cuentas Cliente y Autoregistro (UI-first)
-Version: v1.3 (UI-first, estado actualizado post-implementacion)
-Fecha: 2026-02-09
+Version: v1.4 (UI-first + modelo Payer/Owner para backend)
+Fecha: 2026-02-10
 
 Este documento refleja el **estado real implementado** en el frontend (React + Vite, inline styles, datos mock).
 Sirve como base funcional para disenar las tablas de la base de datos y codificar el backend (Supabase Edge Functions).
@@ -13,8 +13,9 @@ El modulo cubre cuatro grandes bloques funcionales:
 
 1. **Gestion de Planes de Suscripcion** (Superadmin) — CRUD completo de planes.
 2. **Catalogo de Servicios** (Superadmin) — CRUD de servicios dinamicos asociables a planes.
-3. **Gestion de Cuentas Cliente** (Superadmin) — Listado, detalle con tabs, creacion y edicion de cuentas cliente con sus entidades asociadas (empresas legales, internas, alojamientos, usuarios).
-4. **Autoregistro / Alta de Cuenta Cliente** — Wizard publico (self_signup) y wizard Superadmin (superadmin_create) para crear cuentas cliente con plan, usuarios admin, entidad pagadora, branding y metodo de pago.
+3. **Gestion de Cuentas Cliente** (Superadmin) — Listado, detalle con tabs, creacion y edicion de cuentas cliente con sus entidades asociadas (Entidad Pagadora, Entidades Propietarias, alojamientos, usuarios).
+4. **Autoregistro / Alta de Cuenta Cliente** — Wizard publico (self_signup) y wizard Superadmin (superadmin_create) para crear cuentas cliente con plan, usuarios admin, Entidad Pagadora, branding y metodo de pago.
+5. **Gestion de Entidades Propietarias (Owners)** — CRUD de entidades propietarias/operadoras de alojamientos, con limites por plan y reglas de cambio de owner.
 
 ---
 
@@ -166,23 +167,24 @@ Reglas:
 
 **Paso 4 — Facturacion y Pago:**
 
-*Entidad Pagadora:*
+*Entidad Pagadora (PayerEntity — 1:1 con ClientAccount):*
 | Campo wizard | Destino tabla | Descripcion |
 |---|---|---|
-| payer_type | legal_companies.legal_form | "persona_fisica", "autonomo", "persona_juridica" |
-| payer_legal_name | legal_companies.legal_name | Razon social (si juridica) |
-| payer_first_name | legal_companies.first_name | Nombre (si persona/autonomo) |
-| payer_last_name_1 | legal_companies.last_name_1 | Primer apellido |
-| payer_last_name_2 | legal_companies.last_name_2 | Segundo apellido (opcional) |
-| payer_tax_id | legal_companies.tax_id | CIF/NIF |
-| payer_address_line1 | legal_companies.address_line1 | Calle |
-| payer_address_number | legal_companies.address_number | Numero (opcional) |
-| payer_postal_code | legal_companies.postal_code | Codigo postal |
-| payer_city | legal_companies.city | Ciudad |
-| payer_province | legal_companies.province | Provincia (opcional) |
-| payer_country | legal_companies.country | Pais (default "Espana") |
-| payer_billing_email | legal_companies.contact_email | Email facturacion |
-| payer_billing_phone | legal_companies.contact_phone | Telefono facturacion (opcional) |
+| payer_type | payer_entities.entity_type | "persona_fisica", "autonomo", "persona_juridica" |
+| payer_legal_name | payer_entities.legal_name | Razon social (si juridica) |
+| payer_first_name | payer_entities.first_name | Nombre (si persona/autonomo) |
+| payer_last_name_1 | payer_entities.last_name_1 | Primer apellido |
+| payer_last_name_2 | payer_entities.last_name_2 | Segundo apellido (opcional) |
+| payer_tax_id | payer_entities.tax_id | CIF/NIF |
+| payer_address_line1 | payer_entities.street | Calle |
+| payer_address_number | payer_entities.street_number | Numero (opcional) |
+| payer_postal_code | payer_entities.postal_code | Codigo postal |
+| payer_city | payer_entities.city | Ciudad |
+| payer_province | payer_entities.province | Provincia (opcional) |
+| payer_country | payer_entities.country | Pais (default "Espana") |
+| payer_address_extra | payer_entities.address_extra | Informacion adicional (planta, puerta, etc.) |
+| payer_billing_email | payer_entities.billing_email | Email facturacion |
+| payer_billing_phone | payer_entities.phone | Telefono facturacion (opcional) |
 
 *Branding:*
 | Campo wizard | Destino tabla | Descripcion |
@@ -213,63 +215,105 @@ Reglas:
 - En superadmin_create: selector de estado inicial ("ACTIVA" o "PENDIENTE").
 - Boton "Finalizar Registro" (self_signup) o "Crear Cuenta" (superadmin_create).
 
-### 4.5 Empresa Legal (`mockLegalCompanies` en `clientAccountsData.js`)
+### 4.5 Entidad Pagadora — PayerEntity (tabla `payer_entities`)
 
-Representa las entidades juridicas/fiscales asociadas a una cuenta cliente.
+Representa la entidad fiscal que paga la suscripcion SaaS. Relacion **1:1** con ClientAccount.
 
-| Campo | Tipo | Descripcion |
-|---|---|---|
-| id | string | UUID |
-| client_account_id | string (FK) | Cuenta cliente a la que pertenece |
-| type | enum | `account` (pagadora principal) o `fiscal` (empresa fiscal adicional) |
-| legal_name | string | Razon social o nombre completo |
-| legal_form | enum | `persona_fisica`, `autonomo`, `persona_juridica` |
-| tax_id | string | CIF o NIF |
-| address_line1 | string | Direccion (calle y numero) |
-| address_line2 | string (nullable) | Linea 2 de direccion |
-| postal_code | string | Codigo postal |
-| city | string | Ciudad |
-| province | string | Provincia |
-| country | string | Pais |
-| contact_email | string | Email de contacto/facturacion |
-| contact_phone | string (nullable) | Telefono de contacto |
-| status | enum | `active`, `suspended`, `cancelled`, `inactive` |
-| created_at | datetime | Fecha creacion |
-| updated_at | datetime | Fecha actualizacion |
-
-Reglas:
-- Cada cuenta tiene exactamente 1 empresa de tipo `account` (pagadora principal).
-- Puede tener 0 o mas empresas de tipo `fiscal` (adicionales).
-- Las empresas fiscales se usan para vincular alojamientos a entidades fiscales especificas.
-
-### 4.6 Empresa Interna (`mockInternalCompanies` en `clientAccountsData.js`)
-
-Representa las unidades operativas (carteras) dentro de una cuenta cliente.
-
-| Campo | Tipo | Descripcion |
-|---|---|---|
-| id | string | UUID |
-| client_account_id | string (FK) | Cuenta cliente a la que pertenece |
-| name | string | Nombre de la empresa interna / cartera |
-| status | enum | `active`, `suspended`, `cancelled`, `inactive` |
-| is_hidden | boolean | Si es oculta en la UI (true para Basic/Investor/Business, false para Agency) |
-| created_at | datetime | Fecha creacion |
-| updated_at | datetime | Fecha actualizacion |
+| Campo | Tipo | Obligatorio | Descripcion |
+|---|---|---|---|
+| id | string | Auto | UUID |
+| client_account_id | string (FK, unique) | Si | Cuenta cliente (relacion 1:1) |
+| entity_type | enum | Si | `persona_fisica`, `autonomo`, `persona_juridica` |
+| legal_name | string | Si (si juridica) | Razon social |
+| first_name | string | Si (si PF/autonomo) | Nombre |
+| last_name_1 | string | Si (si PF/autonomo) | Primer apellido |
+| last_name_2 | string | No | Segundo apellido |
+| tax_id | string | Si | CIF o NIF |
+| billing_email | string | Si | Email de facturacion |
+| phone | string | Si | Telefono de contacto |
+| **Direccion** | | | |
+| country | string | Si | Pais (default "Espana") |
+| province | string | No | Provincia |
+| city | string | Si | Ciudad |
+| postal_code | string | Si | Codigo postal |
+| street | string | Si | Calle |
+| street_number | string | No | Numero |
+| address_extra | string | No | Informacion adicional (planta, puerta, etc.) |
+| **Estado** | | | |
+| status | enum | Si | `active`, `suspended`, `disabled` |
+| created_at | datetime | Auto | Fecha creacion |
+| start_date | date | No | Fecha inicio actividad |
+| end_date | date (nullable) | No | Fecha fin actividad |
+| deactivated_at | datetime (nullable) | No | Fecha de baja logica |
 
 Reglas:
-- Para planes Basic, Investor y Business: se crea 1 empresa interna oculta automaticamente (is_hidden=true). El admin no la ve.
-- Para plan Agency: se pueden crear multiples empresas internas visibles (is_hidden=false), llamadas "Carteras".
-- Los alojamientos se vinculan a una empresa interna.
-- Los usuarios viewer pueden restringirse a una empresa interna especifica.
+- Cada cuenta tiene exactamente **1** PayerEntity (relacion 1:1 por `client_account_id` UNIQUE).
+- Es obligatoria para activar la cuenta (en self_signup se crea junto con la cuenta; en superadmin_create puede quedar incompleta si estado=PENDING).
+- **No se puede eliminar**, solo editar.
+- **No tiene relacion directa con alojamientos** — su proposito es exclusivamente la facturacion del SaaS.
 
-### 4.7 Alojamiento (`mockAccommodations` en `clientAccountsData.js`)
+> **Mapeo legacy**: Reemplaza a `legal_companies` con `type='account'`.
+
+### 4.6 Entidad Propietaria — OwnerEntity (tabla `owner_entities`)
+
+Representa la entidad fiscal propietaria/operadora de alojamientos. Relacion **1..N** con ClientAccount segun plan.
+
+| Campo | Tipo | Obligatorio | Descripcion |
+|---|---|---|---|
+| id | string | Auto | UUID |
+| client_account_id | string (FK) | Si | Cuenta cliente a la que pertenece |
+| entity_type | enum | Si | `persona_fisica`, `autonomo`, `persona_juridica` |
+| legal_name | string | Si (si juridica) | Razon social |
+| first_name | string | Si (si PF/autonomo) | Nombre |
+| last_name_1 | string | Si (si PF/autonomo) | Primer apellido |
+| last_name_2 | string | No | Segundo apellido |
+| tax_id | string | Si | CIF o NIF |
+| billing_email | string | Recomendado | Email de contacto/facturacion |
+| phone | string | Recomendado | Telefono de contacto |
+| **Direccion** | | | |
+| country | string | Si | Pais (default "Espana") |
+| province | string | No | Provincia |
+| city | string | Si | Ciudad |
+| postal_code | string | Si | Codigo postal |
+| street | string | Si | Calle |
+| street_number | string | No | Numero |
+| address_extra | string | No | Informacion adicional (planta, puerta, etc.) |
+| **Estado** | | | |
+| status | enum | Si | `active`, `suspended`, `disabled` |
+| created_at | datetime | Auto | Fecha creacion |
+| start_date | date | No | Fecha inicio actividad |
+| end_date | date (nullable) | No | Fecha fin actividad |
+| deactivated_at | datetime (nullable) | No | Fecha de baja logica |
+
+**Limites por plan (max_owners):**
+
+| Plan | max_owners | Comportamiento UI |
+|---|---|---|
+| Basic | 1 | Si ya existe 1: ocultar boton "+ Nuevo", mostrar mensaje |
+| Investor | 2 | Si owners_count >= 2: bloquear creacion, mostrar warning |
+| Business | 5 | Si owners_count >= 5: bloquear creacion, mostrar warning |
+| Agency | -1 (ilimitado) | Sin limite visible |
+
+**Regla clave — Cambio de Owner en Alojamiento:**
+- **Agency**: se permite cambiar el owner de un alojamiento (reasignar entre carteras/propietarios). Modal de confirmacion obligatorio.
+- **Basic / Investor / Business**: **NO** se permite cambiar el owner de un alojamiento una vez creado (owner inmutable). Campo read-only con tooltip explicativo.
+
+Reglas:
+- Al menos 1 OwnerEntity activa es necesaria para poder crear alojamientos.
+- Los alojamientos cuelgan de un OwnerEntity via `owner_entity_id`.
+- Los usuarios viewer pueden restringirse a un OwnerEntity especifico (via `owner_entity_id`).
+- No se puede desactivar el unico Owner activo de la cuenta.
+- Al desactivar un Owner con alojamientos activos: modal de confirmacion obligatorio.
+
+> **Mapeo legacy**: Reemplaza a `legal_companies` con `type='fiscal'` + `internal_companies` (las "carteras" de Agency pasan a ser OwnerEntities visibles).
+
+### 4.7 Alojamiento (tabla `accommodations`)
 
 | Campo | Tipo | Descripcion |
 |---|---|---|
 | id | string | UUID |
 | client_account_id | string (FK) | Cuenta cliente |
-| internal_company_id | string (FK) | Empresa interna a la que pertenece |
-| fiscal_company_id | string (FK, nullable) | Empresa fiscal vinculada (null si plan Basic) |
+| owner_entity_id | string (FK) | **Entidad Propietaria** a la que pertenece (OwnerEntity) |
 | name | string | Nombre del alojamiento |
 | status | enum | `active`, `suspended`, `cancelled`, `inactive` |
 | address_line1 | string | Direccion |
@@ -280,6 +324,13 @@ Reglas:
 | created_at | datetime | Fecha creacion |
 | updated_at | datetime | Fecha actualizacion |
 | stats | object | Estadisticas calculadas: total_rooms, occupied, free, pending |
+
+Reglas:
+- Requiere `owner_entity_id` valido y activo para crear.
+- Si no hay OwnerEntities activas, se bloquea la creacion y se muestra CTA: "Crea tu primera Entidad Propietaria".
+- **Cambio de owner**: solo permitido en plan Agency (con modal de confirmacion). En Basic/Investor/Business el campo es read-only.
+
+> **Mapeo legacy**: `internal_company_id` y `fiscal_company_id` se eliminan y se sustituyen por `owner_entity_id`.
 
 ### 4.8 Habitacion (`mockRooms` en `clientAccountsData.js`)
 
@@ -330,7 +381,7 @@ Reglas:
 
 Regla clave: billing_start_date puede ser posterior a move_in_date (ej: entra el 15, facturacion desde el 1 del mes siguiente).
 
-### 4.11 Usuario (`mockUsers` en `clientAccountsData.js`)
+### 4.11 Usuario (tabla `profiles`)
 
 | Campo | Tipo | Descripcion |
 |---|---|---|
@@ -340,15 +391,17 @@ Regla clave: billing_start_date puede ser posterior a move_in_date (ej: entra el
 | phone | string (nullable) | Telefono |
 | role | enum | `superadmin`, `admin`, `api`, `student`, `viewer` |
 | client_account_id | string (FK, nullable) | Cuenta cliente (null para superadmin) |
-| internal_company_id | string (FK, nullable) | Empresa interna (solo para viewer de Agencia) |
+| owner_entity_id | string (FK, nullable) | **Entidad Propietaria** (solo para viewer restringido a un Owner) |
 | status | enum | `active`, `suspended`, `cancelled`, `inactive` |
 
 Reglas:
 - Superadmin: client_account_id = null (no pertenece a ningun tenant).
 - Admin: uno por cuenta como minimo (titular).
-- Viewer: puede tener internal_company_id para restringir vista a una cartera (solo en Agency).
+- Viewer: puede tener `owner_entity_id` para restringir vista a los alojamientos de un Owner especifico.
 - API: usuario para integraciones automaticas.
 - Student: usuario inquilino con acceso a su panel personal.
+
+> **Mapeo legacy**: `internal_company_id` se sustituye por `owner_entity_id`.
 
 ### 4.12 Enums y constantes globales
 
@@ -356,14 +409,16 @@ Reglas:
 |---|---|---|
 | PLANS | basic, investor, business, agency | Codigos de planes asignables a cuentas |
 | STATUS | active, suspended, cancelled, inactive | Estado general de entidades |
-| LEGAL_COMPANY_TYPES | account, fiscal | Tipo de empresa legal |
-| LEGAL_FORMS | persona_fisica, autonomo, persona_juridica | Forma juridica de la empresa |
+| ENTITY_TYPE | persona_fisica, autonomo, persona_juridica | Tipo de entidad (Payer y Owner) |
+| ENTITY_STATUS | active, suspended, disabled | Estado de PayerEntity y OwnerEntity |
 | ROOM_STATUS | free, occupied, pending_checkout, inactive | Estado de habitacion |
 | TENANT_STATUS | invited, active, inactive, pending_checkout | Estado del inquilino |
 | OCCUPANCY_STATUS | active, pending_checkout, ended | Estado de la ocupacion |
 | ROLES | superadmin, admin, api, student, viewer | Roles de usuario |
 | PLAN_STATUS | draft, active, inactive, deprecated, deactivated | Estado del plan |
 | BILLING_PERIOD | monthly, annual | Periodo de facturacion |
+
+> **Mapeo legacy**: `LEGAL_COMPANY_TYPES` (account, fiscal) y `LEGAL_FORMS` se eliminan del flujo v2. Se sustituyen por `ENTITY_TYPE` y `ENTITY_STATUS`.
 
 ---
 
@@ -518,14 +573,18 @@ Datos mock:
 - KPIs (grid 4 columnas): Alojamientos, Habitaciones, Ocupadas, Ocupacion (%)
 - Layout 2 columnas:
   - Card "Informacion de la Cuenta": fecha alta, inicio facturacion, ultima actualizacion, color primario (con dot visual)
-  - Card "Empresa Pagadora": nombre fiscal, CIF/NIF, email, telefono (usa legalCompanies type=account)
+  - Card "Entidad Pagadora": nombre fiscal, CIF/NIF, email, telefono (usa PayerEntity de la cuenta)
 
-**Tab 2 — Empresas (companies)**:
-- Card "Empresas Fiscales": tabla con nombre fiscal, CIF/NIF, email, estado, acciones. Boton "+ Anadir"
-- Card "Empresas Internas (Carteras)": **solo visible si plan = agency**. Tabla con nombre, estado, num alojamientos. Boton "+ Anadir"
+**Tab 2 — Propietarios (owners)** *(reemplaza el antiguo tab "Empresas")*:
+- Card "Entidades Propietarias (Owners)":
+  - Tabla con columnas: Nombre/Razon social, Tipo entidad (badge), NIF/CIF, Estado (badge), Fecha alta, Num. alojamientos, Acciones
+  - **Acciones**: Ver / Editar / Desactivar (baja logica) / Reactivar
+  - Boton "+ Nuevo Owner" (solo si `owners_count < max_owners` del plan, salvo Agency que es ilimitado)
+  - **Warning**: "Has alcanzado el maximo de Entidades Propietarias permitidas por el plan [nombre_plan]" si se alcanza el limite
+  - Indicador: "Propietarios: X / Y" (donde Y = max_owners del plan, o "ilimitado")
 
 **Tab 3 — Alojamientos (accommodations)**:
-- Card con tabla: nombre, direccion, habitaciones (ocupadas/total), ocupacion (barra progreso), estado. Badge con contador total.
+- Card con tabla: nombre, **Owner** (nombre del OwnerEntity), direccion, habitaciones (ocupadas/total), ocupacion (barra progreso), estado. Badge con contador total.
 
 **Tab 4 — Usuarios (users)**:
 - Card con tabla: nombre, email, rol (badge uppercase), estado, acciones. Boton "Gestionar Usuarios"
@@ -534,13 +593,15 @@ Datos mock:
 - Items de configuracion (cards con borde):
   - Cambiar Plan (muestra plan actual)
   - Branding (personalizar logo y colores)
-  - Datos Fiscales (empresa pagadora y facturacion)
+  - Entidad Pagadora (ver/editar datos fiscales del pagador)
   - Zona de Peligro (cancelar cuenta, con borde rojo)
 
 Carga de datos:
 - Busca account por id en `mockClientAccounts`
-- Filtra `mockLegalCompanies`, `mockInternalCompanies`, `mockAccommodations`, `mockUsers` por client_account_id
+- Filtra `mockPayerEntities`, `mockOwnerEntities`, `mockAccommodations`, `mockUsers` por client_account_id
 - Simula carga con setTimeout 300ms + estado loading
+
+> **Mapeo legacy**: El tab "Empresas" con secciones "Empresas Fiscales" + "Empresas Internas (Carteras)" se reemplaza por tab "Propietarios" con la lista de OwnerEntities.
 
 ### 5.9 ClientAccountCreate (Crear Cuenta Cliente - Superadmin)
 
@@ -554,9 +615,79 @@ Es un wrapper ligero que:
 - `onFinalize`: log + alert mock con nombre, plan y email admin → navega a `/v2/superadmin/cuentas`
 - `onCancel`: confirm de cancelacion → navega a `/v2/superadmin/cuentas`
 
+### 5.10 Pantallas planificadas — Gestion de Entidades Propietarias (Owner CRUD)
+
+> **Estado**: PENDIENTE DE IMPLEMENTAR (UI-first, mock)
+
+#### 5.10.1 OwnerEntitiesList (Admin — Listado Owners)
+
+**Ruta propuesta**: `/v2/admin/configuracion/propietarios`
+
+Elementos:
+- Header con titulo "Entidades Propietarias" y contador (activas / max_owners del plan)
+- **Toolbar**: "+ Nuevo Owner" (oculto si `owners_count >= max_owners` y plan != Agency)
+- **Warning** (si limite alcanzado): "Has alcanzado el maximo de Entidades Propietarias permitidas por tu plan ([plan_name])"
+- **Filtros**: busqueda por nombre/razon social, filtro por estado (active/suspended/disabled)
+- **Tabla** con columnas: Nombre/Razon social, Tipo entidad (badge PF/Autonomo/Juridica), NIF/CIF, Estado (badge), Fecha alta, Num. alojamientos, Acciones
+- **Acciones por fila**: Ver detalle, Editar, Desactivar (baja logica con confirm), Reactivar
+
+#### 5.10.2 OwnerEntityCreate (Admin — Crear Owner)
+
+**Ruta propuesta**: `/v2/admin/configuracion/propietarios/nuevo`
+
+Formulario con secciones:
+1. **Tipo de entidad**: selector entity_type (persona_fisica, autonomo, persona_juridica) — condiciona campos visibles
+2. **Datos fiscales**: legal_name (si juridica), first_name + last_name_1 + last_name_2 (si PF/autonomo), tax_id
+3. **Direccion**: country, province, city, postal_code, street, street_number, address_extra
+4. **Contacto**: billing_email, phone
+5. **Estado**: se crea con status=active por defecto
+
+Validaciones:
+- Bloquear si `owners_count >= max_owners` del plan
+- tax_id: formato NIF/CIF
+- Campos obligatorios segun entity_type (ver seccion 4.6)
+- country, city, postal_code, street obligatorios
+
+#### 5.10.3 OwnerEntityDetail / OwnerEntityEdit (Admin — Ver/Editar Owner)
+
+**Rutas propuestas**: `/v2/admin/configuracion/propietarios/:id` (lectura) | `/v2/admin/configuracion/propietarios/:id/editar` (edicion)
+
+Vista lectura: cards con datos fiscales, direccion, contacto, alojamientos vinculados
+Vista edicion: mismo formulario que Create con datos cargados
+Acciones: Desactivar (con modal si tiene alojamientos activos), Reactivar
+
+### 5.11 Pantalla planificada — Entidad Pagadora (Admin — Ver/Editar)
+
+> **Estado**: PENDIENTE DE IMPLEMENTAR (UI-first, mock)
+
+**Ruta propuesta**: `/v2/admin/configuracion/pagador`
+
+Pagina de solo **ver/editar** (no lista, no crear multiples):
+- Card con datos actuales de la Entidad Pagadora
+- Boton "Editar" para pasar a modo edicion
+- Mismos campos que en el wizard (seccion 4.5)
+- No se puede eliminar (siempre existe 1 por cuenta)
+- Campos obligatorios: entity_type, tax_id, billing_email, phone, country, city, postal_code, street
+
+### 5.12 Modificaciones planificadas — Gestion Alojamientos (Admin)
+
+> **Estado**: PENDIENTE DE IMPLEMENTAR (UI-first, mock)
+
+**Crear Alojamiento** — modificaciones:
+- Nuevo campo obligatorio **Owner** (selector de OwnerEntity): muestra `Nombre + Tipo (PF/Autonomo/Juridica) + Estado`
+- Solo muestra owners con status = active
+- Si no hay owners activos: bloquear creacion, CTA "Debes crear al menos 1 Entidad Propietaria antes de crear alojamientos" con enlace
+- No permitir seleccionar owners desactivados
+
+**Editar Alojamiento** — modificaciones:
+- Campo Owner **read-only** (tooltip: "Tu plan no permite cambiar la Entidad Propietaria de un alojamiento") para Basic/Investor/Business
+- Campo Owner **editable** solo si plan = Agency, con modal de confirmacion: "Cambiar la Entidad Propietaria puede afectar al reporting e historico. ¿Continuar?"
+
 ---
 
-## 6) Rutas implementadas (App.jsx)
+## 6) Rutas implementadas y planificadas (App.jsx)
+
+### 6.1 Rutas implementadas
 
 | Ruta | Componente | Contexto |
 |---|---|---|
@@ -572,6 +703,23 @@ Es un wrapper ligero que:
 | `/v2/superadmin/planes/:id` | PlanDetailV2 | Detalle plan (lectura) |
 | `/v2/superadmin/planes/:id/editar` | PlanDetailV2 | Detalle plan (edicion) |
 | `/v2/superadmin/servicios` | ServicesListV2 | Catalogo servicios |
+
+### 6.2 Rutas planificadas (Payer/Owner — Admin)
+
+| Ruta | Componente | Rol | Contexto |
+|---|---|---|---|
+| `/v2/admin/configuracion/pagador` | PayerEntityEdit | Admin | Ver/editar Entidad Pagadora (1:1) |
+| `/v2/admin/configuracion/propietarios` | OwnerEntitiesList | Admin | Listado Entidades Propietarias |
+| `/v2/admin/configuracion/propietarios/nuevo` | OwnerEntityCreate | Admin | Crear Owner |
+| `/v2/admin/configuracion/propietarios/:id` | OwnerEntityDetail | Admin | Ver detalle Owner |
+| `/v2/admin/configuracion/propietarios/:id/editar` | OwnerEntityEdit | Admin | Editar Owner |
+
+### 6.3 Tabs internos actualizados (Superadmin)
+
+| Contexto | Tab | Descripcion |
+|---|---|---|
+| ClientAccountDetail | Tab "Propietarios" | Lista OwnerEntities de la cuenta (reemplaza tab "Empresas") |
+| ClientAccountDetail | Tab "Resumen" → Card "Entidad Pagadora" | Datos de la PayerEntity (reemplaza "Empresa Pagadora") |
 
 ---
 
@@ -591,11 +739,18 @@ src/
   pages/v2/
     autoregistro/
       SelfSignup.jsx              # Pagina publica /registro
+    admin/                        # [PLANIFICADO] Area admin de empresa
+      configuracion/
+        PayerEntityEdit.jsx       # [PLANIFICADO] Ver/editar Entidad Pagadora (1:1)
+        owners/
+          OwnerEntitiesList.jsx   # [PLANIFICADO] Listado Entidades Propietarias
+          OwnerEntityCreate.jsx   # [PLANIFICADO] Crear Owner
+          OwnerEntityDetail.jsx   # [PLANIFICADO] Ver/editar Owner
     superadmin/
       DashboardSuperadmin.jsx     # Dashboard superadmin
       ClientAccountsList.jsx      # Listado cuentas cliente (11 columnas, sorting, filtros)
       ClientAccountCreate.jsx     # Wrapper wizard mode=superadmin_create
-      ClientAccountDetail.jsx     # Detalle cuenta (5 tabs: resumen, empresas, alojamientos, usuarios, config)
+      ClientAccountDetail.jsx     # Detalle cuenta (5 tabs: resumen, propietarios, alojamientos, usuarios, config)
       plans/
         PlansList.jsx             # Listado de planes
         PlanCreate.jsx            # Crear plan (7 secciones)
@@ -603,8 +758,8 @@ src/
       services/
         ServicesList.jsx          # Catalogo de servicios
   mocks/
-    clientAccountsData.js         # Mock centralizado: plans, client_accounts, legal_companies,
-                                  #   internal_companies, accommodations, rooms, tenants,
+    clientAccountsData.js         # Mock centralizado: plans, client_accounts, payer_entities,
+                                  #   owner_entities, accommodations, rooms, tenants,
                                   #   users, room_occupancies, consumption, bulletins,
                                   #   surveys, tickets + helpers + enums
     services.mock.js              # Mock: catalogo de servicios con CRUD en memoria
@@ -635,23 +790,32 @@ src/
 | ca-004 | Agencia Gestion Integral | agencia-gestion | agency | active | 15 | 120 | 98 |
 | ca-005 | Pisos Estudiantes Barcelona | estudiantes-bcn | investor | suspended | 4 | 32 | 0 |
 
-### 8.4 Empresas Legales (mockLegalCompanies — 8 registros):
-- ca-001: 1 pagadora (persona_juridica) + 1 fiscal
-- ca-002: 1 pagadora (autonomo) + 1 fiscal
-- ca-003: 1 pagadora (persona_fisica)
-- ca-004: 1 pagadora (persona_juridica) + 2 fiscales
+### 8.4 Entidades Pagadoras (mockPayerEntities — 1 por cuenta):
 
-### 8.5 Empresas Internas (mockInternalCompanies — 6 registros):
-- ca-001: 1 interna oculta (is_hidden=true)
-- ca-002: 1 interna oculta
-- ca-003: 1 interna oculta
-- ca-004: 3 internas visibles ("Cartera Zona Centro", "Cartera Zona Norte", "Cartera Estudiantes UAM")
+> **Mapeo**: Reemplaza a `mockLegalCompanies` con `type='account'`
+
+- ca-001: 1 PayerEntity (persona_juridica, "Invesment Rent Rooms SL")
+- ca-002: 1 PayerEntity (autonomo, "Roberto Garcia Lopez")
+- ca-003: 1 PayerEntity (persona_fisica, "Ana Martinez Ruiz")
+- ca-004: 1 PayerEntity (persona_juridica, "Agencia Gestion Integral SA")
+- ca-005: 1 PayerEntity (persona_juridica, "Pisos Estudiantes BCN SL")
+
+### 8.5 Entidades Propietarias (mockOwnerEntities — segun plan):
+
+> **Mapeo**: Reemplaza a `mockLegalCompanies` con `type='fiscal'` + `mockInternalCompanies`
+
+- ca-001 (Business, max_owners=5): 1 owner ("Invesment Rent Rooms SL", persona_juridica)
+- ca-002 (Investor, max_owners=2): 1 owner ("Roberto Garcia Lopez", autonomo) + 1 owner fiscal adicional
+- ca-003 (Basic, max_owners=1): 1 owner ("Ana Martinez Ruiz", persona_fisica)
+- ca-004 (Agency, max_owners=ilimitado): 3 owners ("Cartera Zona Centro SL", "Cartera Zona Norte SL", "Cartera Estudiantes UAM SL")
 
 ### 8.6 Alojamientos (mockAccommodations — 10 registros):
-- ca-001: 3 alojamientos (Residencia Central, Campus Norte, Moncloa)
-- ca-002: 2 alojamientos (Salamanca, Chamberi)
-- ca-003: 2 alojamientos (Sol, Opera)
-- ca-004: 3 alojamientos vinculados a 3 carteras distintas
+- ca-001: 3 alojamientos → vinculados a 1 OwnerEntity
+- ca-002: 2 alojamientos → vinculados a 1 OwnerEntity
+- ca-003: 2 alojamientos → vinculados a 1 OwnerEntity
+- ca-004: 3 alojamientos → vinculados a 3 OwnerEntities distintas (1 por cartera/owner)
+
+> Cada alojamiento tiene `owner_entity_id` (FK a OwnerEntity) en lugar de `internal_company_id` + `fiscal_company_id`.
 
 ### 8.7 Otros datos mock:
 - mockRooms: 13 habitaciones de muestra
@@ -664,11 +828,14 @@ src/
 - mockTickets: 3 tickets de incidencias
 
 ### 8.8 Helpers exportados:
-- getClientAccountById, getLegalCompaniesByClientAccount, getInternalCompaniesByClientAccount
-- getAccommodationsByClientAccount, getRoomsByAccommodation, getTenantsByClientAccount, getUsersByClientAccount
+- getClientAccountById, getPayerEntityByClientAccount, getOwnerEntitiesByClientAccount
+- getAccommodationsByClientAccount, getAccommodationsByOwnerEntity, getRoomsByAccommodation, getTenantsByClientAccount, getUsersByClientAccount
 - getPlanById, getPlanByCode, getActivePlans, getPlanStatusLabel, getPlanStatusColor, formatLimit
 - getPlanLabel, getPlanColor, getStatusLabel, getStatusColor
 - getRoomStatusLabel, getRoomStatusColor, formatDate, formatCurrency
+- getOwnerEntityById, getActiveOwnerEntities, getOwnerEntityDisplayName
+
+> **Mapeo legacy**: `getLegalCompaniesByClientAccount` y `getInternalCompaniesByClientAccount` se reemplazan por `getPayerEntityByClientAccount` y `getOwnerEntitiesByClientAccount`.
 
 ---
 
@@ -692,43 +859,87 @@ src/
 
 ## 10) Proximos pasos para backend
 
-Este documento sirve como base para:
+Este documento sirve como base para disenar el backend con el **modelo Payer/Owner** (sin usar los conceptos legacy de empresas internas/fiscales).
 
-1. **Disenar las tablas en Supabase** (Postgres):
-   - `plans` — campos del punto 4.1
-   - `services_catalog` — campos del punto 4.2
-   - `plan_services` — tabla pivot (plan_id, service_id)
-   - `client_accounts` — campos del punto 4.3 + plan_id FK
-   - `subscriptions` — billing_period, status, start_date, end_date, plan_id, client_account_id
-   - `legal_companies` — campos del punto 4.5 (pagadora + fiscales)
-   - `internal_companies` — campos del punto 4.6 (empresas internas / carteras)
-   - `accommodations` — campos del punto 4.7
-   - `rooms` — campos del punto 4.8
-   - `tenants` — campos del punto 4.9
-   - `room_occupancies` — campos del punto 4.10
-   - `profiles` (users) — campos del punto 4.11
-   - Tablas adicionales existentes en mock: `consumption_data`, `bulletins`, `surveys`, `tickets`
+### 10.1 Disenar las tablas en Supabase (Postgres)
 
-2. **Crear Edge Functions** (Supabase):
-   - `provision_client_account`: orquesta la creacion de cuenta (crea client_account + legal_company + internal_company oculta + invita admins + crea subscription)
-   - `manage_plans`: CRUD de planes con validaciones de negocio
-   - `manage_services`: CRUD de catalogo de servicios
-   - `manage_client_accounts`: operaciones sobre cuentas (suspender, reactivar, cambiar plan, cancelar)
-   - `manage_legal_companies`: CRUD de empresas legales por cuenta
-   - `manage_internal_companies`: CRUD de empresas internas (solo visible para Agency)
+| Tabla | Seccion ref. | Descripcion |
+|---|---|---|
+| `plans` | 4.1 | Planes de suscripcion con pricing, limites, branding, reglas |
+| `services_catalog` | 4.2 | Catalogo de servicios disponibles |
+| `plan_services` | — | Tabla pivot (plan_id, service_id) |
+| `client_accounts` | 4.3 | Cuentas cliente (tenant) + plan_id FK |
+| `subscriptions` | — | billing_period, status, start_date, end_date, plan_id, client_account_id |
+| **`payer_entities`** | **4.5** | **Entidad Pagadora (1:1 con client_account, FK unique)** |
+| **`owner_entities`** | **4.6** | **Entidades Propietarias (1..N por client_account segun plan)** |
+| `accommodations` | 4.7 | Alojamientos — **FK `owner_entity_id`** (NO internal_company_id ni fiscal_company_id) |
+| `rooms` | 4.8 | Habitaciones |
+| `tenants` | 4.9 | Inquilinos |
+| `room_occupancies` | 4.10 | Historico de ocupacion |
+| `profiles` | 4.11 | Usuarios — **FK `owner_entity_id`** opcional (para viewer restringido) |
+| `consumption_data` | — | Datos de consumo diario |
+| `bulletins` | — | Boletines energeticos |
+| `surveys` | — | Encuestas |
+| `tickets` | — | Tickets de incidencias |
 
-3. **Aplicar RLS**:
-   - Plans y Services: solo lectura publica (planes activos y visibles); escritura solo superadmin
-   - Client Accounts: superadmin ve todas; admin solo su propia cuenta
-   - Legal Companies: filtrada por client_account_id
-   - Internal Companies: filtrada por client_account_id; viewer solo ve su internal_company_id
-   - Accommodations, Rooms, Tenants, Occupancies: filtrada por client_account_id; viewer por internal_company_id
-   - Profiles: superadmin ve todos; admin ve usuarios de su cuenta; student ve solo su perfil
+**Constraints importantes en `payer_entities`:**
+- `UNIQUE(client_account_id)` — garantiza relacion 1:1
+- `CHECK(status IN ('active', 'suspended', 'disabled'))`
 
-4. **Integrar pasarela de pago** (Stripe u otra):
-   - Tokenizar tarjeta, NO almacenar datos sensibles
-   - Crear customer y subscription en pasarela
-   - Webhooks para confirmar pago
+**Constraints importantes en `owner_entities`:**
+- `CHECK(status IN ('active', 'suspended', 'disabled'))`
+- Validacion a nivel de app/Edge Function: `COUNT(*) < plan.max_owners` (o ilimitado si -1)
+
+**Constraints importantes en `accommodations`:**
+- `FK owner_entity_id REFERENCES owner_entities(id)` — obligatorio
+- Validacion a nivel de app: owner_entity.status = 'active'
+- Validacion a nivel de app: cambio de owner solo si plan.allows_owner_change = true (Agency)
+
+### 10.2 Crear Edge Functions (Supabase)
+
+| Edge Function | Descripcion |
+|---|---|
+| `provision_client_account` | Orquesta creacion de cuenta: crea client_account + **payer_entity** + **owner_entity** (1 por defecto) + invita admins + crea subscription |
+| `manage_plans` | CRUD de planes con validaciones de negocio |
+| `manage_services` | CRUD de catalogo de servicios |
+| `manage_client_accounts` | Operaciones sobre cuentas (suspender, reactivar, cambiar plan, cancelar) |
+| **`manage_payer_entities`** | Ver/editar Entidad Pagadora por cuenta (solo 1, no permite crear/eliminar) |
+| **`manage_owner_entities`** | CRUD de Entidades Propietarias: crear (validando max_owners), editar, desactivar/reactivar |
+| `manage_accommodations` | CRUD de alojamientos con validacion de `owner_entity_id` y regla de cambio de owner |
+
+**Validaciones en Edge Functions:**
+- `manage_owner_entities.create`: verificar `COUNT(owner_entities WHERE client_account_id = X AND status != 'disabled') < plan.max_owners`
+- `manage_owner_entities.deactivate`: verificar que no es el unico owner activo de la cuenta
+- `manage_accommodations.create`: verificar que `owner_entity_id` existe y esta activo
+- `manage_accommodations.update_owner`: verificar que `plan.allows_owner_change = true` (solo Agency)
+- `manage_client_accounts.change_plan`: validar que el uso actual no excede limites del plan destino (owners, accommodations, rooms, users)
+
+### 10.3 Aplicar RLS
+
+| Tabla | Regla |
+|---|---|
+| plans, services_catalog | Solo lectura publica (planes activos y visibles); escritura solo superadmin |
+| client_accounts | Superadmin ve todas; admin solo su propia cuenta |
+| **payer_entities** | Filtrada por client_account_id; superadmin ve todas; admin solo la de su cuenta |
+| **owner_entities** | Filtrada por client_account_id; superadmin ve todas; admin ve las de su cuenta; viewer solo ve su owner_entity_id |
+| accommodations | Filtrada por client_account_id; viewer filtrada ademas por owner_entity_id |
+| rooms, tenants, room_occupancies | Filtrada por client_account_id; viewer por owner_entity_id (via accommodation) |
+| profiles | Superadmin ve todos; admin ve usuarios de su cuenta; student ve solo su perfil |
+
+### 10.4 Integrar pasarela de pago (Stripe u otra)
+
+- Tokenizar tarjeta, NO almacenar datos sensibles
+- Crear customer y subscription en pasarela
+- Webhooks para confirmar pago
+
+### 10.5 Reglas de negocio para plan downgrade
+
+Al cambiar de plan (ej: Business → Investor):
+- Verificar `owners_count <= new_plan.max_owners` → Warning: "La cuenta tiene X Entidades Propietarias pero el plan destino solo permite Y"
+- Verificar `accommodations_count <= new_plan.max_accommodations`
+- Verificar `rooms_count <= new_plan.max_rooms`
+- Verificar limites de usuarios (admin, api, viewer)
+- Si excede cualquier limite → bloquear cambio o exigir desactivar entidades excedentes primero
 
 ---
 
@@ -756,20 +967,94 @@ Este documento sirve como base para:
 - [x] Logo o placeholder con inicial y color primario en la tabla
 - [x] Badges de plan y estado con colores
 - [x] Acciones por fila: ver detalle, editar, suspender/reactivar, gestionar usuarios
-- [x] Detalle de cuenta con 5 tabs (Resumen, Empresas, Alojamientos, Usuarios, Configuracion)
+- [x] Detalle de cuenta con 5 tabs (Resumen, Propietarios, Alojamientos, Usuarios, Configuracion)
 - [x] Header de detalle con logo/placeholder, nombre, slug, plan badge, estado badge
 - [x] KPIs en tab Resumen (alojamientos, habitaciones, ocupadas, % ocupacion)
-- [x] Tab Empresas muestra fiscales + internas (internas solo si plan=agency)
 - [x] Tab Alojamientos con tabla y barras de progreso
 - [x] Tab Usuarios con tabla y roles
-- [x] Tab Configuracion con opciones de cambiar plan, branding, datos fiscales y zona de peligro
+- [x] Tab Configuracion con opciones de cambiar plan, branding, entidad pagadora y zona de peligro
 - [x] Crear cuenta desde superadmin usando wizard mode=superadmin_create
 
-### Pendientes de implementar en UI:
+### Entidades Propietarias (OwnerEntity) — PENDIENTE:
+- [ ] Tab "Propietarios" en ClientAccountDetail reemplaza tab "Empresas"
+- [ ] Lista Owners con columnas: nombre, tipo entidad, NIF/CIF, estado, fecha alta, num alojamientos
+- [ ] Boton "+ Nuevo Owner" solo visible si `owners_count < max_owners` (o plan Agency)
+- [ ] Warning si limite alcanzado: "Has alcanzado el maximo de Entidades Propietarias..."
+- [ ] Indicador "Propietarios: X / Y" (Y = max_owners del plan)
+- [ ] CRUD Owner (Admin): lista, crear, editar, desactivar/reactivar
+- [ ] Validaciones al crear: campos obligatorios segun entity_type, formato tax_id
+- [ ] Bloqueo si excede max_owners al crear
+- [ ] Modal de confirmacion al desactivar Owner con alojamientos activos
+- [ ] No permitir desactivar el unico Owner activo de la cuenta
+
+### Entidad Pagadora (PayerEntity) — PENDIENTE:
+- [ ] Pagina ver/editar Entidad Pagadora (Admin)
+- [ ] No se puede eliminar (siempre existe 1)
+- [ ] Validar campos obligatorios
+- [ ] Card "Entidad Pagadora" en tab Resumen de ClientAccountDetail
+
+### Alojamientos + Owner — PENDIENTE:
+- [ ] Selector Owner obligatorio al crear alojamiento
+- [ ] Solo muestra owners activos en selector
+- [ ] CTA si no hay owners: "Crea tu primera Entidad Propietaria"
+- [ ] Owner read-only al editar (Basic/Investor/Business) con tooltip
+- [ ] Owner editable al editar (Agency) con modal de confirmacion
+- [ ] Columna Owner en tab Alojamientos de ClientAccountDetail
+
+### Pendientes de implementar en UI (otros):
 - [ ] ServiceCreate, ServiceEdit, ServiceDetail (paginas individuales)
 - [ ] Duplicar plan desde listado o edicion
 - [ ] Archivar plan con modal (actualmente usa confirm)
 - [ ] Integracion real del catalogo dinamico de servicios en PlanCreate (actualmente usa AVAILABLE_SERVICES estatico)
 - [ ] Edicion inline de datos de cuenta (tab Configuracion actualmente muestra botones mock)
-- [ ] Cambio de plan desde detalle de cuenta (actualmente mock)
+- [ ] Cambio de plan desde detalle de cuenta (actualmente mock) + validacion downgrade por limites de owners/accommodations/rooms
 - [ ] Gestion real de usuarios desde detalle (actualmente navega a ruta sin componente dedicado)
+
+---
+
+## 12) Jerarquia final del modelo de datos
+
+```
+SmartRent Systems (SaaS)
+  └─ ClientAccount (Tenant / Contrato)
+       ├─ PayerEntity (1:1) — Quien paga la suscripcion SaaS
+       ├─ OwnerEntity (1..N segun plan) — Quien posee/opera los alojamientos
+       │    └─ Accommodation (1..N por Owner)
+       │         └─ Room (1..N por Accommodation)
+       │              └─ Occupancy → Tenant
+       ├─ Users (admin, api, viewer [con owner_entity_id opcional], student)
+       ├─ Subscription (plan + billing_period)
+       └─ Branding (colores, logo — segun plan)
+```
+
+---
+
+## 13) Mapeo antiguo → nuevo (referencia para migracion)
+
+| Concepto antiguo (legacy v1) | Concepto nuevo (v2) | Notas |
+|---|---|---|
+| `legal_companies` type=account | `payer_entities` (PayerEntity) | 1:1 con ClientAccount |
+| `legal_companies` type=fiscal | `owner_entities` (OwnerEntity) | 1..N segun plan |
+| `internal_companies` (is_hidden=true) | Se elimina del flujo | Era transparente al usuario; ahora el Owner es explicito |
+| `internal_companies` (is_hidden=false, Agency) | `owner_entities` (visibles) | Las "carteras" pasan a ser Owners |
+| `accommodations.internal_company_id` | `accommodations.owner_entity_id` | FK al Owner |
+| `accommodations.fiscal_company_id` | Se elimina | El Owner YA es la entidad fiscal/propietaria |
+| `users.internal_company_id` (viewer) | `users.owner_entity_id` (viewer) | Viewer restringido a un Owner |
+| Tab "Empresas" en ClientAccountDetail | Tab "Propietarios" | Reemplaza con nueva funcionalidad |
+| `LEGAL_COMPANY_TYPES` (account, fiscal) | `ENTITY_TYPE` (persona_fisica, autonomo, persona_juridica) | Nuevo enum de tipo de entidad |
+| `LEGAL_FORMS` | `ENTITY_TYPE` | Mismo concepto, distinto nombre |
+
+---
+
+## 14) Nota sobre gestion legacy (v1)
+
+> **IMPORTANTE**: No tocar la gestion legacy de empresas de la **version v1** del sistema.
+> Esto se refiere a las pantallas y rutas de la estructura v1 (`/clientes/empresas`, `CompaniesList.jsx`, `CompanyCreate.jsx`, etc.)
+> que usan los conceptos de `internal_companies` y `legal_companies`.
+>
+> - Mantenerlas sin cambios y **fuera del flujo principal v2**.
+> - Las pantallas v1 legacy pueden quedar ocultas o no navegables, pero NO se eliminan ni se refactorizan.
+> - Esto permite compatibilidad hacia atras mientras se completa la migracion al nuevo modelo v2 con PayerEntity + OwnerEntity.
+>
+> **En la v2**, los conceptos de "Empresas Internas" y "Empresas Fiscales" se reemplazan completamente
+> por **Entidad Pagadora** y **Entidades Propietarias** (ver seccion 13 — Mapeo antiguo → nuevo).

@@ -1,5 +1,5 @@
 // src/mocks/plans.mock.js
-// Planes de suscripción para SmartRent
+// Planes de suscripción para SmartRoom Rental Platform
 
 import { getServiceByKey, getActiveServices } from "./services.mock";
 

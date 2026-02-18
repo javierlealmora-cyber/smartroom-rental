@@ -1,75 +1,76 @@
 // =============================================================================
 // src/components/wizards/ClientAccountWizard.jsx
 // =============================================================================
-// Wizard multi-paso para crear Cuenta Cliente
+// Wizard 6 pasos para crear Cuenta Cliente
 // Modos: "self_signup" (autoregistro) | "superadmin_create" (superadmin)
-// Pasos: 1-Datos Cuenta, 2-Usuarios Admin, 3-Datos Plan, 4-Metodo Pago, 5-Verificacion
+// Pasos: A-Contrato, B-Branding, C-EntidadPagadora, D-Admins, E-Verificacion, F-Pago
+// Conecta con Edge Functions: wizard_submit / provision_client_account_superadmin
 // =============================================================================
 
 import { useState, useCallback } from "react";
 import WizardStepper from "./WizardStepper";
-import StepDatosCuenta from "./steps/StepDatosCuenta";
+import StepContrato from "./steps/StepContrato";
+import StepBranding from "./steps/StepBranding";
+import StepEntidadPagadora from "./steps/StepEntidadPagadora";
 import StepUsuariosAdmin from "./steps/StepUsuariosAdmin";
-import StepDatosPlan from "./steps/StepDatosPlan";
-import StepMetodoPago from "./steps/StepMetodoPago";
 import StepVerificacion from "./steps/StepVerificacion";
+import StepPago from "./steps/StepPago";
 import { getPlanByCode } from "../../mocks/clientAccountsData";
 
-// Definicion de pasos (nuevo orden)
 const WIZARD_STEPS = [
-  { id: "datos_cuenta", label: "Datos Cuenta" },
-  { id: "usuarios_admin", label: "Usuarios Admin" },
-  { id: "datos_plan", label: "Datos del Plan" },
-  { id: "metodo_pago", label: "Metodo de Pago" },
+  { id: "contrato", label: "Contrato" },
+  { id: "branding", label: "Branding" },
+  { id: "entidad_pagadora", label: "Entidad Pagadora" },
+  { id: "usuarios_admin", label: "Admins" },
   { id: "verificacion", label: "Verificacion" },
+  { id: "pago", label: "Pago" },
 ];
 
-// Estado inicial del formulario
+const TOTAL_STEPS = WIZARD_STEPS.length;
+
+// Estado inicial del formulario (nuevo esquema)
 const getInitialFormData = () => ({
-  // Paso 1: Datos Cuenta + Slug
-  full_name: "",
-  email: "",
-  phone: "",
-  start_date: new Date().toISOString().split("T")[0],
+  // Paso A: Contrato
+  account_name: "",
   slug: "",
-
-  // Paso 2: Usuarios Admin
-  admins: [
-    { email: "", full_name: "", phone: "", is_titular: true },
-    { email: "", full_name: "", phone: "", is_titular: false },
-    { email: "", full_name: "", phone: "", is_titular: false },
-  ],
-
-  // Paso 3: Datos del Plan
+  contact_email: "",
+  contact_phone: "",
+  start_date: new Date().toISOString().split("T")[0],
   plan_code: "basic",
-  payment_period: "",
+  billing_cycle: "monthly",
 
-  // Paso 4: Facturacion y Pago (Entidad Pagadora + Branding + Tarjeta)
+  // Paso B: Branding
+  brand_name: "",
+  primary_color: "#111827",
+  secondary_color: "",
+  logo_url: "",
+
+  // Paso C: Entidad Pagadora
   payer_type: "",
   payer_legal_name: "",
   payer_first_name: "",
   payer_last_name_1: "",
   payer_last_name_2: "",
   payer_tax_id: "",
-  payer_address_line1: "",
-  payer_address_number: "",
-  payer_postal_code: "",
+  payer_street: "",
+  payer_street_number: "",
+  payer_address_extra: "",
+  payer_zip: "",
   payer_city: "",
   payer_province: "",
   payer_country: "Espana",
   payer_billing_email: "",
   payer_billing_phone: "",
-  brand_name: "",
-  primary_color: "#111827",
-  secondary_color: "",
-  logo_url: "",
-  card_number: "",
-  card_holder: "",
-  card_expiry: "",
-  card_cvv: "",
 
-  // Extra superadmin
-  superadmin_status: "ACTIVA",
+  // Paso D: Usuarios Admin
+  admins: [
+    { email: "", full_name: "", phone: "", is_titular: true },
+    { email: "", full_name: "", phone: "", is_titular: false },
+    { email: "", full_name: "", phone: "", is_titular: false },
+  ],
+
+  // Paso E: Verificacion (superadmin)
+  superadmin_status: "draft",
 });
 
 // Generar slug automatico
@@ -84,68 +85,44 @@ const generateSlug = (name) => {
     .trim();
 };
 
-// Reglas de validacion por paso
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Validacion por paso
 const validateStep = (stepIndex, formData, mode) => {
   const errs = {};
 
-  // Paso 0: Datos Cuenta + Slug
+  // Paso A: Contrato
   if (stepIndex === 0) {
-    if (!formData.full_name?.trim() || formData.full_name.trim().length < 3)
-      errs.full_name = "Nombre requerido (min. 3 caracteres)";
-    if (!formData.email?.trim())
-      errs.email = "Email requerido";
-    else if (!EMAIL_REGEX.test(formData.email))
-      errs.email = "Email invalido";
-    if (!formData.phone?.trim())
-      errs.phone = "Telefono requerido";
+    if (!formData.account_name?.trim() || formData.account_name.trim().length < 3)
+      errs.account_name = "Nombre requerido (min. 3 caracteres)";
+    if (!formData.contact_email?.trim())
+      errs.contact_email = "Email requerido";
+    else if (!EMAIL_REGEX.test(formData.contact_email))
+      errs.contact_email = "Email invalido";
+    if (!formData.contact_phone?.trim())
+      errs.contact_phone = "Telefono requerido";
     if (!formData.start_date)
       errs.start_date = "Fecha de inicio requerida";
     if (!formData.slug?.trim())
       errs.slug = "Slug requerido";
     else if (!/^[a-z0-9-]+$/.test(formData.slug))
       errs.slug = "Solo letras minusculas, numeros y guiones";
-  }
-
-  // Paso 1: Usuarios Admin
-  if (stepIndex === 1) {
-    if (!formData.admins[0].email?.trim())
-      errs.admins_0_email = "Email del admin titular requerido";
-    else if (!EMAIL_REGEX.test(formData.admins[0].email))
-      errs.admins_0_email = "Email invalido";
-    if (!formData.admins[0].full_name?.trim())
-      errs.admins_0_full_name = "Nombre del admin titular requerido";
-    if (!formData.admins[0].phone?.trim())
-      errs.admins_0_phone = "Telefono del admin titular requerido";
-
-    // Validar opcionales si tienen email parcial
-    [1, 2].forEach((i) => {
-      if (formData.admins[i].email?.trim()) {
-        if (!EMAIL_REGEX.test(formData.admins[i].email))
-          errs[`admins_${i}_email`] = "Email invalido";
-      }
-    });
-
-    // Emails duplicados entre admins
-    const filledEmails = formData.admins
-      .map((a) => a.email?.trim().toLowerCase())
-      .filter(Boolean);
-    if (new Set(filledEmails).size !== filledEmails.length)
-      errs.admins_duplicate = "Los emails de admin no pueden repetirse";
-  }
-
-  // Paso 2: Datos del Plan
-  if (stepIndex === 2) {
     if (!formData.plan_code)
       errs.plan_code = "Seleccione un plan";
-    if (mode === "self_signup" && !formData.payment_period)
-      errs.payment_period = "Periodo de pago requerido";
+    if (!formData.billing_cycle)
+      errs.billing_cycle = "Seleccione ciclo de facturacion";
   }
 
-  // Paso 3: Facturacion y Pago (Entidad Pagadora + Branding + Tarjeta)
-  if (stepIndex === 3) {
-    // Entidad Pagadora
+  // Paso B: Branding (solo validar formatos si hay valor)
+  if (stepIndex === 1) {
+    if (formData.primary_color && !/^#[0-9A-Fa-f]{6}$/.test(formData.primary_color))
+      errs.primary_color = "Formato hex invalido (ej: #1E40AF)";
+    if (formData.secondary_color && !/^#[0-9A-Fa-f]{6}$/.test(formData.secondary_color))
+      errs.secondary_color = "Formato hex invalido";
+  }
+
+  // Paso C: Entidad Pagadora
+  if (stepIndex === 2) {
     if (!formData.payer_type)
       errs.payer_type = "Seleccione tipo de entidad";
     if (formData.payer_type === "persona_juridica" && !formData.payer_legal_name?.trim())
@@ -156,10 +133,10 @@ const validateStep = (stepIndex, formData, mode) => {
       errs.payer_last_name_1 = "Primer apellido requerido";
     if (!formData.payer_tax_id?.trim())
       errs.payer_tax_id = "CIF/NIF requerido";
-    if (!formData.payer_address_line1?.trim())
-      errs.payer_address_line1 = "Direccion requerida";
-    if (!formData.payer_postal_code?.trim())
-      errs.payer_postal_code = "Codigo postal requerido";
+    if (!formData.payer_street?.trim())
+      errs.payer_street = "Direccion requerida";
+    if (!formData.payer_zip?.trim())
+      errs.payer_zip = "Codigo postal requerido";
     if (!formData.payer_city?.trim())
       errs.payer_city = "Ciudad requerida";
     if (!formData.payer_country?.trim())
@@ -168,66 +145,109 @@ const validateStep = (stepIndex, formData, mode) => {
       errs.payer_billing_email = "Email de facturacion requerido";
     else if (!EMAIL_REGEX.test(formData.payer_billing_email))
       errs.payer_billing_email = "Email invalido";
-
-    // Branding
-    if (formData.primary_color && !/^#[0-9A-Fa-f]{6}$/.test(formData.primary_color))
-      errs.primary_color = "Formato hex invalido (ej: #1E40AF)";
-    if (formData.secondary_color && !/^#[0-9A-Fa-f]{6}$/.test(formData.secondary_color))
-      errs.secondary_color = "Formato hex invalido";
-
-    // Tarjeta (obligatorio en self_signup)
-    if (mode === "self_signup") {
-      const cardDigits = formData.card_number?.replace(/\s/g, "") || "";
-      if (!cardDigits)
-        errs.card_number = "Numero de tarjeta requerido";
-      else if (cardDigits.length < 13 || cardDigits.length > 16)
-        errs.card_number = "Numero de tarjeta invalido (13-16 digitos)";
-      if (!formData.card_holder?.trim())
-        errs.card_holder = "Titular de la tarjeta requerido";
-      if (!formData.card_expiry?.trim())
-        errs.card_expiry = "Fecha de caducidad requerida";
-      else if (!/^\d{2}\/\d{2}$/.test(formData.card_expiry))
-        errs.card_expiry = "Formato invalido (MM/AA)";
-      else {
-        const [mm] = formData.card_expiry.split("/").map(Number);
-        if (mm < 1 || mm > 12) errs.card_expiry = "Mes invalido";
-      }
-      if (!formData.card_cvv?.trim())
-        errs.card_cvv = "CVV requerido";
-      else if (formData.card_cvv.length < 3)
-        errs.card_cvv = "CVV invalido (3-4 digitos)";
-    }
   }
+
+  // Paso D: Usuarios Admin
+  if (stepIndex === 3) {
+    if (!formData.admins[0].email?.trim())
+      errs.admins_0_email = "Email del admin titular requerido";
+    else if (!EMAIL_REGEX.test(formData.admins[0].email))
+      errs.admins_0_email = "Email invalido";
+    if (!formData.admins[0].full_name?.trim())
+      errs.admins_0_full_name = "Nombre del admin titular requerido";
+    if (!formData.admins[0].phone?.trim())
+      errs.admins_0_phone = "Telefono del admin titular requerido";
+
+    [1, 2].forEach((i) => {
+      if (formData.admins[i].email?.trim()) {
+        if (!EMAIL_REGEX.test(formData.admins[i].email))
+          errs[`admins_${i}_email`] = "Email invalido";
+      }
+    });
+
+    const filledEmails = formData.admins
+      .map((a) => a.email?.trim().toLowerCase())
+      .filter(Boolean);
+    if (new Set(filledEmails).size !== filledEmails.length)
+      errs.admins_duplicate = "Los emails de admin no pueden repetirse";
+  }
+
+  // Paso E: Verificacion — no tiene validacion propia
+  // Paso F: Pago — no tiene validacion de campos (Stripe maneja)
 
   return errs;
 };
 
-export default function ClientAccountWizard({ mode = "self_signup", onFinalize, onCancel, initialData = null }) {
+export default function ClientAccountWizard({
+  mode = "self_signup",
+  onFinalize,
+  onCancel,
+  initialData = null,
+  submitting = false,
+  submitError = null,
+  initialPlanCode = "",
+  initialBillingCycle = "",
+  userEmail = "",
+  userFullName = "",
+  userPhone = "",
+}) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState(initialData || getInitialFormData());
+  const [formData, setFormData] = useState(() => {
+    const base = initialData || getInitialFormData();
+    if (initialPlanCode) base.plan_code = initialPlanCode;
+    if (initialBillingCycle) base.billing_cycle = initialBillingCycle;
+    // Pre-fill from authenticated user data
+    if (userEmail) {
+      base.contact_email = base.contact_email || userEmail;
+      base.payer_billing_email = base.payer_billing_email || userEmail;
+      base.admins[0].email = base.admins[0].email || userEmail;
+    }
+    if (userFullName) {
+      base.admins[0].full_name = base.admins[0].full_name || userFullName;
+    }
+    if (userPhone) {
+      base.contact_phone = base.contact_phone || userPhone;
+      base.admins[0].phone = base.admins[0].phone || userPhone;
+    }
+    return base;
+  });
   const [errors, setErrors] = useState({});
-  const [stepStatuses, setStepStatuses] = useState(["current", "inactive", "inactive", "inactive", "inactive"]);
+  const [stepStatuses, setStepStatuses] = useState(
+    Array(TOTAL_STEPS).fill("inactive").map((s, i) => (i === 0 ? "current" : s))
+  );
 
   const selectedPlan = getPlanByCode(formData.plan_code);
+
+  // Determinar si paso F (Pago) se muestra
+  const showPaymentStep = mode === "self_signup";
+  const lastStepIndex = showPaymentStep ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2;
+  const verificationStepIndex = TOTAL_STEPS - 2; // paso E
 
   const handleChange = useCallback((field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // Auto-generar slug al cambiar nombre
-      if (field === "full_name") {
+      if (field === "account_name") {
         newData.slug = generateSlug(value);
       }
 
-      // Auto-copiar email titular a billing_email si esta vacio
-      if (field === "email" && !prev.payer_billing_email) {
+      if (field === "contact_email" && !prev.payer_billing_email) {
         newData.payer_billing_email = value;
+      }
+
+      // Auto-fill admin titular from contact data
+      if (field === "contact_email" && !prev.admins[0].email) {
+        newData.admins = [...prev.admins];
+        newData.admins[0] = { ...newData.admins[0], email: value };
+      }
+      if (field === "contact_phone" && !prev.admins[0].phone) {
+        newData.admins = [...prev.admins];
+        newData.admins[0] = { ...newData.admins[0], phone: value };
       }
 
       return newData;
     });
 
-    // Limpiar error del campo
     setErrors((prev) => {
       const next = { ...prev };
       delete next[field];
@@ -237,7 +257,6 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
 
   const handleAdminsChange = useCallback((admins) => {
     setFormData((prev) => ({ ...prev, admins }));
-    // Limpiar errores de admins
     setErrors((prev) => {
       const next = { ...prev };
       Object.keys(next).forEach((k) => {
@@ -256,8 +275,7 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
   }, []);
 
   const handleNext = () => {
-    // Validar paso actual (excepto el ultimo)
-    if (currentStep < 4) {
+    if (currentStep < lastStepIndex) {
       const stepErrors = validateStep(currentStep, formData, mode);
       if (Object.keys(stepErrors).length > 0) {
         setErrors(stepErrors);
@@ -265,12 +283,16 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
         return;
       }
 
-      // Marcar actual como complete
       updateStepStatuses(currentStep, "complete");
-
       const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      updateStepStatuses(nextStep, "current");
+
+      // Saltar paso F si es superadmin
+      const effectiveNext = !showPaymentStep && nextStep === TOTAL_STEPS - 1
+        ? TOTAL_STEPS - 2
+        : nextStep;
+
+      setCurrentStep(effectiveNext);
+      updateStepStatuses(effectiveNext, "current");
       setErrors({});
     }
   };
@@ -288,6 +310,9 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
   };
 
   const handleStepClick = (targetStep) => {
+    // No permitir ir al paso de pago en superadmin
+    if (!showPaymentStep && targetStep === TOTAL_STEPS - 1) return;
+
     if (targetStep < currentStep || stepStatuses[targetStep] === "complete" || stepStatuses[targetStep] === "error") {
       if (targetStep > currentStep) {
         const stepErrors = validateStep(currentStep, formData, mode);
@@ -322,12 +347,12 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
   };
 
   const handleFinalize = () => {
-    // Validar TODOS los pasos (0-3)
+    // Validar pasos 0-3 (A-D)
     let allValid = true;
     const allErrors = {};
     const newStatuses = [...stepStatuses];
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i <= 3; i++) {
       const stepErrors = validateStep(i, formData, mode);
       if (Object.keys(stepErrors).length > 0) {
         allValid = false;
@@ -338,62 +363,106 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
       }
     }
 
-    newStatuses[4] = "current";
+    newStatuses[verificationStepIndex] = "current";
     setStepStatuses(newStatuses);
     setErrors(allErrors);
 
-    if (!allValid) {
-      return;
+    if (!allValid) return;
+
+    // Construir payload para Edge Function
+    const payload = {
+      account_name: formData.account_name,
+      slug: formData.slug,
+      plan_code: formData.plan_code,
+      billing_cycle: formData.billing_cycle,
+      start_date: formData.start_date,
+      contact_email: formData.contact_email,
+      contact_phone: formData.contact_phone,
+      branding_name: formData.brand_name || null,
+      branding_primary_color: formData.primary_color || null,
+      branding_secondary_color: formData.secondary_color || null,
+      branding_logo_url: formData.logo_url || null,
+      payer: {
+        legal_type: formData.payer_type,
+        legal_name: formData.payer_legal_name || null,
+        first_name: formData.payer_first_name || null,
+        last_name1: formData.payer_last_name_1 || null,
+        last_name2: formData.payer_last_name_2 || null,
+        tax_id: formData.payer_tax_id,
+        billing_email: formData.payer_billing_email,
+        phone: formData.payer_billing_phone || null,
+        country: formData.payer_country || "Espana",
+        province: formData.payer_province || null,
+        city: formData.payer_city,
+        zip: formData.payer_zip,
+        street: formData.payer_street,
+        street_number: formData.payer_street_number || null,
+        address_extra: formData.payer_address_extra || null,
+      },
+      admins: formData.admins
+        .filter((a) => a.email?.trim() && (mode === "superadmin_create" || !a.is_titular))
+        .map((a) => ({
+          email: a.email.trim(),
+          full_name: a.full_name?.trim() || null,
+          is_primary: !!a.is_titular,
+        })),
+      mode,
+    };
+
+    // Superadmin: incluir status elegido
+    if (mode === "superadmin_create") {
+      payload.status = formData.superadmin_status || "draft";
     }
 
-    // Llamar callback
-    onFinalize(formData, formData.superadmin_status);
+    onFinalize(payload);
   };
 
-  const isLastStep = currentStep === 4;
+  const isLastStep = currentStep === lastStepIndex;
+
+  // Pasos visibles (sin paso F para superadmin)
+  const visibleSteps = showPaymentStep
+    ? WIZARD_STEPS
+    : WIZARD_STEPS.slice(0, TOTAL_STEPS - 1);
 
   return (
     <div style={styles.wizardContainer}>
-      {/* Stepper */}
       <WizardStepper
-        steps={WIZARD_STEPS}
+        steps={visibleSteps}
         currentStep={currentStep}
         stepStatuses={stepStatuses}
         onStepClick={handleStepClick}
       />
 
-      {/* Contenido del paso actual */}
       <div style={styles.stepContent}>
         {currentStep === 0 && (
-          <StepDatosCuenta
+          <StepContrato
+            formData={formData}
+            errors={errors}
+            onChange={handleChange}
+            mode={mode}
+          />
+        )}
+        {currentStep === 1 && (
+          <StepBranding
+            formData={formData}
+            errors={errors}
+            onChange={handleChange}
+            selectedPlan={selectedPlan}
+          />
+        )}
+        {currentStep === 2 && (
+          <StepEntidadPagadora
             formData={formData}
             errors={errors}
             onChange={handleChange}
           />
         )}
-        {currentStep === 1 && (
+        {currentStep === 3 && (
           <StepUsuariosAdmin
             formData={formData}
             errors={errors}
             onAdminsChange={handleAdminsChange}
             mode={mode}
-          />
-        )}
-        {currentStep === 2 && (
-          <StepDatosPlan
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-            mode={mode}
-          />
-        )}
-        {currentStep === 3 && (
-          <StepMetodoPago
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-            mode={mode}
-            selectedPlan={selectedPlan}
           />
         )}
         {currentStep === 4 && (
@@ -407,9 +476,17 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
             onChange={handleChange}
           />
         )}
+        {currentStep === 5 && showPaymentStep && (
+          <StepPago
+            formData={formData}
+            mode={mode}
+            selectedPlan={selectedPlan}
+            submitting={submitting}
+            submitError={submitError}
+          />
+        )}
       </div>
 
-      {/* Footer de acciones */}
       <div style={styles.footer}>
         <div style={styles.footerLeft}>
           <button type="button" style={styles.cancelButton} onClick={onCancel}>
@@ -430,8 +507,20 @@ export default function ClientAccountWizard({ mode = "self_signup", onFinalize, 
               Siguiente &rarr;
             </button>
           ) : (
-            <button type="button" style={styles.finalizeButton} onClick={handleFinalize}>
-              {mode === "self_signup" ? "Finalizar Registro" : "Crear Cuenta"}
+            <button
+              type="button"
+              style={{
+                ...styles.finalizeButton,
+                ...(submitting ? styles.finalizeButtonDisabled : {}),
+              }}
+              onClick={handleFinalize}
+              disabled={submitting}
+            >
+              {submitting
+                ? "Procesando..."
+                : mode === "self_signup"
+                  ? "Finalizar y Pagar"
+                  : "Crear Cuenta"}
             </button>
           )}
         </div>
@@ -521,5 +610,9 @@ const styles = {
     cursor: "pointer",
     color: "#FFFFFF",
     transition: "all 0.2s ease",
+  },
+  finalizeButtonDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
   },
 };

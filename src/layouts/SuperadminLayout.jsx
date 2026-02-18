@@ -9,7 +9,7 @@ export default function SuperadminLayout() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth/login");
+    navigate("/v2/auth/login");
   };
 
   const menuItems = [
@@ -76,7 +76,7 @@ export default function SuperadminLayout() {
         {/* HEADER */}
         <header style={styles.header}>
           <div style={styles.headerLeft}>
-            <h1 style={styles.headerTitle}>SmartRent Systems</h1>
+            <h1 style={styles.headerTitle}>SmartRoom Rental Platform</h1>
           </div>
 
           <div style={styles.headerRight}>

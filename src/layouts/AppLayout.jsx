@@ -88,7 +88,7 @@ export default function AppLayout() {
     console.log("[AppLayout] Logout completado, redirigiendo...");
 
     // Forzar recarga completa para limpiar todo el estado de React
-    window.location.href = "/auth/login";
+    window.location.href = "/v2/auth/login";
   };
 
   const primaryColor = theme?.primaryColor || "#111827";
@@ -104,7 +104,7 @@ export default function AppLayout() {
             <div style={styles.logoPlaceholder}>🏠</div>
           )}
           <span style={styles.companyName}>
-            {theme?.companyName || "SmartRent Systems"}
+            {theme?.companyName || "SmartRoom Rental Platform"}
           </span>
         </div>
 

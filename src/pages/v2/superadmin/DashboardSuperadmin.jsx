@@ -1,7 +1,7 @@
 // =============================================================================
 // src/pages/v2/superadmin/DashboardSuperadmin.jsx
 // =============================================================================
-// DBSU - Dashboard Superadmin (SmartRent Systems)
+// DBSU - Dashboard Superadmin (SmartRoom Rental Platform)
 // Pantalla principal del Dashboard para el rol Superadmin
 // NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
 // =============================================================================

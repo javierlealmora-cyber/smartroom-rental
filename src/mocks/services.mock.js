@@ -1,5 +1,5 @@
 // src/mocks/services.mock.js
-// Catálogo de servicios dinámicos para SmartRent
+// Catálogo de servicios dinámicos para SmartRoom Rental Platform
 
 // Datos iniciales del catálogo
 let servicesCatalog = [

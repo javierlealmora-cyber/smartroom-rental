@@ -81,7 +81,7 @@ export default function ResetPassword() {
       // Cerrar sesión para que inicie con la nueva contraseña
       await supabase.auth.signOut();
       setTimeout(() => {
-        nav("/auth/login", { replace: true });
+        nav("/v2/auth/login", { replace: true });
       }, 3000);
     }
   };
@@ -249,7 +249,7 @@ export default function ResetPassword() {
               </p>
               <button
                 type="button"
-                onClick={() => nav("/auth/login")}
+                onClick={() => nav("/v2/auth/login")}
                 style={styles.button}
               >
                 Volver al login

@@ -11,7 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 // Configuración de branding por rol
 const BRANDING_CONFIG = {
   superadmin: {
-    name: "SmartRent Systems",
+    name: "SmartRoom Rental Platform",
     tagline: "Panel de Administración",
     logoText: "SR",
     primaryColor: "#111827",
@@ -71,26 +71,26 @@ const BREADCRUMB_ROUTES = {
     { label: "Nuevo Inquilino", path: null },
   ],
   // Student
-  "/v2/student": [{ label: "Inicio", path: "/v2/student" }],
-  "/v2/student/consumo": [
-    { label: "Inicio", path: "/v2/student" },
-    { label: "Mi Consumo", path: "/v2/student/consumo" },
+  "/v2/lodger": [{ label: "Inicio", path: "/v2/lodger" }],
+  "/v2/lodger/consumo": [
+    { label: "Inicio", path: "/v2/lodger" },
+    { label: "Mi Consumo", path: "/v2/lodger/consumo" },
   ],
-  "/v2/student/boletines": [
-    { label: "Inicio", path: "/v2/student" },
-    { label: "Boletines", path: "/v2/student/boletines" },
+  "/v2/lodger/boletines": [
+    { label: "Inicio", path: "/v2/lodger" },
+    { label: "Boletines", path: "/v2/lodger/boletines" },
   ],
-  "/v2/student/servicios": [
-    { label: "Inicio", path: "/v2/student" },
-    { label: "Servicios", path: "/v2/student/servicios" },
+  "/v2/lodger/servicios": [
+    { label: "Inicio", path: "/v2/lodger" },
+    { label: "Servicios", path: "/v2/lodger/servicios" },
   ],
-  "/v2/student/encuestas": [
-    { label: "Inicio", path: "/v2/student" },
-    { label: "Encuestas", path: "/v2/student/encuestas" },
+  "/v2/lodger/encuestas": [
+    { label: "Inicio", path: "/v2/lodger" },
+    { label: "Encuestas", path: "/v2/lodger/encuestas" },
   ],
-  "/v2/student/incidencias": [
-    { label: "Inicio", path: "/v2/student" },
-    { label: "Incidencias", path: "/v2/student/incidencias" },
+  "/v2/lodger/incidencias": [
+    { label: "Inicio", path: "/v2/lodger" },
+    { label: "Incidencias", path: "/v2/lodger/incidencias" },
   ],
 };
 
@@ -122,7 +122,7 @@ export default function V2Layout({
     }
     // Fallback
     return {
-      name: "SmartRent",
+      name: "SmartRoom",
       tagline: role === "admin" ? "Panel de Gestión" : "Portal del Inquilino",
       logoText: "SR",
       primaryColor: "#111827",
@@ -153,13 +153,14 @@ export default function V2Layout({
       }
     }
 
-    return [{ label: "Inicio", path: `/${role === "superadmin" ? "v2/superadmin" : role === "admin" ? "v2/admin" : "v2/student"}` }];
+    return [{ label: "Inicio", path: `/${role === "superadmin" ? "v2/superadmin" : role === "admin" ? "v2/admin" : "v2/lodger"}` }];
   };
 
   const breadcrumbs = getBreadcrumbs();
 
   const handleLogout = () => {
-    navigate("/auth/logout");
+    const portal = role === "superadmin" ? "superadmin" : role === "admin" ? "manager" : "lodger";
+    navigate(`/v2/auth/logout?portal=${portal}`);
   };
 
   return (

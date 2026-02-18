@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth - SmartRent</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Debug Autenticación</h1>
+    <button onclick="checkSession()">Verificar Sesión</button>
+    <button onclick="testInvokeFunction()">Test Edge Function</button>
+    <pre id="output"></pre>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        const SUPABASE_URL = 'https://lqwyyyttjamirccdtlvl.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxxd3l5eXR0amFtaXJjY2R0bHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY5NzM0MTMsImV4cCI6MjA1MjU0OTQxM30.S21VbLXX7n9i3hBxcDZSQ3yUFvvWZnQhJT-XrIo1Y1M'
+
+        window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        window.checkSession = async function() {
+            const output = document.getElementById('output')
+            try {
+                const { data, error } = await window.supabase.auth.getSession()
+
+                if (error) {
+                    output.textContent = 'ERROR:\n' + JSON.stringify(error, null, 2)
+                    return
+                }
+
+                if (!data.session) {
+                    output.textContent = 'NO HAY SESIÓN ACTIVA\n\nDebes hacer login primero en: http://localhost:5173/auth/login'
+                    return
+                }
+
+                const session = data.session
+                output.textContent = `SESIÓN ACTIVA:\n\n` +
+                    `User ID: ${session.user.id}\n` +
+                    `Email: ${session.user.email}\n` +
+                    `Token (primeros 50 chars): ${session.access_token.substring(0, 50)}...\n` +
+                    `Expira en: ${new Date(session.expires_at * 1000).toLocaleString()}\n\n` +
+                    `Token completo:\n${session.access_token}`
+            } catch (err) {
+                output.textContent = 'ERROR INESPERADO:\n' + err.message
+            }
+        }
+
+        window.testInvokeFunction = async function() {
+            const output = document.getElementById('output')
+            try {
+                const { data: sessionData, error: sessionError } = await window.supabase.auth.getSession()
+
+                if (sessionError || !sessionData.session) {
+                    output.textContent = 'ERROR: No hay sesión activa. Haz login primero.'
+                    return
+                }
+
+                output.textContent = 'Invocando Edge Function provision_company...\n\n'
+
+                const { data, error } = await window.supabase.functions.invoke('provision_company', {
+                    body: {
+                        company: {
+                            name: 'Test Company',
+                            slug: 'test-company',
+                            plan: 'basic',
+                            status: 'active',
+                            start_date: '2026-01-23',
+                            theme_primary_color: '#111827',
+                            logo_url: null
+                        },
+                        admin: {
+                            email: 'test@example.com',
+                            full_name: 'Test Admin'
+                        }
+                    }
+                })
+
+                if (error) {
+                    output.textContent += 'ERROR:\n' + JSON.stringify(error, null, 2)
+                } else {
+                    output.textContent += 'ÉXITO:\n' + JSON.stringify(data, null, 2)
+                }
+            } catch (err) {
+                output.textContent += '\nERROR INESPERADO:\n' + err.message + '\n\n' + err.stack
+            }
+        }
+
+        // Auto-check al cargar
+        window.checkSession()
+    </script>
+</body>
+</html>

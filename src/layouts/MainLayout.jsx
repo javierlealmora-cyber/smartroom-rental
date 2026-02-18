@@ -29,7 +29,7 @@ export default function MainLayout() {
           {theme?.logoUrl ? (
             <img src={theme.logoUrl} alt="logo" style={{ height: 28 }} />
           ) : null}
-          <strong>{themeLoading ? "Cargando..." : theme?.companyName || "SmartRent Systems"}</strong>
+          <strong>{themeLoading ? "Cargando..." : theme?.companyName || "SmartRoom Rental Platform"}</strong>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

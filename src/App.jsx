@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import RequireAuth from "./router/RequireAuth";
 import RequireRole from "./router/RequireRole";
-import { AuthProvider } from "./providers/AuthProvider";
-import Login from "./pages/auth/Login";
+import RequireTenant from "./router/RequireTenant";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Logout from "./pages/auth/Logout";
 
@@ -60,7 +59,6 @@ import Personalizacion from "./pages/usuario/Personalizacion";
 
 // =============================================
 // NUEVA ESTRUCTURA v2 (client_accounts)
-// NOTA: Rama paralela independiente - NO afecta a las rutas existentes
 // =============================================
 
 // v2 - Superadmin
@@ -76,8 +74,8 @@ import AccommodationCreateV2 from "./pages/v2/admin/accommodations/Accommodation
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
 
-// v2 - Student
-import StudentDashboardV2 from "./pages/v2/student/StudentDashboard";
+// v2 - Lodger (formerly Student)
+import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
 
 // v2 - Superadmin Plans (DBSU-PC)
 import PlansListV2 from "./pages/v2/superadmin/plans/PlansList";
@@ -88,19 +86,45 @@ import PlanDetailV2 from "./pages/v2/superadmin/plans/PlanDetail";
 import ServicesListV2 from "./pages/v2/superadmin/services/ServicesList";
 
 // v2 - Autoregistro (RCCP)
-import SelfSignupV2 from "./pages/v2/autoregistro/SelfSignup";
+import AutoRegistroCuenta from "./pages/v2/autoregistro/AutoRegistroCuenta";
+
+// v2 - 3 Portales de Login
+import CommercialLogin from "./pages/v2/auth/CommercialLogin";
+import ManagerLogin from "./pages/v2/manager/auth/ManagerLogin";
+import LodgerLogin from "./pages/v2/lodger/auth/LodgerLogin";
+import AuthCallback from "./pages/v2/auth/AuthCallback";
+
+// Páginas públicas (web comercial)
+import Landing from "./pages/public/Landing";
+import PlanesPage from "./pages/public/PlanesPage";
+import Registro from "./pages/public/Registro";
+import ContactoPage from "./pages/public/ContactoPage";
+import LegalTerminos from "./pages/public/LegalTerminos";
+import LegalPrivacidad from "./pages/public/LegalPrivacidad";
+import LegalCookies from "./pages/public/LegalCookies";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
         <Routes>
-          {/* Auth */}
-          <Route path="/auth/login" element={<Login />} />
+          {/* =============================================
+             AUTH — 3 Portales de Login
+             ============================================= */}
+          <Route path="/v2/auth/login" element={<CommercialLogin />} />
+          <Route path="/v2/manager/auth/login" element={<ManagerLogin />} />
+          <Route path="/v2/lodger/auth/login" element={<LodgerLogin />} />
+          <Route path="/v2/auth/logout" element={<Logout />} />
+          <Route path="/v2/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/v2/auth/callback" element={<AuthCallback />} />
+
+          {/* Legacy auth redirects */}
+          <Route path="/auth/login" element={<Navigate to="/v2/auth/login" replace />} />
           <Route path="/auth/logout" element={<Logout />} />
           <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/login" element={<Navigate to="/v2/auth/login" replace />} />
 
-          {/* Rutas protegidas */}
+          {/* =============================================
+             LEGACY v1 — Rutas protegidas (NO tocar)
+             ============================================= */}
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               {/* Rutas CLIENTES - Solo Superadmin */}
@@ -162,51 +186,82 @@ export default function App() {
           </Route>
 
           {/* =============================================
-             RUTAS v2 - Nueva estructura con client_accounts
-             NOTA: Rama paralela independiente - NO afecta a las rutas existentes
+             PÁGINAS PÚBLICAS (web comercial) — bajo /v2/
              ============================================= */}
+          <Route path="/v2" element={<Landing />} />
+          <Route path="/v2/planes" element={<PlanesPage />} />
+          <Route path="/v2/registro" element={<Registro />} />
+          <Route path="/v2/contacto" element={<ContactoPage />} />
+          <Route path="/v2/legal/terminos" element={<LegalTerminos />} />
+          <Route path="/v2/legal/privacidad" element={<LegalPrivacidad />} />
+          <Route path="/v2/legal/cookies" element={<LegalCookies />} />
 
-          {/* RCCP - Autoregistro (página pública) */}
-          <Route path="/registro" element={<SelfSignupV2 />} />
+          {/* Backward-compat redirects for old public URLs */}
+          <Route path="/" element={<Navigate to="/v2" replace />} />
+          <Route path="/planes" element={<Navigate to="/v2/planes" replace />} />
+          <Route path="/registro" element={<Navigate to="/v2/registro" replace />} />
+          <Route path="/contacto" element={<Navigate to="/v2/contacto" replace />} />
+          <Route path="/legal/terminos" element={<Navigate to="/v2/legal/terminos" replace />} />
+          <Route path="/legal/privacidad" element={<Navigate to="/v2/legal/privacidad" replace />} />
+          <Route path="/legal/cookies" element={<Navigate to="/v2/legal/cookies" replace />} />
 
-          {/* v2 - Superadmin */}
-          <Route path="/v2/superadmin" element={<DashboardSuperadminV2 />} />
-          <Route path="/v2/superadmin/cuentas" element={<ClientAccountsListV2 />} />
-          <Route path="/v2/superadmin/cuentas/nueva" element={<ClientAccountCreateV2 />} />
-          <Route path="/v2/superadmin/cuentas/:id" element={<ClientAccountDetailV2 />} />
-          <Route path="/v2/superadmin/cuentas/:id/editar" element={<ClientAccountDetailV2 />} />
-          <Route path="/v2/superadmin/cuentas/:id/usuarios" element={<ClientAccountDetailV2 />} />
+          {/* Autoregistro / Wizard */}
+          <Route path="/v2/wizard/contratar" element={<AutoRegistroCuenta />} />
+          <Route path="/autoregistro-cuenta" element={<Navigate to="/v2/wizard/contratar" replace />} />
 
-          {/* v2 - Superadmin Plans (DBSU-PC) */}
-          <Route path="/v2/superadmin/planes" element={<PlansListV2 />} />
-          <Route path="/v2/superadmin/planes/nuevo" element={<PlanCreateV2 />} />
-          <Route path="/v2/superadmin/planes/:id" element={<PlanDetailV2 />} />
-          <Route path="/v2/superadmin/planes/:id/editar" element={<PlanDetailV2 />} />
+          {/* =============================================
+             RUTAS v2 PROTEGIDAS — Superadmin
+             ============================================= */}
+          <Route element={<RequireAuth />}>
+            <Route element={<RequireRole allow={["superadmin"]} />}>
+              <Route path="/v2/superadmin" element={<DashboardSuperadminV2 />} />
+              <Route path="/v2/superadmin/cuentas" element={<ClientAccountsListV2 />} />
+              <Route path="/v2/superadmin/cuentas/nueva" element={<ClientAccountCreateV2 />} />
+              <Route path="/v2/superadmin/cuentas/:id" element={<ClientAccountDetailV2 />} />
+              <Route path="/v2/superadmin/cuentas/:id/editar" element={<ClientAccountDetailV2 />} />
+              <Route path="/v2/superadmin/cuentas/:id/usuarios" element={<ClientAccountDetailV2 />} />
 
-          {/* v2 - Superadmin Services (DBSU-GS) */}
-          <Route path="/v2/superadmin/servicios" element={<ServicesListV2 />} />
+              {/* v2 - Superadmin Plans (DBSU-PC) */}
+              <Route path="/v2/superadmin/planes" element={<PlansListV2 />} />
+              <Route path="/v2/superadmin/planes/nuevo" element={<PlanCreateV2 />} />
+              <Route path="/v2/superadmin/planes/:id" element={<PlanDetailV2 />} />
+              <Route path="/v2/superadmin/planes/:id/editar" element={<PlanDetailV2 />} />
 
-          {/* v2 - Admin */}
-          <Route path="/v2/admin" element={<DashboardAdminV2 />} />
-          <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
-          <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
-          <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
-          <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+              {/* v2 - Superadmin Services (DBSU-GS) */}
+              <Route path="/v2/superadmin/servicios" element={<ServicesListV2 />} />
+            </Route>
+          </Route>
 
-          {/* v2 - Student/Inquilino */}
-          <Route path="/v2/student" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/consumo" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/boletines" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/servicios" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/encuestas" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/incidencias" element={<StudentDashboardV2 />} />
-          <Route path="/v2/student/perfil" element={<StudentDashboardV2 />} />
+          {/* =============================================
+             RUTAS v2 PROTEGIDAS — Manager (Admin) + Lodger
+             ============================================= */}
+          <Route element={<RequireAuth />}>
+            <Route element={<RequireTenant />}>
+              {/* Manager (Admin) routes */}
+              <Route path="/v2/admin" element={<DashboardAdminV2 />} />
+              <Route path="/v2/manager/dashboard" element={<DashboardAdminV2 />} />
+              <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
+              <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
+              <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
+              <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
 
-          {/* Root - Redirigir según rol */}
-          <Route path="/" element={<Navigate to="/alojamientos" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Lodger (formerly Student) routes */}
+              <Route path="/v2/lodger/dashboard" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/consumo" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/boletines" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/servicios" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
+              <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />
+            </Route>
+          </Route>
+
+          {/* Legacy student → lodger redirects */}
+          <Route path="/v2/student" element={<Navigate to="/v2/lodger/dashboard" replace />} />
+          <Route path="/v2/student/*" element={<Navigate to="/v2/lodger/dashboard" replace />} />
+
+          {/* Catch-all → landing */}
+          <Route path="*" element={<Navigate to="/v2" replace />} />
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
   );
 }

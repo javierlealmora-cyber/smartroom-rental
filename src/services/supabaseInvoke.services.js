@@ -173,6 +173,10 @@ function safeString(x) {
 }
 
 function parseContextBody(err) {
+  // Supabase functions-js v2.95+ pasa el Response raw como context
+  // El body real puede estar en _parsedBody (si lo leimos async) o context.body
+  if (err?._parsedBody !== undefined) return err._parsedBody;
+
   const body = err?.context?.body ?? null;
   if (!body) return null;
 
@@ -184,13 +188,43 @@ function parseContextBody(err) {
       return body;
     }
   }
+
+  // Si body es un ReadableStream (Response.body), no lo podemos parsear sync
+  if (typeof body === "object" && typeof body.getReader === "function") {
+    return null;
+  }
+
   return body;
+}
+
+// Lee el body del Response cuando el context es un Response raw (functions-js v2.95+)
+async function readErrorBody(err) {
+  const ctx = err?.context;
+  if (!ctx) return;
+
+  // Si context es un Response object (tiene .text() method)
+  if (typeof ctx.text === "function" && !err._parsedBody) {
+    try {
+      const text = await ctx.text();
+      try {
+        err._parsedBody = JSON.parse(text);
+      } catch {
+        err._parsedBody = text;
+      }
+    } catch {
+      err._parsedBody = null;
+    }
+  }
 }
 
 function createErrorMessage(err, fn) {
   const status = extractStatus(err);
   const body = parseContextBody(err);
   if (status) {
+    // Intentar extraer el mensaje de error de la respuesta JSON
+    if (body && typeof body === "object" && body.error) {
+      return body.error;
+    }
     return body
       ? `Edge Function "${fn}" devolvió HTTP ${status}: ${safeString(body)}`
       : `Edge Function "${fn}" devolvió HTTP ${status}: ${err?.message ?? "Error"}`;
@@ -357,6 +391,9 @@ export async function invokeWithAuth(
       resetAuthFailures();
       return data;
     }
+
+    // Leer body del Response antes de procesar el error (async)
+    await readErrorBody(error);
 
     if (DEBUG) {
       console.warn(`[invokeWithAuth] ${functionName} error`, {

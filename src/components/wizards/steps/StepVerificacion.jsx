@@ -1,21 +1,20 @@
 // =============================================================================
 // src/components/wizards/steps/StepVerificacion.jsx
 // =============================================================================
-// Paso 5: Verificacion y Resumen
-// Secciones: 1-Datos Cuenta, 2-Usuarios Admin, 3-Datos Plan, 4-Facturacion y Pago
+// Paso E (4): Verificacion y Resumen — 6 secciones
+// A-Contrato, B-Branding, C-Entidad Pagadora, D-Admins
 // =============================================================================
 
 import {
   getPlanLabel,
   getPlanColor,
   formatCurrency,
-  LEGAL_FORMS,
 } from "../../../mocks/clientAccountsData";
 
-const LEGAL_FORM_LABELS = {
-  [LEGAL_FORMS.PERSONA_FISICA]: "Persona Fisica",
-  [LEGAL_FORMS.AUTONOMO]: "Autonomo",
-  [LEGAL_FORMS.PERSONA_JURIDICA]: "Persona Juridica",
+const LEGAL_TYPE_LABELS = {
+  persona_fisica: "Persona Fisica",
+  autonomo: "Autonomo",
+  persona_juridica: "Persona Juridica",
 };
 
 export default function StepVerificacion({
@@ -33,21 +32,19 @@ export default function StepVerificacion({
     return stepStatuses[stepIndex] === "error";
   };
 
-  // Nombre del pagador
   const getPayerName = () => {
-    if (formData.payer_type === LEGAL_FORMS.PERSONA_JURIDICA) {
+    if (formData.payer_type === "persona_juridica") {
       return formData.payer_legal_name || "\u2014";
     }
     const parts = [formData.payer_first_name, formData.payer_last_name_1, formData.payer_last_name_2].filter(Boolean);
     return parts.length > 0 ? parts.join(" ") : "\u2014";
   };
 
-  // Direccion completa
   const getAddress = () => {
     const parts = [
-      formData.payer_address_line1,
-      formData.payer_address_number,
-      formData.payer_postal_code,
+      formData.payer_street,
+      formData.payer_street_number,
+      formData.payer_zip,
       formData.payer_city,
       formData.payer_province,
       formData.payer_country,
@@ -55,10 +52,9 @@ export default function StepVerificacion({
     return parts.length > 0 ? parts.join(", ") : "\u2014";
   };
 
-  // Precio segun periodo
   const getPriceDisplay = () => {
-    if (!selectedPlan || !formData.payment_period) return "\u2014";
-    const isAnnual = formData.payment_period === "annual";
+    if (!selectedPlan || !formData.billing_cycle) return "\u2014";
+    const isAnnual = formData.billing_cycle === "annual";
     const base = isAnnual ? selectedPlan.price_annual : selectedPlan.price_monthly;
     const vat = base * (selectedPlan.vat_percentage / 100);
     const total = base + vat;
@@ -70,95 +66,35 @@ export default function StepVerificacion({
     <div>
       <h2 style={styles.sectionTitle}>Verificacion y Resumen</h2>
       <p style={styles.sectionDescription}>
-        Revisa toda la informacion antes de crear la cuenta. Pulsa "Editar" para modificar cualquier seccion.
+        Revisa toda la informacion antes de {mode === "self_signup" ? "finalizar y pagar" : "crear la cuenta"}.
+        Pulsa "Editar" para modificar cualquier seccion.
       </p>
 
-      {/* Banner de errores */}
       {hasErrors && (
         <div style={styles.errorBanner}>
           <span style={styles.errorBannerIcon}>&#9888;&#65039;</span>
           <div>
             <strong>Hay campos pendientes de completar</strong>
             <p style={{ margin: "4px 0 0", fontSize: 13 }}>
-              Revisa los pasos marcados en rojo en el stepper y completa los campos obligatorios.
+              Revisa los pasos marcados en rojo y completa los campos obligatorios.
             </p>
           </div>
         </div>
       )}
 
-      {/* Seccion 1: Datos de la Cuenta */}
-      <div style={{
-        ...styles.summaryCard,
-        ...(getStepHasErrors(0) ? styles.summaryCardError : {}),
-      }}>
-        <div style={styles.summaryHeader}>
-          <div style={styles.summaryHeaderLeft}>
-            {getStepHasErrors(0) && <span style={styles.errorDot}>!</span>}
-            <h3 style={styles.summaryTitle}>1. Datos de la Cuenta</h3>
-          </div>
-          <button type="button" style={styles.editLink} onClick={() => onGoToStep(0)}>
-            Editar
-          </button>
-        </div>
+      {/* Seccion A: Datos del Contrato */}
+      <SummarySection
+        number="A"
+        title="Datos del Contrato"
+        hasError={getStepHasErrors(0)}
+        onEdit={() => onGoToStep(0)}
+      >
         <div style={styles.summaryGrid}>
-          <SummaryField label="Titular" value={formData.full_name} />
-          <SummaryField label="Email" value={formData.email} />
-          <SummaryField label="Telefono" value={formData.phone} />
-          <SummaryField label="Fecha inicio" value={formData.start_date} />
+          <SummaryField label="Cuenta" value={formData.account_name} />
           <SummaryField label="Slug" value={formData.slug} />
-        </div>
-      </div>
-
-      {/* Seccion 2: Usuarios Admin */}
-      <div style={{
-        ...styles.summaryCard,
-        ...(getStepHasErrors(1) ? styles.summaryCardError : {}),
-      }}>
-        <div style={styles.summaryHeader}>
-          <div style={styles.summaryHeaderLeft}>
-            {getStepHasErrors(1) && <span style={styles.errorDot}>!</span>}
-            <h3 style={styles.summaryTitle}>2. Usuarios Admin</h3>
-          </div>
-          <button type="button" style={styles.editLink} onClick={() => onGoToStep(1)}>
-            Editar
-          </button>
-        </div>
-        <div style={styles.adminsList}>
-          {formData.admins.map((admin, index) => {
-            if (index > 0 && !admin.email?.trim()) return null;
-            return (
-              <div key={index} style={styles.adminItem}>
-                <div style={styles.adminInfo}>
-                  <span style={styles.adminName}>
-                    {admin.full_name || "(Sin nombre)"}
-                    {admin.is_titular && (
-                      <span style={styles.titularBadge}>Titular</span>
-                    )}
-                  </span>
-                  <span style={styles.adminEmail}>{admin.email || "(Sin email)"}</span>
-                  {admin.phone && <span style={styles.adminPhone}>{admin.phone}</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Seccion 3: Datos del Plan */}
-      <div style={{
-        ...styles.summaryCard,
-        ...(getStepHasErrors(2) ? styles.summaryCardError : {}),
-      }}>
-        <div style={styles.summaryHeader}>
-          <div style={styles.summaryHeaderLeft}>
-            {getStepHasErrors(2) && <span style={styles.errorDot}>!</span>}
-            <h3 style={styles.summaryTitle}>3. Datos del Plan</h3>
-          </div>
-          <button type="button" style={styles.editLink} onClick={() => onGoToStep(2)}>
-            Editar
-          </button>
-        </div>
-        <div style={styles.summaryGrid}>
+          <SummaryField label="Email contacto" value={formData.contact_email} />
+          <SummaryField label="Telefono" value={formData.contact_phone} />
+          <SummaryField label="Fecha inicio" value={formData.start_date} />
           <div style={styles.summaryField}>
             <span style={styles.summaryLabel}>Plan</span>
             {formData.plan_code ? (
@@ -173,42 +109,22 @@ export default function StepVerificacion({
             )}
           </div>
           <SummaryField
-            label="Periodo pago"
-            value={formData.payment_period === "monthly" ? "Mensual" : formData.payment_period === "annual" ? "Anual" : "\u2014"}
+            label="Ciclo facturacion"
+            value={formData.billing_cycle === "monthly" ? "Mensual" : formData.billing_cycle === "annual" ? "Anual" : "\u2014"}
           />
-          <SummaryField label="Importe total" value={getPriceDisplay()} />
+          <SummaryField label="Importe" value={getPriceDisplay()} />
         </div>
-      </div>
+      </SummarySection>
 
-      {/* Seccion 4: Facturacion y Pago */}
-      <div style={{
-        ...styles.summaryCard,
-        ...(getStepHasErrors(3) ? styles.summaryCardError : {}),
-      }}>
-        <div style={styles.summaryHeader}>
-          <div style={styles.summaryHeaderLeft}>
-            {getStepHasErrors(3) && <span style={styles.errorDot}>!</span>}
-            <h3 style={styles.summaryTitle}>4. Facturacion y Pago</h3>
-          </div>
-          <button type="button" style={styles.editLink} onClick={() => onGoToStep(3)}>
-            Editar
-          </button>
-        </div>
-        {/* Entidad pagadora */}
+      {/* Seccion B: Branding */}
+      <SummarySection
+        number="B"
+        title="Branding"
+        hasError={getStepHasErrors(1)}
+        onEdit={() => onGoToStep(1)}
+      >
         <div style={styles.summaryGrid}>
-          <SummaryField label="Tipo entidad" value={LEGAL_FORM_LABELS[formData.payer_type] || "\u2014"} />
-          <SummaryField label="Nombre/Razon social" value={getPayerName()} />
-          <SummaryField label="CIF/NIF" value={formData.payer_tax_id || "\u2014"} />
-          <div style={{ ...styles.summaryField, gridColumn: "1 / -1" }}>
-            <span style={styles.summaryLabel}>Direccion</span>
-            <span style={styles.summaryValue}>{getAddress()}</span>
-          </div>
-          <SummaryField label="Email facturacion" value={formData.payer_billing_email || "\u2014"} />
-          <SummaryField label="Telefono facturacion" value={formData.payer_billing_phone || "\u2014"} />
-        </div>
-        {/* Branding */}
-        <div style={{ ...styles.summaryGrid, marginTop: 12, paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
-          <SummaryField label="Nombre marca" value={formData.brand_name || "\u2014"} />
+          <SummaryField label="Nombre marca" value={formData.brand_name || "(Usa nombre de cuenta)"} />
           <div style={styles.summaryField}>
             <span style={styles.summaryLabel}>Color primario</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -238,36 +154,56 @@ export default function StepVerificacion({
             </div>
           )}
           <SummaryField label="Logo" value={formData.logo_url || "Sin logo"} />
-          {!selectedPlan?.branding_enabled && (
-            <div style={styles.summaryNote}>
-              El plan Basic no permite personalizacion de branding
-            </div>
-          )}
         </div>
-        {/* Tarjeta */}
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
-          {formData.card_number ? (
-            <div style={styles.summaryGrid}>
-              <div style={styles.summaryField}>
-                <span style={styles.summaryLabel}>Tarjeta</span>
-                <span style={styles.summaryValue}>
-                  {"\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 "}{formData.card_number.replace(/\s/g, "").slice(-4)}
-                </span>
+      </SummarySection>
+
+      {/* Seccion C: Entidad Pagadora */}
+      <SummarySection
+        number="C"
+        title="Entidad Pagadora"
+        hasError={getStepHasErrors(2)}
+        onEdit={() => onGoToStep(2)}
+      >
+        <div style={styles.summaryGrid}>
+          <SummaryField label="Tipo entidad" value={LEGAL_TYPE_LABELS[formData.payer_type] || "\u2014"} />
+          <SummaryField label="Nombre/Razon social" value={getPayerName()} />
+          <SummaryField label="CIF/NIF" value={formData.payer_tax_id || "\u2014"} />
+          <div style={{ ...styles.summaryField, gridColumn: "1 / -1" }}>
+            <span style={styles.summaryLabel}>Direccion</span>
+            <span style={styles.summaryValue}>{getAddress()}</span>
+          </div>
+          <SummaryField label="Email facturacion" value={formData.payer_billing_email || "\u2014"} />
+          <SummaryField label="Telefono facturacion" value={formData.payer_billing_phone || "\u2014"} />
+        </div>
+      </SummarySection>
+
+      {/* Seccion D: Usuarios Admin */}
+      <SummarySection
+        number="D"
+        title="Usuarios Admin"
+        hasError={getStepHasErrors(3)}
+        onEdit={() => onGoToStep(3)}
+      >
+        <div style={styles.adminsList}>
+          {formData.admins.map((admin, index) => {
+            if (index > 0 && !admin.email?.trim()) return null;
+            return (
+              <div key={index} style={styles.adminItem}>
+                <div style={styles.adminInfo}>
+                  <span style={styles.adminName}>
+                    {admin.full_name || "(Sin nombre)"}
+                    {admin.is_titular && (
+                      <span style={styles.titularBadge}>Titular</span>
+                    )}
+                  </span>
+                  <span style={styles.adminEmail}>{admin.email || "(Sin email)"}</span>
+                  {admin.phone && <span style={styles.adminPhone}>{admin.phone}</span>}
+                </div>
               </div>
-              <SummaryField label="Titular tarjeta" value={formData.card_holder || "\u2014"} />
-              <SummaryField label="Caducidad" value={formData.card_expiry || "\u2014"} />
-            </div>
-          ) : (
-            <div style={styles.noCardMessage}>
-              {mode === "self_signup" ? (
-                <span style={{ color: "#DC2626" }}>Datos de tarjeta pendientes de completar</span>
-              ) : (
-                <span style={{ color: "#6B7280" }}>Sin datos de tarjeta (opcional para superadmin)</span>
-              )}
-            </div>
-          )}
+            );
+          })}
         </div>
-      </div>
+      </SummarySection>
 
       {/* Opciones SuperAdmin: estado inicial */}
       {mode === "superadmin_create" && (
@@ -277,36 +213,28 @@ export default function StepVerificacion({
             Seleccione el estado con el que se creara la cuenta
           </p>
           <div style={styles.statusGrid}>
-            <button
-              type="button"
-              style={{
-                ...styles.statusOption,
-                ...(formData.superadmin_status === "ACTIVA" ? styles.statusOptionSelected : {}),
-                borderColor: formData.superadmin_status === "ACTIVA" ? "#059669" : "#E5E7EB",
-              }}
-              onClick={() => onChange("superadmin_status", "ACTIVA")}
-            >
-              <span style={{ ...styles.statusDot, backgroundColor: "#059669" }} />
-              <div>
-                <span style={styles.statusLabel}>Crear como ACTIVA</span>
-                <span style={styles.statusDesc}>La cuenta estara operativa inmediatamente</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              style={{
-                ...styles.statusOption,
-                ...(formData.superadmin_status === "PENDIENTE" ? styles.statusOptionSelected : {}),
-                borderColor: formData.superadmin_status === "PENDIENTE" ? "#F59E0B" : "#E5E7EB",
-              }}
-              onClick={() => onChange("superadmin_status", "PENDIENTE")}
-            >
-              <span style={{ ...styles.statusDot, backgroundColor: "#F59E0B" }} />
-              <div>
-                <span style={styles.statusLabel}>Crear como PENDIENTE</span>
-                <span style={styles.statusDesc}>Requiere completar datos o pago antes de activar</span>
-              </div>
-            </button>
+            {[
+              { value: "draft", label: "Borrador", desc: "Cuenta creada pero no operativa", color: "#6B7280" },
+              { value: "active", label: "Activa", desc: "La cuenta estara operativa inmediatamente", color: "#059669" },
+              { value: "pending_payment", label: "Pendiente pago", desc: "Requiere completar pago antes de activar", color: "#F59E0B" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                style={{
+                  ...styles.statusOption,
+                  ...(formData.superadmin_status === opt.value ? styles.statusOptionSelected : {}),
+                  borderColor: formData.superadmin_status === opt.value ? opt.color : "#E5E7EB",
+                }}
+                onClick={() => onChange("superadmin_status", opt.value)}
+              >
+                <span style={{ ...styles.statusDot, backgroundColor: opt.color }} />
+                <div>
+                  <span style={styles.statusLabel}>{opt.label}</span>
+                  <span style={styles.statusDesc}>{opt.desc}</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -314,7 +242,26 @@ export default function StepVerificacion({
   );
 }
 
-// Componente auxiliar para campo resumen
+function SummarySection({ number, title, hasError, onEdit, children }) {
+  return (
+    <div style={{
+      ...styles.summaryCard,
+      ...(hasError ? styles.summaryCardError : {}),
+    }}>
+      <div style={styles.summaryHeader}>
+        <div style={styles.summaryHeaderLeft}>
+          {hasError && <span style={styles.errorDot}>!</span>}
+          <h3 style={styles.summaryTitle}>{number}. {title}</h3>
+        </div>
+        <button type="button" style={styles.editLink} onClick={onEdit}>
+          Editar
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function SummaryField({ label, value }) {
   return (
     <div style={styles.summaryField}>
@@ -428,13 +375,6 @@ const styles = {
     color: "#111827",
     fontWeight: "500",
   },
-  summaryNote: {
-    gridColumn: "1 / -1",
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-    padding: "8px 0",
-  },
   planBadge: {
     display: "inline-block",
     padding: "3px 10px",
@@ -443,12 +383,6 @@ const styles = {
     fontWeight: "600",
     color: "#FFFFFF",
   },
-  noCardMessage: {
-    fontSize: 13,
-    fontStyle: "italic",
-    padding: "8px 0",
-  },
-  // Admin list
   adminsList: {
     display: "flex",
     flexDirection: "column",
@@ -491,7 +425,6 @@ const styles = {
     fontSize: 10,
     fontWeight: "600",
   },
-  // Status selection (superadmin)
   statusCard: {
     border: "1px solid #E5E7EB",
     borderRadius: 12,
@@ -512,7 +445,7 @@ const styles = {
   },
   statusGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "1fr 1fr 1fr",
     gap: 12,
   },
   statusOption: {

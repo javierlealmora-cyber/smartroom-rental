@@ -190,7 +190,7 @@ export default function StepUsuariosAdmin({ formData, errors, onAdminsChange }) 
 
       <div style={styles.infoBox}>
         <span style={styles.infoIcon}>ℹ️</span>
-        <span>Se enviará un email de invitación a cada usuario para crear su contraseña y acceder al sistema.</span>
+        <span>Si el usuario ya esta registrado, se vinculara a esta cuenta. Si es nuevo, se le enviara un email de invitacion para crear su contrasena.</span>
       </div>
     </div>
   );
