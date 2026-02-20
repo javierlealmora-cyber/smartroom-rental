@@ -102,6 +102,11 @@ const BREADCRUMB_ROUTES = {
     { label: "Alojamientos", path: "/v2/admin/alojamientos" },
     { label: "Editar", path: null },
   ],
+  "/v2/admin/alojamientos/:id/servicios": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Alojamientos", path: "/v2/admin/alojamientos" },
+    { label: "Servicios", path: null },
+  ],
   "/v2/admin/inquilinos": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },
