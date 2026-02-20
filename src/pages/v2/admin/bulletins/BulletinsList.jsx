@@ -7,7 +7,7 @@ import {
   Alert, Button, Col, Input, Popconfirm, Row,
   Select, Space, Table, Tag, Tooltip, Typography,
 } from "antd";
-import { ReloadOutlined, SendOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, SendOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
@@ -187,7 +187,12 @@ export default function BulletinsList() {
           </Text>
         </Col>
         <Col>
-          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/v2/admin/boletines/nuevo")}>
+              Nuevo Boletín
+            </Button>
+          </Space>
         </Col>
       </Row>
 

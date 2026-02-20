@@ -157,10 +157,21 @@ const BREADCRUMB_ROUTES = {
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Boletines", path: "/v2/admin/boletines" },
   ],
+  "/v2/admin/boletines/nuevo": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Boletines", path: "/v2/admin/boletines" },
+    { label: "Nuevo Boletín", path: null },
+  ],
   "/v2/admin/inquilinos/servicios": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },
     { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
+  ],
+  "/v2/admin/inquilinos/servicios/nuevo": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
+    { label: "Asignar Servicio", path: null },
   ],
   // Lodger
   "/v2/lodger": [{ label: "Inicio", path: "/v2/lodger" }],

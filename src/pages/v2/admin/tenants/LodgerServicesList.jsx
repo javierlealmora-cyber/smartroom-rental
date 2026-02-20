@@ -2,11 +2,12 @@
 // Admin — Servicios asignados a Inquilinos
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Alert, Button, Col, Input, Row,
   Select, Space, Table, Tag, Typography,
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listAccommodations } from "../../../../services/accommodations.service";
@@ -28,6 +29,7 @@ function fEur(n) {
 }
 
 export default function LodgerServicesList() {
+  const navigate = useNavigate();
   const { userName, companyBranding } = useAdminLayout();
 
   const [all, setAll] = useState([]);
@@ -170,7 +172,12 @@ export default function LodgerServicesList() {
           </Text>
         </Col>
         <Col>
-          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/v2/admin/inquilinos/servicios/nuevo")}>
+              Asignar Servicio
+            </Button>
+          </Space>
         </Col>
       </Row>
 
