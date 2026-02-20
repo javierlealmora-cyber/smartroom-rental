@@ -95,9 +95,11 @@ import EnergySettlementsListV2 from "./pages/v2/admin/energy/EnergySettlementsLi
 
 // v2 - Admin Boletines
 import BulletinsListV2 from "./pages/v2/admin/bulletins/BulletinsList";
+import BulletinCreateV2 from "./pages/v2/admin/bulletins/BulletinCreate";
 
 // v2 - Admin Servicios Inquilinos
 import LodgerServicesListV2 from "./pages/v2/admin/tenants/LodgerServicesList";
+import LodgerServiceCreateV2 from "./pages/v2/admin/tenants/LodgerServiceCreate";
 
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
@@ -294,7 +296,9 @@ export default function App() {
               <Route path="/v2/admin/energia/facturas/:id/editar" element={<EnergyBillDetailV2 />} />
               <Route path="/v2/admin/energia/liquidaciones" element={<EnergySettlementsListV2 />} />
               <Route path="/v2/admin/boletines" element={<BulletinsListV2 />} />
+              <Route path="/v2/admin/boletines/nuevo" element={<BulletinCreateV2 />} />
               <Route path="/v2/admin/inquilinos/servicios" element={<LodgerServicesListV2 />} />
+              <Route path="/v2/admin/inquilinos/servicios/nuevo" element={<LodgerServiceCreateV2 />} />
             </Route>
           </Route>
 
