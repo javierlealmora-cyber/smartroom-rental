@@ -84,6 +84,49 @@ const BREADCRUMB_ROUTES = {
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },
     { label: "Nuevo Inquilino", path: null },
   ],
+  "/v2/admin/inquilinos/:id/editar": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Editar", path: null },
+  ],
+  "/v2/admin/alojamientos/:id/editar": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Alojamientos", path: "/v2/admin/alojamientos" },
+    { label: "Editar", path: null },
+  ],
+  "/v2/admin/servicios": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Servicios", path: "/v2/admin/servicios" },
+  ],
+  "/v2/admin/servicios/nuevo": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Servicios", path: "/v2/admin/servicios" },
+    { label: "Nuevo Servicio", path: null },
+  ],
+  "/v2/admin/servicios/:id/editar": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Servicios", path: "/v2/admin/servicios" },
+    { label: "Editar", path: null },
+  ],
+  "/v2/admin/energia/facturas": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Facturas de Energía", path: "/v2/admin/energia/facturas" },
+  ],
+  "/v2/admin/energia/facturas/nueva": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Facturas de Energía", path: "/v2/admin/energia/facturas" },
+    { label: "Nueva Factura", path: null },
+  ],
+  "/v2/admin/energia/facturas/:id": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Facturas de Energía", path: "/v2/admin/energia/facturas" },
+    { label: "Detalle", path: null },
+  ],
+  "/v2/admin/energia/facturas/:id/editar": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Facturas de Energía", path: "/v2/admin/energia/facturas" },
+    { label: "Editar", path: null },
+  ],
   // Student
   "/v2/lodger": [{ label: "Inicio", path: "/v2/lodger" }],
   "/v2/lodger/consumo": [
