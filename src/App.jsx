@@ -90,6 +90,7 @@ import ServiceEditV2 from "./pages/v2/admin/services/ServiceEdit";
 // v2 - Admin Energía
 import EnergyBillsListV2 from "./pages/v2/admin/energy/EnergyBillsList";
 import EnergyBillCreateV2 from "./pages/v2/admin/energy/EnergyBillCreate";
+import EnergyBillDetailV2 from "./pages/v2/admin/energy/EnergyBillDetail";
 
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
@@ -279,6 +280,8 @@ export default function App() {
               <Route path="/v2/admin/servicios/:id/editar" element={<ServiceEditV2 />} />
               <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
               <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
+              <Route path="/v2/admin/energia/facturas/:id" element={<EnergyBillDetailV2 />} />
+              <Route path="/v2/admin/energia/facturas/:id/editar" element={<EnergyBillDetailV2 />} />
             </Route>
           </Route>
 
