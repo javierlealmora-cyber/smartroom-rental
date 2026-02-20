@@ -80,6 +80,13 @@ import EntitiesListV2 from "./pages/v2/admin/entities/EntitiesList";
 import EntityCreateV2 from "./pages/v2/admin/entities/EntityCreate";
 import EntityEditV2 from "./pages/v2/admin/entities/EntityEdit";
 
+// v2 - Admin Servicios
+import ServicesListAdminV2 from "./pages/v2/admin/services/ServicesList";
+
+// v2 - Admin Energía
+import EnergyBillsListV2 from "./pages/v2/admin/energy/EnergyBillsList";
+import EnergyBillCreateV2 from "./pages/v2/admin/energy/EnergyBillCreate";
+
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
 
@@ -261,6 +268,9 @@ export default function App() {
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+              <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
+              <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
+              <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
             </Route>
           </Route>
 
