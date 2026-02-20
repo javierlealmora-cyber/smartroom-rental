@@ -84,6 +84,8 @@ import EntityEditV2 from "./pages/v2/admin/entities/EntityEdit";
 
 // v2 - Admin Servicios
 import ServicesListAdminV2 from "./pages/v2/admin/services/ServicesList";
+import ServiceCreateV2 from "./pages/v2/admin/services/ServiceCreate";
+import ServiceEditV2 from "./pages/v2/admin/services/ServiceEdit";
 
 // v2 - Admin Energía
 import EnergyBillsListV2 from "./pages/v2/admin/energy/EnergyBillsList";
@@ -273,6 +275,8 @@ export default function App() {
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
               <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
               <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
+              <Route path="/v2/admin/servicios/nuevo" element={<ServiceCreateV2 />} />
+              <Route path="/v2/admin/servicios/:id/editar" element={<ServiceEditV2 />} />
               <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
               <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
             </Route>
