@@ -17,9 +17,12 @@ const ADMIN_NAV = [
   { label: "Entidades", path: "/v2/admin/entidades", icon: "🏛️" },
   { label: "Alojamientos", path: "/v2/admin/alojamientos", icon: "🏠" },
   { label: "Inquilinos", path: "/v2/admin/inquilinos", icon: "👥" },
-  { type: "section", label: "Servicios" },
+  { label: "Servicios Inquilinos", path: "/v2/admin/inquilinos/servicios", icon: "🔖" },
+  { type: "section", label: "Servicios y Energía" },
   { label: "Catálogo de Servicios", path: "/v2/admin/servicios", icon: "🔧" },
   { label: "Facturas de Energía", path: "/v2/admin/energia/facturas", icon: "⚡" },
+  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones", icon: "📑" },
+  { label: "Boletines", path: "/v2/admin/boletines", icon: "🔔" },
 ];
 
 const SUPERADMIN_NAV = [
