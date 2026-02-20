@@ -149,6 +149,19 @@ const BREADCRUMB_ROUTES = {
     { label: "Facturas de Energía", path: "/v2/admin/energia/facturas" },
     { label: "Editar", path: null },
   ],
+  "/v2/admin/energia/liquidaciones": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones" },
+  ],
+  "/v2/admin/boletines": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Boletines", path: "/v2/admin/boletines" },
+  ],
+  "/v2/admin/inquilinos/servicios": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
+  ],
   // Lodger
   "/v2/lodger": [{ label: "Inicio", path: "/v2/lodger" }],
   "/v2/lodger/dashboard": [{ label: "Mi Panel", path: "/v2/lodger/dashboard" }],
