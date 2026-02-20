@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Col, Form, Input, Row, Select, Space, Typography } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { useTenant } from "../../../../providers/TenantProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
-import { createEntity, listEntities } from "../../../../services/entities.service";
-import { supabase } from "../../../../services/supabaseClient";
+import { createEntity } from "../../../../services/entities.service";
 
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autónomo" },
@@ -18,7 +16,6 @@ export default function EntityCreate() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const { planCode } = useTenant();
 
   const canWrite = role !== "viewer";
 
@@ -32,25 +29,6 @@ export default function EntityCreate() {
 
   const canSubmit = useMemo(() => !!clientAccountId, [clientAccountId]);
 
-  const enforceOwnerLimit = async () => {
-    if (!planCode) return;
-
-    const [{ data: plan, error: planErr }, owners] = await Promise.all([
-      supabase.from("plans_catalog").select("max_owners").eq("code", planCode).maybeSingle(),
-      listEntities({ type: "owner" }),
-    ]);
-
-    if (planErr) return;
-
-    const maxOwners = plan?.max_owners;
-    if (maxOwners == null || maxOwners === -1) return;
-
-    // Cuenta active + disabled
-    if (owners.length >= maxOwners) {
-      throw new Error(`Has alcanzado el máximo de entidades propietarias del plan (${maxOwners}).`);
-    }
-  };
-
   const onFinish = async (values) => {
     if (!canWrite || !canSubmit || busy) return;
 
@@ -58,8 +36,6 @@ export default function EntityCreate() {
     setError(null);
 
     try {
-      await enforceOwnerLimit();
-
       await createEntity({
         client_account_id: clientAccountId,
         type: "owner",

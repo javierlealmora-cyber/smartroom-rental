@@ -5,7 +5,7 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { updateEntity } from "../../../../services/entities.service";
-import { supabase } from "../../../../services/supabaseClient";
+import { supabase } from "../../../../services/supabaseClient"; // read-only: load entity by id
 
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autónomo" },
