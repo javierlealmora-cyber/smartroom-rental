@@ -73,24 +73,17 @@ export default function TenantCreate() {
     setSaving(true);
     setSaveError(null);
     try {
-      await createLodger(
-        {
-          client_account_id: clientAccountId,
-          full_name: values.full_name,
-          email: values.email,
-          phone: values.phone || null,
-          document_id: values.document_id || null,
-          status: "invited",
-        },
-        {
-          room_id: selectedRoomId,
-          accommodation_id: values.accommodation_id,
-          move_in_date: moveInDate,
-          billing_start_date: billingDate,
-          monthly_rent: selectedRoom?.monthly_rent ?? null,
-          status: "active",
-        }
-      );
+      await createLodger({
+        full_name: values.full_name,
+        email: values.email,
+        phone: values.phone || null,
+        document_id: values.document_id || null,
+        room_id: selectedRoomId,
+        accommodation_id: values.accommodation_id,
+        move_in_date: moveInDate,
+        billing_start_date: billingDate,
+        monthly_rent: selectedRoom?.monthly_rent ?? null,
+      });
       navigate("/v2/admin/inquilinos");
     } catch (e) {
       setSaveError(e.message);

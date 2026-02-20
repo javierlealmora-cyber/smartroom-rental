@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
+import { invokeWithAuth } from "./supabaseInvoke.services";
 
-// ─── Lodgers ──────────────────────────────────────────────────────────────────
+// ─── Lecturas directas con RLS ────────────────────────────────────────────────
 
 export async function listLodgers({ status } = {}) {
   let q = supabase
@@ -41,69 +42,60 @@ export async function getLodger(id) {
   return data;
 }
 
-export async function createLodger(lodgerPayload, assignmentPayload = null) {
-  const { data: lodger, error: lodgerErr } = await supabase
-    .from("lodgers")
-    .insert(lodgerPayload)
-    .select("*")
-    .single();
+// ─── Escrituras por Edge Function (manage_lodger) ─────────────────────────────
 
-  if (lodgerErr) throw new Error(lodgerErr.message);
+function extractEdgeError(result) {
+  if (result?.error?.message) return result.error.message;
+  if (result?.error) return JSON.stringify(result.error);
+  return "Error desconocido";
+}
 
-  if (assignmentPayload) {
-    const { error: assignErr } = await supabase
-      .from("lodger_room_assignments")
-      .insert({
-        ...assignmentPayload,
-        lodger_id: lodger.id,
-        client_account_id: lodger.client_account_id,
-      });
-
-    if (assignErr) throw new Error(assignErr.message);
-
-    // Marcar habitación como ocupada
-    await supabase
-      .from("rooms")
-      .update({ status: "occupied" })
-      .eq("id", assignmentPayload.room_id);
-
-    // Actualizar estado del inquilino a active
-    await supabase
-      .from("lodgers")
-      .update({ status: "active" })
-      .eq("id", lodger.id);
-  }
-
-  return lodger;
+export async function createLodger(payload) {
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "create", payload },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data?.lodger ?? result.data;
 }
 
 export async function updateLodger(id, patch) {
-  const { data, error } = await supabase
-    .from("lodgers")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "update", payload: { id, ...patch } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function setLodgerStatus(id, status) {
-  return updateLodger(id, { status });
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "set_status", payload: { id, status } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function scheduleCheckout(lodgerId, moveOutDate) {
-  const { error } = await supabase
-    .from("lodger_room_assignments")
-    .update({ move_out_date: moveOutDate, status: "ended" })
-    .eq("lodger_id", lodgerId)
-    .eq("status", "active");
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "schedule_checkout", payload: { id: lodgerId, move_out_date: moveOutDate } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
+}
 
-  if (error) throw new Error(error.message);
-
-  await supabase
-    .from("lodgers")
-    .update({ status: "pending_checkout" })
-    .eq("id", lodgerId);
+export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent }) {
+  const result = await invokeWithAuth("manage_lodger", {
+    body: {
+      action: "reassign_room",
+      payload: {
+        id: lodgerId,
+        new_room_id: newRoomId,
+        new_accommodation_id: newAccommodationId,
+        move_in_date: moveInDate,
+        billing_start_date: billingStartDate,
+        monthly_rent: monthlyRent,
+      },
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
