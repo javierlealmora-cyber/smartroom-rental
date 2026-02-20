@@ -9,11 +9,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
+import { listEntities } from "../../../services/entities.service";
 import {
   mockClientAccounts,
   mockAccommodations,
-  mockLegalCompanies,
-  mockInternalCompanies,
   mockTickets,
   mockSurveys,
   PLANS,
@@ -45,57 +44,79 @@ export default function DashboardSuperadmin() {
   const [planDistribution, setPlanDistribution] = useState([]);
 
   useEffect(() => {
-    // Calcular estadísticas desde datos mock
-    const active = mockClientAccounts.filter((ca) => ca.status === STATUS.ACTIVE).length;
-    const suspended = mockClientAccounts.filter((ca) => ca.status === STATUS.SUSPENDED).length;
-    const cancelled = mockClientAccounts.filter((ca) => ca.status === STATUS.CANCELLED).length;
+    const load = async () => {
+      // Calcular estadísticas desde datos mock
+      const active = mockClientAccounts.filter((ca) => ca.status === STATUS.ACTIVE).length;
+      const suspended = mockClientAccounts.filter((ca) => ca.status === STATUS.SUSPENDED).length;
+      const cancelled = mockClientAccounts.filter((ca) => ca.status === STATUS.CANCELLED).length;
 
-    // Contar entidades (legal + internal companies)
-    const totalEntities = mockLegalCompanies.length + mockInternalCompanies.length;
+      let entities = [];
+      try {
+        entities = await listEntities();
+      } catch {
+        entities = [];
+      }
 
-    const totalAccommodations = mockAccommodations.length;
-    const totalRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.total_rooms || 0), 0);
-    const occupiedRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.occupied_rooms || 0), 0);
+      const totalEntities = entities.length;
+      const totalAccommodations = mockAccommodations.length;
+      const totalRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.total_rooms || 0), 0);
+      const occupiedRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.occupied_rooms || 0), 0);
 
-    // Calcular estadísticas de tickets
-    const openTickets = mockTickets.filter((t) => t.status === "open").length;
+      // Calcular estadísticas de tickets
+      const openTickets = mockTickets.filter((t) => t.status === "open").length;
 
-    // Calcular respuestas de encuestas
-    const completedSurveys = mockSurveys.filter((s) => s.status === "completed");
-    const latestSurvey = mockSurveys.length > 0
-      ? mockSurveys.sort((a, b) => new Date(b.due_date) - new Date(a.due_date))[0]
-      : null;
+      // Calcular respuestas de encuestas
+      const completedSurveys = mockSurveys.filter((s) => s.status === "completed");
+      const latestSurvey = mockSurveys.length > 0
+        ? mockSurveys.sort((a, b) => new Date(b.due_date) - new Date(a.due_date))[0]
+        : null;
 
-    setStats({
-      totalAccounts: mockClientAccounts.length,
-      activeAccounts: active,
-      suspendedAccounts: suspended,
-      cancelledAccounts: cancelled,
-      totalEntities,
-      totalAccommodations,
-      totalRooms,
-      occupiedRooms,
-      totalTickets: mockTickets.length,
-      openTickets,
-      totalSurveyResponses: completedSurveys.length,
-      latestSurveyTitle: latestSurvey?.title || "",
-    });
+      setStats({
+        totalAccounts: mockClientAccounts.length,
+        activeAccounts: active,
+        suspendedAccounts: suspended,
+        cancelledAccounts: cancelled,
+        totalEntities,
+        totalAccommodations,
+        totalRooms,
+        occupiedRooms,
+        totalTickets: mockTickets.length,
+        openTickets,
+        totalSurveyResponses: completedSurveys.length,
+        latestSurveyTitle: latestSurvey?.title || "",
+      });
 
-    // Calcular distribución por plan
-    const distribution = Object.values(PLANS).map((plan) => {
-      const count = mockClientAccounts.filter((ca) => ca.plan === plan).length;
-      const percentage = mockClientAccounts.length > 0
-        ? Math.round((count / mockClientAccounts.length) * 100)
-        : 0;
-      return { plan, count, percentage };
-    });
-    setPlanDistribution(distribution);
+      // Calcular distribución por plan
+      const distribution = Object.values(PLANS).map((plan) => {
+        const count = mockClientAccounts.filter((ca) => ca.plan === plan).length;
+        const percentage = mockClientAccounts.length > 0
+          ? Math.round((count / mockClientAccounts.length) * 100)
+          : 0;
+        return { plan, count, percentage };
+      });
+      setPlanDistribution(distribution);
 
-    // Últimas 5 cuentas por fecha de creación
-    const sorted = [...mockClientAccounts]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 5);
-    setRecentAccounts(sorted);
+      // Últimas 5 cuentas por fecha de creación
+      const sorted = [...mockClientAccounts]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5);
+
+      const entitiesByAccountId = entities.reduce((acc, e) => {
+        const key = e.client_account_id;
+        if (!key) return acc;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      setRecentAccounts(
+        sorted.map((a) => ({
+          ...a,
+          __entitiesCount: entitiesByAccountId[a.id] || 0,
+        }))
+      );
+    };
+
+    load();
   }, []);
 
   const occupancyRate = stats.totalRooms > 0
@@ -566,6 +587,7 @@ export default function DashboardSuperadmin() {
             Ver todas →
           </button>
         </div>
+
         <div style={styles.tableContainer}>
           <table style={styles.table}>
             <thead>
@@ -586,10 +608,7 @@ export default function DashboardSuperadmin() {
                 const occRate = account.stats?.total_rooms > 0
                   ? Math.round((account.stats.occupied_rooms / account.stats.total_rooms) * 100)
                   : 0;
-                // Contar entidades de esta cuenta
-                const accountEntities =
-                  mockLegalCompanies.filter(lc => lc.client_account_id === account.id).length +
-                  mockInternalCompanies.filter(ic => ic.client_account_id === account.id).length;
+                const accountEntities = account.__entitiesCount || 0;
 
                 return (
                   <tr key={account.id} style={styles.tr}>

@@ -72,13 +72,57 @@ src/
 
 ## Tablas principales (Postgres)
 
+### Core / Tenancy
 | Tabla | Descripcion |
 |---|---|
 | `auth.users` | Gestionada por Supabase Auth |
 | `profiles` | Perfil extendido: role, client_account_id, onboarding_status, is_primary_admin |
 | `client_accounts` | Tenant SaaS: name, slug, plan_code, billing_cycle, status, branding |
-| `entities` | Entidades payer/owner por cuenta |
+| `entities` | Entidades payer/owner por cuenta (type: payer / owner) |
 | `plans_catalog` | Catalogo de planes con precios, limites y features |
+
+### Operacion
+| Tabla | Descripcion |
+|---|---|
+| `accommodations` | Alojamientos — FK: client_account_id, owner_entity_id (NOT NULL) |
+| `rooms` | Habitaciones — FK: accommodation_id; status: free/occupied/pending_checkout/maintenance |
+| `lodgers` | Inquilinos — FK: client_account_id; status: invited/active/pending_checkout/inactive |
+| `lodger_room_assignments` | Historial completo de ocupacion — nunca se borra, se cierra con move_out_date |
+
+### Servicios
+| Tabla | Descripcion |
+|---|---|
+| `services_catalog` | Catalogo de servicios definidos por entidad propietaria |
+| `accommodation_services` | Servicios activos en cada alojamiento (precio personalizable) |
+| `lodger_services` | Contratacion/consumo de servicios por inquilino |
+
+### Energia y Boletines
+| Tabla | Descripcion |
+|---|---|
+| `energy_bills` | Facturas de consumo por alojamiento (luz, agua, gas) + path a Storage |
+| `energy_readings` | Lecturas diarias de consumo por habitacion (medidas online) |
+| `energy_settlements` | Liquidacion de una factura entre habitaciones (fijo + variable) |
+| `bulletins` | Boletin energetico por habitacion/inquilino — status: draft/published/acknowledged |
+
+### Jerarquia de datos completa
+
+```
+client_accounts
+  ├── entities (type=payer)          ← Entidad pagadora de la cuenta
+  └── entities (type=owner)          ← Entidades propietarias
+        └── accommodations            ← owner_entity_id NOT NULL
+              ├── energy_bills        ← Facturas del alojamiento
+              │     ├── energy_readings (por room)
+              │     ├── energy_settlements (por room + lodger)
+              │     └── bulletins (por room + lodger)
+              ├── accommodation_services ← Servicios activos
+              └── rooms
+                    └── lodger_room_assignments
+                          └── lodgers (client_account_id)
+                                └── lodger_services
+```
+
+> Ver `docs/estructura-sistema.md` para campos completos, limites por plan y reglas de negocio.
 
 ## Flujo de autenticacion
 

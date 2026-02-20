@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { invokeWithAuth } from "../services/supabaseInvoke.services";
+import { supabase } from "../services/supabaseClient";
 
 const TenantContext = createContext(null);
 
@@ -53,7 +53,8 @@ export function TenantProvider({ children }) {
       setLoading(true);
       try {
         const fnName = import.meta.env.VITE_FN_WHOAMI || "whoami";
-        const data = await invokeWithAuth(fnName);
+        const { data, error: fnError } = await supabase.functions.invoke(fnName);
+        if (fnError) throw fnError;
 
         if (data?.ok && data?.client_account_id) {
           const tenantData = {
@@ -70,11 +71,12 @@ export function TenantProvider({ children }) {
           applyCssVars(DEFAULT_BRANDING);
         }
       } catch (err) {
-        console.warn("[TenantProvider] whoami error:", err.message);
+        console.warn("[TenantProvider] whoami error (non-blocking):", err.message);
         setTenant(null);
         applyCssVars(DEFAULT_BRANDING);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     load();

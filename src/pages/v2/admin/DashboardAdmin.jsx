@@ -6,20 +6,23 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
+import { useAuth } from "../../../providers/AuthProvider";
 import {
   mockAccommodations,
   mockRooms,
   mockTenants,
-  mockLegalCompanies,
-  mockInternalCompanies,
   ROOM_STATUS,
   TENANT_STATUS,
   getRoomStatusColor,
 } from "../../../mocks/clientAccountsData";
+import { listEntities } from "../../../services/entities.service";
 
 export default function DashboardAdmin() {
+  console.log("[DashboardAdmin] render");
   const navigate = useNavigate();
+  const { role } = useAuth();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const canWrite = role !== "viewer";
 
   // ID de la cuenta para filtrar mock data (fallback a ca-001 para demo)
   const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
@@ -37,71 +40,77 @@ export default function DashboardAdmin() {
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
-    // Filtrar datos por el cliente actual
-    const accommodations = mockAccommodations.filter(
-      (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    );
-    const rooms = mockRooms.filter(
-      (r) => r.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    );
-    const tenants = mockTenants.filter(
-      (t) => t.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    );
+    const load = async () => {
+      // Filtrar datos por el cliente actual
+      const accommodations = mockAccommodations.filter(
+        (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
+      );
+      const rooms = mockRooms.filter(
+        (r) => r.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
+      );
+      const tenants = mockTenants.filter(
+        (t) => t.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
+      );
 
-    const free = rooms.filter((r) => r.status === ROOM_STATUS.FREE).length;
-    const occupied = rooms.filter((r) => r.status === ROOM_STATUS.OCCUPIED).length;
-    const pending = rooms.filter((r) => r.status === ROOM_STATUS.PENDING_CHECKOUT).length;
-    const activeTenants = tenants.filter((t) => t.status === TENANT_STATUS.ACTIVE).length;
-    const pendingTenants = tenants.filter(
-      (t) => t.status === TENANT_STATUS.PENDING_CHECKOUT
-    ).length;
+      const free = rooms.filter((r) => r.status === ROOM_STATUS.FREE).length;
+      const occupied = rooms.filter((r) => r.status === ROOM_STATUS.OCCUPIED).length;
+      const pending = rooms.filter((r) => r.status === ROOM_STATUS.PENDING_CHECKOUT).length;
+      const activeTenants = tenants.filter((t) => t.status === TENANT_STATUS.ACTIVE).length;
+      const pendingTenants = tenants.filter(
+        (t) => t.status === TENANT_STATUS.PENDING_CHECKOUT
+      ).length;
 
-    const legalCount = mockLegalCompanies.filter(
-      (lc) => lc.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    ).length;
-    const internalCount = mockInternalCompanies.filter(
-      (ic) => ic.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    ).length;
+      let totalEntities = 0;
+      try {
+        const entities = await listEntities();
+        totalEntities = entities.length;
+      } catch {
+        totalEntities = 0;
+      }
 
-    setStats({
-      totalAccommodations: accommodations.length,
-      totalRooms: rooms.length,
-      freeRooms: free,
-      occupiedRooms: occupied,
-      pendingCheckout: pending,
-      activeTenants,
-      pendingTenants,
-      totalEntities: legalCount + internalCount,
-    });
+      setStats({
+        totalAccommodations: accommodations.length,
+        totalRooms: rooms.length,
+        freeRooms: free,
+        occupiedRooms: occupied,
+        pendingCheckout: pending,
+        activeTenants,
+        pendingTenants,
+        totalEntities,
+      });
 
-    // Simular actividad reciente
-    setRecentActivity([
-      {
-        id: 1,
-        type: "check_in",
-        message: "Ana García se ha registrado en la habitación 101",
-        time: "Hace 2 horas",
-      },
-      {
-        id: 2,
-        type: "check_out",
-        message: "Pedro Sánchez ha programado su salida para el 31/01",
-        time: "Hace 5 horas",
-      },
-      {
-        id: 3,
-        type: "payment",
-        message: "Pago de renta recibido de Carlos Martín",
-        time: "Ayer",
-      },
-      {
-        id: 4,
-        type: "maintenance",
-        message: "Ticket de mantenimiento creado: Calefacción hab. 101",
-        time: "Ayer",
-      },
-    ]);
-  }, []);
+      // Simular actividad reciente
+      setRecentActivity([
+        {
+          id: 1,
+          type: "check_in",
+          message: "Ana García se ha registrado en la habitación 101",
+          time: "Hace 2 horas",
+        },
+        {
+          id: 2,
+          type: "check_out",
+          message: "Pedro Sánchez ha programado su salida para el 31/01",
+          time: "Hace 5 horas",
+        },
+        {
+          id: 3,
+          type: "payment",
+          message: "Pago de renta recibido de Carlos Martín",
+          time: "Ayer",
+        },
+        {
+          id: 4,
+          type: "maintenance",
+          message: "Ticket de mantenimiento creado: Calefacción hab. 101",
+          time: "Ayer",
+        },
+      ]);
+    };
+
+    load();
+
+  }, [CURRENT_CLIENT_ACCOUNT_ID]);
 
   const occupancyRate = stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
@@ -274,7 +283,7 @@ export default function DashboardAdmin() {
           <div style={styles.quickActionsGrid}>
             <button
               style={styles.quickAction}
-              onClick={() => alert("Gestión de Entidades (próximamente)")}
+              onClick={() => navigate("/v2/admin/entidades")}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
                 e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
@@ -286,6 +295,32 @@ export default function DashboardAdmin() {
             >
               <span style={styles.quickActionIcon}>🏛️</span>
               <span style={styles.quickActionLabel}>Gestión Entidades</span>
+            </button>
+
+            <button
+              style={{
+                ...styles.quickAction,
+                opacity: canWrite ? 1 : 0.55,
+                cursor: canWrite ? "pointer" : "not-allowed",
+              }}
+              disabled={!canWrite}
+              onClick={() => {
+                if (!canWrite) return;
+                navigate("/v2/admin/entidades/nueva");
+              }}
+              onMouseEnter={(e) => {
+                if (!canWrite) return;
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                if (!canWrite) return;
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <span style={styles.quickActionIcon}>➕</span>
+              <span style={styles.quickActionLabel}>Nueva Entidad</span>
             </button>
             <button
               style={styles.quickAction}

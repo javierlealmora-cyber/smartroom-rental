@@ -1,439 +1,281 @@
 // src/pages/v2/admin/accommodations/AccommodationsList.jsx
-// Lista de Alojamientos para Admin
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// Lista de Alojamientos para Admin — Ant Design + Supabase real
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Alert, Button, Card, Checkbox, Col, Input, Popconfirm,
+  Progress, Row, Select, Skeleton, Space, Statistic, Tag, Typography,
+} from "antd";
+import { BankOutlined, EditOutlined, PlusOutlined, PoweroffOutlined, ReloadOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import {
-  mockAccommodations,
-  mockRooms,
-  ROOM_STATUS,
-  STATUS,
-  getStatusLabel,
-  getStatusColor,
-  getRoomStatusColor,
-} from "../../../../mocks/clientAccountsData";
+import { listAccommodations, setAccommodationStatus } from "../../../../services/accommodations.service";
+import { listEntities } from "../../../../services/entities.service";
+
+const { Title, Text } = Typography;
+const { Search } = Input;
+const { Option } = Select;
 
 export default function AccommodationsList() {
   const navigate = useNavigate();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
+  const { userName, companyBranding } = useAdminLayout();
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [filterEntityId, setFilterEntityId] = useState(null);
+  const [allAccommodations, setAllAccommodations] = useState([]);
+  const [ownerEntities, setOwnerEntities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filtrar alojamientos
-  const accommodations = useMemo(() => {
-    let result = mockAccommodations.filter(
-      (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-    );
-
-    if (!showInactive) {
-      result = result.filter((a) => a.status === STATUS.ACTIVE);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [data, entities] = await Promise.all([
+        listAccommodations(),
+        listEntities({ type: "owner" }),
+      ]);
+      setAllAccommodations(data);
+      setOwnerEntities(entities);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  const accommodations = useMemo(() => {
+    let result = allAccommodations;
+    if (!showInactive) result = result.filter((a) => a.status === "active");
+    if (filterEntityId) result = result.filter((a) => a.owner_entity_id === filterEntityId);
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
+      const s = searchTerm.toLowerCase();
       result = result.filter(
         (a) =>
-          a.name.toLowerCase().includes(search) ||
-          a.address_line1?.toLowerCase().includes(search) ||
-          a.city?.toLowerCase().includes(search)
+          a.name.toLowerCase().includes(s) ||
+          a.address_line1?.toLowerCase().includes(s) ||
+          a.city?.toLowerCase().includes(s) ||
+          a.owner_entity?.legal_name?.toLowerCase().includes(s)
       );
     }
-
     return result;
-  }, [searchTerm, showInactive]);
+  }, [allAccommodations, searchTerm, showInactive, filterEntityId]);
 
-  // Calcular estadísticas de habitaciones por alojamiento
-  const getAccommodationStats = (accommodationId) => {
-    const rooms = mockRooms.filter((r) => r.accommodation_id === accommodationId);
+  const getStats = (acc) => {
+    const rooms = acc.rooms || [];
     const total = rooms.length;
-    const free = rooms.filter((r) => r.status === ROOM_STATUS.FREE).length;
-    const occupied = rooms.filter((r) => r.status === ROOM_STATUS.OCCUPIED).length;
-    const pending = rooms.filter((r) => r.status === ROOM_STATUS.PENDING_CHECKOUT).length;
-    return { total, free, occupied, pending };
+    const occupied = rooms.filter((r) => r.status === "occupied").length;
+    const free = rooms.filter((r) => r.status === "free").length;
+    const pending = rooms.filter((r) => r.status === "pending_checkout").length;
+    const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
+    return { total, occupied, free, pending, rate };
   };
+
+  const onToggleStatus = async (acc) => {
+    const next = acc.status === "active" ? "inactive" : "active";
+    try {
+      await setAccommodationStatus(acc.id, next);
+      setAllAccommodations((prev) =>
+        prev.map((a) => (a.id === acc.id ? { ...a, status: next } : a))
+      );
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const STATUS_TAG = { active: "success", inactive: "warning", archived: "default" };
+  const STATUS_LABEL = { active: "Activo", inactive: "Inactivo", archived: "Archivado" };
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
-      <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>Gestión de Alojamientos</h1>
-            <p style={styles.subtitle}>
-              {accommodations.length} alojamiento{accommodations.length !== 1 ? "s" : ""}
-            </p>
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div style={styles.toolbar}>
-          <button
-            style={styles.toolbarButton}
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col flex="auto">
+          <Title level={2} style={{ margin: 0 }}>Gestión de Alojamientos</Title>
+          <Text type="secondary">
+            {loading ? "Cargando..." : `${accommodations.length} alojamiento${accommodations.length !== 1 ? "s" : ""}`}
+          </Text>
+        </Col>
+        <Col>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
           >
-            <span style={styles.toolbarIcon}>+</span>
-            <span>Nuevo</span>
-            <span style={styles.toolbarBold}>Alojamiento</span>
-          </button>
-          <button
-            style={styles.toolbarButton}
-            onClick={() => {
-              setSearchTerm("");
-              setShowInactive(false);
-            }}
-          >
-            <span style={styles.toolbarIcon}>🔄</span>
-            <span>Limpiar Filtros</span>
-          </button>
-        </div>
+            Nuevo Alojamiento
+          </Button>
+        </Col>
+      </Row>
 
-        {/* Filtros */}
-        <div style={styles.filters}>
-          <input
-            type="text"
-            placeholder="Buscar por nombre o dirección..."
+      {/* Filtros */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="middle">
+        <Col xs={24} sm={12} md={8}>
+          <Search
+            placeholder="Buscar por nombre, dirección o entidad..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.searchInput}
+            onSearch={(v) => setSearchTerm(v)}
+            allowClear
           />
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-              style={styles.checkbox}
-            />
+        </Col>
+        <Col xs={24} sm={12} md={7}>
+          <Select
+            placeholder="Filtrar por entidad propietaria"
+            value={filterEntityId}
+            onChange={setFilterEntityId}
+            allowClear
+            style={{ width: "100%" }}
+            options={ownerEntities.map((e) => ({ value: e.id, label: e.legal_name }))}
+          />
+        </Col>
+        <Col>
+          <Checkbox
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+          >
             Mostrar desactivados
-          </label>
-        </div>
+          </Checkbox>
+        </Col>
+        <Col>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => { setSearchTerm(""); setShowInactive(false); setFilterEntityId(null); }}
+          >
+            Limpiar
+          </Button>
+        </Col>
+      </Row>
 
-        {/* Lista de alojamientos como cards */}
-        {accommodations.length === 0 ? (
-          <div style={styles.emptyState}>
-            <span style={styles.emptyIcon}>🏠</span>
-            <h3 style={styles.emptyTitle}>No hay alojamientos</h3>
-            <p style={styles.emptyText}>
-              {searchTerm
-                ? "No se encontraron alojamientos con los filtros aplicados"
-                : "Crea tu primer alojamiento para empezar"}
-            </p>
-            {!searchTerm && (
-              <button
-                style={styles.primaryButton}
+      {/* Error */}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+          showIcon
+          action={<Button size="small" onClick={load}>Reintentar</Button>}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {/* Loading skeleton */}
+      {loading && (
+        <Row gutter={[20, 20]}>
+          {[1, 2, 3].map((i) => (
+            <Col key={i} xs={24} sm={24} md={12} xl={8}>
+              <Card>
+                <Skeleton active paragraph={{ rows: 4 }} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      {/* Empty state */}
+      {!loading && accommodations.length === 0 && (
+        <Card style={{ textAlign: "center", padding: "40px 0" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🏠</div>
+          <Title level={4}>No hay alojamientos</Title>
+          <Text type="secondary">
+            {searchTerm
+              ? "No se encontraron alojamientos con los filtros aplicados"
+              : "Crea tu primer alojamiento para empezar"}
+          </Text>
+          {!searchTerm && (
+            <div style={{ marginTop: 24 }}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
                 onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
               >
-                + Añadir Alojamiento
-              </button>
-            )}
-          </div>
-        ) : (
-          <div style={styles.accommodationsGrid}>
-            {accommodations.map((acc) => {
-              const stats = getAccommodationStats(acc.id);
-              const occupancyRate = stats.total > 0
-                ? Math.round((stats.occupied / stats.total) * 100)
-                : 0;
+                Añadir Alojamiento
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
 
-              return (
-                <div key={acc.id} style={styles.accommodationCard}>
-                  <div style={styles.cardHeader}>
-                    <h3 style={styles.accName}>{acc.name}</h3>
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        backgroundColor: `${getStatusColor(acc.status)}15`,
-                        color: getStatusColor(acc.status),
-                      }}
-                    >
-                      {getStatusLabel(acc.status)}
-                    </span>
-                  </div>
+      {/* Grid de cards */}
+      {!loading && accommodations.length > 0 && (
+        <Row gutter={[20, 20]}>
+          {accommodations.map((acc) => {
+            const { total, occupied, free, pending, rate } = getStats(acc);
+            const progressColor = rate > 80 ? "#059669" : rate > 50 ? "#F59E0B" : "#DC2626";
 
-                  <p style={styles.accAddress}>
-                    {acc.address_line1}, {acc.postal_code} {acc.city}
-                  </p>
-
-                  {/* Estadísticas de habitaciones */}
-                  <div style={styles.roomStats}>
-                    <div style={styles.roomStatItem}>
-                      <span style={styles.roomStatValue}>{stats.total}</span>
-                      <span style={styles.roomStatLabel}>Total</span>
-                    </div>
-                    <div style={styles.roomStatItem}>
-                      <span style={{ ...styles.roomStatValue, color: getRoomStatusColor(ROOM_STATUS.OCCUPIED) }}>
-                        {stats.occupied}
-                      </span>
-                      <span style={styles.roomStatLabel}>Ocupadas</span>
-                    </div>
-                    <div style={styles.roomStatItem}>
-                      <span style={{ ...styles.roomStatValue, color: getRoomStatusColor(ROOM_STATUS.FREE) }}>
-                        {stats.free}
-                      </span>
-                      <span style={styles.roomStatLabel}>Libres</span>
-                    </div>
-                    <div style={styles.roomStatItem}>
-                      <span style={{ ...styles.roomStatValue, color: getRoomStatusColor(ROOM_STATUS.PENDING_CHECKOUT) }}>
-                        {stats.pending}
-                      </span>
-                      <span style={styles.roomStatLabel}>Pendientes</span>
-                    </div>
-                  </div>
-
-                  {/* Barra de ocupación */}
-                  <div style={styles.occupancyBar}>
-                    <div style={styles.occupancyLabel}>
-                      <span>Ocupación</span>
-                      <span style={styles.occupancyPercentage}>{occupancyRate}%</span>
-                    </div>
-                    <div style={styles.progressBar}>
-                      <div
-                        style={{
-                          ...styles.progressFill,
-                          width: `${occupancyRate}%`,
-                          backgroundColor: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Acciones */}
-                  <div style={styles.cardActions}>
-                    <button
-                      style={styles.actionButton}
-                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}`)}
-                    >
-                      Ver Detalle
-                    </button>
-                    <button
-                      style={styles.actionButtonSecondary}
+            return (
+              <Col key={acc.id} xs={24} sm={24} md={12} xl={8}>
+                <Card
+                  title={
+                    <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                      <Space>
+                        <Text strong style={{ fontSize: 16 }}>{acc.name}</Text>
+                        <Tag color={STATUS_TAG[acc.status] || "default"}>
+                          {STATUS_LABEL[acc.status] || acc.status}
+                        </Tag>
+                      </Space>
+                      {acc.owner_entity && (
+                        <Text type="secondary" style={{ fontSize: 12, fontWeight: "normal" }}>
+                          <BankOutlined style={{ marginRight: 4 }} />
+                          {acc.owner_entity.legal_name}
+                        </Text>
+                      )}
+                    </Space>
+                  }
+                  actions={[
+                    <Button
+                      key="edit"
+                      type="link"
+                      icon={<EditOutlined />}
                       onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/editar`)}
                     >
                       Editar
-                    </button>
+                    </Button>,
+                    <Popconfirm
+                      key="toggle"
+                      title={acc.status === "active" ? "¿Desactivar este alojamiento?" : "¿Reactivar este alojamiento?"}
+                      onConfirm={() => onToggleStatus(acc)}
+                      okText="Sí"
+                      cancelText="No"
+                    >
+                      <Button type="link" icon={<PoweroffOutlined />} danger={acc.status === "active"}>
+                        {acc.status === "active" ? "Desactivar" : "Reactivar"}
+                      </Button>
+                    </Popconfirm>,
+                  ]}
+                >
+                  <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+                    {[acc.address_line1, acc.postal_code, acc.city].filter(Boolean).join(", ") || "Sin dirección"}
+                  </Text>
+
+                  {/* Estadísticas */}
+                  <Row gutter={8} style={{ marginBottom: 16 }}>
+                    <Col span={6}><Statistic title="Total" value={total} valueStyle={{ fontSize: 20 }} /></Col>
+                    <Col span={6}><Statistic title="Ocupadas" value={occupied} valueStyle={{ fontSize: 20, color: "#DC2626" }} /></Col>
+                    <Col span={6}><Statistic title="Libres" value={free} valueStyle={{ fontSize: 20, color: "#059669" }} /></Col>
+                    <Col span={6}><Statistic title="Pendientes" value={pending} valueStyle={{ fontSize: 20, color: "#F59E0B" }} /></Col>
+                  </Row>
+
+                  {/* Barra de ocupación */}
+                  <div>
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>Ocupación</Text>
+                      <Text strong style={{ fontSize: 12 }}>{rate}%</Text>
+                    </Row>
+                    <Progress
+                      percent={rate}
+                      showInfo={false}
+                      strokeColor={progressColor}
+                      size="small"
+                    />
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
+      )}
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  toolbar: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 20,
-  },
-  toolbarButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "10px 20px",
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  toolbarIcon: {
-    fontSize: 16,
-  },
-  toolbarBold: {
-    fontWeight: "700",
-    color: "#111827",
-  },
-  primaryButton: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  filters: {
-    display: "flex",
-    gap: 16,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  searchInput: {
-    flex: 1,
-    maxWidth: 400,
-    padding: "10px 16px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-  },
-  checkboxLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    fontSize: 14,
-    color: "#374151",
-    cursor: "pointer",
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    cursor: "pointer",
-  },
-  accommodationsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-    gap: 20,
-  },
-  accommodationCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    transition: "box-shadow 0.2s ease",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  accName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    margin: 0,
-  },
-  statusBadge: {
-    padding: "4px 10px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  accAddress: {
-    fontSize: 14,
-    color: "#6B7280",
-    margin: "0 0 20px 0",
-  },
-  roomStats: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: 12,
-    padding: 16,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  roomStatItem: {
-    textAlign: "center",
-  },
-  roomStatValue: {
-    display: "block",
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  roomStatLabel: {
-    fontSize: 11,
-    color: "#6B7280",
-    textTransform: "uppercase",
-  },
-  occupancyBar: {
-    marginBottom: 20,
-  },
-  occupancyLabel: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 6,
-  },
-  occupancyPercentage: {
-    fontWeight: "600",
-    color: "#111827",
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-  cardActions: {
-    display: "flex",
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    padding: "10px 16px",
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    cursor: "pointer",
-  },
-  actionButtonSecondary: {
-    flex: 1,
-    padding: "10px 16px",
-    backgroundColor: "#FFFFFF",
-    color: "#374151",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    cursor: "pointer",
-  },
-  emptyState: {
-    textAlign: "center",
-    padding: 60,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    display: "block",
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
-  },
-};

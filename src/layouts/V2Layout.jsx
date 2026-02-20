@@ -52,6 +52,20 @@ const BREADCRUMB_ROUTES = {
   ],
   // Admin
   "/v2/admin": [{ label: "Dashboard", path: "/v2/admin" }],
+  "/v2/admin/entidades": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Entidades", path: "/v2/admin/entidades" },
+  ],
+  "/v2/admin/entidades/nueva": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Entidades", path: "/v2/admin/entidades" },
+    { label: "Nueva", path: null },
+  ],
+  "/v2/admin/entidades/:id/editar": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Entidades", path: "/v2/admin/entidades" },
+    { label: "Editar", path: null },
+  ],
   "/v2/admin/alojamientos": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Alojamientos", path: "/v2/admin/alojamientos" },
@@ -159,7 +173,7 @@ export default function V2Layout({
   const breadcrumbs = getBreadcrumbs();
 
   const handleLogout = () => {
-    const portal = role === "superadmin" ? "superadmin" : role === "admin" ? "manager" : "lodger";
+    const portal = role === "superadmin" ? "superadmin" : role === "admin" ? "admin" : "lodger";
     navigate(`/v2/auth/logout?portal=${portal}`);
   };
 

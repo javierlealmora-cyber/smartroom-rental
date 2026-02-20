@@ -13,9 +13,23 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
 
 export default function RequireTenant() {
-  const { loading, role, tenantState } = useAuth();
+  const { loading, user, profile, profileLoading, role, tenantState } = useAuth();
 
-  if (loading) return null;
+  if (loading || (user && profileLoading)) {
+    return (
+      <div style={{ padding: 24, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
+        Cargando...
+      </div>
+    );
+  }
+
+  if (user && !profile) {
+    return (
+      <div style={{ padding: 24, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
+        No se ha podido cargar tu perfil. Cierra sesion y vuelve a iniciar.
+      </div>
+    );
+  }
 
   // Superadmins bypass all tenant checks
   if (role === "superadmin") return <Outlet />;
@@ -27,6 +41,7 @@ export default function RequireTenant() {
     case "in_progress":
     case "payment_pending":
       // User has started onboarding but hasn't completed -- send to wizard
+      console.warn("[RequireTenant] Redirecting to wizard", { role, tenantState });
       return <Navigate to="/v2/wizard/contratar" replace />;
 
     case "none":
@@ -35,6 +50,7 @@ export default function RequireTenant() {
       if (tenantState !== "none") {
         console.error("[RequireTenant] Unexpected tenantState:", tenantState);
       }
+      console.warn("[RequireTenant] Redirecting to plans (no active tenant)", { role, tenantState });
       return (
         <Navigate
           to="/v2/planes"

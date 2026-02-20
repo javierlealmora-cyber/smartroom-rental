@@ -111,10 +111,10 @@ export default function LodgerLogin() {
               Esta cuenta es de <strong>gestor</strong> y no tiene acceso al portal del inquilino.
             </p>
             <p style={s.msgText}>
-              Utiliza el enlace de <strong>Acceso Gestores</strong> que aparece mas abajo para entrar en tu portal.
+              Utiliza el enlace de <strong>Acceso Admin</strong> que aparece mas abajo para entrar en tu portal.
             </p>
             <div style={s.portalLinks}>
-              <Link to="/v2/manager/auth/login" style={{ ...s.portalLink, color: "#2563eb", fontWeight: 600 }}>Acceso Gestores</Link>
+              <Link to="/v2/admin/auth/login" style={{ ...s.portalLink, color: "#2563eb", fontWeight: 600 }}>Acceso Admin</Link>
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function LodgerLogin() {
         <div style={s.portalLinks}>
           <Link to="/v2/auth/login" style={s.portalLink}>Acceso Comercial</Link>
           <span style={s.portalSep}>|</span>
-          <Link to="/v2/manager/auth/login" style={s.portalLink}>Acceso Gestores</Link>
+          <Link to="/v2/admin/auth/login" style={s.portalLink}>Acceso Admin</Link>
         </div>
       </div>
     );

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { ConfigProvider } from "antd";
+import esES from "antd/locale/es_ES";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "./AuthProvider";
 import { useTenant } from "./TenantProvider";
@@ -98,7 +100,21 @@ export function ThemeProvider({ children }) {
 
   const value = useMemo(() => ({ theme, loading }), [theme, loading]);
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const antTheme = useMemo(() => ({
+    token: {
+      colorPrimary: theme.primaryColor || "#111827",
+      borderRadius: 8,
+      fontFamily: "inherit",
+    },
+  }), [theme.primaryColor]);
+
+  return (
+    <ThemeContext.Provider value={value}>
+      <ConfigProvider theme={antTheme} locale={esES}>
+        {children}
+      </ConfigProvider>
+    </ThemeContext.Provider>
+  );
 }
 
 export const useTheme = () => useContext(ThemeContext);

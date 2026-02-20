@@ -19,6 +19,6 @@ export function isLodgerRole(role) {
 export function getPortalHomeForRole(role) {
   if (role === "superadmin") return "/v2/superadmin";
   if (isLodgerRole(role)) return "/v2/lodger/dashboard";
-  if (isManagerRole(role)) return "/v2/manager/dashboard";
-  return "/v2/manager/dashboard";
+  if (isManagerRole(role)) return "/v2/admin";
+  return "/v2/admin";
 }

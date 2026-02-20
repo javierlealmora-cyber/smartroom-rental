@@ -109,7 +109,7 @@ export default function AutoRegistroCuenta() {
       } else {
         // Sin checkout → mock mode → cuenta activada directamente
         // Redirigir al dashboard automaticamente
-        navigate("/v2/manager/dashboard");
+        navigate("/v2/admin/dashboard");
       }
     } catch (err) {
       console.error("[AutoRegistroCuenta] wizard_submit error:", err);
@@ -145,7 +145,7 @@ export default function AutoRegistroCuenta() {
   // Redirect a dashboard tras stripe success
   const handleGoToDashboard = useCallback(async () => {
     await refreshProfile();
-    navigate("/v2/manager/dashboard");
+    navigate("/v2/admin/dashboard");
   }, [navigate, refreshProfile]);
 
   return (

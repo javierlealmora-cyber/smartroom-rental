@@ -5,13 +5,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
+import { supabase } from "../../../services/supabaseClient";
 import {
   mockClientAccounts,
-  mockLegalCompanies,
-  mockInternalCompanies,
   mockAccommodations,
   mockUsers,
-  LEGAL_COMPANY_TYPES,
   STATUS,
   getPlanLabel,
   getPlanColor,
@@ -25,26 +23,42 @@ export default function ClientAccountDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [account, setAccount] = useState(null);
-  const [legalCompanies, setLegalCompanies] = useState([]);
-  const [internalCompanies, setInternalCompanies] = useState([]);
+  const [payerEntity, setPayerEntity] = useState(null);
+  const [ownerEntities, setOwnerEntities] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simular carga de datos
-    setTimeout(() => {
+    const load = async () => {
       const acc = mockClientAccounts.find((a) => a.id === id);
       if (acc) {
         setAccount(acc);
-        setLegalCompanies(mockLegalCompanies.filter((lc) => lc.client_account_id === id));
-        setInternalCompanies(mockInternalCompanies.filter((ic) => ic.client_account_id === id));
         setAccommodations(mockAccommodations.filter((a) => a.client_account_id === id));
         setUsers(mockUsers.filter((u) => u.client_account_id === id));
+
+        try {
+          const { data: entities, error } = await supabase
+            .from("entities")
+            .select("*")
+            .eq("client_account_id", id);
+
+          if (!error) {
+            const payer = (entities || []).find((e) => e.type === "payer") || null;
+            const owners = (entities || []).filter((e) => e.type === "owner");
+            setPayerEntity(payer);
+            setOwnerEntities(owners);
+          }
+        } catch {
+          setPayerEntity(null);
+          setOwnerEntities([]);
+        }
       }
       setLoading(false);
-    }, 300);
+    };
+
+    load();
   }, [id]);
 
   if (loading) {
@@ -74,8 +88,8 @@ export default function ClientAccountDetail() {
     );
   }
 
-  const accountCompany = legalCompanies.find((lc) => lc.type === LEGAL_COMPANY_TYPES.ACCOUNT);
-  const fiscalCompanies = legalCompanies.filter((lc) => lc.type === LEGAL_COMPANY_TYPES.FISCAL);
+  const accountCompany = payerEntity;
+  const fiscalCompanies = ownerEntities;
   const occupancyRate = account.stats?.total_rooms > 0
     ? Math.round((account.stats.occupied_rooms / account.stats.total_rooms) * 100)
     : 0;
@@ -263,19 +277,19 @@ export default function ClientAccountDetail() {
                   <div style={styles.infoGrid}>
                     <div style={styles.infoRow}>
                       <span style={styles.infoLabel}>Nombre fiscal:</span>
-                      <span style={styles.infoValue}>{accountCompany.legal_name}</span>
+                      <span style={styles.infoValue}>{accountCompany.legal_name || "-"}</span>
                     </div>
                     <div style={styles.infoRow}>
                       <span style={styles.infoLabel}>CIF/NIF:</span>
-                      <span style={styles.infoValue}>{accountCompany.tax_id}</span>
+                      <span style={styles.infoValue}>{accountCompany.tax_id || "-"}</span>
                     </div>
                     <div style={styles.infoRow}>
                       <span style={styles.infoLabel}>Email:</span>
-                      <span style={styles.infoValue}>{accountCompany.contact_email}</span>
+                      <span style={styles.infoValue}>{accountCompany.billing_email || "-"}</span>
                     </div>
                     <div style={styles.infoRow}>
                       <span style={styles.infoLabel}>Teléfono:</span>
-                      <span style={styles.infoValue}>{accountCompany.contact_phone || "-"}</span>
+                      <span style={styles.infoValue}>{accountCompany.phone || "-"}</span>
                     </div>
                   </div>
                 ) : (
@@ -289,34 +303,27 @@ export default function ClientAccountDetail() {
         {/* Tab: Empresas */}
         {activeTab === "companies" && (
           <>
-            {/* Empresas Fiscales */}
+            {/* Entidades Propietarias */}
             <div style={styles.card}>
               <div style={styles.cardHeader}>
-                <h3 style={styles.cardTitle}>Empresas Fiscales</h3>
-                <button
-                  style={styles.addButton}
-                  onClick={() => alert("Añadir empresa fiscal (mock)")}
-                >
-                  + Añadir
-                </button>
+                <h3 style={styles.cardTitle}>Entidades Propietarias</h3>
               </div>
               {fiscalCompanies.length > 0 ? (
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>Nombre fiscal</th>
+                      <th style={styles.th}>Nombre</th>
                       <th style={styles.th}>CIF/NIF</th>
                       <th style={styles.th}>Email</th>
                       <th style={styles.th}>Estado</th>
-                      <th style={styles.th}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {fiscalCompanies.map((fc) => (
                       <tr key={fc.id} style={styles.tr}>
-                        <td style={styles.td}>{fc.legal_name}</td>
-                        <td style={styles.td}>{fc.tax_id}</td>
-                        <td style={styles.td}>{fc.contact_email}</td>
+                        <td style={styles.td}>{fc.legal_name || fc.first_name || "-"}</td>
+                        <td style={styles.td}>{fc.tax_id || "-"}</td>
+                        <td style={styles.td}>{fc.billing_email || "-"}</td>
                         <td style={styles.td}>
                           <span
                             style={{
@@ -328,73 +335,14 @@ export default function ClientAccountDetail() {
                             {getStatusLabel(fc.status)}
                           </span>
                         </td>
-                        <td style={styles.td}>
-                          <button style={styles.actionLink}>Editar</button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
-                <p style={styles.emptyText}>No hay empresas fiscales configuradas</p>
+                <p style={styles.emptyText}>No hay entidades propietarias configuradas</p>
               )}
             </div>
-
-            {/* Empresas Internas (solo visible para Agencia) */}
-            {account.plan === "agency" && (
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>Empresas Internas (Carteras)</h3>
-                  <button
-                    style={styles.addButton}
-                    onClick={() => alert("Añadir empresa interna (mock)")}
-                  >
-                    + Añadir
-                  </button>
-                </div>
-                {internalCompanies.length > 0 ? (
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>Nombre</th>
-                        <th style={styles.th}>Estado</th>
-                        <th style={styles.th}>Alojamientos</th>
-                        <th style={styles.th}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {internalCompanies.map((ic) => {
-                        const accCount = accommodations.filter(
-                          (a) => a.internal_company_id === ic.id
-                        ).length;
-                        return (
-                          <tr key={ic.id} style={styles.tr}>
-                            <td style={styles.td}>{ic.name}</td>
-                            <td style={styles.td}>
-                              <span
-                                style={{
-                                  ...styles.badge,
-                                  backgroundColor: `${getStatusColor(ic.status)}15`,
-                                  color: getStatusColor(ic.status),
-                                }}
-                              >
-                                {getStatusLabel(ic.status)}
-                              </span>
-                            </td>
-                            <td style={styles.td}>{accCount}</td>
-                            <td style={styles.td}>
-                              <button style={styles.actionLink}>Editar</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p style={styles.emptyText}>No hay empresas internas configuradas</p>
-                )}
-              </div>
-            )}
           </>
         )}
 

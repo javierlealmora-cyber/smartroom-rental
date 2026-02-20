@@ -1,11 +1,12 @@
 // src/pages/auth/Logout.jsx
 // Página de logout manual - acceder a /auth/logout para forzar cierre de sesión
-// Soporta ?portal=manager|lodger|superadmin para redirigir al login correcto
+// Soporta ?portal=admin|lodger|superadmin para redirigir al login correcto
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 
 const LOGIN_ROUTES = {
-  manager: "/v2/manager/auth/login",
+  admin: "/v2/admin/auth/login",
+  manager: "/v2/admin/auth/login",
   lodger: "/v2/lodger/auth/login",
   superadmin: "/v2/auth/login",
 };

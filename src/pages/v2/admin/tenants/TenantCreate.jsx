@@ -1,582 +1,279 @@
 // src/pages/v2/admin/tenants/TenantCreate.jsx
-// Crear nuevo Inquilino con asignación de habitación
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// Crear nuevo Inquilino con asignación de habitación — Ant Design + Supabase real
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import {
+  Alert, Button, Card, Checkbox, Col, DatePicker, Form,
+  Input, Row, Select, Space, Tag, Typography,
+} from "antd";
+import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import {
-  mockAccommodations,
-  mockRooms,
-  ROOM_STATUS,
-  getRoomStatusLabel,
-  getRoomStatusColor,
-} from "../../../../mocks/clientAccountsData";
+import { createLodger } from "../../../../services/lodgers.service";
+import { listAccommodations, listRooms } from "../../../../services/accommodations.service";
+
+const { Title, Text } = Typography;
+
+const ROOM_STATUS_TAG = { free: "success", occupied: "error", pending_checkout: "warning", maintenance: "default" };
+const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pendiente baja", maintenance: "Mantenimiento" };
 
 export default function TenantCreate() {
   const navigate = useNavigate();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
-  const [errors, setErrors] = useState({});
+  const [form] = Form.useForm();
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [billingSameAsMoveIn, setBillingSameAsMoveIn] = useState(true);
 
-  // Estado del formulario
-  const [formData, setFormData] = useState({
-    full_name: "",
-    email: "",
-    phone: "",
-    document: "",
-    accommodation_id: "",
-    room_id: "",
-    move_in_date: new Date().toISOString().split("T")[0],
-    billing_start_date: "",
-    billing_same_as_move_in: true,
-    send_onboarding: true,
-  });
-
-  useEffect(() => {
-    // Cargar alojamientos del cliente
-    const accs = mockAccommodations.filter(
-      (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID && a.status === "active"
-    );
-    setAccommodations(accs);
+  const loadAccommodations = useCallback(async () => {
+    try {
+      const accs = await listAccommodations({ status: "active" });
+      setAccommodations(accs);
+    } catch {
+      setAccommodations([]);
+    }
   }, []);
 
-  // Actualizar habitaciones disponibles cuando cambia el alojamiento
-  useEffect(() => {
-    if (formData.accommodation_id) {
-      const rooms = mockRooms.filter(
-        (r) => r.accommodation_id === formData.accommodation_id
-      );
-      setAvailableRooms(rooms);
-      // Reset room selection
-      setFormData((prev) => ({ ...prev, room_id: "" }));
-    } else {
-      setAvailableRooms([]);
-    }
-  }, [formData.accommodation_id]);
+  useEffect(() => { loadAccommodations(); }, [loadAccommodations]);
 
-  // Actualizar billing_start_date cuando cambia move_in_date y está marcado el checkbox
-  useEffect(() => {
-    if (formData.billing_same_as_move_in) {
-      setFormData((prev) => ({ ...prev, billing_start_date: prev.move_in_date }));
-    }
-  }, [formData.move_in_date, formData.billing_same_as_move_in]);
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+  const onAccommodationChange = (accId) => {
+    setSelectedRoomId(null);
+    form.setFieldValue("room_id", undefined);
+    if (!accId) { setAvailableRooms([]); return; }
+    setLoadingRooms(true);
+    listRooms(accId)
+      .then(setAvailableRooms)
+      .catch(() => setAvailableRooms([]))
+      .finally(() => setLoadingRooms(false));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.full_name.trim()) {
-      newErrors.full_name = "El nombre es obligatorio";
+  const onFinish = async (values) => {
+    const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
+    if (!selectedRoomId) {
+      form.setFields([{ name: "room_id", errors: ["Seleccione una habitación"] }]);
+      return;
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "El email es obligatorio";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido";
-    }
-
-    if (!formData.accommodation_id) {
-      newErrors.accommodation_id = "Seleccione un alojamiento";
-    }
-
-    if (!formData.room_id) {
-      newErrors.room_id = "Seleccione una habitación";
-    }
-
-    if (!formData.move_in_date) {
-      newErrors.move_in_date = "La fecha de entrada es obligatoria";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    // Verificar que la habitación sigue libre
-    const selectedRoom = availableRooms.find((r) => r.id === formData.room_id);
-    if (selectedRoom && selectedRoom.status !== ROOM_STATUS.FREE) {
-      setErrors({ room_id: "Esta habitación ya está ocupada" });
+    if (selectedRoom?.status !== "free") {
+      form.setFields([{ name: "room_id", errors: ["Esta habitación ya no está libre"] }]);
       return;
     }
 
-    // Mock: simular creación
-    console.log("Crear inquilino:", formData);
-    alert(
-      `Inquilino ${formData.full_name} registrado correctamente (mock).\n` +
-        (formData.send_onboarding
-          ? `Se enviará email de onboarding a ${formData.email}`
-          : "No se enviará email de onboarding")
-    );
-    navigate("/v2/admin/inquilinos");
-  };
+    const moveInDate = values.move_in_date.format("YYYY-MM-DD");
+    const billingDate = billingSameAsMoveIn
+      ? moveInDate
+      : (values.billing_start_date?.format("YYYY-MM-DD") || moveInDate);
 
-  const selectedAccommodation = accommodations.find((a) => a.id === formData.accommodation_id);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await createLodger(
+        {
+          client_account_id: clientAccountId,
+          full_name: values.full_name,
+          email: values.email,
+          phone: values.phone || null,
+          document_id: values.document_id || null,
+          status: "invited",
+        },
+        {
+          room_id: selectedRoomId,
+          accommodation_id: values.accommodation_id,
+          move_in_date: moveInDate,
+          billing_start_date: billingDate,
+          monthly_rent: selectedRoom?.monthly_rent ?? null,
+          status: "active",
+        }
+      );
+      navigate("/v2/admin/inquilinos");
+    } catch (e) {
+      setSaveError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>Registrar Inquilino</h1>
-          <p style={styles.subtitle}>Complete los datos del nuevo inquilino y asigne una habitación</p>
-        </div>
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={2} style={{ margin: 0 }}>Registrar Inquilino</Title>
+          <Text type="secondary">Complete los datos del nuevo inquilino y asigne una habitación</Text>
+        </Col>
+        <Col>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}>
+            Volver
+          </Button>
+        </Col>
+      </Row>
 
-        <form onSubmit={handleSubmit}>
-          <div style={styles.formGrid}>
-            {/* Datos personales */}
-            <div style={styles.formCard}>
-              <h2 style={styles.sectionTitle}>Datos Personales</h2>
+      {saveError && (
+        <Alert type="error" message={saveError} showIcon style={{ marginBottom: 16 }} />
+      )}
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  Nombre completo <span style={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => handleChange("full_name", e.target.value)}
-                  style={{ ...styles.input, ...(errors.full_name ? styles.inputError : {}) }}
-                  placeholder="Nombre y apellidos"
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        initialValues={{
+          move_in_date: dayjs(),
+          send_onboarding: true,
+        }}
+      >
+        <Row gutter={[24, 0]}>
+          {/* Datos personales */}
+          <Col xs={24} lg={12}>
+            <Card title="Datos Personales" style={{ marginBottom: 24 }}>
+              <Form.Item
+                label="Nombre completo"
+                name="full_name"
+                rules={[{ required: true, message: "El nombre es obligatorio" }]}
+              >
+                <Input placeholder="Nombre y apellidos" />
+              </Form.Item>
+
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: "El email es obligatorio" },
+                  { type: "email", message: "Email inválido" },
+                ]}
+              >
+                <Input placeholder="email@ejemplo.com" />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Teléfono" name="phone">
+                    <Input placeholder="+34 666 123 456" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Documento (DNI/NIE)" name="document_id">
+                    <Input placeholder="12345678A" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item name="send_onboarding" valuePropName="checked">
+                <Checkbox>Enviar email de onboarding al crear el inquilino</Checkbox>
+              </Form.Item>
+            </Card>
+          </Col>
+
+          {/* Asignación */}
+          <Col xs={24} lg={12}>
+            <Card title="Asignación de Habitación" style={{ marginBottom: 24 }}>
+              <Form.Item
+                label="Alojamiento"
+                name="accommodation_id"
+                rules={[{ required: true, message: "Seleccione un alojamiento" }]}
+              >
+                <Select
+                  placeholder="Seleccionar alojamiento..."
+                  onChange={onAccommodationChange}
+                  options={accommodations.map((a) => ({ value: a.id, label: a.name }))}
+                  allowClear
                 />
-                {errors.full_name && <span style={styles.errorText}>{errors.full_name}</span>}
-              </div>
+              </Form.Item>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  Email <span style={styles.required}>*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  style={{ ...styles.input, ...(errors.email ? styles.inputError : {}) }}
-                  placeholder="email@ejemplo.com"
-                />
-                {errors.email && <span style={styles.errorText}>{errors.email}</span>}
-              </div>
-
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Teléfono</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                    style={styles.input}
-                    placeholder="+34 666 123 456"
-                  />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Documento (DNI/NIE)</label>
-                  <input
-                    type="text"
-                    value={formData.document}
-                    onChange={(e) => handleChange("document", e.target.value)}
-                    style={styles.input}
-                    placeholder="12345678A"
-                  />
-                </div>
-              </div>
-
-              <div style={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  id="send_onboarding"
-                  checked={formData.send_onboarding}
-                  onChange={(e) => handleChange("send_onboarding", e.target.checked)}
-                  style={styles.checkboxInput}
-                />
-                <label htmlFor="send_onboarding" style={styles.checkboxLabelText}>
-                  Enviar email de onboarding al crear el inquilino
-                </label>
-              </div>
-            </div>
-
-            {/* Asignación de habitación */}
-            <div style={styles.formCard}>
-              <h2 style={styles.sectionTitle}>Asignación de Habitación</h2>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  Alojamiento <span style={styles.required}>*</span>
-                </label>
-                <select
-                  value={formData.accommodation_id}
-                  onChange={(e) => handleChange("accommodation_id", e.target.value)}
-                  style={{ ...styles.select, ...(errors.accommodation_id ? styles.inputError : {}) }}
-                >
-                  <option value="">Seleccionar alojamiento...</option>
-                  {accommodations.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.accommodation_id && (
-                  <span style={styles.errorText}>{errors.accommodation_id}</span>
-                )}
-              </div>
-
-              {formData.accommodation_id && (
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Habitación <span style={styles.required}>*</span>
-                  </label>
-                  <div style={styles.roomsGrid}>
+              <Form.Item
+                label="Habitación"
+                name="room_id"
+                rules={[{ required: true, message: "Seleccione una habitación" }]}
+              >
+                {loadingRooms ? (
+                  <Text type="secondary">Cargando habitaciones...</Text>
+                ) : availableRooms.length === 0 ? (
+                  <Text type="secondary">
+                    {form.getFieldValue("accommodation_id")
+                      ? "No hay habitaciones en este alojamiento"
+                      : "Selecciona primero un alojamiento"}
+                  </Text>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
                     {availableRooms.map((room) => {
-                      const isSelected = formData.room_id === room.id;
-                      const isAvailable = room.status === ROOM_STATUS.FREE;
-
+                      const isFree = room.status === "free";
+                      const isSelected = selectedRoomId === room.id;
                       return (
-                        <button
+                        <div
                           key={room.id}
-                          type="button"
+                          onClick={() => isFree && setSelectedRoomId(room.id)}
                           style={{
-                            ...styles.roomCard,
-                            ...(isSelected ? styles.roomCardSelected : {}),
-                            ...(isAvailable ? {} : styles.roomCardDisabled),
-                            borderColor: isSelected
-                              ? "#111827"
-                              : getRoomStatusColor(room.status),
+                            padding: "12px 8px",
+                            border: `2px solid ${isSelected ? "#111827" : isFree ? "#d9f7be" : "#ffd8bf"}`,
+                            borderRadius: 8,
+                            backgroundColor: isSelected ? "#f0f0f0" : "#fff",
+                            cursor: isFree ? "pointer" : "not-allowed",
+                            opacity: isFree ? 1 : 0.5,
+                            textAlign: "center",
                           }}
-                          onClick={() => isAvailable && handleChange("room_id", room.id)}
-                          disabled={!isAvailable}
                         >
-                          <span style={styles.roomNumber}>Hab. {room.number}</span>
-                          <span
-                            style={{
-                              ...styles.roomStatus,
-                              color: getRoomStatusColor(room.status),
-                            }}
-                          >
-                            {getRoomStatusLabel(room.status)}
-                          </span>
-                          {room.monthly_rent && (
-                            <span style={styles.roomPrice}>{room.monthly_rent}€/mes</span>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>Hab. {room.number}</div>
+                          <Tag color={ROOM_STATUS_TAG[room.status] || "default"} style={{ fontSize: 10 }}>
+                            {ROOM_STATUS_LABEL[room.status] || room.status}
+                          </Tag>
+                          {room.monthly_rent > 0 && (
+                            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>{room.monthly_rent}€/mes</div>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
-                  {errors.room_id && <span style={styles.errorText}>{errors.room_id}</span>}
-                </div>
-              )}
+                )}
+              </Form.Item>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>
-                  Fecha de entrada (move-in) <span style={styles.required}>*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.move_in_date}
-                  onChange={(e) => handleChange("move_in_date", e.target.value)}
-                  style={{ ...styles.input, ...(errors.move_in_date ? styles.inputError : {}) }}
-                />
-                {errors.move_in_date && <span style={styles.errorText}>{errors.move_in_date}</span>}
-              </div>
-
-              <div style={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  id="billing_same"
-                  checked={formData.billing_same_as_move_in}
-                  onChange={(e) => handleChange("billing_same_as_move_in", e.target.checked)}
-                  style={styles.checkboxInput}
-                />
-                <label htmlFor="billing_same" style={styles.checkboxLabelText}>
-                  Facturar desde la fecha de entrada
-                </label>
-              </div>
-
-              {!formData.billing_same_as_move_in && (
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Fecha inicio facturación</label>
-                  <input
-                    type="date"
-                    value={formData.billing_start_date}
-                    onChange={(e) => handleChange("billing_start_date", e.target.value)}
-                    style={styles.input}
-                  />
-                  <span style={styles.helpText}>
-                    Permite diferir el inicio de facturación respecto a la entrada real
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Resumen y acciones */}
-          <div style={styles.summaryCard}>
-            <div style={styles.summary}>
-              <h3 style={styles.summaryTitle}>Resumen</h3>
-              <div style={styles.summaryGrid}>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Inquilino:</span>
-                  <span style={styles.summaryValue}>
-                    {formData.full_name || "-"}
-                  </span>
-                </div>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Email:</span>
-                  <span style={styles.summaryValue}>{formData.email || "-"}</span>
-                </div>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Alojamiento:</span>
-                  <span style={styles.summaryValue}>
-                    {selectedAccommodation?.name || "-"}
-                  </span>
-                </div>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Habitación:</span>
-                  <span style={styles.summaryValue}>
-                    {formData.room_id
-                      ? `Hab. ${availableRooms.find((r) => r.id === formData.room_id)?.number}`
-                      : "-"}
-                  </span>
-                </div>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Fecha entrada:</span>
-                  <span style={styles.summaryValue}>{formData.move_in_date || "-"}</span>
-                </div>
-                <div style={styles.summaryItem}>
-                  <span style={styles.summaryLabel}>Inicio facturación:</span>
-                  <span style={styles.summaryValue}>
-                    {formData.billing_same_as_move_in
-                      ? formData.move_in_date || "-"
-                      : formData.billing_start_date || "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.formActions}>
-              <button
-                type="button"
-                style={styles.cancelButton}
-                onClick={() => navigate("/v2/admin/inquilinos")}
+              <Form.Item
+                label="Fecha de entrada"
+                name="move_in_date"
+                rules={[{ required: true, message: "La fecha de entrada es obligatoria" }]}
               >
-                Cancelar
-              </button>
-              <button type="submit" style={styles.primaryButton}>
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              </Form.Item>
+
+              <Form.Item>
+                <Checkbox
+                  checked={billingSameAsMoveIn}
+                  onChange={(e) => setBillingSameAsMoveIn(e.target.checked)}
+                >
+                  Facturar desde la fecha de entrada
+                </Checkbox>
+              </Form.Item>
+
+              {!billingSameAsMoveIn && (
+                <Form.Item label="Fecha inicio facturación" name="billing_start_date">
+                  <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                </Form.Item>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Acciones */}
+        <Row justify="end">
+          <Col>
+            <Space>
+              <Button onClick={() => navigate("/v2/admin/inquilinos")}>Cancelar</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SaveOutlined />}
+                loading={saving}
+              >
                 Registrar Inquilino
-              </button>
-            </div>
-          </div>
-        </form>
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Form>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 24,
-    marginBottom: 24,
-  },
-  formCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 20px 0",
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  formRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 16,
-  },
-  label: {
-    display: "block",
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: 6,
-  },
-  required: {
-    color: "#DC2626",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  inputError: {
-    borderColor: "#DC2626",
-  },
-  select: {
-    width: "100%",
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    backgroundColor: "#FFFFFF",
-    cursor: "pointer",
-  },
-  errorText: {
-    display: "block",
-    fontSize: 12,
-    color: "#DC2626",
-    marginTop: 4,
-  },
-  helpText: {
-    display: "block",
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginTop: 4,
-  },
-  checkboxGroup: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 16,
-  },
-  checkboxInput: {
-    width: 18,
-    height: 18,
-    cursor: "pointer",
-  },
-  checkboxLabelText: {
-    fontSize: 14,
-    color: "#374151",
-    cursor: "pointer",
-  },
-  roomsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-    gap: 12,
-  },
-  roomCard: {
-    padding: 16,
-    border: "2px solid",
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    cursor: "pointer",
-    textAlign: "center",
-    transition: "all 0.2s ease",
-  },
-  roomCardSelected: {
-    backgroundColor: "#F3F4F6",
-  },
-  roomCardDisabled: {
-    opacity: 0.5,
-    cursor: "not-allowed",
-  },
-  roomNumber: {
-    display: "block",
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  roomStatus: {
-    display: "block",
-    fontSize: 11,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  roomPrice: {
-    display: "block",
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  summaryCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  summary: {},
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 12px 0",
-  },
-  summaryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px 24px",
-  },
-  summaryItem: {
-    display: "flex",
-    gap: 8,
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  summaryValue: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#111827",
-  },
-  formActions: {
-    display: "flex",
-    gap: 12,
-  },
-  cancelButton: {
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "500",
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#374151",
-  },
-  primaryButton: {
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "600",
-    backgroundColor: "#111827",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#FFFFFF",
-  },
-};

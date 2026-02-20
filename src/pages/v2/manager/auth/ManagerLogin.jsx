@@ -52,7 +52,7 @@ export default function ManagerLogin() {
     if (isLodgerRole(role)) { setPostLogin("wrong_portal"); return; }
     if (!hasTenant) { navigate("/v2/planes", { replace: true }); return; }
     // Any non-lodger role with tenant → manager dashboard
-    navigate("/v2/manager/dashboard", { replace: true });
+    navigate("/v2/admin/dashboard", { replace: true });
   };
 
   // If already authenticated on mount, resolve immediately
@@ -102,9 +102,15 @@ export default function ManagerLogin() {
     e.preventDefault();
     setPostLogin("resolving");
     setProfileTimedOut(false);
-    form.handleLogin(() => {
-      console.log("[ManagerLogin] signIn succeeded, waiting for profile...");
-    });
+    form.handleLogin(
+      () => {
+        console.log("[ManagerLogin] signIn succeeded, waiting for profile...");
+      },
+      () => {
+        // Login failed — go back to form so error is visible
+        setPostLogin(null);
+      }
+    );
   };
 
   // Render del panel derecho según estado

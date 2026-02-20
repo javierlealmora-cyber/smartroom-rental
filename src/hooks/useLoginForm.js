@@ -16,7 +16,7 @@ export default function useLoginForm() {
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
 
-  const handleLogin = async (onSuccess) => {
+  const handleLogin = async (onSuccess, onError) => {
     if (!email || !password) return;
     setError(null);
     setBusy(true);
@@ -29,6 +29,7 @@ export default function useLoginForm() {
     setBusy(false);
     if (err) {
       setError(err.message);
+      if (onError) onError(err);
     } else if (onSuccess) {
       onSuccess();
     }

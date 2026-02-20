@@ -48,7 +48,7 @@ export default function CommercialLogin() {
 
     // 5. Has tenant → redirigir al dashboard segun rol
     if (isLodgerRole(role)) return "/v2/lodger/dashboard";
-    return "/v2/manager/dashboard";
+    return "/v2/admin/dashboard";
   };
 
   // Post-login resolver
@@ -139,7 +139,7 @@ export default function CommercialLogin() {
             </p>
 
             <div style={s.portalLinks}>
-              <Link to="/v2/manager/auth/login" style={s.portalLink}>Acceso Gestores</Link>
+              <Link to="/v2/admin/auth/login" style={s.portalLink}>Acceso Admin</Link>
               <span style={s.portalSep}>|</span>
               <Link to="/v2/lodger/auth/login" style={s.portalLink}>Acceso Inquilinos</Link>
             </div>

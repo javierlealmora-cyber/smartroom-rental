@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import AppLayout from "./layouts/AppLayout";
 import RequireAuth from "./router/RequireAuth";
 import RequireRole from "./router/RequireRole";
@@ -74,6 +75,11 @@ import AccommodationCreateV2 from "./pages/v2/admin/accommodations/Accommodation
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
 
+// v2 - Admin Entities
+import EntitiesListV2 from "./pages/v2/admin/entities/EntitiesList";
+import EntityCreateV2 from "./pages/v2/admin/entities/EntityCreate";
+import EntityEditV2 from "./pages/v2/admin/entities/EntityEdit";
+
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
 
@@ -104,17 +110,26 @@ import LegalPrivacidad from "./pages/public/LegalPrivacidad";
 import LegalCookies from "./pages/public/LegalCookies";
 
 export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    console.log("[App] location:", location.pathname + location.search);
+  }, [location.pathname, location.search]);
+
   return (
         <Routes>
           {/* =============================================
              AUTH — 3 Portales de Login
              ============================================= */}
           <Route path="/v2/auth/login" element={<CommercialLogin />} />
-          <Route path="/v2/manager/auth/login" element={<ManagerLogin />} />
+          <Route path="/v2/admin/auth/login" element={<ManagerLogin />} />
           <Route path="/v2/lodger/auth/login" element={<LodgerLogin />} />
           <Route path="/v2/auth/logout" element={<Logout />} />
           <Route path="/v2/auth/reset-password" element={<ResetPassword />} />
           <Route path="/v2/auth/callback" element={<AuthCallback />} />
+
+          {/* Legacy manager login redirect */}
+          <Route path="/v2/manager/auth/login" element={<Navigate to="/v2/admin/auth/login" replace />} />
 
           {/* Legacy auth redirects */}
           <Route path="/auth/login" element={<Navigate to="/v2/auth/login" replace />} />
@@ -233,27 +248,34 @@ export default function App() {
           </Route>
 
           {/* =============================================
-             RUTAS v2 PROTEGIDAS — Manager (Admin) + Lodger
+             RUTAS v2 PROTEGIDAS — Admin + Lodger
              ============================================= */}
-          <Route element={<RequireAuth />}>
-            <Route element={<RequireTenant />}>
-              {/* Manager (Admin) routes */}
+          <Route element={<RequireAuth loginPath="/v2/admin/auth/login" />}>
+            <Route element={<RequireRole allow={["superadmin", "admin", "api", "agent", "viewer"]} />}>
               <Route path="/v2/admin" element={<DashboardAdminV2 />} />
-              <Route path="/v2/manager/dashboard" element={<DashboardAdminV2 />} />
+              <Route path="/v2/admin/dashboard" element={<DashboardAdminV2 />} />
+              <Route path="/v2/admin/entidades" element={<EntitiesListV2 />} />
+              <Route path="/v2/admin/entidades/nueva" element={<EntityCreateV2 />} />
+              <Route path="/v2/admin/entidades/:id/editar" element={<EntityEditV2 />} />
               <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
-
-              {/* Lodger (formerly Student) routes */}
-              <Route path="/v2/lodger/dashboard" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/consumo" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/boletines" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/servicios" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
-              <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />
             </Route>
+          </Route>
+
+          {/* Legacy manager redirects */}
+          <Route path="/v2/manager" element={<Navigate to="/v2/admin" replace />} />
+          <Route path="/v2/manager/dashboard" element={<Navigate to="/v2/admin/dashboard" replace />} />
+
+          <Route element={<RequireAuth loginPath="/v2/lodger/auth/login" />}>
+            <Route path="/v2/lodger/dashboard" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/consumo" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/boletines" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/servicios" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />
           </Route>
 
           {/* Legacy student → lodger redirects */}
