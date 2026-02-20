@@ -6,6 +6,18 @@
 
 ---
 
+## Decisiones de arquitectura confirmadas (Feb 2026)
+
+| # | Decisión | Detalle |
+|---|---|---|
+| P1 | **Escrituras por Edge, lecturas directas con RLS** | Módulos existentes se migran cuando se toque ese módulo. Módulos nuevos nacen ya con Edge. |
+| P2 | **`audit_log` tabla genérica** | Una sola tabla con `entity_type`, `action`, `old_values`, `new_values` jsonb. |
+| P3 | **Límites de plan en Edge** | Validar `max_owner_entities`, `max_accommodations`, `max_rooms`, `max_admin_users` en cada Edge de creación. |
+| P4 | **Ramas Git: `main` + `develop`** | `develop` creada y publicada. Todo el trabajo nuevo va en `develop` → PR → `main`. |
+| P5 | **Entornos Supabase separados** | `dev` = proyecto actual (`lqwyyyttjamirccdtlvl` — "Smart Rent Systems DataBase Dev"). `pre` y `prod` = proyectos nuevos cuando llegue el momento. |
+
+---
+
 ## 1. Principios de arquitectura
 
 ### 1.1 Edge-first (backend primero)
@@ -190,13 +202,16 @@ CREATE UNIQUE INDEX idx_room_active_assignment
 ## 8. DevOps y control de calidad
 
 ### 8.1 Entornos separados
-| Entorno | Supabase | Variables |
-|---|---|---|
-| `dev` | Proyecto separado | `.env.development` |
-| `pre` | Proyecto separado | `.env.staging` |
-| `prod` | `lqwyyyttjamirccdtlvl` | `.env.production` |
 
-Variables de entorno **nunca hardcodeadas** en código fuente.
+| Entorno | Nombre Supabase | Project ID | Fichero .env | Script npm |
+|---|---|---|---|---|
+| **dev** | `SmartRoom Rental BD Dev` | `lqwyyyttjamirccdtlvl` | `.env.development` | `npm run dev` |
+| **pre** | `SmartRoom Rental BD Pre` | *(pendiente crear)* | `.env.staging` | `npm run build:pre` |
+| **prod** | `SmartRoom Rental BD Prod` | *(pendiente crear)* | `.env.production` | `npm run build` |
+
+- Variables de entorno **nunca hardcodeadas** en código fuente.
+- Todos los `.env.*` están en `.gitignore` — nunca se suben al repositorio.
+- Renombrar el proyecto en el Dashboard de Supabase es cosmético — no afecta URLs, keys ni conexiones.
 
 ### 8.2 Testing mínimo
 - Edge Functions: tests unit/integration con casos de rol, plan y tenant.
