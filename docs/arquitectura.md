@@ -1,14 +1,16 @@
 # Arquitectura Tecnica — SmartRent Systems
 
+> Ver `docs/reglas-proyecto.md` para normas de arquitectura, seguridad y calidad de obligado cumplimiento.
+
 ## Stack
 
 - **Frontend**: React 18 + Vite + react-router-dom
+- **UI**: Ant Design 6.x + @ant-design/icons (migración desde Tailwind/inline styles en curso)
 - **Backend**: Supabase (Auth + Postgres + Edge Functions + Storage)
 - **Pagos**: Stripe (Checkout Sessions + Webhooks) — actualmente en modo mock
 - **Batch/Workflows**: n8n (planificado)
-- **Estilos**: Inline styles (componentes nuevos) + Tailwind (legacy) + CSS variables para theming
 - **Despliegue**: Vercel (pendiente configurar)
-- **Repo**: GitHub
+- **Repo**: GitHub (`main` = producción, `develop` = integración planificado)
 
 ## Arquitectura multi-tenant
 
