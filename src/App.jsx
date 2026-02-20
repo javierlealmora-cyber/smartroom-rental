@@ -72,6 +72,7 @@ import ClientAccountDetailV2 from "./pages/v2/superadmin/ClientAccountDetail";
 import DashboardAdminV2 from "./pages/v2/admin/DashboardAdmin";
 import AccommodationsListV2 from "./pages/v2/admin/accommodations/AccommodationsList";
 import AccommodationCreateV2 from "./pages/v2/admin/accommodations/AccommodationCreate";
+import AccommodationEditV2 from "./pages/v2/admin/accommodations/AccommodationEdit";
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
 import TenantEditV2 from "./pages/v2/admin/tenants/TenantEdit";
@@ -267,6 +268,7 @@ export default function App() {
               <Route path="/v2/admin/entidades/:id/editar" element={<EntityEditV2 />} />
               <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
+              <Route path="/v2/admin/alojamientos/:id/editar" element={<AccommodationEditV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
               <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
