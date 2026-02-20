@@ -94,6 +94,9 @@ import EnergyBillDetailV2 from "./pages/v2/admin/energy/EnergyBillDetail";
 
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
+import LodgerServicesV2 from "./pages/v2/lodger/LodgerServices";
+import LodgerConsumoV2 from "./pages/v2/lodger/LodgerConsumo";
+import LodgerBoletinesV2 from "./pages/v2/lodger/LodgerBoletines";
 
 // v2 - Superadmin Plans (DBSU-PC)
 import PlansListV2 from "./pages/v2/superadmin/plans/PlansList";
@@ -291,9 +294,9 @@ export default function App() {
 
           <Route element={<RequireAuth loginPath="/v2/lodger/auth/login" />}>
             <Route path="/v2/lodger/dashboard" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/consumo" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/boletines" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/servicios" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/consumo" element={<LodgerConsumoV2 />} />
+            <Route path="/v2/lodger/boletines" element={<LodgerBoletinesV2 />} />
+            <Route path="/v2/lodger/servicios" element={<LodgerServicesV2 />} />
             <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
             <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
             <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />
