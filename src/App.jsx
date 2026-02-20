@@ -74,6 +74,7 @@ import AccommodationsListV2 from "./pages/v2/admin/accommodations/Accommodations
 import AccommodationCreateV2 from "./pages/v2/admin/accommodations/AccommodationCreate";
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
+import TenantEditV2 from "./pages/v2/admin/tenants/TenantEdit";
 
 // v2 - Admin Entities
 import EntitiesListV2 from "./pages/v2/admin/entities/EntitiesList";
@@ -268,6 +269,7 @@ export default function App() {
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+              <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
               <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
               <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
               <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />

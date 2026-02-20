@@ -1,640 +1,209 @@
-// src/pages/v2/admin/DashboardAdmin.jsx
-// Dashboard principal para Admin de empresa
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+﻿// src/pages/v2/admin/DashboardAdmin.jsx
+// Dashboard principal para Admin — Ant Design + datos reales Supabase
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Alert, Button, Card, Col, Progress, Row,
+  Skeleton, Space, Statistic, Tag, Typography,
+} from "antd";
+import {
+  BankOutlined, HomeOutlined, TeamOutlined,
+  AppstoreOutlined, ReloadOutlined, WarningOutlined,
+} from "@ant-design/icons";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
 import { useAuth } from "../../../providers/AuthProvider";
-import {
-  mockAccommodations,
-  mockRooms,
-  mockTenants,
-  ROOM_STATUS,
-  TENANT_STATUS,
-  getRoomStatusColor,
-} from "../../../mocks/clientAccountsData";
-import { listEntities } from "../../../services/entities.service";
+import { supabase } from "../../../services/supabaseClient";
+
+const { Title, Text } = Typography;
 
 export default function DashboardAdmin() {
-  console.log("[DashboardAdmin] render");
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { userName, companyBranding } = useAdminLayout();
   const canWrite = role !== "viewer";
 
-  // ID de la cuenta para filtrar mock data (fallback a ca-001 para demo)
-  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [stats, setStats] = useState({
-    totalAccommodations: 0,
-    totalRooms: 0,
-    freeRooms: 0,
-    occupiedRooms: 0,
-    pendingCheckout: 0,
-    activeTenants: 0,
-    pendingTenants: 0,
-    totalEntities: 0,
-  });
-  const [recentActivity, setRecentActivity] = useState([]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [
+        { data: entities },
+        { data: accommodations },
+        { data: rooms },
+        { data: lodgers },
+      ] = await Promise.all([
+        supabase.from("entities").select("id, type, status"),
+        supabase.from("accommodations").select("id, status"),
+        supabase.from("rooms").select("id, status"),
+        supabase.from("lodgers").select("id, status"),
+      ]);
 
-  useEffect(() => {
-    const load = async () => {
-      // Filtrar datos por el cliente actual
-      const accommodations = mockAccommodations.filter(
-        (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-      const rooms = mockRooms.filter(
-        (r) => r.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-      const tenants = mockTenants.filter(
-        (t) => t.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-
-      const free = rooms.filter((r) => r.status === ROOM_STATUS.FREE).length;
-      const occupied = rooms.filter((r) => r.status === ROOM_STATUS.OCCUPIED).length;
-      const pending = rooms.filter((r) => r.status === ROOM_STATUS.PENDING_CHECKOUT).length;
-      const activeTenants = tenants.filter((t) => t.status === TENANT_STATUS.ACTIVE).length;
-      const pendingTenants = tenants.filter(
-        (t) => t.status === TENANT_STATUS.PENDING_CHECKOUT
-      ).length;
-
-      let totalEntities = 0;
-      try {
-        const entities = await listEntities();
-        totalEntities = entities.length;
-      } catch {
-        totalEntities = 0;
-      }
+      const totalEntities = (entities || []).filter((e) => e.type === "owner").length;
+      const totalAccommodations = (accommodations || []).filter((a) => a.status === "active").length;
+      const allRooms = rooms || [];
+      const totalRooms = allRooms.length;
+      const freeRooms = allRooms.filter((r) => r.status === "free").length;
+      const occupiedRooms = allRooms.filter((r) => r.status === "occupied").length;
+      const pendingCheckout = allRooms.filter((r) => r.status === "pending_checkout").length;
+      const allLodgers = lodgers || [];
+      const activeTenants = allLodgers.filter((l) => l.status === "active").length;
+      const pendingTenants = allLodgers.filter((l) => l.status === "pending_checkout").length;
 
       setStats({
-        totalAccommodations: accommodations.length,
-        totalRooms: rooms.length,
-        freeRooms: free,
-        occupiedRooms: occupied,
-        pendingCheckout: pending,
+        totalEntities,
+        totalAccommodations,
+        totalRooms,
+        freeRooms,
+        occupiedRooms,
+        pendingCheckout,
         activeTenants,
         pendingTenants,
-        totalEntities,
       });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // Simular actividad reciente
-      setRecentActivity([
-        {
-          id: 1,
-          type: "check_in",
-          message: "Ana García se ha registrado en la habitación 101",
-          time: "Hace 2 horas",
-        },
-        {
-          id: 2,
-          type: "check_out",
-          message: "Pedro Sánchez ha programado su salida para el 31/01",
-          time: "Hace 5 horas",
-        },
-        {
-          id: 3,
-          type: "payment",
-          message: "Pago de renta recibido de Carlos Martín",
-          time: "Ayer",
-        },
-        {
-          id: 4,
-          type: "maintenance",
-          message: "Ticket de mantenimiento creado: Calefacción hab. 101",
-          time: "Ayer",
-        },
-      ]);
-    };
+  useEffect(() => { load(); }, [load]);
 
-    load();
-
-  }, [CURRENT_CLIENT_ACCOUNT_ID]);
-
-  const occupancyRate = stats.totalRooms > 0
+  const occupancyRate = stats && stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
     : 0;
 
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case "check_in": return "✅";
-      case "check_out": return "🚪";
-      case "payment": return "💰";
-      case "maintenance": return "🔧";
-      default: return "📌";
-    }
-  };
+  const occupancyColor = occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626";
+
+  const quickLinks = [
+    { label: "Entidades", icon: <BankOutlined />, path: "/v2/admin/entidades", color: "#8B5CF6" },
+    { label: "Alojamientos", icon: <HomeOutlined />, path: "/v2/admin/alojamientos", color: "#3B82F6" },
+    { label: "Inquilinos", icon: <TeamOutlined />, path: "/v2/admin/inquilinos", color: "#059669" },
+    { label: "Servicios", icon: <AppstoreOutlined />, path: "/v2/admin/servicios", color: "#F59E0B" },
+  ];
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+
       {/* Header */}
-      <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>Dashboard</h1>
-            <p style={styles.subtitle}>Resumen de tu operación</p>
-          </div>
-        </div>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
+          <Text type="secondary">Resumen de tu operación</Text>
+        </Col>
+        <Col>
+          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+            Actualizar
+          </Button>
+        </Col>
+      </Row>
 
-        {/* KPIs principales */}
-        <div style={styles.kpiGrid}>
-          <div style={{ ...styles.kpiCard, borderLeft: "4px solid #8B5CF6" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏛️</span>
-              <span style={styles.kpiLabel}>Entidades Totales</span>
-            </div>
-            <div style={{ ...styles.kpiValue, color: "#8B5CF6" }}>{stats.totalEntities}</div>
-            <div style={styles.kpiDetail}>
-              <span style={{ color: "#6B7280" }}>Legal + Internas</span>
-            </div>
-          </div>
+      {error && (
+        <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
+          action={<Button size="small" onClick={load}>Reintentar</Button>}
+        />
+      )}
 
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏠</span>
-              <span style={styles.kpiLabel}>Alojamientos</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.totalAccommodations}</div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🚪</span>
-              <span style={styles.kpiLabel}>Habitaciones</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.totalRooms}</div>
-            <div style={styles.kpiDetail}>
-              <span style={{ color: "#059669" }}>{stats.occupiedRooms} ocupadas</span>
-              <span style={{ color: "#6B7280" }}> · </span>
-              <span style={{ color: "#3B82F6" }}>{stats.freeRooms} libres</span>
-            </div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>📊</span>
-              <span style={styles.kpiLabel}>Ocupación</span>
-            </div>
-            <div style={styles.kpiValue}>
-              <span
-                style={{
-                  color: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626",
-                }}
-              >
-                {occupancyRate}%
-              </span>
-            </div>
-            <div style={styles.progressBarLarge}>
-              <div
-                style={{
-                  ...styles.progressFillLarge,
-                  width: `${occupancyRate}%`,
-                  backgroundColor: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626",
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>👥</span>
-              <span style={styles.kpiLabel}>Inquilinos</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.activeTenants}</div>
-            {stats.pendingTenants > 0 && (
-              <div style={styles.kpiWarning}>
-                ⚠️ {stats.pendingTenants} pendiente(s) de baja
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Contenido en dos columnas */}
-        <div style={styles.twoColumnGrid}>
-          {/* Estado de habitaciones */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Estado de Habitaciones</h2>
-            <div style={styles.roomStatusGrid}>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.FREE),
-                  }}
+      {/* KPIs */}
+      {loading ? (
+        <Skeleton active paragraph={{ rows: 4 }} />
+      ) : (
+        <>
+          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Col xs={12} sm={8} md={6} lg={4}>
+              <Card size="small" style={{ borderLeft: "4px solid #8B5CF6" }}>
+                <Statistic
+                  title={<Text style={{ fontSize: 12 }}>Entidades</Text>}
+                  value={stats.totalEntities}
+                  prefix={<BankOutlined style={{ color: "#8B5CF6" }} />}
+                  valueStyle={{ color: "#8B5CF6", fontSize: 28 }}
                 />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Libres</span>
-                  <span style={styles.statusValue}>{stats.freeRooms}</span>
-                </div>
-              </div>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.OCCUPIED),
-                  }}
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6} lg={4}>
+              <Card size="small" style={{ borderLeft: "4px solid #3B82F6" }}>
+                <Statistic
+                  title={<Text style={{ fontSize: 12 }}>Alojamientos</Text>}
+                  value={stats.totalAccommodations}
+                  prefix={<HomeOutlined style={{ color: "#3B82F6" }} />}
+                  valueStyle={{ color: "#3B82F6", fontSize: 28 }}
                 />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Ocupadas</span>
-                  <span style={styles.statusValue}>{stats.occupiedRooms}</span>
-                </div>
-              </div>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.PENDING_CHECKOUT),
-                  }}
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6} lg={4}>
+              <Card size="small" style={{ borderLeft: "4px solid #111827" }}>
+                <Statistic
+                  title={<Text style={{ fontSize: 12 }}>Habitaciones</Text>}
+                  value={stats.totalRooms}
+                  valueStyle={{ fontSize: 28 }}
                 />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Pendiente de baja</span>
-                  <span style={styles.statusValue}>{stats.pendingCheckout}</span>
-                </div>
-              </div>
-            </div>
-            <button
-              style={styles.cardLink}
-              onClick={() => navigate("/v2/admin/alojamientos")}
-            >
-              Ver todos los alojamientos →
-            </button>
-          </div>
+                <Space size={4} style={{ marginTop: 4 }}>
+                  <Tag color="success" style={{ fontSize: 10, margin: 0 }}>{stats.freeRooms} libres</Tag>
+                  <Tag color="error" style={{ fontSize: 10, margin: 0 }}>{stats.occupiedRooms} ocup.</Tag>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6} lg={4}>
+              <Card size="small" style={{ borderLeft: `4px solid ${occupancyColor}` }}>
+                <Statistic
+                  title={<Text style={{ fontSize: 12 }}>Ocupación</Text>}
+                  value={occupancyRate}
+                  suffix="%"
+                  valueStyle={{ color: occupancyColor, fontSize: 28 }}
+                />
+                <Progress
+                  percent={occupancyRate}
+                  showInfo={false}
+                  strokeColor={occupancyColor}
+                  size="small"
+                  style={{ marginTop: 4 }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6} lg={4}>
+              <Card size="small" style={{ borderLeft: "4px solid #059669" }}>
+                <Statistic
+                  title={<Text style={{ fontSize: 12 }}>Inquilinos activos</Text>}
+                  value={stats.activeTenants}
+                  prefix={<TeamOutlined style={{ color: "#059669" }} />}
+                  valueStyle={{ color: "#059669", fontSize: 28 }}
+                />
+                {stats.pendingTenants > 0 && (
+                  <Tag color="warning" icon={<WarningOutlined />} style={{ fontSize: 10, marginTop: 4 }}>
+                    {stats.pendingTenants} pendiente{stats.pendingTenants > 1 ? "s" : ""} de baja
+                  </Tag>
+                )}
+              </Card>
+            </Col>
+          </Row>
 
-          {/* Actividad reciente */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Actividad Reciente</h2>
-            <div style={styles.activityList}>
-              {recentActivity.map((activity) => (
-                <div key={activity.id} style={styles.activityItem}>
-                  <span style={styles.activityIcon}>{getActivityIcon(activity.type)}</span>
-                  <div style={styles.activityContent}>
-                    <span style={styles.activityMessage}>{activity.message}</span>
-                    <span style={styles.activityTime}>{activity.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          {/* Accesos rápidos */}
+          <Row gutter={[16, 16]}>
+            {quickLinks.map((item) => (
+              <Col key={item.path} xs={12} sm={6}>
+                <Card
+                  hoverable
+                  size="small"
+                  onClick={() => navigate(item.path)}
+                  style={{ textAlign: "center", cursor: "pointer", borderTop: `3px solid ${item.color}` }}
+                >
+                  <div style={{ fontSize: 28, color: item.color, marginBottom: 6 }}>{item.icon}</div>
+                  <Text strong style={{ fontSize: 13 }}>{item.label}</Text>
+                  {!canWrite && (
+                    <div><Text type="secondary" style={{ fontSize: 11 }}>Solo lectura</Text></div>
+                  )}
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </>
+      )}
 
-        {/* Acciones rápidas */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Acciones Rápidas</h2>
-          <div style={styles.quickActionsGrid}>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/entidades")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🏛️</span>
-              <span style={styles.quickActionLabel}>Gestión Entidades</span>
-            </button>
-
-            <button
-              style={{
-                ...styles.quickAction,
-                opacity: canWrite ? 1 : 0.55,
-                cursor: canWrite ? "pointer" : "not-allowed",
-              }}
-              disabled={!canWrite}
-              onClick={() => {
-                if (!canWrite) return;
-                navigate("/v2/admin/entidades/nueva");
-              }}
-              onMouseEnter={(e) => {
-                if (!canWrite) return;
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                if (!canWrite) return;
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>➕</span>
-              <span style={styles.quickActionLabel}>Nueva Entidad</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/inquilinos/nuevo")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>👤</span>
-              <span style={styles.quickActionLabel}>Registrar Inquilino</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🏠</span>
-              <span style={styles.quickActionLabel}>Añadir Alojamiento</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Generar boletín (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>📄</span>
-              <span style={styles.quickActionLabel}>Generar Boletín</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Ver consumos (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>⚡</span>
-              <span style={styles.quickActionLabel}>Ver Consumos</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/ocupacion")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>📅</span>
-              <span style={styles.quickActionLabel}>Ver Ocupación</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Gestión de tickets (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🎫</span>
-              <span style={styles.quickActionLabel}>Tickets</span>
-            </button>
-          </div>
-        </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  headerActions: {
-    display: "flex",
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    padding: "12px 20px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    backgroundColor: "#FFFFFF",
-    color: "#374151",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    padding: "12px 20px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  kpiGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: 20,
-    marginBottom: 32,
-  },
-  kpiCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  kpiHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  kpiIcon: {
-    fontSize: 20,
-  },
-  kpiLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  kpiValue: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  kpiDetail: {
-    fontSize: 13,
-    marginTop: 8,
-  },
-  kpiWarning: {
-    fontSize: 12,
-    color: "#F59E0B",
-    marginTop: 8,
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-  },
-  progressBarLarge: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 12,
-  },
-  progressFillLarge: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-  twoColumnGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 24,
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 20px 0",
-  },
-  roomStatusGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-    marginBottom: 20,
-  },
-  statusItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: "50%",
-  },
-  statusInfo: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flex: 1,
-  },
-  statusLabel: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  statusValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  cardLink: {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "#3B82F6",
-    fontSize: 14,
-    fontWeight: "500",
-    cursor: "pointer",
-    padding: 0,
-  },
-  activityList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  activityItem: {
-    display: "flex",
-    gap: 12,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-  },
-  activityIcon: {
-    fontSize: 18,
-    width: 32,
-    height: 32,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-  },
-  activityContent: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  activityMessage: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  quickActionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: 12,
-  },
-  quickAction: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 8,
-    padding: 20,
-    backgroundColor: "#F9FAFB",
-    border: "1px solid #E5E7EB",
-    borderRadius: 12,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  quickActionIcon: {
-    fontSize: 24,
-  },
-  quickActionLabel: {
-    fontSize: 12,
-    color: "#374151",
-    fontWeight: "500",
-    textAlign: "center",
-  },
-};
