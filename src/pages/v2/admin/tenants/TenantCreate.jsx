@@ -56,14 +56,6 @@ export default function TenantCreate() {
 
   const onFinish = async (values) => {
     const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
-    if (!selectedRoomId) {
-      form.setFields([{ name: "room_id", errors: ["Seleccione una habitación"] }]);
-      return;
-    }
-    if (selectedRoom?.status !== "free") {
-      form.setFields([{ name: "room_id", errors: ["Esta habitación ya no está libre"] }]);
-      return;
-    }
 
     const moveInDate = values.move_in_date.format("YYYY-MM-DD");
     const billingDate = billingSameAsMoveIn
@@ -199,7 +191,7 @@ export default function TenantCreate() {
                       return (
                         <div
                           key={room.id}
-                          onClick={() => isFree && setSelectedRoomId(room.id)}
+                          onClick={() => { if (isFree) { setSelectedRoomId(room.id); form.setFieldValue("room_id", room.id); } }}
                           style={{
                             padding: "12px 8px",
                             border: `2px solid ${isSelected ? "#111827" : isFree ? "#d9f7be" : "#ffd8bf"}`,
