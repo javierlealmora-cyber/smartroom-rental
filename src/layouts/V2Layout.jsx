@@ -1,8 +1,7 @@
 ﻿// =============================================================================
 // src/layouts/V2Layout.jsx
 // =============================================================================
-// Layout comun para todas las paginas v2
-// Incluye: Header con branding, Sidebar de navegacion (admin/superadmin), Breadcrumbs
+// Layout v2 — Top navigation bar (Apple style) + breadcrumbs + content
 // =============================================================================
 
 import { useState } from "react";
@@ -12,32 +11,29 @@ import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 // ─── Menus de navegacion por rol ─────────────────────────────────────────────
 
 const ADMIN_NAV = [
-  { label: "Dashboard", path: "/v2/admin", icon: "📊" },
-  { type: "section", label: "Gestión" },
-  { label: "Entidades", path: "/v2/admin/entidades", icon: "🏛️" },
-  { label: "Alojamientos", path: "/v2/admin/alojamientos", icon: "🏠" },
-  { label: "Inquilinos", path: "/v2/admin/inquilinos", icon: "👥" },
-  { label: "Servicios Inquilinos", path: "/v2/admin/inquilinos/servicios", icon: "🔖" },
-  { type: "section", label: "Servicios y Energía" },
-  { label: "Catálogo de Servicios", path: "/v2/admin/servicios", icon: "🔧" },
-  { label: "Facturas de Energía", path: "/v2/admin/energia/facturas", icon: "⚡" },
-  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones", icon: "📑" },
-  { label: "Boletines", path: "/v2/admin/boletines", icon: "🔔" },
+  { label: "Dashboard", path: "/v2/admin" },
+  { label: "Entidades", path: "/v2/admin/entidades" },
+  { label: "Alojamientos", path: "/v2/admin/alojamientos" },
+  { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+  { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
+  { label: "Catálogo", path: "/v2/admin/servicios" },
+  { label: "Facturas", path: "/v2/admin/energia/facturas" },
+  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones" },
+  { label: "Boletines", path: "/v2/admin/boletines" },
 ];
 
 const SUPERADMIN_NAV = [
-  { label: "Dashboard", path: "/v2/superadmin", icon: "📊" },
-  { type: "section", label: "Plataforma" },
-  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas", icon: "🏢" },
-  { label: "Planes", path: "/v2/superadmin/planes", icon: "📋" },
-  { label: "Servicios", path: "/v2/superadmin/servicios", icon: "🔧" },
+  { label: "Dashboard", path: "/v2/superadmin" },
+  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
+  { label: "Planes", path: "/v2/superadmin/planes" },
+  { label: "Servicios", path: "/v2/superadmin/servicios" },
 ];
 
 const LODGER_NAV = [
-  { label: "Mi Panel", path: "/v2/lodger/dashboard", icon: "🏠" },
-  { label: "Mi Consumo", path: "/v2/lodger/consumo", icon: "⚡" },
-  { label: "Servicios", path: "/v2/lodger/servicios", icon: "🔧" },
-  { label: "Boletines", path: "/v2/lodger/boletines", icon: "📢" },
+  { label: "Mi Panel", path: "/v2/lodger/dashboard" },
+  { label: "Mi Consumo", path: "/v2/lodger/consumo" },
+  { label: "Servicios", path: "/v2/lodger/servicios" },
+  { label: "Boletines", path: "/v2/lodger/boletines" },
 ];
 
 // ─── Breadcrumb routes mapping ────────────────────────────────────────────────
@@ -227,15 +223,12 @@ export default function V2Layout({
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const hasSidebar = role !== "lodger";
   const navItems = getNavItems(role);
 
   const branding = {
     name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
     logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),
     logoUrl: companyBranding?.logoUrl || null,
-    primaryColor: companyBranding?.primaryColor || "#111827",
-    secondaryColor: companyBranding?.secondaryColor || "#3B82F6",
     tagline: role === "superadmin" ? "Superadmin" : role === "lodger" ? "Portal Inquilino" : "Panel de Gestión",
   };
 
@@ -269,253 +262,168 @@ export default function V2Layout({
   return (
     <>
       <style>{`
-        @media (max-width: 768px) {
-          .v2-sidebar { display: none !important; }
-          .v2-sidebar-mobile-open { display: flex !important; }
-          .v2-mobile-toggle { display: flex !important; }
-          .v2-main-with-sidebar { margin-left: 0 !important; }
+        *, *::before, *::after { box-sizing: border-box; }
+        .v2-topbar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 0 24px; height: 52px;
+          background: #0071E3;
+          position: sticky; top: 0; z-index: 300;
+          gap: 12px;
         }
-        @media (min-width: 769px) {
-          .v2-mobile-toggle { display: none !important; }
-          .v2-sidebar-overlay { display: none !important; }
+        .v2-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .v2-logo-img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
+        .v2-logo-placeholder {
+          width: 30px; height: 30px; border-radius: 8px;
+          background: rgba(255,255,255,0.22);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .v2-brand-text { display: flex; flex-direction: column; }
+        .v2-brand-name { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-tagline { font-size: 10px; color: rgba(255,255,255,0.7); line-height: 1.2; white-space: nowrap; }
+        .v2-topnav {
+          display: flex; align-items: center; gap: 2px;
+          flex: 1; justify-content: center;
+          overflow-x: auto; scrollbar-width: none;
+        }
+        .v2-topnav::-webkit-scrollbar { display: none; }
+        .v2-nav-btn {
+          background: none; border: none;
+          color: rgba(255,255,255,0.82);
+          font-size: 13.5px; font-weight: 500;
+          padding: 5px 12px; border-radius: 20px;
+          cursor: pointer; white-space: nowrap;
+          transition: background 0.18s, color 0.18s;
+          font-family: inherit; letter-spacing: -0.01em;
+        }
+        .v2-nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .v2-nav-btn.active { background: rgba(255,255,255,0.22); color: #fff; font-weight: 600; }
+        .v2-topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .v2-username { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.88); white-space: nowrap; }
+        .v2-logout-btn {
+          padding: 5px 15px;
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.28);
+          border-radius: 20px; color: #fff;
+          font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: inherit;
+          transition: background 0.18s; white-space: nowrap;
+        }
+        .v2-logout-btn:hover { background: rgba(255,255,255,0.22); }
+        .v2-hamburger {
+          display: none; background: none; border: none;
+          color: #fff; font-size: 20px; cursor: pointer;
+          padding: 4px 6px; border-radius: 8px; align-items: center;
+          transition: background 0.15s;
+        }
+        .v2-hamburger:hover { background: rgba(255,255,255,0.15); }
+        .v2-mobile-drawer {
+          display: none;
+          position: fixed; top: 52px; left: 0; right: 0;
+          background: #0062c8;
+          padding: 10px 16px 16px;
+          z-index: 299;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+          flex-direction: column; gap: 2px;
+        }
+        .v2-mobile-drawer.open { display: flex; }
+        .v2-mobile-drawer .v2-nav-btn {
+          text-align: left; border-radius: 10px;
+          padding: 10px 14px; width: 100%;
+        }
+        .v2-overlay {
+          display: none; position: fixed; inset: 0; top: 52px;
+          background: rgba(0,0,0,0.28); z-index: 298;
+        }
+        .v2-overlay.open { display: block; }
+        .v2-breadcrumb {
+          padding: 9px 28px; font-size: 12.5px; color: #6B7280;
+          border-bottom: 1px solid #E5E7EB; background: #fff; flex-shrink: 0;
+        }
+        .v2-crumb-link { color: #0071E3; cursor: pointer; }
+        .v2-crumb-link:hover { text-decoration: underline; }
+        .v2-crumb-sep { margin: 0 6px; color: #9CA3AF; }
+        .v2-crumb-current { color: #1D1D1F; font-weight: 500; }
+        .v2-main { padding: 28px; flex: 1; }
+        @media (max-width: 900px) {
+          .v2-topnav { display: none !important; }
+          .v2-username { display: none !important; }
+          .v2-hamburger { display: flex !important; }
+        }
+        @media (max-width: 480px) {
+          .v2-topbar { padding: 0 14px; }
+          .v2-main { padding: 16px; }
+          .v2-breadcrumb { padding: 8px 16px; }
         }
       `}</style>
 
-      <div style={s.root}>
-        {/* ── Header ── */}
-        <header style={{ ...s.header, backgroundColor: branding.primaryColor }}>
-          <div style={s.headerLeft}>
-            {hasSidebar && (
-              <button
-                className="v2-mobile-toggle"
-                style={s.mobileToggle}
-                onClick={() => setMobileOpen((v) => !v)}
-                aria-label="Menú"
-              >
-                {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}
-              </button>
-            )}
-            {branding.logoUrl ? (
-              <img src={branding.logoUrl} alt="" style={s.headerLogo} />
-            ) : (
-              <div style={{ ...s.headerLogoPlaceholder, backgroundColor: branding.secondaryColor }}>
-                {branding.logoText}
-              </div>
-            )}
-            <div style={s.headerText}>
-              <span style={s.headerName}>{branding.name}</span>
-              <span style={s.headerTagline}>{branding.tagline}</span>
+      <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F7", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+
+        {/* ── Top Bar ── */}
+        <header className="v2-topbar">
+          {/* Brand */}
+          <div className="v2-brand">
+            {branding.logoUrl
+              ? <img src={branding.logoUrl} alt="" className="v2-logo-img" />
+              : <div className="v2-logo-placeholder">{branding.logoText}</div>
+            }
+            <div className="v2-brand-text">
+              <span className="v2-brand-name">{branding.name}</span>
+              <span className="v2-brand-tagline">{branding.tagline}</span>
             </div>
           </div>
-          <div style={s.headerRight}>
-            <span style={s.userName}>{userName}</span>
-            <button style={s.logoutButton} onClick={handleLogout}>Salir</button>
+
+          {/* Nav centrada — desktop */}
+          <nav className="v2-topnav">
+            {navItems.map((item, i) => {
+              const active = isNavActive(item.path, location.pathname);
+              return (
+                <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Derecha */}
+          <div className="v2-topbar-right">
+            <span className="v2-username">{userName}</span>
+            <button className="v2-logout-btn" onClick={handleLogout}>Salir</button>
+            <button className="v2-hamburger" onClick={() => setMobileOpen((v) => !v)} aria-label="Menú">
+              {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}
+            </button>
           </div>
         </header>
 
-        <div style={s.body}>
-          {/* ── Sidebar (desktop) ── */}
-          {hasSidebar && (
-            <aside className="v2-sidebar" style={s.sidebar}>
-              <SidebarNav
-                items={navItems}
-                currentPath={location.pathname}
-                onNavigate={handleNavClick}
-                primaryColor={branding.primaryColor}
-              />
-            </aside>
-          )}
-
-          {/* ── Sidebar (mobile overlay) ── */}
-          {hasSidebar && mobileOpen && (
-            <>
-              <div
-                className="v2-sidebar-overlay"
-                style={s.overlay}
-                onClick={() => setMobileOpen(false)}
-              />
-              <aside
-                className="v2-sidebar v2-sidebar-mobile-open"
-                style={{ ...s.sidebar, ...s.sidebarMobile }}
-              >
-                <SidebarNav
-                  items={navItems}
-                  currentPath={location.pathname}
-                  onNavigate={handleNavClick}
-                  primaryColor={branding.primaryColor}
-                />
-              </aside>
-            </>
-          )}
-
-          {/* ── Content ── */}
-          <div style={s.contentWrapper}>
-            {/* Breadcrumbs */}
-            <div style={s.breadcrumbBar}>
-              {breadcrumbs.map((crumb, i) => (
-                <span key={i} style={s.crumbWrapper}>
-                  {crumb.path ? (
-                    <span style={s.crumbLink} onClick={() => navigate(crumb.path)}>
-                      {crumb.label}
-                    </span>
-                  ) : (
-                    <span style={s.crumbCurrent}>{crumb.label}</span>
-                  )}
-                  {i < breadcrumbs.length - 1 && (
-                    <span style={s.crumbSep}>/</span>
-                  )}
-                </span>
-              ))}
-            </div>
-
-            {/* Page content */}
-            <main style={s.main}>{children}</main>
-          </div>
+        {/* ── Mobile drawer ── */}
+        <div className={`v2-mobile-drawer${mobileOpen ? " open" : ""}`}>
+          {navItems.map((item, i) => {
+            const active = isNavActive(item.path, location.pathname);
+            return (
+              <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
+                {item.label}
+              </button>
+            );
+          })}
         </div>
+        <div className={`v2-overlay${mobileOpen ? " open" : ""}`} onClick={() => setMobileOpen(false)} />
+
+        {/* ── Breadcrumbs ── */}
+        <div className="v2-breadcrumb">
+          {breadcrumbs.map((crumb, i) => (
+            <span key={i}>
+              {crumb.path
+                ? <span className="v2-crumb-link" onClick={() => navigate(crumb.path)}>{crumb.label}</span>
+                : <span className="v2-crumb-current">{crumb.label}</span>
+              }
+              {i < breadcrumbs.length - 1 && <span className="v2-crumb-sep">/</span>}
+            </span>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        <main className="v2-main">{children}</main>
       </div>
     </>
   );
 }
-
-// ─── SidebarNav ───────────────────────────────────────────────────────────────
-
-function SidebarNav({ items, currentPath, onNavigate, primaryColor }) {
-  return (
-    <nav style={s.nav}>
-      {items.map((item, i) => {
-        if (item.type === "section") {
-          return (
-            <div key={i} style={s.navSection}>{item.label}</div>
-          );
-        }
-        const active = isNavActive(item.path, currentPath);
-        return (
-          <button
-            key={i}
-            style={{
-              ...s.navItem,
-              ...(active ? { ...s.navItemActive, borderLeftColor: primaryColor } : {}),
-            }}
-            onClick={() => onNavigate(item.path)}
-          >
-            {item.icon && <span style={s.navIcon}>{item.icon}</span>}
-            <span style={s.navLabel}>{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const s = {
-  root: {
-    minHeight: "100vh",
-    backgroundColor: "#F9FAFB",
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    display: "flex",
-    flexDirection: "column",
-  },
-  // Header
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "0 24px",
-    height: 56,
-    color: "#FFFFFF",
-    flexShrink: 0,
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-  },
-  headerLeft: { display: "flex", alignItems: "center", gap: 12 },
-  headerLogo: { width: 32, height: 32, borderRadius: 6, objectFit: "cover" },
-  headerLogoPlaceholder: {
-    width: 32, height: 32, borderRadius: 6,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 14, fontWeight: "700", color: "#FFFFFF", flexShrink: 0,
-  },
-  headerText: { display: "flex", flexDirection: "column" },
-  headerName: { fontSize: 15, fontWeight: "700", lineHeight: 1.2 },
-  headerTagline: { fontSize: 11, opacity: 0.75, lineHeight: 1.2 },
-  headerRight: { display: "flex", alignItems: "center", gap: 12 },
-  userName: { fontSize: 13, fontWeight: "500" },
-  logoutButton: {
-    padding: "6px 14px",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    border: "1px solid rgba(255,255,255,0.3)",
-    borderRadius: 6, color: "#FFFFFF", fontSize: 13,
-    fontWeight: "500", cursor: "pointer",
-  },
-  mobileToggle: {
-    background: "none", border: "none", color: "#fff",
-    fontSize: 18, cursor: "pointer", padding: 4,
-    display: "none", alignItems: "center",
-  },
-  // Body
-  body: { display: "flex", flex: 1, overflow: "hidden" },
-  // Sidebar
-  sidebar: {
-    width: 220,
-    backgroundColor: "#FFFFFF",
-    borderRight: "1px solid #E5E7EB",
-    flexShrink: 0,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-  },
-  sidebarMobile: {
-    position: "fixed",
-    top: 56,
-    left: 0,
-    bottom: 0,
-    zIndex: 200,
-    boxShadow: "4px 0 16px rgba(0,0,0,0.12)",
-  },
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    top: 56,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    zIndex: 199,
-  },
-  // Nav
-  nav: { padding: "12px 0", display: "flex", flexDirection: "column" },
-  navSection: {
-    padding: "12px 16px 4px",
-    fontSize: 10, fontWeight: "700", color: "#9CA3AF",
-    textTransform: "uppercase", letterSpacing: "0.5px",
-  },
-  navItem: {
-    backgroundColor: "transparent", border: "none",
-    borderLeft: "3px solid transparent",
-    padding: "9px 16px",
-    display: "flex", alignItems: "center", gap: 10,
-    cursor: "pointer", textAlign: "left",
-    fontSize: 13, fontWeight: "500", color: "#374151",
-    transition: "all 0.15s ease",
-    width: "100%",
-  },
-  navItemActive: {
-    backgroundColor: "#F3F4F6",
-    color: "#111827", fontWeight: "600",
-  },
-  navIcon: { fontSize: 15, width: 18, textAlign: "center", flexShrink: 0 },
-  navLabel: { flex: 1 },
-  // Content
-  contentWrapper: { flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 },
-  breadcrumbBar: {
-    padding: "10px 24px",
-    fontSize: 13, color: "#6B7280",
-    borderBottom: "1px solid #F3F4F6",
-    backgroundColor: "#fff",
-    flexShrink: 0,
-  },
-  crumbWrapper: { display: "inline-flex", alignItems: "center" },
-  crumbLink: { color: "#3B82F6", cursor: "pointer" },
-  crumbCurrent: { color: "#374151", fontWeight: "500" },
-  crumbSep: { margin: "0 6px", color: "#9CA3AF" },
-  main: { padding: "24px", flex: 1 },
-};

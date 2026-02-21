@@ -1,28 +1,29 @@
 ﻿// src/pages/v2/admin/DashboardAdmin.jsx
-// Dashboard principal para Admin — Ant Design + datos reales Supabase
+// Dashboard principal para Admin — diseño Apple style
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Alert, Button, Card, Col, Progress, Row,
-  Skeleton, Space, Statistic, Tag, Typography,
-} from "antd";
-import {
-  BankOutlined, HomeOutlined, TeamOutlined,
-  AppstoreOutlined, ReloadOutlined, WarningOutlined,
-} from "@ant-design/icons";
+import { Alert, Skeleton } from "antd";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
 import { useAuth } from "../../../providers/AuthProvider";
 import { supabase } from "../../../services/supabaseClient";
 
-const { Title, Text } = Typography;
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 13) return "Buenos días";
+  if (h < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+function fDate() {
+  return new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+}
 
 export default function DashboardAdmin() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { userName, companyBranding } = useAdminLayout();
-  const canWrite = role !== "viewer";
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,16 +56,7 @@ export default function DashboardAdmin() {
       const activeTenants = allLodgers.filter((l) => l.status === "active").length;
       const pendingTenants = allLodgers.filter((l) => l.status === "pending_checkout").length;
 
-      setStats({
-        totalEntities,
-        totalAccommodations,
-        totalRooms,
-        freeRooms,
-        occupiedRooms,
-        pendingCheckout,
-        activeTenants,
-        pendingTenants,
-      });
+      setStats({ totalEntities, totalAccommodations, totalRooms, freeRooms, occupiedRooms, pendingCheckout, activeTenants, pendingTenants });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -75,134 +67,188 @@ export default function DashboardAdmin() {
   useEffect(() => { load(); }, [load]);
 
   const occupancyRate = stats && stats.totalRooms > 0
-    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
-    : 0;
+    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
 
-  const occupancyColor = occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626";
+  const kpis = stats ? [
+    { label: "Alojamientos", value: stats.totalAccommodations, icon: "🏠", color: "#0071E3", sub: "activos" },
+    { label: "Habitaciones", value: stats.totalRooms, icon: "🚪", color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
+    { label: "Inquilinos", value: stats.activeTenants, icon: "👥", color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
+    { label: "Ocupación", value: `${occupancyRate}%`, icon: "📊", color: occupancyRate > 80 ? "#34C759" : occupancyRate > 50 ? "#FF9500" : "#FF3B30", sub: "tasa actual", isOccupancy: true, rate: occupancyRate },
+    { label: "Entidades", value: stats.totalEntities, icon: "🏛️", color: "#AF52DE", sub: "propietarias" },
+  ] : [];
 
   const quickLinks = [
-    { label: "Entidades", icon: <BankOutlined />, path: "/v2/admin/entidades", color: "#8B5CF6" },
-    { label: "Alojamientos", icon: <HomeOutlined />, path: "/v2/admin/alojamientos", color: "#3B82F6" },
-    { label: "Inquilinos", icon: <TeamOutlined />, path: "/v2/admin/inquilinos", color: "#059669" },
-    { label: "Servicios", icon: <AppstoreOutlined />, path: "/v2/admin/servicios", color: "#F59E0B" },
+    { label: "Nueva Factura", desc: "Registrar consumo energético", icon: "⚡", path: "/v2/admin/energia/facturas/nueva", color: "#FF9500" },
+    { label: "Nuevo Inquilino", desc: "Registrar y asignar habitación", icon: "👤", path: "/v2/admin/inquilinos/nuevo", color: "#34C759" },
+    { label: "Nuevo Alojamiento", desc: "Añadir propiedad al portfolio", icon: "🏠", path: "/v2/admin/alojamientos/nuevo", color: "#0071E3" },
+    { label: "Nuevo Boletín", desc: "Crear liquidación para inquilino", icon: "🔔", path: "/v2/admin/boletines/nuevo", color: "#AF52DE" },
+    { label: "Ver Liquidaciones", desc: "Consultar liquidaciones de energía", icon: "📑", path: "/v2/admin/energia/liquidaciones", color: "#FF3B30" },
+    { label: "Catálogo Servicios", desc: "Gestionar servicios disponibles", icon: "🔧", path: "/v2/admin/servicios", color: "#5856D6" },
   ];
+
+  const firstName = userName?.split(" ")[0] || "Admin";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <style>{`
+        .dash-hero {
+          background: linear-gradient(135deg, #0071E3 0%, #0051a8 100%);
+          border-radius: 20px;
+          padding: 32px 36px;
+          margin-bottom: 28px;
+          color: #fff;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-hero::after {
+          content: '';
+          position: absolute;
+          right: -40px; top: -40px;
+          width: 220px; height: 220px;
+          background: rgba(255,255,255,0.07);
+          border-radius: 50%;
+        }
+        .dash-hero-greeting { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .dash-hero-date { font-size: 14px; color: rgba(255,255,255,0.72); }
+        .dash-hero-reload {
+          position: absolute; top: 20px; right: 20px;
+          background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+          border-radius: 50%; width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #fff; font-size: 16px;
+          transition: background 0.18s;
+        }
+        .dash-hero-reload:hover { background: rgba(255,255,255,0.25); }
+        .dash-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 14px;
+          margin-bottom: 28px;
+        }
+        .dash-kpi-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 20px 18px 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          cursor: default;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-kpi-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+        }
+        .dash-kpi-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+        .dash-kpi-value { font-size: 34px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
+        .dash-kpi-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+        .dash-kpi-sub { font-size: 11.5px; color: #9CA3AF; }
+        .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 10px; overflow: hidden; }
+        .dash-kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+        .dash-section-title { font-size: 18px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 14px; }
+        .dash-quick-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+        }
+        .dash-quick-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          display: flex; align-items: flex-start; gap: 14px;
+          border: none; text-align: left; width: 100%; font-family: inherit;
+        }
+        .dash-quick-card:hover {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 10px 28px rgba(0,0,0,0.11);
+        }
+        .dash-quick-icon {
+          width: 46px; height: 46px; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 22px; flex-shrink: 0;
+        }
+        .dash-quick-label { font-size: 14px; font-weight: 600; color: #1D1D1F; margin-bottom: 3px; }
+        .dash-quick-desc { font-size: 12px; color: #6B7280; line-height: 1.4; }
+        .dash-alert-banner {
+          background: #FFF7ED; border: 1px solid #FED7AA;
+          border-radius: 12px; padding: 12px 18px;
+          margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+          font-size: 13.5px; color: #92400E;
+        }
+        @media (max-width: 1100px) {
+          .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+          .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+          .dash-quick-grid { grid-template-columns: repeat(2, 1fr); }
+          .dash-hero { padding: 24px 20px; }
+          .dash-hero-greeting { font-size: 22px; }
+        }
+        @media (max-width: 480px) {
+          .dash-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .dash-quick-grid { grid-template-columns: 1fr; }
+          .dash-kpi-value { font-size: 28px; }
+        }
+      `}</style>
 
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
-          <Text type="secondary">Resumen de tu operación</Text>
-        </Col>
-        <Col>
-          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-            Actualizar
-          </Button>
-        </Col>
-      </Row>
+      {/* Hero */}
+      <div className="dash-hero">
+        <div className="dash-hero-greeting">{getGreeting()}, {firstName} 👋</div>
+        <div className="dash-hero-date" style={{ textTransform: "capitalize" }}>{fDate()}</div>
+        <button className="dash-hero-reload" onClick={load} title="Actualizar datos">↻</button>
+      </div>
 
       {error && (
-        <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
-          action={<Button size="small" onClick={load}>Reintentar</Button>}
-        />
+        <Alert type="error" message={error} showIcon style={{ marginBottom: 16, borderRadius: 12 }} />
+      )}
+
+      {/* Alerta pendientes */}
+      {stats?.pendingTenants > 0 && (
+        <div className="dash-alert-banner">
+          <span>⚠️</span>
+          <span><strong>{stats.pendingTenants} inquilino{stats.pendingTenants > 1 ? "s" : ""}</strong> pendiente{stats.pendingTenants > 1 ? "s" : ""} de baja — revisa la sección de Inquilinos</span>
+        </div>
       )}
 
       {/* KPIs */}
       {loading ? (
-        <Skeleton active paragraph={{ rows: 4 }} />
+        <Skeleton active paragraph={{ rows: 3 }} style={{ marginBottom: 28 }} />
       ) : (
-        <>
-          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Card size="small" style={{ borderLeft: "4px solid #8B5CF6" }}>
-                <Statistic
-                  title={<Text style={{ fontSize: 12 }}>Entidades</Text>}
-                  value={stats.totalEntities}
-                  prefix={<BankOutlined style={{ color: "#8B5CF6" }} />}
-                  valueStyle={{ color: "#8B5CF6", fontSize: 28 }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Card size="small" style={{ borderLeft: "4px solid #3B82F6" }}>
-                <Statistic
-                  title={<Text style={{ fontSize: 12 }}>Alojamientos</Text>}
-                  value={stats.totalAccommodations}
-                  prefix={<HomeOutlined style={{ color: "#3B82F6" }} />}
-                  valueStyle={{ color: "#3B82F6", fontSize: 28 }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Card size="small" style={{ borderLeft: "4px solid #111827" }}>
-                <Statistic
-                  title={<Text style={{ fontSize: 12 }}>Habitaciones</Text>}
-                  value={stats.totalRooms}
-                  valueStyle={{ fontSize: 28 }}
-                />
-                <Space size={4} style={{ marginTop: 4 }}>
-                  <Tag color="success" style={{ fontSize: 10, margin: 0 }}>{stats.freeRooms} libres</Tag>
-                  <Tag color="error" style={{ fontSize: 10, margin: 0 }}>{stats.occupiedRooms} ocup.</Tag>
-                </Space>
-              </Card>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Card size="small" style={{ borderLeft: `4px solid ${occupancyColor}` }}>
-                <Statistic
-                  title={<Text style={{ fontSize: 12 }}>Ocupación</Text>}
-                  value={occupancyRate}
-                  suffix="%"
-                  valueStyle={{ color: occupancyColor, fontSize: 28 }}
-                />
-                <Progress
-                  percent={occupancyRate}
-                  showInfo={false}
-                  strokeColor={occupancyColor}
-                  size="small"
-                  style={{ marginTop: 4 }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Card size="small" style={{ borderLeft: "4px solid #059669" }}>
-                <Statistic
-                  title={<Text style={{ fontSize: 12 }}>Inquilinos activos</Text>}
-                  value={stats.activeTenants}
-                  prefix={<TeamOutlined style={{ color: "#059669" }} />}
-                  valueStyle={{ color: "#059669", fontSize: 28 }}
-                />
-                {stats.pendingTenants > 0 && (
-                  <Tag color="warning" icon={<WarningOutlined />} style={{ fontSize: 10, marginTop: 4 }}>
-                    {stats.pendingTenants} pendiente{stats.pendingTenants > 1 ? "s" : ""} de baja
-                  </Tag>
-                )}
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Accesos rápidos */}
-          <Row gutter={[16, 16]}>
-            {quickLinks.map((item) => (
-              <Col key={item.path} xs={12} sm={6}>
-                <Card
-                  hoverable
-                  size="small"
-                  onClick={() => navigate(item.path)}
-                  style={{ textAlign: "center", cursor: "pointer", borderTop: `3px solid ${item.color}` }}
-                >
-                  <div style={{ fontSize: 28, color: item.color, marginBottom: 6 }}>{item.icon}</div>
-                  <Text strong style={{ fontSize: 13 }}>{item.label}</Text>
-                  {!canWrite && (
-                    <div><Text type="secondary" style={{ fontSize: 11 }}>Solo lectura</Text></div>
-                  )}
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </>
+        <div className="dash-kpi-grid">
+          {kpis.map((k) => (
+            <div key={k.label} className="dash-kpi-card">
+              <span className="dash-kpi-icon">{k.icon}</span>
+              <div className="dash-kpi-label">{k.label}</div>
+              <div className="dash-kpi-value" style={{ color: k.color }}>{k.value}</div>
+              <div className="dash-kpi-sub">{k.sub}</div>
+              {k.isOccupancy && (
+                <div className="dash-kpi-bar">
+                  <div className="dash-kpi-bar-fill" style={{ width: `${k.rate}%`, background: k.color }} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* Accesos rápidos */}
+      <div className="dash-section-title">Accesos rápidos</div>
+      <div className="dash-quick-grid">
+        {quickLinks.map((item) => (
+          <button key={item.path} className="dash-quick-card" onClick={() => navigate(item.path)}>
+            <div className="dash-quick-icon" style={{ background: `${item.color}18` }}>
+              <span style={{ fontSize: 22 }}>{item.icon}</span>
+            </div>
+            <div>
+              <div className="dash-quick-label">{item.label}</div>
+              <div className="dash-quick-desc">{item.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
 
     </V2Layout>
   );
