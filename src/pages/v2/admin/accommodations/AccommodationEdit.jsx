@@ -244,9 +244,14 @@ export default function AccommodationEdit() {
           {accommodation && <Text type="secondary">{accommodation.name}</Text>}
         </Col>
         <Col>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/alojamientos")}>
-            Volver
-          </Button>
+          <Space>
+            <Button onClick={() => navigate(`/v2/admin/alojamientos/${id}/servicios`)}>
+              Servicios
+            </Button>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/alojamientos")}>
+              Volver
+            </Button>
+          </Space>
         </Col>
       </Row>
 

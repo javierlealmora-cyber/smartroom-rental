@@ -8,6 +8,7 @@ import {
   Popconfirm, Row, Select, Space, Table, Tag, Typography,
 } from "antd";
 import { ArrowLeftOutlined, PlusOutlined, StopOutlined, CheckOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getAccommodation } from "../../../../services/accommodations.service";
@@ -236,7 +237,7 @@ export default function AccommodationServices() {
         scroll={{ x: true }}
         size="small"
         pagination={false}
-        locale={{ emptyText: "No hay servicios configurados para este alojamiento" }}
+        locale={{ emptyText: <EmptyState icon="🔧" title="Sin servicios configurados" description="Añade servicios del catálogo a este alojamiento para asignarlos a inquilinos" /> }}
       />
     </V2Layout>
   );
