@@ -7,6 +7,7 @@ import {
   Select, Space, Table, Tag, Typography,
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listAccommodations } from "../../../../services/accommodations.service";
@@ -207,7 +208,10 @@ export default function EnergySettlementsList() {
         scroll={{ x: true }}
         size="small"
         pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: "No hay liquidaciones" }}
+        locale={{ emptyText: search || filterAccommodation
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay liquidaciones que coincidan con los filtros aplicados" />
+          : <EmptyState icon="📑" title="No hay liquidaciones" description="Las liquidaciones se generan al procesar facturas de energía" />
+        }}
       />
     </V2Layout>
   );

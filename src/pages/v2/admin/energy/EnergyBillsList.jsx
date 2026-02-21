@@ -8,6 +8,7 @@ import {
   Space, Table, Tag, Tooltip, Typography,
 } from "antd";
 import { PlusOutlined, ReloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listEnergyBills } from "../../../../services/energy.service";
@@ -208,7 +209,10 @@ export default function EnergyBillsList() {
         loading={loading}
         scroll={{ x: true }}
         pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: hasFilters ? "Sin resultados para los filtros aplicados" : "Sube tu primera factura de energía" }}
+        locale={{ emptyText: hasFilters
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay facturas que coincidan con los filtros aplicados" />
+          : <EmptyState icon="⚡" title="No hay facturas de energía" description="Registra la primera factura para empezar a gestionar el consumo" actionLabel="Nueva Factura" onAction={() => navigate("/v2/admin/energia/facturas/nueva")} />
+        }}
       />
     </V2Layout>
   );

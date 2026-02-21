@@ -8,6 +8,7 @@ import {
   Space, Table, Tag, Tooltip, Typography,
 } from "antd";
 import { PlusOutlined, ReloadOutlined, EditOutlined, StopOutlined, CheckOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listServicesCatalog } from "../../../../services/services.service";
@@ -189,7 +190,10 @@ export default function ServicesList() {
         loading={loading}
         scroll={{ x: true }}
         pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: search || filterStatus ? "Sin resultados para los filtros aplicados" : "Crea tu primer servicio" }}
+        locale={{ emptyText: search || filterStatus
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay servicios que coincidan con los filtros aplicados" />
+          : <EmptyState icon="🔧" title="No hay servicios" description="Crea el primer servicio del catálogo" actionLabel="Nuevo Servicio" onAction={() => navigate("/v2/admin/servicios/nuevo")} />
+        }}
       />
     </V2Layout>
   );

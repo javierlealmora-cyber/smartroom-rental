@@ -8,6 +8,7 @@ import {
   Select, Space, Table, Tag, Typography,
 } from "antd";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listAccommodations } from "../../../../services/accommodations.service";
@@ -237,7 +238,10 @@ export default function LodgerServicesList() {
         scroll={{ x: true }}
         size="small"
         pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: "No hay servicios asignados a inquilinos" }}
+        locale={{ emptyText: search || filterStatus || filterAccommodation
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay servicios que coincidan con los filtros aplicados" />
+          : <EmptyState icon="🔖" title="No hay servicios asignados" description="Asigna el primer servicio a un inquilino" actionLabel="Asignar Servicio" onAction={() => navigate("/v2/admin/inquilinos/servicios/nuevo")} />
+        }}
       />
     </V2Layout>
   );

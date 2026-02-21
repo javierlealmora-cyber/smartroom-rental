@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Col, Row, Space, Table, Typography } from "antd";
+import { BankOutlined, PlusOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useTenant } from "../../../../providers/TenantProvider";
@@ -181,9 +183,13 @@ export default function EntitiesList() {
         <Col xs={24} lg={12}>
           <Card title="Entidad pagadora" loading={loading}>
             {!loading && !payer && (
-              <Typography.Text type="secondary">
-                No hay entidad pagadora configurada.
-              </Typography.Text>
+              <EmptyState
+                icon="🏦"
+                title="Sin entidad pagadora"
+                description="Configura la entidad pagadora de tu cuenta"
+                actionLabel="Nueva Entidad"
+                onAction={() => navigate("/v2/admin/entidades/nueva")}
+              />
             )}
             {!loading && payer && (
               <Row gutter={[12, 12]}>
@@ -213,9 +219,13 @@ export default function EntitiesList() {
             loading={loading}
           >
             {!loading && owners.length === 0 ? (
-              <Typography.Text type="secondary">
-                No hay entidades propietarias. Crea la primera para empezar.
-              </Typography.Text>
+              <EmptyState
+                icon="🏠"
+                title="Sin propietarios"
+                description="Crea la primera entidad propietaria para asignar alojamientos"
+                actionLabel="Nueva Entidad"
+                onAction={() => navigate("/v2/admin/entidades/nueva")}
+              />
             ) : (
               <Table
                 rowKey="id"

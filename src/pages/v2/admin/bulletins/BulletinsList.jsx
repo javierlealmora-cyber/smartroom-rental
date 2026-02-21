@@ -8,6 +8,7 @@ import {
   Select, Space, Table, Tag, Tooltip, Typography,
 } from "antd";
 import { PlusOutlined, ReloadOutlined, SendOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
@@ -240,7 +241,10 @@ export default function BulletinsList() {
         scroll={{ x: true }}
         size="small"
         pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: "No hay boletines" }}
+        locale={{ emptyText: search || filterStatus || filterAccommodation
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay boletines que coincidan con los filtros aplicados" />
+          : <EmptyState icon="🔔" title="No hay boletines" description="Crea el primer boletin de liquidación para tus inquilinos" actionLabel="Nuevo Boletin" onAction={() => navigate("/v2/admin/boletines/nuevo")} />
+        }}
       />
     </V2Layout>
   );
