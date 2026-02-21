@@ -241,7 +241,7 @@ export default function BulletinsList() {
         scroll={{ x: true }}
         size="small"
         pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: search || filterStatus || filterAccommodation
+        locale={{ emptyText: search || filterStatus
           ? <EmptyState icon="🔍" title="Sin resultados" description="No hay boletines que coincidan con los filtros aplicados" />
           : <EmptyState icon="🔔" title="No hay boletines" description="Crea el primer boletin de liquidación para tus inquilinos" actionLabel="Nuevo Boletin" onAction={() => navigate("/v2/admin/boletines/nuevo")} />
         }}
