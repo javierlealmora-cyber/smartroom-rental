@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Alert, Card, Col, Row, Skeleton, Space, Tag, Typography } from "antd";
+import EmptyState from "../../../components/EmptyState";
 import { AppstoreOutlined } from "@ant-design/icons";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAuth } from "../../../providers/AuthProvider";
@@ -91,9 +92,11 @@ export default function LodgerServices() {
       {loading ? (
         <Skeleton active paragraph={{ rows: 4 }} />
       ) : services.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "32px 0" }}>
-          <Text type="secondary">No tienes servicios contratados actualmente</Text>
-        </Card>
+        <EmptyState
+          icon="🔧"
+          title="Sin servicios contratados"
+          description="Actualmente no tienes ningún servicio asignado a tu habitación"
+        />
       ) : (
         <Row gutter={[16, 16]}>
           {services.map((s) => {

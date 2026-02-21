@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Alert, Card, Col, Descriptions, Row, Skeleton, Space, Tag, Typography } from "antd";
+import EmptyState from "../../../components/EmptyState";
 import { ThunderboltOutlined } from "@ant-design/icons";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAuth } from "../../../providers/AuthProvider";
@@ -102,9 +103,11 @@ export default function LodgerConsumo() {
       {loading ? (
         <Skeleton active paragraph={{ rows: 5 }} />
       ) : settlements.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "32px 0" }}>
-          <Text type="secondary">No hay liquidaciones de energía disponibles aún</Text>
-        </Card>
+        <EmptyState
+          icon="⚡"
+          title="Sin liquidaciones"
+          description="No hay liquidaciones de energía disponibles aún para tu habitación"
+        />
       ) : (
         <Space direction="vertical" style={{ width: "100%" }} size={12}>
           {settlements.map((s) => (

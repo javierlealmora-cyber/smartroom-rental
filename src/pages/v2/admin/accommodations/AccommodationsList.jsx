@@ -232,6 +232,13 @@ export default function AccommodationsList() {
                     >
                       Editar
                     </Button>,
+                    <Button
+                      key="services"
+                      type="link"
+                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/servicios`)}
+                    >
+                      Servicios
+                    </Button>,
                     <Popconfirm
                       key="toggle"
                       title={acc.status === "active" ? "¿Desactivar este alojamiento?" : "¿Reactivar este alojamiento?"}
