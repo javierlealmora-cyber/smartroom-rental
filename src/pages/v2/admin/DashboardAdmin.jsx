@@ -120,7 +120,7 @@ export default function DashboardAdmin() {
 
   // KPIs en orden lógico: Entidades > Alojamientos > Habitaciones > Inquilinos > Ocupación
   const kpis = stats ? [
-    { label: "Entidades", value: stats.totalEntities, icon: "🏛️", color: "#AF52DE", sub: "propietarias" },
+    { label: "Entidades", value: stats.totalEntities, icon: null, isEntityImg: true, color: "#AF52DE", sub: "propietarias" },
     { label: "Alojamientos", value: stats.totalAccommodations, icon: "🏠", color: "#0071E3", sub: "activos" },
     { label: "Habitaciones", value: stats.totalRooms, icon: "🚪", color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
     { label: "Inquilinos", value: stats.activeTenants, icon: "👥", color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
@@ -177,8 +177,8 @@ export default function DashboardAdmin() {
         }
         .dash-kpi-card {
           background: #fff;
-          border-radius: 12px;
-          padding: 14px 14px 12px;
+          border-radius: 10px;
+          padding: 10px 10px 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           cursor: default;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -189,10 +189,10 @@ export default function DashboardAdmin() {
           transform: translateY(-3px);
           box-shadow: 0 8px 24px rgba(0,0,0,0.10);
         }
-        .dash-kpi-icon { font-size: 20px; margin-bottom: 6px; display: block; }
-        .dash-kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 3px; }
-        .dash-kpi-label { font-size: 10px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
-        .dash-kpi-sub { font-size: 10px; color: #9CA3AF; }
+        .dash-kpi-icon { font-size: 14px; margin-bottom: 4px; display: block; }
+        .dash-kpi-value { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; margin-bottom: 2px; }
+        .dash-kpi-label { font-size: 9px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+        .dash-kpi-sub { font-size: 9px; color: #9CA3AF; }
         .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 10px; overflow: hidden; }
         .dash-kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
         .dash-section-title { font-size: 14px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 10px; }
@@ -302,7 +302,10 @@ export default function DashboardAdmin() {
         <div className="dash-kpi-grid">
           {kpis.map((k) => (
             <div key={k.label} className="dash-kpi-card">
-              <span className="dash-kpi-icon">{k.icon}</span>
+              {k.isEntityImg
+                ? <img src="https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/entidad-icono-model.png" alt="Entidades" style={{ width: 42, height: 42, objectFit: "contain", display: "block", marginBottom: 4 }} />
+                : <span className="dash-kpi-icon">{k.icon}</span>
+              }
               <div className="dash-kpi-label">{k.label}</div>
               <div className="dash-kpi-value" style={{ color: k.color }}>{k.value}</div>
               <div className="dash-kpi-sub">{k.sub}</div>

@@ -419,9 +419,10 @@ export default function V2Layout({
             {navItems.map((item, i) => {
               const active = isNavActive(item.path, location.pathname);
               const { Icon } = item;
+              const iconSize = item.label === "Entidades" ? 56 : 28;
               return (
                 <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                  <Icon size={28} />
+                  <Icon size={iconSize} />
                   <span className="v2-nav-label">{item.label}</span>
                 </button>
               );

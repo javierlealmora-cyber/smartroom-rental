@@ -27,26 +27,17 @@ export function Icon3DDashboard({ size = 44 }) {
   );
 }
 
+const ENTIDAD_ICONO_URL = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/entidad-icono-model.png";
+
 export function Icon3DEntidades({ size = 44 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
-      <defs>
-        <filter id="sh-ent" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#1D1D1F" floodOpacity="0.18"/></filter>
-        <linearGradient id="g-ef" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#D1D1D6"/></linearGradient>
-        <linearGradient id="g-es" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#8E8E93"/><stop offset="100%" stopColor="#AEAEB2"/></linearGradient>
-        <linearGradient id="g-et" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#F2F2F7"/><stop offset="100%" stopColor="#E5E5EA"/></linearGradient>
-      </defs>
-      <g filter="url(#sh-ent)">
-        <path d="M8 30 L8 15 L22 10 L22 25 Z" fill="url(#g-ef)" stroke="#C8C8CC" strokeWidth="0.5"/>
-        <path d="M22 10 L36 15 L36 30 L22 25 Z" fill="url(#g-es)" stroke="#AEAEB2" strokeWidth="0.5"/>
-        <path d="M8 15 L22 10 L36 15 L22 20 Z" fill="url(#g-et)"/>
-        <rect x="11" y="18" width="4" height="4" rx="1" fill="white" opacity="0.6"/>
-        <rect x="17" y="18" width="4" height="4" rx="1" fill="white" opacity="0.6"/>
-        <rect x="25" y="18" width="4" height="4" rx="1" fill="white" opacity="0.3"/>
-        <path d="M9 15.5 L22 11.5 L22 13 L9 17 Z" fill="white" opacity="0.35"/>
-        <rect x="18" y="25" width="8" height="5" rx="1" fill="#8E8E93" opacity="0.5"/>
-      </g>
-    </svg>
+    <img
+      src={ENTIDAD_ICONO_URL}
+      alt="Entidades"
+      width={size}
+      height={size}
+      style={{ objectFit: "contain", display: "block" }}
+    />
   );
 }
 
