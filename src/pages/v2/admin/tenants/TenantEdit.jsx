@@ -33,6 +33,12 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactivo" },
 ];
 
+const GENDER_OPTIONS = [
+  { value: "male", label: "Masculino" },
+  { value: "female", label: "Femenino" },
+  { value: "other", label: "Otro" },
+];
+
 function fDate(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
@@ -108,6 +114,7 @@ export default function TenantEdit() {
         phone: data.phone || "",
         document_id: data.document_id || "",
         status: data.status,
+        gender: data.gender || null,
       });
       // Auto-open reassign modal if ?action=reassign
       if (searchParams.get("action") === "reassign") {
@@ -178,6 +185,7 @@ export default function TenantEdit() {
         full_name,
         phone: values.phone || null,
         document_id: values.document_id || null,
+        gender: values.gender || null,
       });
       navigate("/v2/admin/inquilinos");
     } catch (e) {
@@ -346,7 +354,12 @@ export default function TenantEdit() {
                       <Input placeholder="12345678A" />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} sm={12}>
+                  <Col xs={24} sm={6}>
+                    <Form.Item label="Género" name="gender">
+                      <Select options={GENDER_OPTIONS} placeholder="Seleccionar" allowClear />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={6}>
                     <Form.Item label="Estado" name="status"
                       rules={[{ required: true, message: "Selecciona un estado" }]}>
                       <Select options={STATUS_OPTIONS} />

@@ -26,7 +26,7 @@ export function Icon3DAlojamientos({ size = 44 }) {
 }
 
 export function Icon3DInquilinos({ size = 44 }) {
-  return <ImgIcon src="/icons/inquilino-icono-model.png" alt="Inquilinos" size={size} />;
+  return <ImgIcon src="/icons/inquilinos-icono-model.png" alt="Inquilinos" size={size} />;
 }
 
 export function Icon3DServicios({ size = 44 }) {

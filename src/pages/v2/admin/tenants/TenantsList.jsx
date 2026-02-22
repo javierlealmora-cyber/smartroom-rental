@@ -126,7 +126,11 @@ export default function TenantsList() {
       key: "name",
       render: (_, t) => (
         <Space>
-          <img src="/icons/inquilino-icono-model.png" alt="Inquilino" style={{ width: 32, height: 32, objectFit: "contain", flexShrink: 0 }} />
+          <img
+            src={t.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+            alt="Inquilino"
+            style={{ width: 36, height: 36, objectFit: "contain", flexShrink: 0 }}
+          />
           <Text strong>{t.full_name}</Text>
         </Space>
       ),

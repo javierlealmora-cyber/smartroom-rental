@@ -266,7 +266,11 @@ export default function LodgerDetail() {
           {loading ? <Skeleton active title={{ width: 200 }} paragraph={false} /> : (
             <Row align="middle" gutter={14}>
               <Col>
-                <img src="/icons/inquilino-icono-model.png" alt="Inquilino" style={{ width: 52, height: 52, objectFit: "contain" }} />
+                <img
+                  src={lodger?.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+                  alt="Inquilino"
+                  style={{ width: 52, height: 52, objectFit: "contain" }}
+                />
               </Col>
               <Col>
                 <Title level={2} style={{ margin: 0 }}>{lodger?.full_name}</Title>
