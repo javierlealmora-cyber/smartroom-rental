@@ -8,9 +8,16 @@
 import { useAuth } from "../providers/AuthProvider";
 import { useTenant } from "../providers/TenantProvider";
 
+const PLAN_LABELS = {
+  basic: "Plan Basic",
+  agent: "Plan Agent",
+  pro: "Plan Pro",
+  enterprise: "Plan Enterprise",
+};
+
 export function useAdminLayout() {
   const { user, profile, clientAccountId } = useAuth();
-  const { branding: tenantBranding } = useTenant();
+  const { branding: tenantBranding, planCode } = useTenant();
 
   const userName =
     profile?.full_name ||
@@ -18,13 +25,16 @@ export function useAdminLayout() {
     user?.email ||
     "Usuario";
 
+  const planLabel = planCode ? (PLAN_LABELS[planCode] || planCode) : null;
+
   const companyBranding = {
     name: tenantBranding?.name || "SmartRoom",
     logoText: (tenantBranding?.name || "S").charAt(0),
     logoUrl: tenantBranding?.logo_url || null,
     primaryColor: tenantBranding?.primary_color || "#111827",
     secondaryColor: tenantBranding?.secondary_color || "#3B82F6",
+    planLabel,
   };
 
-  return { userName, companyBranding, clientAccountId };
+  return { userName, companyBranding, clientAccountId, planCode };
 }

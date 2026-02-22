@@ -218,6 +218,7 @@ export default function V2Layout({
   companyBranding = {},
   userName = "Usuario",
   customBreadcrumbs = null,
+  onSettings = null,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -229,7 +230,7 @@ export default function V2Layout({
     name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
     logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),
     logoUrl: companyBranding?.logoUrl || null,
-    tagline: role === "superadmin" ? "Superadmin" : role === "lodger" ? "Portal Inquilino" : "Panel de Gestión",
+    tagline: role === "superadmin" ? "Superadmin" : role === "lodger" ? "Portal Inquilino" : (companyBranding?.planLabel || "Panel de Gestión"),
   };
 
   // Breadcrumbs
@@ -388,6 +389,16 @@ export default function V2Layout({
           {/* Derecha */}
           <div className="v2-topbar-right">
             <span className="v2-username">{userName}</span>
+            {(onSettings || role === "admin") && (
+              <button
+                className="v2-logout-btn"
+                onClick={onSettings || (() => {})}
+                title="Configuración"
+                style={{ padding: "5px 12px" }}
+              >
+                ⚙️
+              </button>
+            )}
             <button className="v2-logout-btn" onClick={handleLogout}>Salir</button>
             <button className="v2-hamburger" onClick={() => setMobileOpen((v) => !v)} aria-label="Menú">
               {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}

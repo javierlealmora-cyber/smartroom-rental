@@ -20,14 +20,47 @@ function fDate() {
   return new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 }
 
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Ahora mismo";
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Ayer";
+  return `Hace ${days} días`;
+}
+
+const ACTION_LABELS = {
+  create: { label: "Creado", color: "#34C759", icon: "✚" },
+  update: { label: "Actualizado", color: "#0071E3", icon: "✎" },
+  delete: { label: "Eliminado", color: "#FF3B30", icon: "✕" },
+  set_status: { label: "Estado cambiado", color: "#FF9500", icon: "◉" },
+  set_room_status: { label: "Habitación actualizada", color: "#FF9500", icon: "🚪" },
+};
+
+const ENTITY_LABELS = {
+  accommodation: "Alojamiento",
+  room: "Habitación",
+  lodger: "Inquilino",
+  entity: "Entidad",
+  service: "Servicio",
+  energy_bill: "Factura",
+  bulletin: "Boletín",
+  lodger_service: "Servicio inquilino",
+};
+
 export default function DashboardAdmin() {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,17 +97,34 @@ export default function DashboardAdmin() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const loadActivity = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      const { data } = await supabase
+        .from("audit_log")
+        .select("id, entity_type, action, actor_role, metadata, new_values, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setActivity(data || []);
+    } catch {
+      setActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); loadActivity(); }, [load, loadActivity]);
 
   const occupancyRate = stats && stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
 
+  // KPIs en orden lógico: Entidades > Alojamientos > Habitaciones > Inquilinos > Ocupación
   const kpis = stats ? [
+    { label: "Entidades", value: stats.totalEntities, icon: "🏛️", color: "#AF52DE", sub: "propietarias" },
     { label: "Alojamientos", value: stats.totalAccommodations, icon: "🏠", color: "#0071E3", sub: "activos" },
     { label: "Habitaciones", value: stats.totalRooms, icon: "🚪", color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
     { label: "Inquilinos", value: stats.activeTenants, icon: "👥", color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
     { label: "Ocupación", value: `${occupancyRate}%`, icon: "📊", color: occupancyRate > 80 ? "#34C759" : occupancyRate > 50 ? "#FF9500" : "#FF3B30", sub: "tasa actual", isOccupancy: true, rate: occupancyRate },
-    { label: "Entidades", value: stats.totalEntities, icon: "🏛️", color: "#AF52DE", sub: "propietarias" },
   ] : [];
 
   const quickLinks = [
@@ -178,8 +228,40 @@ export default function DashboardAdmin() {
           margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
           font-size: 13.5px; color: #92400E;
         }
+        .dash-bottom-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-top: 28px;
+        }
+        .dash-activity-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 22px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .dash-activity-title {
+          font-size: 16px; font-weight: 700; color: #1D1D1F;
+          letter-spacing: -0.2px; margin-bottom: 16px;
+        }
+        .dash-activity-item {
+          display: flex; align-items: flex-start; gap: 12px;
+          padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+        }
+        .dash-activity-item:last-child { border-bottom: none; }
+        .dash-activity-dot {
+          width: 28px; height: 28px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; color: #fff; flex-shrink: 0; margin-top: 1px;
+        }
+        .dash-activity-text { font-size: 13px; color: #374151; line-height: 1.4; }
+        .dash-activity-meta { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+        .dash-activity-empty { text-align: center; padding: 32px 0; color: #9CA3AF; font-size: 13px; }
         @media (max-width: 1100px) {
           .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+          .dash-bottom-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
           .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -234,20 +316,61 @@ export default function DashboardAdmin() {
         </div>
       )}
 
-      {/* Accesos rápidos */}
-      <div className="dash-section-title">Accesos rápidos</div>
-      <div className="dash-quick-grid">
-        {quickLinks.map((item) => (
-          <button key={item.path} className="dash-quick-card" onClick={() => navigate(item.path)}>
-            <div className="dash-quick-icon" style={{ background: `${item.color}18` }}>
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
+      {/* Bottom grid: Accesos rápidos + Actividad reciente */}
+      <div className="dash-bottom-grid">
+
+        {/* Accesos rápidos */}
+        <div>
+          <div className="dash-section-title">Accesos rápidos</div>
+          <div className="dash-quick-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+            {quickLinks.map((item) => (
+              <button key={item.path} className="dash-quick-card" onClick={() => navigate(item.path)}>
+                <div className="dash-quick-icon" style={{ background: `${item.color}18` }}>
+                  <span style={{ fontSize: 22 }}>{item.icon}</span>
+                </div>
+                <div>
+                  <div className="dash-quick-label">{item.label}</div>
+                  <div className="dash-quick-desc">{item.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actividad reciente */}
+        <div className="dash-activity-card">
+          <div className="dash-activity-title">⏱ Actividad reciente</div>
+          {activityLoading ? (
+            <Skeleton active paragraph={{ rows: 5 }} />
+          ) : activity.length === 0 ? (
+            <div className="dash-activity-empty">
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+              <div>Sin actividad registrada aún</div>
             </div>
-            <div>
-              <div className="dash-quick-label">{item.label}</div>
-              <div className="dash-quick-desc">{item.desc}</div>
-            </div>
-          </button>
-        ))}
+          ) : (
+            activity.map((item) => {
+              const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
+              const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
+              const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
+              return (
+                <div key={item.id} className="dash-activity-item">
+                  <div className="dash-activity-dot" style={{ background: act.color }}>
+                    {act.icon}
+                  </div>
+                  <div>
+                    <div className="dash-activity-text">
+                      <strong>{act.label}</strong> · {entityLabel}{name ? `: ${name}` : ""}
+                    </div>
+                    <div className="dash-activity-meta">
+                      {item.actor_role} · {timeAgo(item.created_at)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
       </div>
 
     </V2Layout>

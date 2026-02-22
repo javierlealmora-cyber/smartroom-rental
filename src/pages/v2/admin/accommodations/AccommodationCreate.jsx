@@ -8,10 +8,22 @@ import {
   Row, Select, Space, Steps, Table, Typography,
 } from "antd";
 import { ArrowLeftOutlined, ArrowRightOutlined, SaveOutlined } from "@ant-design/icons";
+
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listEntities } from "../../../../services/entities.service";
 import { createAccommodation } from "../../../../services/accommodations.service";
+
+const PROVINCIAS_ES = [
+  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
+  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
+  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
+  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
+  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
+  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
+  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
+  "Ceuta","Melilla",
+].map((p) => ({ value: p, label: p }));
 
 const { Title, Text } = Typography;
 
@@ -66,11 +78,19 @@ export default function AccommodationCreate() {
     setSaving(true);
     setSaveError(null);
     try {
+      const street = [
+        step1Values.street,
+        step1Values.street_number,
+        step1Values.floor ? `${step1Values.floor}º` : null,
+        step1Values.door || null,
+      ].filter(Boolean).join(" ");
+
       await createAccommodation(
         {
           client_account_id: clientAccountId,
           name: step1Values.name,
-          address_line1: step1Values.address_line1 || null,
+          address_line1: street || null,
+          address_line2: step1Values.address_line2 || null,
           postal_code: step1Values.postal_code || null,
           city: step1Values.city || null,
           province: step1Values.province || null,
@@ -90,7 +110,12 @@ export default function AccommodationCreate() {
       );
       navigate("/v2/admin/alojamientos");
     } catch (e) {
-      setSaveError(e.message);
+      const msg = e?.message || "Error al crear el alojamiento";
+      if (msg.includes("CIRCUIT_OPEN") || msg.includes("SESSION_COOLDOWN")) {
+        setSaveError("Sesión expirada. Por favor recarga la página e inicia sesión de nuevo.");
+      } else {
+        setSaveError(msg);
+      }
     } finally {
       setSaving(false);
     }
@@ -198,14 +223,34 @@ export default function AccommodationCreate() {
                   <InputNumber style={{ width: "100%" }} min={1} max={100} placeholder="8" />
                 </Form.Item>
               </Col>
-              <Col xs={24}>
-                <Form.Item label="Dirección" name="address_line1">
-                  <Input placeholder="Calle, número..." />
+              <Col xs={24} sm={14}>
+                <Form.Item label="Calle" name="street">
+                  <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={4}>
+                <Form.Item label="Número" name="street_number">
+                  <Input placeholder="12" />
+                </Form.Item>
+              </Col>
+              <Col xs={12} sm={3}>
+                <Form.Item label="Piso" name="floor">
+                  <Input placeholder="3" />
+                </Form.Item>
+              </Col>
+              <Col xs={12} sm={3}>
+                <Form.Item label="Puerta" name="door">
+                  <Input placeholder="A" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2">
+                  <Input placeholder="Bloque B, Escalera 2..." />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={4}>
                 <Form.Item label="Código Postal" name="postal_code">
-                  <Input placeholder="28001" />
+                  <Input placeholder="28001" maxLength={5} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
@@ -213,9 +258,17 @@ export default function AccommodationCreate() {
                   <Input placeholder="Madrid" />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={12}>
                 <Form.Item label="Provincia" name="province">
-                  <Input placeholder="Madrid" />
+                  <Select
+                    showSearch
+                    placeholder="Seleccionar provincia..."
+                    optionFilterProp="label"
+                    options={PROVINCIAS_ES}
+                    filterOption={(input, option) =>
+                      option.label.toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
                 </Form.Item>
               </Col>
             </Row>
