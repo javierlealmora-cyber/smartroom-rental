@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Col, Form, Input, Row, Select, Space, Typography } from "antd";
+import { Alert, Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { useTenant } from "../../../../providers/TenantProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
-import { createEntity, listEntities } from "../../../../services/entities.service";
-import { supabase } from "../../../../services/supabaseClient";
+import { createEntity } from "../../../../services/entities.service";
+
+const GENDER_OPTIONS = [
+  { value: "male", label: "Hombre" },
+  { value: "female", label: "Mujer" },
+  { value: "other", label: "Otro" },
+];
 
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autónomo" },
@@ -14,11 +18,20 @@ const LEGAL_TYPES = [
   { value: "persona_juridica", label: "Persona jurídica" },
 ];
 
+const PROVINCIAS_ES = [
+  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
+  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba","Cuenca",
+  "Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca","Islas Baleares",
+  "Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga",
+  "Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife",
+  "Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid",
+  "Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
+];
+
 export default function EntityCreate() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const { planCode } = useTenant();
 
   const canWrite = role !== "viewer";
 
@@ -29,27 +42,9 @@ export default function EntityCreate() {
 
   const legalType = Form.useWatch("legal_type", form) || "persona_juridica";
   const isCompany = legalType === "persona_juridica";
+  const isPhysical = legalType === "persona_fisica";
 
   const canSubmit = useMemo(() => !!clientAccountId, [clientAccountId]);
-
-  const enforceOwnerLimit = async () => {
-    if (!planCode) return;
-
-    const [{ data: plan, error: planErr }, owners] = await Promise.all([
-      supabase.from("plans_catalog").select("max_owners").eq("code", planCode).maybeSingle(),
-      listEntities({ type: "owner" }),
-    ]);
-
-    if (planErr) return;
-
-    const maxOwners = plan?.max_owners;
-    if (maxOwners == null || maxOwners === -1) return;
-
-    // Cuenta active + disabled
-    if (owners.length >= maxOwners) {
-      throw new Error(`Has alcanzado el máximo de entidades propietarias del plan (${maxOwners}).`);
-    }
-  };
 
   const onFinish = async (values) => {
     if (!canWrite || !canSubmit || busy) return;
@@ -58,8 +53,6 @@ export default function EntityCreate() {
     setError(null);
 
     try {
-      await enforceOwnerLimit();
-
       await createEntity({
         client_account_id: clientAccountId,
         type: "owner",
@@ -69,6 +62,7 @@ export default function EntityCreate() {
         first_name: values.first_name || null,
         last_name1: values.last_name1 || null,
         last_name2: values.last_name2 || null,
+        gender: values.gender || null,
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
@@ -91,7 +85,7 @@ export default function EntityCreate() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       <Typography.Title level={2} style={{ marginTop: 0 }}>
-        Nueva entidad propietaria
+        Nueva entidad
       </Typography.Title>
       <Typography.Text type="secondary">
         Se crea dentro de tu Cuenta Cliente
@@ -163,6 +157,18 @@ export default function EntityCreate() {
               </>
             )}
 
+            {isPhysical && (
+              <Col xs={24} md={8}>
+                <Form.Item label="Género" name="gender">
+                  <Select
+                    placeholder="Seleccionar..."
+                    options={GENDER_OPTIONS}
+                    allowClear
+                  />
+                </Form.Item>
+              </Col>
+            )}
+
             <Col xs={24} md={8}>
               <Form.Item label="NIF/CIF" name="tax_id">
                 <Input />
@@ -179,39 +185,59 @@ export default function EntityCreate() {
               </Form.Item>
             </Col>
 
+            <Col xs={24}>
+              <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Tipo de vía" name="street"
+                extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
+                <Input placeholder="Calle, Avenida, Plaza, Paseo..." />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={4}>
+              <Form.Item label="Número" name="street_number">
+                <Input placeholder="12" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={4}>
+              <Form.Item label="Piso" name="floor">
+                <Input placeholder="2" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={4}>
+              <Form.Item label="Puerta" name="door">
+                <Input placeholder="A" />
+              </Form.Item>
+            </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="País" name="country">
-                <Input />
+              <Form.Item label="Código Postal" name="zip">
+                <Input placeholder="28001" maxLength={5} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Ciudad / Municipio" name="city">
+                <Input placeholder="Madrid" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Provincia" name="province">
-                <Input />
+                <Select
+                  showSearch
+                  placeholder="Seleccionar provincia..."
+                  optionFilterProp="label"
+                  options={PROVINCIAS_ES.map((p) => ({ value: p, label: p }))}
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Ciudad" name="city">
-                <Input />
+              <Form.Item label="País" name="country">
+                <Input placeholder="España" />
               </Form.Item>
             </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="CP" name="zip">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Calle" name="street">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Número" name="street_number">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label="Extra" name="address_extra">
-                <Input />
+            <Col xs={24} md={16}>
+              <Form.Item label="Información adicional" name="address_extra"
+                extra="Escalera, bloque, referencia catastral, etc.">
+                <Input placeholder="Escalera B, Bloque 3..." />
               </Form.Item>
             </Col>
           </Row>

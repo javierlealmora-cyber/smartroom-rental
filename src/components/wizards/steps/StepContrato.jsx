@@ -7,7 +7,8 @@
 
 import { mockPlans, getPlanByCode, formatCurrency, getPlanColor, getPlanLabel } from "../../../mocks/clientAccountsData";
 
-export default function StepContrato({ formData, errors, onChange, mode }) {
+export default function StepContrato({ formData, errors, onChange, mode, onChangeField }) {
+  const handleChange = onChangeField || onChange;
   const activePlans = mockPlans.filter(
     (p) => p.status === "active" && p.visible_for_new_accounts
   );
@@ -27,7 +28,7 @@ export default function StepContrato({ formData, errors, onChange, mode }) {
         <div style={styles.formGrid}>
           <div style={styles.formGroup}>
             <label style={styles.label}>
-              Nombre de la cuenta <span style={styles.required}>*</span>
+              Nombre de la Persona propietaria de la Cuenta <span style={styles.required}>*</span>
             </label>
             <input
               type="text"
@@ -42,6 +43,30 @@ export default function StepContrato({ formData, errors, onChange, mode }) {
             {errors.account_name && (
               <span style={styles.errorText}>{errors.account_name}</span>
             )}
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              Primer Apellido
+            </label>
+            <input
+              type="text"
+              value={formData.account_last_name1 || ""}
+              onChange={(e) => onChange("account_last_name1", e.target.value)}
+              style={styles.input}
+              placeholder="Primer apellido"
+            />
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              Segundo Apellido
+            </label>
+            <input
+              type="text"
+              value={formData.account_last_name2 || ""}
+              onChange={(e) => onChange("account_last_name2", e.target.value)}
+              style={styles.input}
+              placeholder="Segundo apellido (opcional)"
+            />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>

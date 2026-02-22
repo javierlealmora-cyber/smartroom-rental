@@ -1,16 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Button, Card, Col, Form, Input, Row, Select, Space, Typography } from "antd";
+import { Alert, Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { updateEntity } from "../../../../services/entities.service";
-import { supabase } from "../../../../services/supabaseClient";
+import { supabase } from "../../../../services/supabaseClient"; // read-only: load entity by id
+
+const GENDER_OPTIONS = [
+  { value: "male", label: "Hombre" },
+  { value: "female", label: "Mujer" },
+  { value: "other", label: "Otro" },
+];
 
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autónomo" },
   { value: "persona_fisica", label: "Persona física" },
   { value: "persona_juridica", label: "Persona jurídica" },
+];
+
+const PROVINCIAS_ES = [
+  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
+  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba","Cuenca",
+  "Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca","Islas Baleares",
+  "Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga",
+  "Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife",
+  "Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid",
+  "Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
 ];
 
 export default function EntityEdit() {
@@ -59,6 +75,7 @@ export default function EntityEdit() {
           first_name: data.first_name || "",
           last_name1: data.last_name1 || "",
           last_name2: data.last_name2 || "",
+          gender: data.gender || null,
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
@@ -78,6 +95,7 @@ export default function EntityEdit() {
           first_name: data.first_name || "",
           last_name1: data.last_name1 || "",
           last_name2: data.last_name2 || "",
+          gender: data.gender || null,
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
@@ -108,7 +126,6 @@ export default function EntityEdit() {
 
     try {
       if (!entity) throw new Error("Entidad no cargada");
-      if (entity.type !== "owner") throw new Error("Solo se pueden editar entidades propietarias desde este portal");
 
       await updateEntity(entity.id, {
         legal_type: values.legal_type,
@@ -116,6 +133,7 @@ export default function EntityEdit() {
         first_name: values.first_name || null,
         last_name1: values.last_name1 || null,
         last_name2: values.last_name2 || null,
+        gender: values.gender || null,
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
@@ -138,11 +156,12 @@ export default function EntityEdit() {
 
   const legalType = Form.useWatch("legal_type", formAntd) || entity?.legal_type;
   const isCompanyAntd = legalType === "persona_juridica";
+  const isPhysicalAntd = legalType === "persona_fisica";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       <Typography.Title level={2} style={{ marginTop: 0 }}>
-        Editar entidad propietaria
+        Editar entidad
       </Typography.Title>
       <Typography.Text type="secondary">
         {loading ? "" : entity ? `ID: ${entity.id}` : ""}
@@ -213,6 +232,18 @@ export default function EntityEdit() {
                 </>
               )}
 
+              {isPhysicalAntd && (
+                <Col xs={24} md={8}>
+                  <Form.Item label="Género" name="gender">
+                    <Select
+                      placeholder="Seleccionar..."
+                      options={GENDER_OPTIONS}
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
+              )}
+
               <Col xs={24} md={8}>
                 <Form.Item label="NIF/CIF" name="tax_id">
                   <Input />
@@ -244,39 +275,59 @@ export default function EntityEdit() {
                 </Form.Item>
               </Col>
 
+              <Col xs={24}>
+                <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Tipo de vía" name="street"
+                  extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
+                  <Input placeholder="Calle, Avenida, Plaza, Paseo..." />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={4}>
+                <Form.Item label="Número" name="street_number">
+                  <Input placeholder="12" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={4}>
+                <Form.Item label="Piso" name="floor">
+                  <Input placeholder="2" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={4}>
+                <Form.Item label="Puerta" name="door">
+                  <Input placeholder="A" />
+                </Form.Item>
+              </Col>
               <Col xs={24} md={8}>
-                <Form.Item label="País" name="country">
-                  <Input />
+                <Form.Item label="Código Postal" name="zip">
+                  <Input placeholder="28001" maxLength={5} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item label="Ciudad / Municipio" name="city">
+                  <Input placeholder="Madrid" />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item label="Provincia" name="province">
-                  <Input />
+                  <Select
+                    showSearch
+                    placeholder="Seleccionar provincia..."
+                    optionFilterProp="label"
+                    options={PROVINCIAS_ES.map((p) => ({ value: p, label: p }))}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item label="Ciudad" name="city">
-                  <Input />
+                <Form.Item label="País" name="country">
+                  <Input placeholder="España" />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="CP" name="zip">
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Calle" name="street">
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Número" name="street_number">
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col xs={24}>
-                <Form.Item label="Extra" name="address_extra">
-                  <Input />
+              <Col xs={24} md={16}>
+                <Form.Item label="Información adicional" name="address_extra"
+                  extra="Escalera, bloque, referencia catastral, etc.">
+                  <Input placeholder="Escalera B, Bloque 3..." />
                 </Form.Item>
               </Col>
             </Row>

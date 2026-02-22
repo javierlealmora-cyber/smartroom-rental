@@ -32,6 +32,8 @@ const TOTAL_STEPS = WIZARD_STEPS.length;
 const getInitialFormData = () => ({
   // Paso A: Contrato
   account_name: "",
+  account_last_name1: "",
+  account_last_name2: "",
   slug: "",
   contact_email: "",
   contact_phone: "",

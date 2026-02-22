@@ -1,640 +1,378 @@
-// src/pages/v2/admin/DashboardAdmin.jsx
-// Dashboard principal para Admin de empresa
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+﻿// src/pages/v2/admin/DashboardAdmin.jsx
+// Dashboard principal para Admin — diseño Apple style
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Alert, Skeleton } from "antd";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
 import { useAuth } from "../../../providers/AuthProvider";
-import {
-  mockAccommodations,
-  mockRooms,
-  mockTenants,
-  ROOM_STATUS,
-  TENANT_STATUS,
-  getRoomStatusColor,
-} from "../../../mocks/clientAccountsData";
-import { listEntities } from "../../../services/entities.service";
+import { supabase } from "../../../services/supabaseClient";
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 13) return "Buenos días";
+  if (h < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+function fDate() {
+  return new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Ahora mismo";
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return "Ayer";
+  return `Hace ${days} días`;
+}
+
+const ACTION_LABELS = {
+  create: { label: "Creado", color: "#34C759", icon: "✚" },
+  update: { label: "Actualizado", color: "#0071E3", icon: "✎" },
+  delete: { label: "Eliminado", color: "#FF3B30", icon: "✕" },
+  set_status: { label: "Estado cambiado", color: "#FF9500", icon: "◉" },
+  set_room_status: { label: "Habitación actualizada", color: "#FF9500", icon: "🚪" },
+};
+
+const ENTITY_LABELS = {
+  accommodation: "Alojamiento",
+  room: "Habitación",
+  lodger: "Inquilino",
+  entity: "Entidad",
+  service: "Servicio",
+  energy_bill: "Factura",
+  bulletin: "Boletín",
+  lodger_service: "Servicio inquilino",
+};
 
 export default function DashboardAdmin() {
-  console.log("[DashboardAdmin] render");
   const navigate = useNavigate();
   const { role } = useAuth();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const canWrite = role !== "viewer";
 
-  // ID de la cuenta para filtrar mock data (fallback a ca-001 para demo)
-  const CURRENT_CLIENT_ACCOUNT_ID = clientAccountId || "ca-001";
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
-  const [stats, setStats] = useState({
-    totalAccommodations: 0,
-    totalRooms: 0,
-    freeRooms: 0,
-    occupiedRooms: 0,
-    pendingCheckout: 0,
-    activeTenants: 0,
-    pendingTenants: 0,
-    totalEntities: 0,
-  });
-  const [recentActivity, setRecentActivity] = useState([]);
-
-  useEffect(() => {
-    const load = async () => {
-      // Filtrar datos por el cliente actual
-      const accommodations = mockAccommodations.filter(
-        (a) => a.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-      const rooms = mockRooms.filter(
-        (r) => r.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-      const tenants = mockTenants.filter(
-        (t) => t.client_account_id === CURRENT_CLIENT_ACCOUNT_ID
-      );
-
-      const free = rooms.filter((r) => r.status === ROOM_STATUS.FREE).length;
-      const occupied = rooms.filter((r) => r.status === ROOM_STATUS.OCCUPIED).length;
-      const pending = rooms.filter((r) => r.status === ROOM_STATUS.PENDING_CHECKOUT).length;
-      const activeTenants = tenants.filter((t) => t.status === TENANT_STATUS.ACTIVE).length;
-      const pendingTenants = tenants.filter(
-        (t) => t.status === TENANT_STATUS.PENDING_CHECKOUT
-      ).length;
-
-      let totalEntities = 0;
-      try {
-        const entities = await listEntities();
-        totalEntities = entities.length;
-      } catch {
-        totalEntities = 0;
-      }
-
-      setStats({
-        totalAccommodations: accommodations.length,
-        totalRooms: rooms.length,
-        freeRooms: free,
-        occupiedRooms: occupied,
-        pendingCheckout: pending,
-        activeTenants,
-        pendingTenants,
-        totalEntities,
-      });
-
-      // Simular actividad reciente
-      setRecentActivity([
-        {
-          id: 1,
-          type: "check_in",
-          message: "Ana García se ha registrado en la habitación 101",
-          time: "Hace 2 horas",
-        },
-        {
-          id: 2,
-          type: "check_out",
-          message: "Pedro Sánchez ha programado su salida para el 31/01",
-          time: "Hace 5 horas",
-        },
-        {
-          id: 3,
-          type: "payment",
-          message: "Pago de renta recibido de Carlos Martín",
-          time: "Ayer",
-        },
-        {
-          id: 4,
-          type: "maintenance",
-          message: "Ticket de mantenimiento creado: Calefacción hab. 101",
-          time: "Ayer",
-        },
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [
+        { data: entities },
+        { data: accommodations },
+        { data: rooms },
+        { data: lodgers },
+      ] = await Promise.all([
+        supabase.from("entities").select("id, type, status"),
+        supabase.from("accommodations").select("id, status"),
+        supabase.from("rooms").select("id, status"),
+        supabase.from("lodgers").select("id, status"),
       ]);
-    };
 
-    load();
+      const totalEntities = (entities || []).filter((e) => e.type === "owner").length;
+      const totalAccommodations = (accommodations || []).filter((a) => a.status === "active").length;
+      const allRooms = rooms || [];
+      const totalRooms = allRooms.length;
+      const freeRooms = allRooms.filter((r) => r.status === "free").length;
+      const occupiedRooms = allRooms.filter((r) => r.status === "occupied").length;
+      const pendingCheckout = allRooms.filter((r) => r.status === "pending_checkout").length;
+      const allLodgers = lodgers || [];
+      const activeTenants = allLodgers.filter((l) => l.status === "active").length;
+      const pendingTenants = allLodgers.filter((l) => l.status === "pending_checkout").length;
 
-  }, [CURRENT_CLIENT_ACCOUNT_ID]);
-
-  const occupancyRate = stats.totalRooms > 0
-    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
-    : 0;
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case "check_in": return "✅";
-      case "check_out": return "🚪";
-      case "payment": return "💰";
-      case "maintenance": return "🔧";
-      default: return "📌";
+      setStats({ totalEntities, totalAccommodations, totalRooms, freeRooms, occupiedRooms, pendingCheckout, activeTenants, pendingTenants });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  const loadActivity = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      const { data } = await supabase
+        .from("audit_log")
+        .select("id, entity_type, action, actor_role, metadata, new_values, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setActivity(data || []);
+    } catch {
+      setActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); loadActivity(); }, [load, loadActivity]);
+
+  const occupancyRate = stats && stats.totalRooms > 0
+    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
+
+  // KPIs en orden lógico: Entidades > Alojamientos > Habitaciones > Inquilinos > Ocupación
+  const kpis = stats ? [
+    { label: "Entidades", value: stats.totalEntities, icon: "🏛️", color: "#AF52DE", sub: "propietarias" },
+    { label: "Alojamientos", value: stats.totalAccommodations, icon: "🏠", color: "#0071E3", sub: "activos" },
+    { label: "Habitaciones", value: stats.totalRooms, icon: "🚪", color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
+    { label: "Inquilinos", value: stats.activeTenants, icon: "👥", color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
+    { label: "Ocupación", value: `${occupancyRate}%`, icon: "📊", color: occupancyRate > 80 ? "#34C759" : occupancyRate > 50 ? "#FF9500" : "#FF3B30", sub: "tasa actual", isOccupancy: true, rate: occupancyRate },
+  ] : [];
+
+  const quickLinks = [
+    { label: "Nueva Factura", desc: "Registrar consumo energético", icon: "⚡", path: "/v2/admin/energia/facturas/nueva", color: "#FF9500" },
+    { label: "Nuevo Inquilino", desc: "Registrar y asignar habitación", icon: "👤", path: "/v2/admin/inquilinos/nuevo", color: "#34C759" },
+    { label: "Nuevo Alojamiento", desc: "Añadir propiedad al portfolio", icon: "🏠", path: "/v2/admin/alojamientos/nuevo", color: "#0071E3" },
+    { label: "Nuevo Boletín", desc: "Crear liquidación para inquilino", icon: "🔔", path: "/v2/admin/boletines/nuevo", color: "#AF52DE" },
+    { label: "Ver Liquidaciones", desc: "Consultar liquidaciones de energía", icon: "📑", path: "/v2/admin/energia/liquidaciones", color: "#FF3B30" },
+    { label: "Catálogo Servicios", desc: "Gestionar servicios disponibles", icon: "🔧", path: "/v2/admin/servicios", color: "#5856D6" },
+  ];
+
+  const firstName = userName?.split(" ")[0] || "Admin";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>Dashboard</h1>
-            <p style={styles.subtitle}>Resumen de tu operación</p>
+      <style>{`
+        .dash-hero {
+          background: linear-gradient(135deg, #0071E3 0%, #0051a8 100%);
+          border-radius: 16px;
+          padding: 22px 28px;
+          margin-bottom: 22px;
+          color: #fff;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-hero::after {
+          content: '';
+          position: absolute;
+          right: -40px; top: -40px;
+          width: 220px; height: 220px;
+          background: rgba(255,255,255,0.07);
+          border-radius: 50%;
+        }
+        .dash-hero-greeting { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 3px; }
+        .dash-hero-date { font-size: 12px; color: rgba(255,255,255,0.72); }
+        .dash-hero-reload {
+          position: absolute; top: 20px; right: 20px;
+          background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+          border-radius: 50%; width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #fff; font-size: 16px;
+          transition: background 0.18s;
+        }
+        .dash-hero-reload:hover { background: rgba(255,255,255,0.25); }
+        .dash-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 10px;
+          margin-bottom: 22px;
+        }
+        .dash-kpi-card {
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px 14px 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          cursor: default;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-kpi-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+        }
+        .dash-kpi-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+        .dash-kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 3px; }
+        .dash-kpi-label { font-size: 10px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+        .dash-kpi-sub { font-size: 10px; color: #9CA3AF; }
+        .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 10px; overflow: hidden; }
+        .dash-kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+        .dash-section-title { font-size: 14px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 10px; }
+        .dash-quick-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+        }
+        .dash-quick-card {
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          display: flex; align-items: flex-start; gap: 10px;
+          border: none; text-align: left; width: 100%; font-family: inherit;
+        }
+        .dash-quick-card:hover {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 10px 28px rgba(0,0,0,0.11);
+        }
+        .dash-quick-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 17px; flex-shrink: 0;
+        }
+        .dash-quick-label { font-size: 12px; font-weight: 600; color: #1D1D1F; margin-bottom: 2px; }
+        .dash-quick-desc { font-size: 11px; color: #6B7280; line-height: 1.4; }
+        .dash-alert-banner {
+          background: #FFF7ED; border: 1px solid #FED7AA;
+          border-radius: 12px; padding: 12px 18px;
+          margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+          font-size: 13.5px; color: #92400E;
+        }
+        .dash-bottom-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-top: 22px;
+        }
+        .dash-activity-card {
+          background: #fff;
+          border-radius: 12px;
+          padding: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .dash-activity-title {
+          font-size: 13px; font-weight: 700; color: #1D1D1F;
+          letter-spacing: -0.2px; margin-bottom: 12px;
+        }
+        .dash-activity-item {
+          display: flex; align-items: flex-start; gap: 8px;
+          padding: 7px 0; border-bottom: 1px solid #F3F4F6;
+        }
+        .dash-activity-item:last-child { border-bottom: none; }
+        .dash-activity-dot {
+          width: 22px; height: 22px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; color: #fff; flex-shrink: 0; margin-top: 1px;
+        }
+        .dash-activity-text { font-size: 11px; color: #374151; line-height: 1.4; }
+        .dash-activity-meta { font-size: 10px; color: #9CA3AF; margin-top: 1px; }
+        .dash-activity-empty { text-align: center; padding: 32px 0; color: #9CA3AF; font-size: 13px; }
+        @media (max-width: 1100px) {
+          .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+          .dash-bottom-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+          .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+          .dash-quick-grid { grid-template-columns: repeat(2, 1fr); }
+          .dash-hero { padding: 24px 20px; }
+          .dash-hero-greeting { font-size: 22px; }
+        }
+        @media (max-width: 480px) {
+          .dash-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .dash-quick-grid { grid-template-columns: 1fr; }
+          .dash-kpi-value { font-size: 28px; }
+        }
+      `}</style>
+
+      {/* Hero */}
+      <div className="dash-hero">
+        <div className="dash-hero-greeting">{getGreeting()}, {firstName} 👋</div>
+        <div className="dash-hero-date" style={{ textTransform: "capitalize" }}>{fDate()}</div>
+        <button className="dash-hero-reload" onClick={load} title="Actualizar datos">↻</button>
+      </div>
+
+      {error && (
+        <Alert type="error" message={error} showIcon style={{ marginBottom: 16, borderRadius: 12 }} />
+      )}
+
+      {/* Alerta pendientes */}
+      {stats?.pendingTenants > 0 && (
+        <div className="dash-alert-banner">
+          <span>⚠️</span>
+          <span><strong>{stats.pendingTenants} inquilino{stats.pendingTenants > 1 ? "s" : ""}</strong> pendiente{stats.pendingTenants > 1 ? "s" : ""} de baja — revisa la sección de Inquilinos</span>
+        </div>
+      )}
+
+      {/* KPIs */}
+      {loading ? (
+        <Skeleton active paragraph={{ rows: 3 }} style={{ marginBottom: 28 }} />
+      ) : (
+        <div className="dash-kpi-grid">
+          {kpis.map((k) => (
+            <div key={k.label} className="dash-kpi-card">
+              <span className="dash-kpi-icon">{k.icon}</span>
+              <div className="dash-kpi-label">{k.label}</div>
+              <div className="dash-kpi-value" style={{ color: k.color }}>{k.value}</div>
+              <div className="dash-kpi-sub">{k.sub}</div>
+              {k.isOccupancy && (
+                <div className="dash-kpi-bar">
+                  <div className="dash-kpi-bar-fill" style={{ width: `${k.rate}%`, background: k.color }} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom grid: Accesos rápidos + Actividad reciente */}
+      <div className="dash-bottom-grid">
+
+        {/* Accesos rápidos */}
+        <div>
+          <div className="dash-section-title">Accesos rápidos</div>
+          <div className="dash-quick-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+            {quickLinks.map((item) => (
+              <button key={item.path} className="dash-quick-card" onClick={() => navigate(item.path)}>
+                <div className="dash-quick-icon" style={{ background: `${item.color}18` }}>
+                  <span style={{ fontSize: 22 }}>{item.icon}</span>
+                </div>
+                <div>
+                  <div className="dash-quick-label">{item.label}</div>
+                  <div className="dash-quick-desc">{item.desc}</div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* KPIs principales */}
-        <div style={styles.kpiGrid}>
-          <div style={{ ...styles.kpiCard, borderLeft: "4px solid #8B5CF6" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏛️</span>
-              <span style={styles.kpiLabel}>Entidades Totales</span>
+        {/* Actividad reciente */}
+        <div className="dash-activity-card">
+          <div className="dash-activity-title">⏱ Actividad reciente</div>
+          {activityLoading ? (
+            <Skeleton active paragraph={{ rows: 5 }} />
+          ) : activity.length === 0 ? (
+            <div className="dash-activity-empty">
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+              <div>Sin actividad registrada aún</div>
             </div>
-            <div style={{ ...styles.kpiValue, color: "#8B5CF6" }}>{stats.totalEntities}</div>
-            <div style={styles.kpiDetail}>
-              <span style={{ color: "#6B7280" }}>Legal + Internas</span>
-            </div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏠</span>
-              <span style={styles.kpiLabel}>Alojamientos</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.totalAccommodations}</div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🚪</span>
-              <span style={styles.kpiLabel}>Habitaciones</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.totalRooms}</div>
-            <div style={styles.kpiDetail}>
-              <span style={{ color: "#059669" }}>{stats.occupiedRooms} ocupadas</span>
-              <span style={{ color: "#6B7280" }}> · </span>
-              <span style={{ color: "#3B82F6" }}>{stats.freeRooms} libres</span>
-            </div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>📊</span>
-              <span style={styles.kpiLabel}>Ocupación</span>
-            </div>
-            <div style={styles.kpiValue}>
-              <span
-                style={{
-                  color: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626",
-                }}
-              >
-                {occupancyRate}%
-              </span>
-            </div>
-            <div style={styles.progressBarLarge}>
-              <div
-                style={{
-                  ...styles.progressFillLarge,
-                  width: `${occupancyRate}%`,
-                  backgroundColor: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626",
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>👥</span>
-              <span style={styles.kpiLabel}>Inquilinos</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.activeTenants}</div>
-            {stats.pendingTenants > 0 && (
-              <div style={styles.kpiWarning}>
-                ⚠️ {stats.pendingTenants} pendiente(s) de baja
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Contenido en dos columnas */}
-        <div style={styles.twoColumnGrid}>
-          {/* Estado de habitaciones */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Estado de Habitaciones</h2>
-            <div style={styles.roomStatusGrid}>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.FREE),
-                  }}
-                />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Libres</span>
-                  <span style={styles.statusValue}>{stats.freeRooms}</span>
-                </div>
-              </div>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.OCCUPIED),
-                  }}
-                />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Ocupadas</span>
-                  <span style={styles.statusValue}>{stats.occupiedRooms}</span>
-                </div>
-              </div>
-              <div style={styles.statusItem}>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: getRoomStatusColor(ROOM_STATUS.PENDING_CHECKOUT),
-                  }}
-                />
-                <div style={styles.statusInfo}>
-                  <span style={styles.statusLabel}>Pendiente de baja</span>
-                  <span style={styles.statusValue}>{stats.pendingCheckout}</span>
-                </div>
-              </div>
-            </div>
-            <button
-              style={styles.cardLink}
-              onClick={() => navigate("/v2/admin/alojamientos")}
-            >
-              Ver todos los alojamientos →
-            </button>
-          </div>
-
-          {/* Actividad reciente */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Actividad Reciente</h2>
-            <div style={styles.activityList}>
-              {recentActivity.map((activity) => (
-                <div key={activity.id} style={styles.activityItem}>
-                  <span style={styles.activityIcon}>{getActivityIcon(activity.type)}</span>
-                  <div style={styles.activityContent}>
-                    <span style={styles.activityMessage}>{activity.message}</span>
-                    <span style={styles.activityTime}>{activity.time}</span>
+          ) : (
+            activity.map((item) => {
+              const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
+              const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
+              const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
+              return (
+                <div key={item.id} className="dash-activity-item">
+                  <div className="dash-activity-dot" style={{ background: act.color }}>
+                    {act.icon}
+                  </div>
+                  <div>
+                    <div className="dash-activity-text">
+                      <strong>{act.label}</strong> · {entityLabel}{name ? `: ${name}` : ""}
+                    </div>
+                    <div className="dash-activity-meta">
+                      {item.actor_role} · {timeAgo(item.created_at)}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              );
+            })
+          )}
         </div>
 
-        {/* Acciones rápidas */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Acciones Rápidas</h2>
-          <div style={styles.quickActionsGrid}>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/entidades")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🏛️</span>
-              <span style={styles.quickActionLabel}>Gestión Entidades</span>
-            </button>
+      </div>
 
-            <button
-              style={{
-                ...styles.quickAction,
-                opacity: canWrite ? 1 : 0.55,
-                cursor: canWrite ? "pointer" : "not-allowed",
-              }}
-              disabled={!canWrite}
-              onClick={() => {
-                if (!canWrite) return;
-                navigate("/v2/admin/entidades/nueva");
-              }}
-              onMouseEnter={(e) => {
-                if (!canWrite) return;
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                if (!canWrite) return;
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>➕</span>
-              <span style={styles.quickActionLabel}>Nueva Entidad</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/inquilinos/nuevo")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>👤</span>
-              <span style={styles.quickActionLabel}>Registrar Inquilino</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🏠</span>
-              <span style={styles.quickActionLabel}>Añadir Alojamiento</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Generar boletín (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>📄</span>
-              <span style={styles.quickActionLabel}>Generar Boletín</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Ver consumos (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>⚡</span>
-              <span style={styles.quickActionLabel}>Ver Consumos</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => navigate("/v2/admin/ocupacion")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>📅</span>
-              <span style={styles.quickActionLabel}>Ver Ocupación</span>
-            </button>
-            <button
-              style={styles.quickAction}
-              onClick={() => alert("Gestión de tickets (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.quickActionIcon}>🎫</span>
-              <span style={styles.quickActionLabel}>Tickets</span>
-            </button>
-          </div>
-        </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  headerActions: {
-    display: "flex",
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    padding: "12px 20px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    backgroundColor: "#FFFFFF",
-    color: "#374151",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    padding: "12px 20px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  kpiGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: 20,
-    marginBottom: 32,
-  },
-  kpiCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  kpiHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  kpiIcon: {
-    fontSize: 20,
-  },
-  kpiLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  kpiValue: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  kpiDetail: {
-    fontSize: 13,
-    marginTop: 8,
-  },
-  kpiWarning: {
-    fontSize: 12,
-    color: "#F59E0B",
-    marginTop: 8,
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-  },
-  progressBarLarge: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 12,
-  },
-  progressFillLarge: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-  twoColumnGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 24,
-    marginBottom: 24,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 20px 0",
-  },
-  roomStatusGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-    marginBottom: 20,
-  },
-  statusItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: "50%",
-  },
-  statusInfo: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flex: 1,
-  },
-  statusLabel: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  statusValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  cardLink: {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "#3B82F6",
-    fontSize: 14,
-    fontWeight: "500",
-    cursor: "pointer",
-    padding: 0,
-  },
-  activityList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  activityItem: {
-    display: "flex",
-    gap: 12,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-  },
-  activityIcon: {
-    fontSize: 18,
-    width: 32,
-    height: 32,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-  },
-  activityContent: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  activityMessage: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  quickActionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: 12,
-  },
-  quickAction: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 8,
-    padding: 20,
-    backgroundColor: "#F9FAFB",
-    border: "1px solid #E5E7EB",
-    borderRadius: 12,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  quickActionIcon: {
-    fontSize: 24,
-  },
-  quickActionLabel: {
-    fontSize: 12,
-    color: "#374151",
-    fontWeight: "500",
-    textAlign: "center",
-  },
-};

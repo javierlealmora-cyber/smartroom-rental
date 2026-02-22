@@ -72,16 +72,47 @@ import ClientAccountDetailV2 from "./pages/v2/superadmin/ClientAccountDetail";
 import DashboardAdminV2 from "./pages/v2/admin/DashboardAdmin";
 import AccommodationsListV2 from "./pages/v2/admin/accommodations/AccommodationsList";
 import AccommodationCreateV2 from "./pages/v2/admin/accommodations/AccommodationCreate";
+import AccommodationEditV2 from "./pages/v2/admin/accommodations/AccommodationEdit";
+import AccommodationServicesV2 from "./pages/v2/admin/accommodations/AccommodationServices";
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
+import TenantEditV2 from "./pages/v2/admin/tenants/TenantEdit";
 
 // v2 - Admin Entities
 import EntitiesListV2 from "./pages/v2/admin/entities/EntitiesList";
 import EntityCreateV2 from "./pages/v2/admin/entities/EntityCreate";
 import EntityEditV2 from "./pages/v2/admin/entities/EntityEdit";
+import EntityDetailV2 from "./pages/v2/admin/entities/EntityDetail";
+import AccommodationDetailV2 from "./pages/v2/admin/accommodations/AccommodationDetail";
+
+// v2 - Admin Servicios
+import ServicesListAdminV2 from "./pages/v2/admin/services/ServicesList";
+import ServiceCreateV2 from "./pages/v2/admin/services/ServiceCreate";
+import ServiceEditV2 from "./pages/v2/admin/services/ServiceEdit";
+
+// v2 - Admin Energía
+import EnergyBillsListV2 from "./pages/v2/admin/energy/EnergyBillsList";
+import EnergyBillCreateV2 from "./pages/v2/admin/energy/EnergyBillCreate";
+import EnergyBillDetailV2 from "./pages/v2/admin/energy/EnergyBillDetail";
+import EnergySettlementsListV2 from "./pages/v2/admin/energy/EnergySettlementsList";
+
+// v2 - Admin Boletines
+import BulletinsListV2 from "./pages/v2/admin/bulletins/BulletinsList";
+import BulletinCreateV2 from "./pages/v2/admin/bulletins/BulletinCreate";
+
+// v2 - Admin Servicios Inquilinos
+import LodgerServicesListV2 from "./pages/v2/admin/tenants/LodgerServicesList";
+import LodgerServiceCreateV2 from "./pages/v2/admin/tenants/LodgerServiceCreate";
+
+// v2 - Admin Settings
+import AdminSettingsV2 from "./pages/v2/admin/settings/AdminSettings";
+import LodgerDetailV2 from "./pages/v2/admin/tenants/LodgerDetail";
 
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
+import LodgerServicesV2 from "./pages/v2/lodger/LodgerServices";
+import LodgerConsumoV2 from "./pages/v2/lodger/LodgerConsumo";
+import LodgerBoletinesV2 from "./pages/v2/lodger/LodgerBoletines";
 
 // v2 - Superadmin Plans (DBSU-PC)
 import PlansListV2 from "./pages/v2/superadmin/plans/PlansList";
@@ -256,11 +287,31 @@ export default function App() {
               <Route path="/v2/admin/dashboard" element={<DashboardAdminV2 />} />
               <Route path="/v2/admin/entidades" element={<EntitiesListV2 />} />
               <Route path="/v2/admin/entidades/nueva" element={<EntityCreateV2 />} />
+              <Route path="/v2/admin/entidades/:id" element={<EntityDetailV2 />} />
               <Route path="/v2/admin/entidades/:id/editar" element={<EntityEditV2 />} />
+              <Route path="/v2/admin/entidades/:entityId/alojamientos/:accId" element={<AccommodationDetailV2 />} />
+              <Route path="/v2/admin/alojamientos/:accId/habitaciones" element={<AccommodationDetailV2 />} />
               <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
+              <Route path="/v2/admin/alojamientos/:id/editar" element={<AccommodationEditV2 />} />
+              <Route path="/v2/admin/alojamientos/:id/servicios" element={<AccommodationServicesV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+              <Route path="/v2/admin/inquilinos/:id/detalle" element={<LodgerDetailV2 />} />
+              <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
+              <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
+              <Route path="/v2/admin/servicios/nuevo" element={<ServiceCreateV2 />} />
+              <Route path="/v2/admin/servicios/:id/editar" element={<ServiceEditV2 />} />
+              <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
+              <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
+              <Route path="/v2/admin/energia/facturas/:id" element={<EnergyBillDetailV2 />} />
+              <Route path="/v2/admin/energia/facturas/:id/editar" element={<EnergyBillDetailV2 />} />
+              <Route path="/v2/admin/energia/liquidaciones" element={<EnergySettlementsListV2 />} />
+              <Route path="/v2/admin/boletines" element={<BulletinsListV2 />} />
+              <Route path="/v2/admin/boletines/nuevo" element={<BulletinCreateV2 />} />
+              <Route path="/v2/admin/inquilinos/servicios" element={<LodgerServicesListV2 />} />
+              <Route path="/v2/admin/inquilinos/servicios/nuevo" element={<LodgerServiceCreateV2 />} />
+              <Route path="/v2/admin/settings" element={<AdminSettingsV2 />} />
             </Route>
           </Route>
 
@@ -270,9 +321,9 @@ export default function App() {
 
           <Route element={<RequireAuth loginPath="/v2/lodger/auth/login" />}>
             <Route path="/v2/lodger/dashboard" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/consumo" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/boletines" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/servicios" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/consumo" element={<LodgerConsumoV2 />} />
+            <Route path="/v2/lodger/boletines" element={<LodgerBoletinesV2 />} />
+            <Route path="/v2/lodger/servicios" element={<LodgerServicesV2 />} />
             <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
             <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
             <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />

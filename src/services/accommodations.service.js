@@ -1,4 +1,11 @@
 import { supabase } from "./supabaseClient";
+import { invokeWithAuth } from "./supabaseInvoke.services";
+
+function extractEdgeError(result) {
+  if (result?.error?.message) return result.error.message;
+  if (result?.error) return JSON.stringify(result.error);
+  return "Error desconocido";
+}
 
 // ─── Accommodations ───────────────────────────────────────────────────────────
 
@@ -35,44 +42,27 @@ export async function getAccommodation(id) {
 }
 
 export async function createAccommodation(payload, rooms = []) {
-  const { rooms: _rooms, ...accPayload } = payload;
-
-  const { data: acc, error: accErr } = await supabase
-    .from("accommodations")
-    .insert(accPayload)
-    .select("*")
-    .single();
-
-  if (accErr) throw new Error(accErr.message);
-
-  if (rooms.length > 0) {
-    const roomRows = rooms.map(({ id: _id, ...r }) => ({
-      ...r,
-      accommodation_id: acc.id,
-      client_account_id: acc.client_account_id,
-    }));
-
-    const { error: roomErr } = await supabase.from("rooms").insert(roomRows);
-    if (roomErr) throw new Error(roomErr.message);
-  }
-
-  return acc;
+  const result = await invokeWithAuth("manage_accommodation", {
+    body: { action: "create", payload: { ...payload, rooms } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data?.accommodation ?? result.data;
 }
 
 export async function updateAccommodation(id, patch) {
-  const { data, error } = await supabase
-    .from("accommodations")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const result = await invokeWithAuth("manage_accommodation", {
+    body: { action: "update", payload: { id, ...patch } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function setAccommodationStatus(id, status) {
-  return updateAccommodation(id, { status });
+  const result = await invokeWithAuth("manage_accommodation", {
+    body: { action: "set_status", payload: { id, status } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 // ─── Rooms ────────────────────────────────────────────────────────────────────
@@ -89,17 +79,17 @@ export async function listRooms(accommodationId) {
 }
 
 export async function updateRoom(id, patch) {
-  const { data, error } = await supabase
-    .from("rooms")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  const result = await invokeWithAuth("manage_accommodation", {
+    body: { action: "update_room", payload: { id, ...patch } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function setRoomStatus(id, status) {
-  return updateRoom(id, { status });
+  const result = await invokeWithAuth("manage_accommodation", {
+    body: { action: "set_room_status", payload: { id, status } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }

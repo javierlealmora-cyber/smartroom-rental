@@ -7,7 +7,8 @@ import {
   Alert, Avatar, Button, Input, Row, Col, Select, Space,
   Table, Tag, Typography, Tooltip,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined } from "@ant-design/icons";
+import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers, scheduleCheckout } from "../../../../services/lodgers.service";
@@ -174,6 +175,15 @@ export default function TenantsList() {
             />
           </Tooltip>
           {t.status === "active" && (
+            <Tooltip title="Cambiar habitación">
+              <Button
+                size="small"
+                icon={<SwapOutlined />}
+                onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`)}
+              />
+            </Tooltip>
+          )}
+          {t.status === "active" && (
             <Tooltip title="Programar baja">
               <Button
                 size="small"
@@ -275,8 +285,8 @@ export default function TenantsList() {
         pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }}
         locale={{
           emptyText: hasFilters
-            ? "No se encontraron inquilinos con los filtros aplicados"
-            : "Registra tu primer inquilino para empezar",
+            ? <EmptyState icon="🔍" title="Sin resultados" description="No se encontraron inquilinos con los filtros aplicados" />
+            : <EmptyState icon="👥" title="No hay inquilinos" description="Registra tu primer inquilino para empezar" actionLabel="Nuevo Inquilino" onAction={() => navigate("/v2/admin/inquilinos/nuevo")} />,
         }}
       />
     </V2Layout>
