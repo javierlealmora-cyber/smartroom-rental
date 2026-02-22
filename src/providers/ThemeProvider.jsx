@@ -103,8 +103,25 @@ export function ThemeProvider({ children }) {
   const antTheme = useMemo(() => ({
     token: {
       colorPrimary: theme.primaryColor || "#111827",
-      borderRadius: 8,
+      borderRadius: 6,
       fontFamily: "inherit",
+      fontSize: 12,
+    },
+    components: {
+      Button: {
+        contentFontSize: 11,
+        contentFontSizeLG: 12,
+        contentFontSizeSM: 10,
+        paddingInline: 10,
+        paddingInlineLG: 14,
+        paddingInlineSM: 6,
+        controlHeight: 26,
+        controlHeightLG: 32,
+        controlHeightSM: 20,
+        borderRadius: 5,
+        borderRadiusSM: 4,
+        borderRadiusLG: 6,
+      },
     },
   }), [theme.primaryColor]);
 
