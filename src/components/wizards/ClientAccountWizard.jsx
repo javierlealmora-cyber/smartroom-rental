@@ -533,16 +533,16 @@ export default function ClientAccountWizard({
 
 const styles = {
   wizardContainer: {
-    maxWidth: 720,
+    maxWidth: 900,
     margin: "0 auto",
   },
   stepContent: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 24,
+    borderRadius: 12,
+    padding: 32,
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    marginBottom: 20,
-    minHeight: 320,
+    marginBottom: 24,
+    minHeight: 400,
   },
   footer: {
     display: "flex",

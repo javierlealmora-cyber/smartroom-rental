@@ -143,9 +143,9 @@ export default function DashboardAdmin() {
       <style>{`
         .dash-hero {
           background: linear-gradient(135deg, #0071E3 0%, #0051a8 100%);
-          border-radius: 20px;
-          padding: 32px 36px;
-          margin-bottom: 28px;
+          border-radius: 16px;
+          padding: 22px 28px;
+          margin-bottom: 22px;
           color: #fff;
           position: relative;
           overflow: hidden;
@@ -158,8 +158,8 @@ export default function DashboardAdmin() {
           background: rgba(255,255,255,0.07);
           border-radius: 50%;
         }
-        .dash-hero-greeting { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .dash-hero-date { font-size: 14px; color: rgba(255,255,255,0.72); }
+        .dash-hero-greeting { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 3px; }
+        .dash-hero-date { font-size: 12px; color: rgba(255,255,255,0.72); }
         .dash-hero-reload {
           position: absolute; top: 20px; right: 20px;
           background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
@@ -172,13 +172,13 @@ export default function DashboardAdmin() {
         .dash-kpi-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 14px;
-          margin-bottom: 28px;
+          gap: 10px;
+          margin-bottom: 22px;
         }
         .dash-kpi-card {
           background: #fff;
-          border-radius: 16px;
-          padding: 20px 18px 16px;
+          border-radius: 12px;
+          padding: 14px 14px 12px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           cursor: default;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -189,26 +189,26 @@ export default function DashboardAdmin() {
           transform: translateY(-3px);
           box-shadow: 0 8px 24px rgba(0,0,0,0.10);
         }
-        .dash-kpi-icon { font-size: 28px; margin-bottom: 10px; display: block; }
-        .dash-kpi-value { font-size: 34px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
-        .dash-kpi-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
-        .dash-kpi-sub { font-size: 11.5px; color: #9CA3AF; }
+        .dash-kpi-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+        .dash-kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 3px; }
+        .dash-kpi-label { font-size: 10px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+        .dash-kpi-sub { font-size: 10px; color: #9CA3AF; }
         .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 10px; overflow: hidden; }
         .dash-kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
-        .dash-section-title { font-size: 18px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 14px; }
+        .dash-section-title { font-size: 14px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 10px; }
         .dash-quick-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 14px;
+          gap: 10px;
         }
         .dash-quick-card {
           background: #fff;
-          border-radius: 16px;
-          padding: 20px;
+          border-radius: 12px;
+          padding: 14px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
-          display: flex; align-items: flex-start; gap: 14px;
+          display: flex; align-items: flex-start; gap: 10px;
           border: none; text-align: left; width: 100%; font-family: inherit;
         }
         .dash-quick-card:hover {
@@ -216,12 +216,12 @@ export default function DashboardAdmin() {
           box-shadow: 0 10px 28px rgba(0,0,0,0.11);
         }
         .dash-quick-icon {
-          width: 46px; height: 46px; border-radius: 12px;
+          width: 36px; height: 36px; border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 22px; flex-shrink: 0;
+          font-size: 17px; flex-shrink: 0;
         }
-        .dash-quick-label { font-size: 14px; font-weight: 600; color: #1D1D1F; margin-bottom: 3px; }
-        .dash-quick-desc { font-size: 12px; color: #6B7280; line-height: 1.4; }
+        .dash-quick-label { font-size: 12px; font-weight: 600; color: #1D1D1F; margin-bottom: 2px; }
+        .dash-quick-desc { font-size: 11px; color: #6B7280; line-height: 1.4; }
         .dash-alert-banner {
           background: #FFF7ED; border: 1px solid #FED7AA;
           border-radius: 12px; padding: 12px 18px;
@@ -231,31 +231,31 @@ export default function DashboardAdmin() {
         .dash-bottom-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-top: 28px;
+          gap: 16px;
+          margin-top: 22px;
         }
         .dash-activity-card {
           background: #fff;
-          border-radius: 16px;
-          padding: 22px;
+          border-radius: 12px;
+          padding: 16px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .dash-activity-title {
-          font-size: 16px; font-weight: 700; color: #1D1D1F;
-          letter-spacing: -0.2px; margin-bottom: 16px;
+          font-size: 13px; font-weight: 700; color: #1D1D1F;
+          letter-spacing: -0.2px; margin-bottom: 12px;
         }
         .dash-activity-item {
-          display: flex; align-items: flex-start; gap: 12px;
-          padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+          display: flex; align-items: flex-start; gap: 8px;
+          padding: 7px 0; border-bottom: 1px solid #F3F4F6;
         }
         .dash-activity-item:last-child { border-bottom: none; }
         .dash-activity-dot {
-          width: 28px; height: 28px; border-radius: 50%;
+          width: 22px; height: 22px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 12px; color: #fff; flex-shrink: 0; margin-top: 1px;
+          font-size: 10px; color: #fff; flex-shrink: 0; margin-top: 1px;
         }
-        .dash-activity-text { font-size: 13px; color: #374151; line-height: 1.4; }
-        .dash-activity-meta { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+        .dash-activity-text { font-size: 11px; color: #374151; line-height: 1.4; }
+        .dash-activity-meta { font-size: 10px; color: #9CA3AF; margin-top: 1px; }
         .dash-activity-empty { text-align: center; padding: 32px 0; color: #9CA3AF; font-size: 13px; }
         @media (max-width: 1100px) {
           .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); }
