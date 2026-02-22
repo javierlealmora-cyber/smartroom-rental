@@ -10,7 +10,7 @@ import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import {
   Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
   Icon3DServicios, Icon3DCatalogo, Icon3DFacturas, Icon3DLiquidaciones,
-  Icon3DBoletines, Icon3DCuentas, Icon3DPlanes, Icon3DMiPanel, Icon3DConsumo,
+  Icon3DBoletines, Icon3DCuentas, Icon3DPlanes, Icon3DMiPanel, Icon3DConsumo, Icon3DIncidencias,
 } from "../components/icons3d/NavIcons3D";
 
 // ─── Menus de navegacion por rol ─────────────────────────────────────────────
@@ -35,10 +35,11 @@ const SUPERADMIN_NAV = [
 ];
 
 const LODGER_NAV = [
-  { label: "Mi Panel",   path: "/v2/lodger/dashboard", Icon: Icon3DMiPanel },
-  { label: "Mi Consumo", path: "/v2/lodger/consumo",   Icon: Icon3DConsumo },
-  { label: "Servicios",  path: "/v2/lodger/servicios", Icon: Icon3DServicios },
-  { label: "Boletines",  path: "/v2/lodger/boletines", Icon: Icon3DBoletines },
+  { label: "Mi Panel",    path: "/v2/lodger/dashboard",   Icon: Icon3DMiPanel },
+  { label: "Mi Consumo", path: "/v2/lodger/consumo",     Icon: Icon3DConsumo },
+  { label: "Servicios",  path: "/v2/lodger/servicios",   Icon: Icon3DServicios },
+  { label: "Boletines",  path: "/v2/lodger/boletines",   Icon: Icon3DBoletines },
+  { label: "Incidencias",path: "/v2/lodger/incidencias", Icon: Icon3DIncidencias },
 ];
 
 // ─── Breadcrumb routes mapping ────────────────────────────────────────────────

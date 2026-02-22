@@ -254,6 +254,25 @@ export function Icon3DMiPanel({ size = 44 }) {
   );
 }
 
+export function Icon3DIncidencias({ size = 44 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
+      <defs>
+        <filter id="sh-inc" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#1D1D1F" floodOpacity="0.18"/></filter>
+        <linearGradient id="g-inc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#D1D1D6"/></linearGradient>
+        <linearGradient id="g-inc2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F2F2F7"/><stop offset="100%" stopColor="#AEAEB2"/></linearGradient>
+      </defs>
+      <g filter="url(#sh-inc)">
+        <path d="M22 5 L39 35 H5 Z" fill="url(#g-inc)" stroke="#C8C8CC" strokeWidth="0.5"/>
+        <path d="M22 5 L39 35 L22 35 Z" fill="url(#g-inc2)" opacity="0.5"/>
+        <path d="M22 6 L37 34 L35 34 L22 8 Z" fill="white" opacity="0.3"/>
+        <rect x="20.5" y="16" width="3" height="10" rx="1.5" fill="#636366" opacity="0.8"/>
+        <circle cx="22" cy="30" r="2" fill="#636366" opacity="0.8"/>
+      </g>
+    </svg>
+  );
+}
+
 export function Icon3DConsumo({ size = 44 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 44 44" fill="none">

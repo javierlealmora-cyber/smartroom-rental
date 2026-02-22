@@ -113,6 +113,7 @@ import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
 import LodgerServicesV2 from "./pages/v2/lodger/LodgerServices";
 import LodgerConsumoV2 from "./pages/v2/lodger/LodgerConsumo";
 import LodgerBoletinesV2 from "./pages/v2/lodger/LodgerBoletines";
+import LodgerIncidenciasV2 from "./pages/v2/lodger/LodgerIncidencias";
 
 // v2 - Superadmin Plans (DBSU-PC)
 import PlansListV2 from "./pages/v2/superadmin/plans/PlansList";
@@ -325,7 +326,7 @@ export default function App() {
             <Route path="/v2/lodger/boletines" element={<LodgerBoletinesV2 />} />
             <Route path="/v2/lodger/servicios" element={<LodgerServicesV2 />} />
             <Route path="/v2/lodger/encuestas" element={<LodgerDashboard />} />
-            <Route path="/v2/lodger/incidencias" element={<LodgerDashboard />} />
+            <Route path="/v2/lodger/incidencias" element={<LodgerIncidenciasV2 />} />
             <Route path="/v2/lodger/perfil" element={<LodgerDashboard />} />
           </Route>
 
