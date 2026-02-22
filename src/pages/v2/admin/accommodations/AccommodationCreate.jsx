@@ -73,8 +73,39 @@ export default function AccommodationCreate() {
   };
 
   const handleSubmit = async () => {
-    const invalid = rooms.filter((r) => !String(r.number).trim());
-    if (invalid.length > 0) { setSaveError("Todas las habitaciones deben tener número"); return; }
+    // Validación completa de habitaciones
+    const emptyRooms = rooms.filter((r) => !String(r.number ?? "").trim());
+    if (emptyRooms.length > 0) {
+      setSaveError(`${emptyRooms.length} habitación(es) sin número. Completa todos los campos de número antes de continuar.`);
+      return;
+    }
+
+    const numbers = rooms.map((r) => String(r.number).trim());
+    const duplicates = numbers.filter((n, i) => numbers.indexOf(n) !== i);
+    if (duplicates.length > 0) {
+      setSaveError(`Números de habitación duplicados: ${[...new Set(duplicates)].join(", ")}. Cada habitación debe tener un número único.`);
+      return;
+    }
+
+    const numericNumbers = numbers.map(Number).filter((n) => !isNaN(n) && n > 0);
+    if (numericNumbers.length === numbers.length) {
+      numericNumbers.sort((a, b) => a - b);
+      const gaps = [];
+      for (let i = 1; i < numericNumbers.length; i++) {
+        if (numericNumbers[i] - numericNumbers[i - 1] > 1) {
+          gaps.push(`${numericNumbers[i - 1]} → ${numericNumbers[i]}`);
+        }
+      }
+      if (gaps.length > 0) {
+        setSaveError(`Hay saltos en la numeración: ${gaps.join(", ")}. ¿Deseas continuar de todas formas? Edita los números o pulsa de nuevo Crear Alojamiento para confirmar.`);
+        if (!window._roomGapConfirmed) {
+          window._roomGapConfirmed = true;
+          return;
+        }
+      }
+    }
+    window._roomGapConfirmed = false;
+
     setSaving(true);
     setSaveError(null);
     try {
@@ -203,10 +234,17 @@ export default function AccommodationCreate() {
                   extra="El alojamiento queda vinculado a esta entidad propietaria"
                 >
                   <Select
+                    showSearch
                     placeholder="Seleccionar entidad propietaria..."
                     loading={loadingEntities}
                     disabled={ownerEntities.length === 0}
-                    options={ownerEntities.map((e) => ({ value: e.id, label: `${e.legal_name} (${e.tax_id || e.type})` }))}
+                    optionFilterProp="label"
+                    options={ownerEntities.map((e) => {
+                      const displayName = e.legal_name ||
+                        [e.first_name, e.last_name1, e.last_name2].filter(Boolean).join(" ") ||
+                        e.tax_id || "Entidad sin nombre";
+                      return { value: e.id, label: displayName };
+                    })}
                   />
                 </Form.Item>
               </Col>

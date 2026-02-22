@@ -6,118 +6,132 @@
 // NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
 // =============================================================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
-import { listEntities } from "../../../services/entities.service";
-import {
-  mockClientAccounts,
-  mockAccommodations,
-  mockTickets,
-  mockSurveys,
-  PLANS,
-  STATUS,
-  getPlanLabel,
-  getPlanColor,
-  getStatusLabel,
-  getStatusColor,
-  formatDate,
-} from "../../../mocks/clientAccountsData";
+import { supabase } from "../../../services/supabaseClient";
+
+const PLAN_COLORS_MAP = {
+  basic: "#6B7280",
+  agent: "#3B82F6",
+  pro: "#8B5CF6",
+  enterprise: "#F59E0B",
+};
+const PLAN_LABELS_MAP = {
+  basic: "Basic",
+  agent: "Agent",
+  pro: "Pro",
+  enterprise: "Enterprise",
+};
+const getPlanLabel = (p) => PLAN_LABELS_MAP[p] || p || "—";
+const getPlanColor = (p) => PLAN_COLORS_MAP[p] || "#6B7280";
+const getStatusLabel = (s) => ({ active: "Activa", suspended: "Suspendida", cancelled: "Cancelada", trial: "Prueba" }[s] || s);
+const getStatusColor = (s) => ({ active: "#059669", suspended: "#F59E0B", cancelled: "#DC2626", trial: "#3B82F6" }[s] || "#6B7280");
+const formatDate = (d) => d ? new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+const ACTION_LABELS = {
+  create: { label: "Creado", color: "#34C759", icon: "+" },
+  update: { label: "Actualizado", color: "#0071E3", icon: "✎" },
+  delete: { label: "Eliminado", color: "#FF3B30", icon: "✕" },
+  set_status: { label: "Estado cambiado", color: "#FF9500", icon: "◉" },
+  set_room_status: { label: "Hab. actualizada", color: "#FF9500", icon: "🚪" },
+};
+const ENTITY_LABELS = {
+  accommodation: "Alojamiento", room: "Habitación", lodger: "Inquilino",
+  entity: "Entidad", service: "Servicio", energy_bill: "Factura", bulletin: "Boletín",
+};
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Ahora mismo";
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return days === 1 ? "Ayer" : `Hace ${days} días`;
+}
 
 export default function DashboardSuperadmin() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalAccounts: 0,
-    activeAccounts: 0,
-    suspendedAccounts: 0,
-    cancelledAccounts: 0,
-    totalEntities: 0,
-    totalAccommodations: 0,
-    totalRooms: 0,
-    occupiedRooms: 0,
-    totalTickets: 0,
-    openTickets: 0,
-    totalSurveyResponses: 0,
-    latestSurveyTitle: "",
+    totalAccounts: 0, activeAccounts: 0, suspendedAccounts: 0, cancelledAccounts: 0,
+    totalEntities: 0, totalAccommodations: 0, totalRooms: 0, occupiedRooms: 0, freeRooms: 0,
+    totalLodgers: 0, activeLodgers: 0,
   });
   const [recentAccounts, setRecentAccounts] = useState([]);
   const [planDistribution, setPlanDistribution] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      // Calcular estadísticas desde datos mock
-      const active = mockClientAccounts.filter((ca) => ca.status === STATUS.ACTIVE).length;
-      const suspended = mockClientAccounts.filter((ca) => ca.status === STATUS.SUSPENDED).length;
-      const cancelled = mockClientAccounts.filter((ca) => ca.status === STATUS.CANCELLED).length;
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [
+        { data: accounts },
+        { data: entities },
+        { data: accommodations },
+        { data: rooms },
+        { data: lodgers },
+        { data: auditLog },
+      ] = await Promise.all([
+        supabase.from("client_accounts").select("id, name, slug, plan_code, billing_cycle, status, start_date, created_at, contact_email").order("created_at", { ascending: false }),
+        supabase.from("entities").select("id, client_account_id, type, status"),
+        supabase.from("accommodations").select("id, status"),
+        supabase.from("rooms").select("id, status"),
+        supabase.from("lodgers").select("id, status"),
+        supabase.from("audit_log").select("id, entity_type, action, actor_role, new_values, created_at").order("created_at", { ascending: false }).limit(8),
+      ]);
 
-      let entities = [];
-      try {
-        entities = await listEntities();
-      } catch {
-        entities = [];
-      }
+      const allAccounts = accounts || [];
+      const allEntities = entities || [];
+      const allRooms = rooms || [];
+      const allLodgers = lodgers || [];
 
-      const totalEntities = entities.length;
-      const totalAccommodations = mockAccommodations.length;
-      const totalRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.total_rooms || 0), 0);
-      const occupiedRooms = mockClientAccounts.reduce((sum, ca) => sum + (ca.stats?.occupied_rooms || 0), 0);
-
-      // Calcular estadísticas de tickets
-      const openTickets = mockTickets.filter((t) => t.status === "open").length;
-
-      // Calcular respuestas de encuestas
-      const completedSurveys = mockSurveys.filter((s) => s.status === "completed");
-      const latestSurvey = mockSurveys.length > 0
-        ? mockSurveys.sort((a, b) => new Date(b.due_date) - new Date(a.due_date))[0]
-        : null;
+      const activeAccounts = allAccounts.filter((a) => a.status === "active").length;
+      const suspendedAccounts = allAccounts.filter((a) => a.status === "suspended").length;
+      const cancelledAccounts = allAccounts.filter((a) => a.status === "cancelled").length;
+      const occupiedRooms = allRooms.filter((r) => r.status === "occupied").length;
+      const freeRooms = allRooms.filter((r) => r.status === "free").length;
 
       setStats({
-        totalAccounts: mockClientAccounts.length,
-        activeAccounts: active,
-        suspendedAccounts: suspended,
-        cancelledAccounts: cancelled,
-        totalEntities,
-        totalAccommodations,
-        totalRooms,
+        totalAccounts: allAccounts.length,
+        activeAccounts,
+        suspendedAccounts,
+        cancelledAccounts,
+        totalEntities: allEntities.length,
+        totalAccommodations: (accommodations || []).length,
+        totalRooms: allRooms.length,
         occupiedRooms,
-        totalTickets: mockTickets.length,
-        openTickets,
-        totalSurveyResponses: completedSurveys.length,
-        latestSurveyTitle: latestSurvey?.title || "",
+        freeRooms,
+        totalLodgers: allLodgers.length,
+        activeLodgers: allLodgers.filter((l) => l.status === "active").length,
       });
 
-      // Calcular distribución por plan
-      const distribution = Object.values(PLANS).map((plan) => {
-        const count = mockClientAccounts.filter((ca) => ca.plan === plan).length;
-        const percentage = mockClientAccounts.length > 0
-          ? Math.round((count / mockClientAccounts.length) * 100)
-          : 0;
+      // Distribución por plan
+      const planCodes = ["basic", "agent", "pro", "enterprise"];
+      const distribution = planCodes.map((plan) => {
+        const count = allAccounts.filter((a) => a.plan_code === plan).length;
+        const percentage = allAccounts.length > 0 ? Math.round((count / allAccounts.length) * 100) : 0;
         return { plan, count, percentage };
-      });
+      }).filter((d) => d.count > 0 || true);
       setPlanDistribution(distribution);
 
-      // Últimas 5 cuentas por fecha de creación
-      const sorted = [...mockClientAccounts]
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 5);
-
-      const entitiesByAccountId = entities.reduce((acc, e) => {
-        const key = e.client_account_id;
-        if (!key) return acc;
-        acc[key] = (acc[key] || 0) + 1;
+      // Últimas 5 cuentas
+      const entitiesByAccountId = allEntities.reduce((acc, e) => {
+        if (e.client_account_id) acc[e.client_account_id] = (acc[e.client_account_id] || 0) + 1;
         return acc;
       }, {});
+      setRecentAccounts(allAccounts.slice(0, 5).map((a) => ({ ...a, __entitiesCount: entitiesByAccountId[a.id] || 0 })));
 
-      setRecentAccounts(
-        sorted.map((a) => ({
-          ...a,
-          __entitiesCount: entitiesByAccountId[a.id] || 0,
-        }))
-      );
-    };
-
-    load();
+      setActivity(auditLog || []);
+    } catch (err) {
+      console.error("[DashboardSuperadmin] load error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const occupancyRate = stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
@@ -264,118 +278,82 @@ export default function DashboardSuperadmin() {
               </div>
             </div>
 
-            {/* Tickets Abiertos */}
+            {/* Inquilinos */}
             <div>
-              <h3 style={styles.sectionLabel}>Incidencias</h3>
+              <h3 style={styles.sectionLabel}>Inquilinos</h3>
               <div style={{ ...styles.kpiCard, borderLeftColor: "#DC2626" }}>
                 <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>🎫</span>
-                  <span style={styles.kpiTitle}>Tickets Abiertos</span>
+                  <span style={styles.kpiIcon}>👥</span>
+                  <span style={styles.kpiTitle}>Inquilinos</span>
                 </div>
-                <div style={{
-                  ...styles.kpiValue,
-                  color: stats.openTickets > 0 ? "#DC2626" : "#059669"
-                }}>
-                  {stats.totalTickets > 0
-                    ? Math.round((stats.openTickets / stats.totalTickets) * 100)
-                    : 0}%
+                <div style={{ ...styles.kpiValue, color: "#DC2626" }}>
+                  {stats.activeLodgers}
                 </div>
                 <div style={styles.kpiBreakdown}>
-                  <span style={{ ...styles.kpiBreakdownItem, color: "#DC2626" }}>
-                    {stats.openTickets} abiertos
+                  <span style={{ ...styles.kpiBreakdownItem, color: "#059669" }}>
+                    {stats.activeLodgers} activos
                   </span>
                   <span style={styles.kpiBreakdownSeparator}>·</span>
                   <span style={styles.kpiBreakdownItem}>
-                    {stats.totalTickets} total
+                    {stats.totalLodgers} total
                   </span>
-                </div>
-                <div style={styles.ticketBarContainer}>
-                  <div
-                    style={{
-                      ...styles.ticketBarFill,
-                      width: `${stats.totalTickets > 0 ? (stats.openTickets / stats.totalTickets) * 100 : 0}%`,
-                      backgroundColor: stats.openTickets > 0 ? "#DC2626" : "#059669",
-                    }}
-                  />
                 </div>
               </div>
             </div>
 
-            {/* Respuestas Encuestas */}
+            {/* Habitaciones libres */}
             <div>
-              <h3 style={styles.sectionLabel}>Encuestas</h3>
+              <h3 style={styles.sectionLabel}>Disponibilidad</h3>
               <div style={{ ...styles.kpiCard, borderLeftColor: "#6366F1" }}>
                 <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>📋</span>
-                  <span style={styles.kpiTitle}>Respuestas Encuestas</span>
+                  <span style={styles.kpiIcon}>�</span>
+                  <span style={styles.kpiTitle}>Habitaciones libres</span>
                 </div>
                 <div style={{ ...styles.kpiValue, color: "#6366F1" }}>
-                  {stats.totalSurveyResponses}
+                  {stats.freeRooms}
                 </div>
                 <div style={styles.kpiBreakdown}>
                   <span style={styles.kpiBreakdownItem}>
-                    de {mockSurveys.length} encuestas
+                    de {stats.totalRooms} totales
                   </span>
                 </div>
-                {stats.latestSurveyTitle && (
-                  <div style={styles.kpiSubtext}>
-                    Última: {stats.latestSurveyTitle.length > 40
-                      ? stats.latestSurveyTitle.substring(0, 40) + "..."
-                      : stats.latestSurveyTitle}
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* Columna derecha: Actividad Reciente */}
+          {/* Columna derecha: Actividad Reciente — datos reales de audit_log */}
           <div style={styles.activityCard}>
             <h2 style={styles.activityTitle}>Actividad Reciente</h2>
             <div style={styles.activityList}>
-              <div style={styles.activityItem}>
-                <div style={{ ...styles.activityDot, backgroundColor: "#059669" }}>
-                  <span style={styles.activityDotIcon}>&#10003;</span>
+              {loading ? (
+                <div style={{ color: "#9CA3AF", fontSize: 13, padding: "12px 0" }}>Cargando...</div>
+              ) : activity.length === 0 ? (
+                <div style={{ color: "#9CA3AF", fontSize: 13, textAlign: "center", padding: "24px 0" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
+                  Sin actividad registrada aún
                 </div>
-                <div style={styles.activityContent}>
-                  <span style={styles.activityText}>
-                    Ana García se ha registrado en la habitación 101
-                  </span>
-                  <span style={styles.activityTime}>Hace 2 horas</span>
-                </div>
-              </div>
-              <div style={styles.activityItem}>
-                <div style={{ ...styles.activityDot, backgroundColor: "#F59E0B" }}>
-                  <span style={styles.activityDotIcon}>&#x25A0;</span>
-                </div>
-                <div style={styles.activityContent}>
-                  <span style={styles.activityText}>
-                    Pedro Sánchez ha programado su salida para el 31/01
-                  </span>
-                  <span style={styles.activityTime}>Hace 5 horas</span>
-                </div>
-              </div>
-              <div style={styles.activityItem}>
-                <div style={{ ...styles.activityDot, backgroundColor: "#3B82F6" }}>
-                  <span style={styles.activityDotIcon}>&#x25CF;</span>
-                </div>
-                <div style={styles.activityContent}>
-                  <span style={styles.activityText}>
-                    Pago de renta recibido de Carlos Martín
-                  </span>
-                  <span style={styles.activityTime}>Ayer</span>
-                </div>
-              </div>
-              <div style={styles.activityItem}>
-                <div style={{ ...styles.activityDot, backgroundColor: "#8B5CF6" }}>
-                  <span style={styles.activityDotIcon}>&#x1F527;</span>
-                </div>
-                <div style={styles.activityContent}>
-                  <span style={styles.activityText}>
-                    Ticket de mantenimiento creado: Calefacción hab. 101
-                  </span>
-                  <span style={styles.activityTime}>Ayer</span>
-                </div>
-              </div>
+              ) : (
+                activity.map((item) => {
+                  const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
+                  const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
+                  const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
+                  return (
+                    <div key={item.id} style={styles.activityItem}>
+                      <div style={{ ...styles.activityDot, backgroundColor: act.color }}>
+                        <span style={styles.activityDotIcon}>{act.icon}</span>
+                      </div>
+                      <div style={styles.activityContent}>
+                        <span style={styles.activityText}>
+                          <strong>{act.label}</strong> · {entityLabel}{name ? `: ${name}` : ""}
+                        </span>
+                        <span style={styles.activityTime}>
+                          {item.actor_role} · {timeAgo(item.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

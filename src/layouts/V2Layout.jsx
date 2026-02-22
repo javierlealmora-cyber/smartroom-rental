@@ -389,10 +389,10 @@ export default function V2Layout({
           {/* Derecha */}
           <div className="v2-topbar-right">
             <span className="v2-username">{userName}</span>
-            {(onSettings || role === "admin") && (
+            {role === "admin" && (
               <button
                 className="v2-logout-btn"
-                onClick={onSettings || (() => {})}
+                onClick={() => navigate("/v2/admin/settings")}
                 title="Configuración"
                 style={{ padding: "5px 12px" }}
               >

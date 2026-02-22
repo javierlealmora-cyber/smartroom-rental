@@ -102,6 +102,9 @@ import BulletinCreateV2 from "./pages/v2/admin/bulletins/BulletinCreate";
 import LodgerServicesListV2 from "./pages/v2/admin/tenants/LodgerServicesList";
 import LodgerServiceCreateV2 from "./pages/v2/admin/tenants/LodgerServiceCreate";
 
+// v2 - Admin Settings
+import AdminSettingsV2 from "./pages/v2/admin/settings/AdminSettings";
+
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
 import LodgerServicesV2 from "./pages/v2/lodger/LodgerServices";
@@ -301,6 +304,7 @@ export default function App() {
               <Route path="/v2/admin/boletines/nuevo" element={<BulletinCreateV2 />} />
               <Route path="/v2/admin/inquilinos/servicios" element={<LodgerServicesListV2 />} />
               <Route path="/v2/admin/inquilinos/servicios/nuevo" element={<LodgerServiceCreateV2 />} />
+              <Route path="/v2/admin/settings" element={<AdminSettingsV2 />} />
             </Route>
           </Route>
 
