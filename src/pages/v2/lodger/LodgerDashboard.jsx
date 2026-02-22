@@ -90,7 +90,10 @@ export default function LodgerDashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const firstName = lodger?.full_name?.split(" ")[0] || profile?.full_name?.split(" ")[0] || "Inquilino";
+  const fullName = lodger?.full_name || profile?.full_name || "Inquilino";
+  const nameParts = fullName.trim().split(" ");
+  const firstName = nameParts[0] || "Inquilino";
+  const lastName = nameParts.slice(1).join(" ") || "";
   const unreadBulletins = bulletins.filter((b) => b.status === "published" && !b.acknowledged_at).length;
 
   if (loading) {
@@ -102,7 +105,7 @@ export default function LodgerDashboard() {
   }
 
   return (
-    <V2Layout role="lodger" companyBranding={companyBranding} userName={lodger?.full_name || profile?.full_name}>
+    <V2Layout role="lodger" companyBranding={companyBranding} userName={fullName}>
 
       {error && (
         <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
@@ -120,7 +123,7 @@ export default function LodgerDashboard() {
               </Avatar>
               <div>
                 <Title level={4} style={{ color: "#fff", margin: 0, lineHeight: 1.3 }}>
-                  Hola, {firstName} 👋
+                  Hola, {fullName} 👋
                 </Title>
                 <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>
                   {assignment
@@ -140,20 +143,26 @@ export default function LodgerDashboard() {
         </Row>
       </div>
 
-      {/* ── Fila 1: Habitación + Boletines ───────────────────────────── */}
+      {/* ── Fila 1: Habitación (grande) + Mis Datos ───────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
 
-        <Col xs={24} md={10} lg={8}>
+        <Col xs={24} md={14} lg={16}>
           <Card size="small" title={<Space><HomeOutlined /><span>Mi Habitación</span></Space>} style={{ height: "100%" }}>
             {assignment ? (
-              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 100 }}>
+              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 110 }}>
                 <Descriptions.Item label="Alojamiento">
                   <Text strong>{assignment.accommodation?.name}</Text>
                 </Descriptions.Item>
+                {assignment.accommodation?.address && (
+                  <Descriptions.Item label="Dirección">{assignment.accommodation.address}{assignment.accommodation.city ? `, ${assignment.accommodation.city}` : ""}</Descriptions.Item>
+                )}
                 <Descriptions.Item label="Habitación">
                   <Tag color="geekblue" style={{ fontSize: 13, padding: "1px 10px" }}>
                     Hab. {assignment.room?.number}
                   </Tag>
+                  {assignment.room?.type && (
+                    <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>{assignment.room.type}</Text>
+                  )}
                 </Descriptions.Item>
                 {assignment.room?.floor != null && (
                   <Descriptions.Item label="Planta">{assignment.room.floor}</Descriptions.Item>
@@ -161,8 +170,13 @@ export default function LodgerDashboard() {
                 <Descriptions.Item label={<Space size={4}><CalendarOutlined />Entrada</Space>}>
                   {fDate(assignment.move_in_date)}
                 </Descriptions.Item>
+                {assignment.billing_start_date && (
+                  <Descriptions.Item label={<Space size={4}><CalendarOutlined />Inicio facturación</Space>}>
+                    {fDate(assignment.billing_start_date)}
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item label={<Space size={4}><EuroOutlined />Renta</Space>}>
-                  <Text strong style={{ color: "#059669" }}>
+                  <Text strong style={{ color: "#059669", fontSize: 15 }}>
                     {fEur(assignment.monthly_rent)}
                     <Text type="secondary" style={{ fontSize: 11 }}>/mes</Text>
                   </Text>
@@ -173,6 +187,38 @@ export default function LodgerDashboard() {
             )}
           </Card>
         </Col>
+
+        <Col xs={24} md={10} lg={8}>
+          <Card size="small"
+            title={<Space><UserOutlined /><span>Mis Datos</span></Space>}
+            extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/perfil")}>Editar →</Button>}
+            style={{ height: "100%" }}
+          >
+            {lodger ? (
+              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 90 }}>
+                <Descriptions.Item label="Nombre">{firstName}</Descriptions.Item>
+                {lastName && <Descriptions.Item label="Apellidos">{lastName}</Descriptions.Item>}
+                <Descriptions.Item label="Email">{lodger.email}</Descriptions.Item>
+                {lodger.phone && <Descriptions.Item label="Teléfono">{lodger.phone}</Descriptions.Item>}
+                {lodger.document_id && <Descriptions.Item label="Documento">{lodger.document_id}</Descriptions.Item>}
+                <Descriptions.Item label={<Space size={4}><CalendarOutlined />Alta</Space>}>
+                  {fDate(lodger.created_at)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Estado">
+                  <Tag color={lodger.status === "active" ? "success" : lodger.status === "invited" ? "processing" : "default"}>
+                    {lodger.status === "active" ? "Activo" : lodger.status === "invited" ? "Invitado" : lodger.status}
+                  </Tag>
+                </Descriptions.Item>
+              </Descriptions>
+            ) : (
+              <Empty description="No se encontraron datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ── Fila 2: Boletines + Servicios ─────────────────────────────── */}
+      <Row gutter={[16, 16]}>
 
         <Col xs={24} md={14} lg={16}>
           <Card size="small"
@@ -206,12 +252,8 @@ export default function LodgerDashboard() {
             )}
           </Card>
         </Col>
-      </Row>
 
-      {/* ── Fila 2: Servicios + Datos personales ─────────────────────── */}
-      <Row gutter={[16, 16]}>
-
-        <Col xs={24} md={12}>
+        <Col xs={24} md={10} lg={8}>
           <Card size="small"
             title={<Space><AppstoreOutlined /><span>Servicios Activos</span></Space>}
             extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/servicios")}>Ver todos →</Button>}
@@ -239,29 +281,6 @@ export default function LodgerDashboard() {
                   </Row>
                 ))}
               </Space>
-            )}
-          </Card>
-        </Col>
-
-        <Col xs={24} md={12}>
-          <Card size="small"
-            title={<Space><UserOutlined /><span>Mis Datos</span></Space>}
-            extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/perfil")}>Editar →</Button>}
-          >
-            {lodger ? (
-              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 100 }}>
-                <Descriptions.Item label="Nombre">{lodger.full_name}</Descriptions.Item>
-                <Descriptions.Item label="Email">{lodger.email}</Descriptions.Item>
-                {lodger.phone && <Descriptions.Item label="Teléfono">{lodger.phone}</Descriptions.Item>}
-                {lodger.document_id && <Descriptions.Item label="Documento">{lodger.document_id}</Descriptions.Item>}
-                <Descriptions.Item label="Estado">
-                  <Tag color={lodger.status === "active" ? "success" : lodger.status === "invited" ? "processing" : "default"}>
-                    {lodger.status === "active" ? "Activo" : lodger.status === "invited" ? "Invitado" : lodger.status}
-                  </Tag>
-                </Descriptions.Item>
-              </Descriptions>
-            ) : (
-              <Empty description="No se encontraron datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </Card>
         </Col>
