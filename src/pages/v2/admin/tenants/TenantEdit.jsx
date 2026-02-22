@@ -11,7 +11,7 @@ import { ArrowLeftOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, File
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { getLodger, updateLodger, setLodgerStatus, reassignRoom } from "../../../../services/lodgers.service";
+import { getLodger, updateLodger, setLodgerStatus, reassignRoom, inviteLodger } from "../../../../services/lodgers.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
 import { supabase } from "../../../../services/supabaseClient";
 
@@ -255,13 +255,10 @@ export default function TenantEdit() {
   };
 
   const onSendInvite = async () => {
-    if (!lodger?.email) return;
+    if (!lodger?.id) return;
     setSendingInvite(true);
     try {
-      const { error: invErr } = await supabase.auth.resetPasswordForEmail(lodger.email, {
-        redirectTo: `${window.location.origin}/v2/auth/callback?type=recovery&portal=lodger`,
-      });
-      if (invErr) throw invErr;
+      await inviteLodger(lodger.id);
       message.success(`Email de acceso enviado a ${lodger.email}`);
     } catch (e) {
       message.error(`Error al enviar: ${e.message}`);

@@ -82,6 +82,14 @@ export async function scheduleCheckout(lodgerId, moveOutDate) {
   return result.data;
 }
 
+export async function inviteLodger(lodgerId) {
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "invite", payload: { id: lodgerId } },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
+}
+
 export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent }) {
   const result = await invokeWithAuth("manage_lodger", {
     body: {

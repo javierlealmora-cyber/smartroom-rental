@@ -11,8 +11,7 @@ import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutline
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { listLodgers, scheduleCheckout } from "../../../../services/lodgers.service";
-import { supabase } from "../../../../services/supabaseClient";
+import { listLodgers, scheduleCheckout, inviteLodger } from "../../../../services/lodgers.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
 
 const { Title, Text } = Typography;
@@ -106,10 +105,7 @@ export default function TenantsList() {
   const onSendInvite = async (tenant) => {
     setSendingInvite((prev) => ({ ...prev, [tenant.id]: true }));
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(tenant.email, {
-        redirectTo: `${window.location.origin}/v2/auth/callback?type=recovery&portal=lodger`,
-      });
-      if (error) throw error;
+      await inviteLodger(tenant.id);
       message.success(`Email de acceso enviado a ${tenant.email}`);
     } catch (e) {
       message.error(`Error al enviar: ${e.message}`);
