@@ -332,11 +332,22 @@ export default function V2Layout({
           background: none; border: none;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           gap: 2px;
-          padding: 4px 18px; border-radius: 11px;
+          padding: 4px 10px; border-radius: 11px;
           cursor: pointer; white-space: nowrap;
           transition: background 0.18s, transform 0.15s;
           font-family: inherit;
-          min-width: 80px;
+          min-width: 72px;
+          max-width: 88px;
+        }
+        .v2-nav-icon-wrap {
+          width: 48px; height: 48px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .v2-nav-icon-wrap img, .v2-nav-icon-wrap svg {
+          max-width: 48px; max-height: 48px;
+          width: auto; height: auto;
+          object-fit: contain;
         }
         .v2-nav-btn:hover { background: rgba(0,0,0,0.04); transform: translateY(-1px); }
         .v2-nav-btn.active { background: rgba(0,0,0,0.06); }
@@ -432,7 +443,7 @@ export default function V2Layout({
               const iconSize = 52;
               return (
                 <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                  <Icon size={iconSize} />
+                  <div className="v2-nav-icon-wrap"><Icon size={iconSize} /></div>
                   <span className="v2-nav-label">{item.label}</span>
                 </button>
               );
