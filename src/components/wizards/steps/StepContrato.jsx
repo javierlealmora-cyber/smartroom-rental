@@ -7,7 +7,8 @@
 
 import { mockPlans, getPlanByCode, formatCurrency, getPlanColor, getPlanLabel } from "../../../mocks/clientAccountsData";
 
-export default function StepContrato({ formData, errors, onChange, mode }) {
+export default function StepContrato({ formData, errors, onChange, mode, onChangeField }) {
+  const handleChange = onChangeField || onChange;
   const activePlans = mockPlans.filter(
     (p) => p.status === "active" && p.visible_for_new_accounts
   );
@@ -27,7 +28,7 @@ export default function StepContrato({ formData, errors, onChange, mode }) {
         <div style={styles.formGrid}>
           <div style={styles.formGroup}>
             <label style={styles.label}>
-              Nombre de la cuenta <span style={styles.required}>*</span>
+              Nombre de la Persona propietaria de la Cuenta <span style={styles.required}>*</span>
             </label>
             <input
               type="text"
@@ -42,6 +43,30 @@ export default function StepContrato({ formData, errors, onChange, mode }) {
             {errors.account_name && (
               <span style={styles.errorText}>{errors.account_name}</span>
             )}
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              Primer Apellido
+            </label>
+            <input
+              type="text"
+              value={formData.account_last_name1 || ""}
+              onChange={(e) => onChange("account_last_name1", e.target.value)}
+              style={styles.input}
+              placeholder="Primer apellido"
+            />
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              Segundo Apellido
+            </label>
+            <input
+              type="text"
+              value={formData.account_last_name2 || ""}
+              onChange={(e) => onChange("account_last_name2", e.target.value)}
+              style={styles.input}
+              placeholder="Segundo apellido (opcional)"
+            />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>
@@ -241,48 +266,48 @@ export default function StepContrato({ formData, errors, onChange, mode }) {
 
 const styles = {
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
-  },
-  subsection: {
-    marginBottom: 28,
-  },
-  subsectionTitle: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#111827",
+    margin: "0 0 6px 0",
+  },
+  sectionDescription: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 18,
+  },
+  subsection: {
+    marginBottom: 20,
+  },
+  subsectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
     color: "#374151",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   formGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: 16,
+    gap: 12,
   },
   formGroup: {
     display: "flex",
     flexDirection: "column",
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
     color: "#374151",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   required: {
     color: "#DC2626",
   },
   input: {
-    padding: "10px 14px",
-    fontSize: 14,
+    padding: "7px 10px",
+    fontSize: 12,
     border: "1px solid #E5E7EB",
-    borderRadius: 8,
+    borderRadius: 6,
     outline: "none",
     transition: "border-color 0.2s ease",
   },
@@ -315,8 +340,8 @@ const styles = {
   },
   planCard: {
     border: "2px solid #E5E7EB",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
     cursor: "pointer",
     transition: "all 0.2s ease",
     backgroundColor: "#FFFFFF",
@@ -344,20 +369,20 @@ const styles = {
     fontSize: 16,
   },
   planPrice: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   planPriceLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "400",
     color: "#6B7280",
   },
   planDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    marginBottom: 12,
+    marginBottom: 10,
     lineHeight: 1.4,
   },
   planLimits: {
@@ -374,8 +399,8 @@ const styles = {
   },
   cycleOption: {
     border: "2px solid #E5E7EB",
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 10,
+    padding: 14,
     cursor: "pointer",
     transition: "all 0.2s ease",
     backgroundColor: "#FFFFFF",
@@ -391,12 +416,12 @@ const styles = {
     marginBottom: 8,
   },
   cycleName: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "600",
     color: "#111827",
   },
   cyclePrice: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
   },

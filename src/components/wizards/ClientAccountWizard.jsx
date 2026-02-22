@@ -32,6 +32,8 @@ const TOTAL_STEPS = WIZARD_STEPS.length;
 const getInitialFormData = () => ({
   // Paso A: Contrato
   account_name: "",
+  account_last_name1: "",
+  account_last_name2: "",
   slug: "",
   contact_email: "",
   contact_phone: "",
@@ -531,16 +533,16 @@ export default function ClientAccountWizard({
 
 const styles = {
   wizardContainer: {
-    maxWidth: 900,
+    maxWidth: 720,
     margin: "0 auto",
   },
   stepContent: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 32,
+    borderRadius: 10,
+    padding: 24,
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    marginBottom: 24,
-    minHeight: 400,
+    marginBottom: 20,
+    minHeight: 320,
   },
   footer: {
     display: "flex",

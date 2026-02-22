@@ -139,7 +139,10 @@ export default function AccommodationDetail() {
                 {[accommodation?.address_line1 || accommodation?.street, accommodation?.postal_code, accommodation?.city].filter(Boolean).join(", ") || "Sin dirección"}
                 {accommodation?.owner_entity && (
                   <span style={{ marginLeft: 10 }}>· <BankOutlined style={{ marginRight: 4, color: "#3B82F6" }} />
-                    <span style={{ color: "#3B82F6", fontWeight: 500 }}>
+                    <span
+                      style={{ color: "#3B82F6", fontWeight: 500, cursor: "pointer", textDecoration: "underline" }}
+                      onClick={() => navigate(`/v2/admin/entidades/${accommodation.owner_entity.id}`)}
+                    >
                       {accommodation.owner_entity.legal_name || [accommodation.owner_entity.first_name, accommodation.owner_entity.last_name1].filter(Boolean).join(" ")}
                     </span>
                   </span>
@@ -169,11 +172,11 @@ export default function AccommodationDetail() {
           ].map((s) => (
             <Col key={s.label} xs={6}>
               <div style={{
-                background: s.bg, borderRadius: 16, padding: "14px 8px",
-                textAlign: "center", boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                background: s.bg, borderRadius: 10, padding: "6px 4px",
+                textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
               }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: s.color, opacity: 0.7, marginTop: 3, fontWeight: 500 }}>{s.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: s.color, opacity: 0.7, marginTop: 2, fontWeight: 500 }}>{s.label}</div>
               </div>
             </Col>
           ))}

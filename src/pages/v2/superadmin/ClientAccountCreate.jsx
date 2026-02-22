@@ -63,14 +63,14 @@ const styles = {
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "700",
     color: "#111827",
     margin: 0,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: 3,
   },
 };
