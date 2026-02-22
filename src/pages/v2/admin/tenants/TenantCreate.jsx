@@ -2,7 +2,7 @@
 // Crear nuevo Inquilino con asignación de habitación — Ant Design + Supabase real
 
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import {
   Alert, Button, Card, Checkbox, Col, DatePicker, Form,
@@ -21,25 +21,48 @@ const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout
 
 export default function TenantCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const [form] = Form.useForm();
+
+  const preselectedAccId = searchParams.get("acc") || null;
+  const preselectedRoomId = searchParams.get("room") || null;
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
   const [billingSameAsMoveIn, setBillingSameAsMoveIn] = useState(true);
 
   const loadAccommodations = useCallback(async () => {
     try {
       const accs = await listAccommodations({ status: "active" });
       setAccommodations(accs);
+      // Auto-select accommodation from query param
+      if (preselectedAccId) {
+        form.setFieldValue("accommodation_id", preselectedAccId);
+        setLoadingRooms(true);
+        listRooms(preselectedAccId)
+          .then((rooms) => {
+            setAvailableRooms(rooms);
+            // Auto-select room from query param
+            if (preselectedRoomId) {
+              const room = rooms.find((r) => r.id === preselectedRoomId);
+              if (room && room.status === "free") {
+                setSelectedRoomId(preselectedRoomId);
+                form.setFieldValue("room_id", preselectedRoomId);
+              }
+            }
+          })
+          .catch(() => setAvailableRooms([]))
+          .finally(() => setLoadingRooms(false));
+      }
     } catch {
       setAccommodations([]);
     }
-  }, []);
+  }, [preselectedAccId, preselectedRoomId]);
 
   useEffect(() => { loadAccommodations(); }, [loadAccommodations]);
 
@@ -53,6 +76,10 @@ export default function TenantCreate() {
       .catch(() => setAvailableRooms([]))
       .finally(() => setLoadingRooms(false));
   };
+
+  const backPath = preselectedAccId
+    ? `/v2/admin/alojamientos/${preselectedAccId}/habitaciones`
+    : "/v2/admin/inquilinos";
 
   const onFinish = async (values) => {
     const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
@@ -76,7 +103,7 @@ export default function TenantCreate() {
         billing_start_date: billingDate,
         monthly_rent: selectedRoom?.monthly_rent ?? null,
       });
-      navigate("/v2/admin/inquilinos");
+      navigate(backPath);
     } catch (e) {
       setSaveError(e.message);
     } finally {
@@ -86,18 +113,19 @@ export default function TenantCreate() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ margin: 0 }}>Registrar Inquilino</Title>
-          <Text type="secondary">Complete los datos del nuevo inquilino y asigne una habitación</Text>
-        </Col>
-        <Col>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}>
-            Volver
-          </Button>
-        </Col>
-      </Row>
+      {/* Header — back top-left, title below */}
+      <div style={{ marginBottom: 28 }}>
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(backPath)}
+          style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}
+        >
+          {preselectedAccId ? "Volver al alojamiento" : "Inquilinos"}
+        </Button>
+        <Title level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px" }}>Registrar Inquilino</Title>
+        <Text type="secondary" style={{ fontSize: 15 }}>Complete los datos del nuevo inquilino y asigne una habitación</Text>
+      </div>
 
       {saveError && (
         <Alert type="error" message={saveError} showIcon style={{ marginBottom: 16 }} />
@@ -246,7 +274,7 @@ export default function TenantCreate() {
         <Row justify="end">
           <Col>
             <Space>
-              <Button onClick={() => navigate("/v2/admin/inquilinos")}>Cancelar</Button>
+              <Button onClick={() => navigate(backPath)}>Cancelar</Button>
               <Button
                 type="primary"
                 htmlType="submit"

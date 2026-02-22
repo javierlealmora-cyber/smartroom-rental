@@ -7,33 +7,38 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import {
+  Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
+  Icon3DServicios, Icon3DCatalogo, Icon3DFacturas, Icon3DLiquidaciones,
+  Icon3DBoletines, Icon3DCuentas, Icon3DPlanes, Icon3DMiPanel, Icon3DConsumo,
+} from "../components/icons3d/NavIcons3D";
 
 // ─── Menus de navegacion por rol ─────────────────────────────────────────────
 
 const ADMIN_NAV = [
-  { label: "Dashboard", path: "/v2/admin" },
-  { label: "Entidades", path: "/v2/admin/entidades" },
-  { label: "Alojamientos", path: "/v2/admin/alojamientos" },
-  { label: "Inquilinos", path: "/v2/admin/inquilinos" },
-  { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
-  { label: "Catálogo", path: "/v2/admin/servicios" },
-  { label: "Facturas", path: "/v2/admin/energia/facturas" },
-  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones" },
-  { label: "Boletines", path: "/v2/admin/boletines" },
+  { label: "Dashboard",     path: "/v2/admin",                       Icon: Icon3DDashboard },
+  { label: "Entidades",     path: "/v2/admin/entidades",             Icon: Icon3DEntidades },
+  { label: "Alojamientos",  path: "/v2/admin/alojamientos",          Icon: Icon3DAlojamientos },
+  { label: "Inquilinos",    path: "/v2/admin/inquilinos",            Icon: Icon3DInquilinos },
+  { label: "Servicios",     path: "/v2/admin/inquilinos/servicios",  Icon: Icon3DServicios },
+  { label: "Catálogo",      path: "/v2/admin/servicios",             Icon: Icon3DCatalogo },
+  { label: "Facturas",      path: "/v2/admin/energia/facturas",      Icon: Icon3DFacturas },
+  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones", Icon: Icon3DLiquidaciones },
+  { label: "Boletines",     path: "/v2/admin/boletines",             Icon: Icon3DBoletines },
 ];
 
 const SUPERADMIN_NAV = [
-  { label: "Dashboard", path: "/v2/superadmin" },
-  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
-  { label: "Planes", path: "/v2/superadmin/planes" },
-  { label: "Servicios", path: "/v2/superadmin/servicios" },
+  { label: "Dashboard",       path: "/v2/superadmin",          Icon: Icon3DDashboard },
+  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas",  Icon: Icon3DCuentas },
+  { label: "Planes",          path: "/v2/superadmin/planes",   Icon: Icon3DPlanes },
+  { label: "Servicios",       path: "/v2/superadmin/servicios",Icon: Icon3DServicios },
 ];
 
 const LODGER_NAV = [
-  { label: "Mi Panel", path: "/v2/lodger/dashboard" },
-  { label: "Mi Consumo", path: "/v2/lodger/consumo" },
-  { label: "Servicios", path: "/v2/lodger/servicios" },
-  { label: "Boletines", path: "/v2/lodger/boletines" },
+  { label: "Mi Panel",   path: "/v2/lodger/dashboard", Icon: Icon3DMiPanel },
+  { label: "Mi Consumo", path: "/v2/lodger/consumo",   Icon: Icon3DConsumo },
+  { label: "Servicios",  path: "/v2/lodger/servicios", Icon: Icon3DServicios },
+  { label: "Boletines",  path: "/v2/lodger/boletines", Icon: Icon3DBoletines },
 ];
 
 // ─── Breadcrumb routes mapping ────────────────────────────────────────────────
@@ -287,99 +292,113 @@ export default function V2Layout({
         *, *::before, *::after { box-sizing: border-box; }
         .v2-topbar {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 0 24px; height: 52px;
-          background: ${primaryColor};
+          padding: 0 16px; height: 64px;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: saturate(180%) blur(20px);
+          -webkit-backdrop-filter: saturate(180%) blur(20px);
+          border-bottom: 1px solid rgba(0,0,0,0.08);
           position: sticky; top: 0; z-index: 300;
-          gap: 12px;
+          gap: 8px;
         }
         .v2-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .v2-logo-img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
+        .v2-logo-img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
         .v2-logo-placeholder {
-          width: 30px; height: 30px; border-radius: 8px;
-          background: rgba(255,255,255,0.22);
+          width: 28px; height: 28px; border-radius: 8px;
+          background: ${primaryColor};
           display: flex; align-items: center; justify-content: center;
-          font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+          font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .v2-brand-text { display: flex; flex-direction: column; }
-        .v2-brand-name { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; }
-        .v2-brand-tagline { font-size: 10px; color: rgba(255,255,255,0.7); line-height: 1.2; white-space: nowrap; }
+        .v2-brand-name { font-size: 11px; font-weight: 700; color: #1D1D1F; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-tagline { font-size: 8px; color: #6B7280; line-height: 1.2; white-space: nowrap; }
         .v2-topnav {
-          display: flex; align-items: center; gap: 2px;
+          display: flex; align-items: center; gap: 0;
           flex: 1; justify-content: center;
           overflow-x: auto; scrollbar-width: none;
         }
         .v2-topnav::-webkit-scrollbar { display: none; }
         .v2-nav-btn {
           background: none; border: none;
-          color: rgba(255,255,255,0.82);
-          font-size: 13.5px; font-weight: 500;
-          padding: 5px 12px; border-radius: 20px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 2px;
+          padding: 4px 9px; border-radius: 11px;
           cursor: pointer; white-space: nowrap;
-          transition: background 0.18s, color 0.18s;
-          font-family: inherit; letter-spacing: -0.01em;
+          transition: background 0.18s, transform 0.15s;
+          font-family: inherit;
+          min-width: 50px;
         }
-        .v2-nav-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
-        .v2-nav-btn.active { background: rgba(255,255,255,0.22); color: #fff; font-weight: 600; }
-        .v2-topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .v2-username { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.88); white-space: nowrap; }
+        .v2-nav-btn:hover { background: rgba(0,0,0,0.04); transform: translateY(-1px); }
+        .v2-nav-btn.active { background: rgba(0,0,0,0.06); }
+        .v2-nav-btn.active .v2-nav-label { color: ${primaryColor}; font-weight: 600; }
+        .v2-nav-label {
+          font-size: 8.5px; font-weight: 500; color: #374151;
+          letter-spacing: -0.01em; line-height: 1;
+        }
+        .v2-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .v2-username { font-size: 10px; font-weight: 500; color: #374151; white-space: nowrap; }
         .v2-logout-btn {
-          padding: 5px 15px;
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.28);
-          border-radius: 20px; color: #fff;
-          font-size: 13px; font-weight: 500;
+          padding: 4px 12px;
+          background: rgba(0,0,0,0.05);
+          border: 1px solid rgba(0,0,0,0.1);
+          border-radius: 16px; color: #374151;
+          font-size: 10px; font-weight: 500;
           cursor: pointer; font-family: inherit;
           transition: background 0.18s; white-space: nowrap;
         }
-        .v2-logout-btn:hover { background: rgba(255,255,255,0.22); }
+        .v2-logout-btn:hover { background: rgba(0,0,0,0.09); }
         .v2-hamburger {
           display: none; background: none; border: none;
-          color: #fff; font-size: 20px; cursor: pointer;
+          color: #374151; font-size: 20px; cursor: pointer;
           padding: 4px 6px; border-radius: 8px; align-items: center;
           transition: background 0.15s;
         }
-        .v2-hamburger:hover { background: rgba(255,255,255,0.15); }
+        .v2-hamburger:hover { background: rgba(0,0,0,0.06); }
         .v2-mobile-drawer {
           display: none;
-          position: fixed; top: 52px; left: 0; right: 0;
-          background: ${darkerColor};
-          padding: 10px 16px 16px;
+          position: fixed; top: 64px; left: 0; right: 0;
+          background: rgba(255,255,255,0.97);
+          backdrop-filter: blur(20px);
+          padding: 12px 16px 20px;
           z-index: 299;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-          flex-direction: column; gap: 2px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+          flex-direction: column; gap: 4px;
+          border-bottom: 1px solid rgba(0,0,0,0.08);
         }
         .v2-mobile-drawer.open { display: flex; }
         .v2-mobile-drawer .v2-nav-btn {
-          text-align: left; border-radius: 10px;
+          flex-direction: row; justify-content: flex-start;
+          gap: 12px; border-radius: 12px;
           padding: 10px 14px; width: 100%;
         }
+        .v2-mobile-drawer .v2-nav-label { font-size: 14px; }
         .v2-overlay {
-          display: none; position: fixed; inset: 0; top: 52px;
-          background: rgba(0,0,0,0.28); z-index: 298;
+          display: none; position: fixed; inset: 0; top: 64px;
+          background: rgba(0,0,0,0.2); z-index: 298;
         }
         .v2-overlay.open { display: block; }
         .v2-breadcrumb {
-          padding: 9px 28px; font-size: 12.5px; color: #6B7280;
-          border-bottom: 1px solid #E5E7EB; background: #fff; flex-shrink: 0;
+          padding: 6px 22px; font-size: 10px; color: #6B7280;
+          border-bottom: 1px solid #F3F4F6; background: #FAFAFA; flex-shrink: 0;
         }
         .v2-crumb-link { color: ${primaryColor}; cursor: pointer; }
         .v2-crumb-link:hover { text-decoration: underline; }
-        .v2-crumb-sep { margin: 0 6px; color: #9CA3AF; }
+        .v2-crumb-sep { margin: 0 6px; color: #D1D5DB; }
         .v2-crumb-current { color: #1D1D1F; font-weight: 500; }
-        .v2-main { padding: 28px; flex: 1; }
-        @media (max-width: 900px) {
+        .v2-main { padding: 22px; flex: 1; }
+        @media (max-width: 1000px) {
           .v2-topnav { display: none !important; }
           .v2-username { display: none !important; }
           .v2-hamburger { display: flex !important; }
         }
         @media (max-width: 480px) {
-          .v2-topbar { padding: 0 14px; }
-          .v2-main { padding: 16px; }
-          .v2-breadcrumb { padding: 8px 16px; }
+          .v2-topbar { padding: 0 10px; height: 56px; }
+          .v2-main { padding: 12px; }
+          .v2-breadcrumb { padding: 5px 12px; }
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F7", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F7", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif", WebkitFontSmoothing: "antialiased" }}>
 
         {/* ── Top Bar ── */}
         <header className="v2-topbar">
@@ -395,13 +414,15 @@ export default function V2Layout({
             </div>
           </div>
 
-          {/* Nav centrada — desktop */}
+          {/* Nav centrada — desktop con iconos 3D */}
           <nav className="v2-topnav">
             {navItems.map((item, i) => {
               const active = isNavActive(item.path, location.pathname);
+              const { Icon } = item;
               return (
                 <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                  {item.label}
+                  <Icon size={28} />
+                  <span className="v2-nav-label">{item.label}</span>
                 </button>
               );
             })}
@@ -431,9 +452,11 @@ export default function V2Layout({
         <div className={`v2-mobile-drawer${mobileOpen ? " open" : ""}`}>
           {navItems.map((item, i) => {
             const active = isNavActive(item.path, location.pathname);
+            const { Icon } = item;
             return (
               <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                {item.label}
+                <Icon size={22} />
+                <span className="v2-nav-label">{item.label}</span>
               </button>
             );
           })}

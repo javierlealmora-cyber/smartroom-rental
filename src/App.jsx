@@ -106,6 +106,7 @@ import LodgerServiceCreateV2 from "./pages/v2/admin/tenants/LodgerServiceCreate"
 
 // v2 - Admin Settings
 import AdminSettingsV2 from "./pages/v2/admin/settings/AdminSettings";
+import LodgerDetailV2 from "./pages/v2/admin/tenants/LodgerDetail";
 
 // v2 - Lodger (formerly Student)
 import LodgerDashboard from "./pages/v2/lodger/LodgerDashboard";
@@ -296,6 +297,7 @@ export default function App() {
               <Route path="/v2/admin/alojamientos/:id/servicios" element={<AccommodationServicesV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
+              <Route path="/v2/admin/inquilinos/:id/detalle" element={<LodgerDetailV2 />} />
               <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
               <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
               <Route path="/v2/admin/servicios/nuevo" element={<ServiceCreateV2 />} />

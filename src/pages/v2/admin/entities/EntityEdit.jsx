@@ -7,6 +7,12 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { updateEntity } from "../../../../services/entities.service";
 import { supabase } from "../../../../services/supabaseClient"; // read-only: load entity by id
 
+const GENDER_OPTIONS = [
+  { value: "male", label: "Hombre" },
+  { value: "female", label: "Mujer" },
+  { value: "other", label: "Otro" },
+];
+
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autónomo" },
   { value: "persona_fisica", label: "Persona física" },
@@ -69,6 +75,7 @@ export default function EntityEdit() {
           first_name: data.first_name || "",
           last_name1: data.last_name1 || "",
           last_name2: data.last_name2 || "",
+          gender: data.gender || null,
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
@@ -88,6 +95,7 @@ export default function EntityEdit() {
           first_name: data.first_name || "",
           last_name1: data.last_name1 || "",
           last_name2: data.last_name2 || "",
+          gender: data.gender || null,
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
@@ -118,7 +126,6 @@ export default function EntityEdit() {
 
     try {
       if (!entity) throw new Error("Entidad no cargada");
-      if (entity.type !== "owner") throw new Error("Solo se pueden editar entidades propietarias desde este portal");
 
       await updateEntity(entity.id, {
         legal_type: values.legal_type,
@@ -126,6 +133,7 @@ export default function EntityEdit() {
         first_name: values.first_name || null,
         last_name1: values.last_name1 || null,
         last_name2: values.last_name2 || null,
+        gender: values.gender || null,
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
@@ -148,6 +156,7 @@ export default function EntityEdit() {
 
   const legalType = Form.useWatch("legal_type", formAntd) || entity?.legal_type;
   const isCompanyAntd = legalType === "persona_juridica";
+  const isPhysicalAntd = legalType === "persona_fisica";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
@@ -221,6 +230,18 @@ export default function EntityEdit() {
                     </Form.Item>
                   </Col>
                 </>
+              )}
+
+              {isPhysicalAntd && (
+                <Col xs={24} md={8}>
+                  <Form.Item label="Género" name="gender">
+                    <Select
+                      placeholder="Seleccionar..."
+                      options={GENDER_OPTIONS}
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
               )}
 
               <Col xs={24} md={8}>

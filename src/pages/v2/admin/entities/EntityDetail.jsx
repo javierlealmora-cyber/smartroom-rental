@@ -18,6 +18,9 @@ const { Title, Text } = Typography;
 
 const STATUS_TAG = { active: "success", inactive: "warning", archived: "default" };
 const STATUS_LABEL = { active: "Activo", inactive: "Inactivo", archived: "Archivado" };
+const STATUS_COLOR = { active: "#16A34A", inactive: "#DC2626", archived: "#6B7280" };
+
+const ACC_CARD_IMAGE = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/alojamiento-card-model.jpg";
 
 const LEGAL_TYPE_LABEL = {
   autonomo: "Autónomo",
@@ -161,84 +164,87 @@ export default function EntityDetail() {
           {accommodations.map((acc) => {
             const { total, occupied, free, pending, rate } = getStats(acc);
             const progressColor = rate > 80 ? "#059669" : rate > 50 ? "#F59E0B" : "#DC2626";
-
+            const isActive = acc.status === "active";
             return (
-              <Col key={acc.id} xs={24} sm={12} xl={8}>
+              <Col key={acc.id} xs={24} sm={12} lg={8} xl={6}>
                 <Card
-                  hoverable
-                  onClick={() => navigate(`/v2/admin/entidades/${id}/alojamientos/${acc.id}`)}
                   style={{
-                    cursor: "pointer",
-                    borderRadius: 12,
-                    border: acc.status === "active" ? "1.5px solid #E5E7EB" : "1.5px solid #FCA5A5",
-                    opacity: acc.status === "active" ? 1 : 0.78,
-                    transition: "box-shadow 0.2s",
+                    borderRadius: 16,
+                    border: "1px solid #E5E7EB",
+                    background: "#FFFFFF",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                    overflow: "hidden",
+                    opacity: isActive ? 1 : 0.78,
                   }}
-                  bodyStyle={{ padding: "20px 22px 14px" }}
-                  actions={[
-                    <Tooltip key="edit" title="Editar alojamiento">
-                      <Button
-                        type="text" size="small" icon={<EditOutlined />}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/alojamientos/${acc.id}/editar`); }}
-                      >
-                        Editar
-                      </Button>
-                    </Tooltip>,
-                    <Tooltip key="services" title="Servicios">
-                      <Button
-                        type="text" size="small" icon={<ToolOutlined />}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/alojamientos/${acc.id}/servicios`); }}
-                      >
-                        Servicios
-                      </Button>
-                    </Tooltip>,
-                    <Tooltip key="rooms" title="Ver habitaciones e inquilinos">
-                      <Button
-                        type="text" size="small" icon={<HomeOutlined />}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/entidades/${id}/alojamientos/${acc.id}`); }}
-                      >
-                        Habitaciones
-                      </Button>
-                    </Tooltip>,
-                  ]}
+                  styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}
                 >
-                  <Row justify="space-between" align="top" style={{ marginBottom: 6 }}>
-                    <Col flex="auto" style={{ paddingRight: 8 }}>
-                      <Text strong style={{ fontSize: 15, lineHeight: 1.3, display: "block" }}>{acc.name}</Text>
-                    </Col>
-                    <Col>
-                      <Tag color={STATUS_TAG[acc.status] || "default"} style={{ margin: 0 }}>
-                        {STATUS_LABEL[acc.status] || acc.status}
-                      </Tag>
-                    </Col>
-                  </Row>
+                  {/* ── 1: Nombre + Estado ── */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                    <Text strong style={{ fontSize: 20, color: "#1D1D1F", letterSpacing: "-0.3px", lineHeight: 1.3, flex: 1, paddingRight: 8 }}>
+                      {acc.name}
+                    </Text>
+                    <span style={{ color: STATUS_COLOR[acc.status] || "#6B7280", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {STATUS_LABEL[acc.status] || acc.status}
+                    </span>
+                  </div>
 
-                  <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 14 }}>
-                    <HomeOutlined style={{ marginRight: 4 }} />
+                  {/* ── 2: Dirección ── */}
+                  <Text style={{ fontSize: 13, color: "#6B7280", display: "block", marginBottom: 16 }}>
                     {[acc.address_line1 || acc.street, acc.postal_code, acc.city].filter(Boolean).join(", ") || "Sin dirección"}
                   </Text>
 
-                  <Row gutter={8} style={{ marginBottom: 12 }}>
-                    <Col span={6}>
-                      <Statistic title="Total" value={total} valueStyle={{ fontSize: 18, fontWeight: 700 }} />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic title="Ocupadas" value={occupied} valueStyle={{ fontSize: 18, color: "#DC2626" }} />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic title="Libres" value={free} valueStyle={{ fontSize: 18, color: "#059669" }} />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic title="Pend." value={pending} valueStyle={{ fontSize: 18, color: "#F59E0B" }} />
-                    </Col>
-                  </Row>
+                  {/* ── 3: KPI boxes con borde ── */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                    {[
+                      { v: total,    l: "Total",   c: "#374151" },
+                      { v: occupied, l: "Ocupado", c: "#DC2626" },
+                      { v: free,     l: "Libres",  c: "#16A34A" },
+                      { v: pending,  l: "Pend.",   c: "#D97706" },
+                    ].map(({ v, l, c }) => (
+                      <div key={l} style={{ border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "8px 14px", minWidth: 60, textAlign: "left" }}>
+                        <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 2 }}>{l}</div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: c, lineHeight: 1 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
 
-                  <div>
-                    <Row justify="space-between" style={{ marginBottom: 3 }}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Ocupación</Text>
-                      <Text strong style={{ fontSize: 11 }}>{rate}%</Text>
-                    </Row>
-                    <Progress percent={rate} showInfo={false} strokeColor={progressColor} size="small" />
+                  {/* ── 4: Divider ── */}
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 16px -20px" }} />
+
+                  {/* ── 5: Imagen ── */}
+                  <div onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)} style={{ margin: "0 -20px 14px -20px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
+                    <img src={ACC_CARD_IMAGE} alt="Alojamiento"
+                      style={{ width: "100%", display: "block", objectFit: "contain", height: 180 }} />
+                  </div>
+
+                  {/* ── 6: Barra ocupación ── */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                      <Text style={{ fontSize: 12, color: "#6B7280" }}>Ocupación</Text>
+                      <Text style={{ fontSize: 12, color: "#6B7280" }}>{rate}%</Text>
+                    </div>
+                    <Progress percent={rate} showInfo={false} strokeColor={progressColor} size="small" trailColor="#E5E7EB" />
+                  </div>
+
+                  {/* ── 7: Divider + Botones ── */}
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
+                  <div style={{ paddingBottom: 16, display: "flex", alignItems: "center", gap: 0 }}
+                    onClick={(e) => e.stopPropagation()}>
+                    <Button type="primary" size="middle"
+                      style={{ borderRadius: 20, fontWeight: 600, fontSize: 13, marginRight: 16 }}
+                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/editar`)}>
+                      Editar
+                    </Button>
+                    <Button type="link" size="middle"
+                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500, marginRight: 16 }}
+                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/servicios`)}>
+                      Servicios &gt;
+                    </Button>
+                    <Button type="link" size="middle"
+                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500 }}
+                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)}>
+                      Habitaciones &gt;
+                    </Button>
                   </div>
                 </Card>
               </Col>

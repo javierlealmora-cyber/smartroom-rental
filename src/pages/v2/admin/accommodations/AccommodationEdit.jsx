@@ -19,6 +19,17 @@ import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
 
 const { Title, Text } = Typography;
 
+const PROVINCIAS_ES = [
+  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
+  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
+  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
+  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
+  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
+  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
+  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
+  "Ceuta","Melilla",
+].map((p) => ({ value: p, label: p }));
+
 const ROOM_STATUS_COLOR = { free: "success", occupied: "error", pending_checkout: "warning", inactive: "default" };
 const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", inactive: "Inactiva" };
 
@@ -61,9 +72,10 @@ export default function AccommodationEdit() {
         name: acc.name,
         owner_entity_id: acc.owner_entity_id,
         address_line1: acc.address_line1 || "",
+        address_line2: acc.address_line2 || "",
         postal_code: acc.postal_code || "",
         city: acc.city || "",
-        province: acc.province || "",
+        province: acc.province || null,
         notes: acc.notes || "",
         status: acc.status,
       });
@@ -84,6 +96,7 @@ export default function AccommodationEdit() {
         name: values.name,
         owner_entity_id: values.owner_entity_id,
         address_line1: values.address_line1 || null,
+        address_line2: values.address_line2 || null,
         postal_code: values.postal_code || null,
         city: values.city || null,
         province: values.province || null,
@@ -290,24 +303,53 @@ export default function AccommodationEdit() {
                   ]} />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Dirección" name="address_line1">
-                  <Input placeholder="Calle, número..." />
+              <Col xs={24} sm={14}>
+                <Form.Item label="Calle" name="address_line1">
+                  <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8} md={4}>
-                <Form.Item label="CP" name="postal_code">
-                  <Input placeholder="28001" />
+              <Col xs={24} sm={4}>
+                <Form.Item label="Número" name="street_number">
+                  <Input placeholder="12" />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8} md={4}>
+              <Col xs={12} sm={3}>
+                <Form.Item label="Piso" name="floor">
+                  <Input placeholder="3" />
+                </Form.Item>
+              </Col>
+              <Col xs={12} sm={3}>
+                <Form.Item label="Puerta" name="door">
+                  <Input placeholder="A" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2">
+                  <Input placeholder="Bloque B, Escalera 2..." />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={4}>
+                <Form.Item label="Código Postal" name="postal_code">
+                  <Input placeholder="28001" maxLength={5} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
                 <Form.Item label="Ciudad" name="city">
                   <Input placeholder="Madrid" />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8} md={4}>
+              <Col xs={24} sm={12}>
                 <Form.Item label="Provincia" name="province">
-                  <Input placeholder="Madrid" />
+                  <Select
+                    showSearch
+                    placeholder="Seleccionar provincia..."
+                    optionFilterProp="label"
+                    options={PROVINCIAS_ES}
+                    allowClear
+                    filterOption={(input, option) =>
+                      option.label.toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24}>
