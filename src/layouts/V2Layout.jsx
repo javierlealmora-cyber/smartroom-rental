@@ -226,6 +226,11 @@ export default function V2Layout({
 
   const navItems = getNavItems(role);
 
+  const primaryColor = companyBranding?.primaryColor || "#0071E3";
+  const darkerColor = companyBranding?.primaryColor
+    ? companyBranding.primaryColor
+    : "#0062c8";
+
   const branding = {
     name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
     logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),
@@ -267,7 +272,7 @@ export default function V2Layout({
         .v2-topbar {
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 24px; height: 52px;
-          background: #0071E3;
+          background: ${primaryColor};
           position: sticky; top: 0; z-index: 300;
           gap: 12px;
         }
@@ -321,7 +326,7 @@ export default function V2Layout({
         .v2-mobile-drawer {
           display: none;
           position: fixed; top: 52px; left: 0; right: 0;
-          background: #0062c8;
+          background: ${darkerColor};
           padding: 10px 16px 16px;
           z-index: 299;
           box-shadow: 0 8px 32px rgba(0,0,0,0.22);
@@ -341,7 +346,7 @@ export default function V2Layout({
           padding: 9px 28px; font-size: 12.5px; color: #6B7280;
           border-bottom: 1px solid #E5E7EB; background: #fff; flex-shrink: 0;
         }
-        .v2-crumb-link { color: #0071E3; cursor: pointer; }
+        .v2-crumb-link { color: ${primaryColor}; cursor: pointer; }
         .v2-crumb-link:hover { text-decoration: underline; }
         .v2-crumb-sep { margin: 0 6px; color: #9CA3AF; }
         .v2-crumb-current { color: #1D1D1F; font-weight: 500; }

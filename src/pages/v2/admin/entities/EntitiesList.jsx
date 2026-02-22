@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Col, Row, Space, Table, Typography } from "antd";
-import { BankOutlined, PlusOutlined } from "@ant-design/icons";
+import { Alert, Badge, Button, Card, Col, Popconfirm, Row, Skeleton, Space, Tag, Tooltip, Typography } from "antd";
+import { BankOutlined, EditOutlined, IdcardOutlined, MailOutlined, PhoneOutlined, PlusOutlined, PoweroffOutlined, UserOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -102,146 +102,230 @@ export default function EntitiesList() {
       ]
     : [];
 
-  const columns = [
-    {
-      title: "Nombre",
-      key: "name",
-      render: (_, record) => formatEntityName(record),
-    },
-    {
-      title: "Tipo",
-      dataIndex: "legal_type",
-      key: "legal_type",
-    },
-    {
-      title: "NIF/CIF",
-      dataIndex: "tax_id",
-      key: "tax_id",
-      render: (v) => v || "-",
-    },
-    {
-      title: "Estado",
-      dataIndex: "status",
-      key: "status",
-      render: (s) => (s || "").toUpperCase(),
-    },
-    {
-      title: "Acciones",
-      key: "actions",
-      render: (_, record) => {
-        if (!canWrite) return <Typography.Text type="secondary">Solo lectura</Typography.Text>;
-        return (
-          <Space>
-            <Button onClick={() => navigate(`/v2/admin/entidades/${record.id}/editar`)}>Editar</Button>
-            <Button
-              danger={record.status === "active"}
-              type={record.status === "active" ? "default" : "primary"}
-              onClick={() => onToggleStatus(record)}
-            >
-              {record.status === "active" ? "Deshabilitar" : "Reactivar"}
-            </Button>
-          </Space>
-        );
-      },
-    },
-  ];
+  const LEGAL_TYPE_LABEL = {
+    autonomo: "Autónomo",
+    persona_fisica: "Persona física",
+    persona_juridica: "Persona jurídica",
+  };
+
+  const STATUS_COLOR = { active: "success", disabled: "error", inactive: "warning", suspended: "warning" };
+  const STATUS_LABEL = { active: "Activo", disabled: "Deshabilitado", inactive: "Inactivo", suspended: "Suspendido" };
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" gutter={[16, 16]}>
+      {/* Header */}
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col flex="auto">
-          <Typography.Title level={2} style={{ margin: 0 }}>
-            Entidades
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Pagadora y propietarias de la Cuenta Cliente
-          </Typography.Text>
+          <Typography.Title level={2} style={{ margin: 0 }}>Entidades</Typography.Title>
+          <Typography.Text type="secondary">Pagadora y propietarias de la Cuenta Cliente</Typography.Text>
         </Col>
         <Col>
           <Button
             type="primary"
+            icon={<PlusOutlined />}
             disabled={!canWrite || limitReached}
             onClick={() => navigate("/v2/admin/entidades/nueva")}
           >
-            + Nueva entidad
+            Nueva entidad
           </Button>
         </Col>
       </Row>
 
-      <div style={{ height: 16 }} />
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
-      {error && (
-        <Alert
-          type="error"
-          message={error}
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+      {/* ── Entidad Pagadora ── */}
+      <Typography.Title level={5} style={{ marginBottom: 12, color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>
+        Entidad Pagadora
+      </Typography.Title>
+
+      {loading ? (
+        <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+          <Col xs={24} sm={12} md={8}>
+            <Card><Skeleton active paragraph={{ rows: 3 }} /></Card>
+          </Col>
+        </Row>
+      ) : !payer ? (
+        <Card style={{ marginBottom: 32, textAlign: "center", padding: "24px 0", borderStyle: "dashed" }}>
+          <BankOutlined style={{ fontSize: 32, color: "#D1D5DB", marginBottom: 8 }} />
+          <div><Typography.Text type="secondary">Sin entidad pagadora configurada</Typography.Text></div>
+          {canWrite && (
+            <Button type="link" onClick={() => navigate("/v2/admin/entidades/nueva")} style={{ marginTop: 4 }}>
+              + Crear entidad pagadora
+            </Button>
+          )}
+        </Card>
+      ) : (
+        <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+          <Col xs={24} sm={12} md={8}>
+            <Card
+              hoverable
+              onClick={() => navigate(`/v2/admin/entidades/${payer.id}/editar`)}
+              style={{ cursor: "pointer", borderRadius: 12, border: "1.5px solid #E5E7EB", transition: "box-shadow 0.2s" }}
+              bodyStyle={{ padding: "20px 24px" }}
+            >
+              <Row justify="space-between" align="top" style={{ marginBottom: 12 }}>
+                <Col>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <BankOutlined style={{ fontSize: 20, color: "#3B82F6" }} />
+                  </div>
+                </Col>
+                <Col>
+                  <Tag color={STATUS_COLOR[payer.status] || "default"}>
+                    {STATUS_LABEL[payer.status] || payer.status}
+                  </Tag>
+                </Col>
+              </Row>
+              <Typography.Text strong style={{ fontSize: 15, display: "block", marginBottom: 2 }}>
+                {formatEntityName(payer)}
+              </Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
+                {LEGAL_TYPE_LABEL[payer.legal_type] || payer.legal_type} · Pagadora
+              </Typography.Text>
+              {payer.tax_id && (
+                <Space size={4} style={{ display: "flex", marginBottom: 4 }}>
+                  <IdcardOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>{payer.tax_id}</Typography.Text>
+                </Space>
+              )}
+              {payer.billing_email && (
+                <Space size={4} style={{ display: "flex", marginBottom: 4 }}>
+                  <MailOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>{payer.billing_email}</Typography.Text>
+                </Space>
+              )}
+              {payer.phone && (
+                <Space size={4} style={{ display: "flex" }}>
+                  <PhoneOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>{payer.phone}</Typography.Text>
+                </Space>
+              )}
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #F3F4F6", display: "flex", justifyContent: "flex-end" }}>
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  <EditOutlined style={{ marginRight: 4 }} />Editar
+                </Typography.Text>
+              </div>
+            </Card>
+          </Col>
+        </Row>
       )}
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={12}>
-          <Card title="Entidad pagadora" loading={loading}>
-            {!loading && !payer && (
-              <EmptyState
-                icon="🏦"
-                title="Sin entidad pagadora"
-                description="Configura la entidad pagadora de tu cuenta"
-                actionLabel="Nueva Entidad"
-                onAction={() => navigate("/v2/admin/entidades/nueva")}
-              />
-            )}
-            {!loading && payer && (
-              <Row gutter={[12, 12]}>
-                {payerItems.map((it) => (
-                  <Col key={it.label} xs={24} sm={12}>
-                    <Card size="small">
-                      <Typography.Text type="secondary">{it.label}</Typography.Text>
-                      <div>
-                        <Typography.Text strong>{it.value}</Typography.Text>
-                      </div>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            )}
-          </Card>
+      {/* ── Entidades Propietarias ── */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
+        <Col>
+          <Typography.Title level={5} style={{ margin: 0, color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>
+            Entidades Propietarias
+          </Typography.Title>
         </Col>
-
-        <Col xs={24} lg={12}>
-          <Card
-            title="Entidades propietarias"
-            extra={
-              ownerLimitLabel ? (
-                <Typography.Text type="secondary">{ownerLimitLabel}</Typography.Text>
-              ) : null
-            }
-            loading={loading}
-          >
-            {!loading && owners.length === 0 ? (
-              <EmptyState
-                icon="🏠"
-                title="Sin propietarios"
-                description="Crea la primera entidad propietaria para asignar alojamientos"
-                actionLabel="Nueva Entidad"
-                onAction={() => navigate("/v2/admin/entidades/nueva")}
-              />
-            ) : (
-              <Table
-                rowKey="id"
-                size="middle"
-                scroll={{ x: true }}
-                columns={columns}
-                dataSource={owners}
-                pagination={{ pageSize: 10, hideOnSinglePage: true }}
-              />
-            )}
-          </Card>
-        </Col>
+        {ownerLimitLabel && (
+          <Col>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>{ownerLimitLabel}</Typography.Text>
+          </Col>
+        )}
       </Row>
 
-      <div style={{ height: 8 }} />
-      <Typography.Text type="secondary">Tenant: {clientAccountId || "-"}</Typography.Text>
+      {loading ? (
+        <Row gutter={[16, 16]}>
+          {[1, 2, 3].map((i) => (
+            <Col key={i} xs={24} sm={12} md={8} xl={6}>
+              <Card><Skeleton active paragraph={{ rows: 3 }} /></Card>
+            </Col>
+          ))}
+        </Row>
+      ) : owners.length === 0 ? (
+        <EmptyState
+          icon="🏠"
+          title="Sin entidades propietarias"
+          description="Crea la primera entidad propietaria para asignar alojamientos"
+          actionLabel="Nueva Entidad"
+          onAction={() => navigate("/v2/admin/entidades/nueva")}
+        />
+      ) : (
+        <Row gutter={[16, 16]}>
+          {owners.map((entity) => (
+            <Col key={entity.id} xs={24} sm={12} md={8} xl={6}>
+              <Card
+                hoverable
+                onClick={() => navigate(`/v2/admin/entidades/${entity.id}/editar`)}
+                style={{
+                  cursor: "pointer",
+                  borderRadius: 12,
+                  border: entity.status === "active" ? "1.5px solid #E5E7EB" : "1.5px solid #FCA5A5",
+                  opacity: entity.status === "active" ? 1 : 0.75,
+                  transition: "box-shadow 0.2s, transform 0.15s",
+                }}
+                bodyStyle={{ padding: "20px 24px" }}
+                actions={canWrite ? [
+                  <Tooltip key="edit" title="Editar">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/entidades/${entity.id}/editar`); }}
+                    >
+                      Editar
+                    </Button>
+                  </Tooltip>,
+                  <Popconfirm
+                    key="toggle"
+                    title={entity.status === "active" ? "¿Deshabilitar esta entidad?" : "¿Reactivar esta entidad?"}
+                    onConfirm={(e) => { e?.stopPropagation(); onToggleStatus(entity); }}
+                    onCancel={(e) => e?.stopPropagation()}
+                    okText="Sí"
+                    cancelText="No"
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger={entity.status === "active"}
+                      icon={<PoweroffOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {entity.status === "active" ? "Deshabilitar" : "Reactivar"}
+                    </Button>
+                  </Popconfirm>,
+                ] : undefined}
+              >
+                <Row justify="space-between" align="top" style={{ marginBottom: 12 }}>
+                  <Col>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <UserOutlined style={{ fontSize: 20, color: "#16A34A" }} />
+                    </div>
+                  </Col>
+                  <Col>
+                    <Tag color={STATUS_COLOR[entity.status] || "default"}>
+                      {STATUS_LABEL[entity.status] || entity.status}
+                    </Tag>
+                  </Col>
+                </Row>
+                <Typography.Text strong style={{ fontSize: 15, display: "block", marginBottom: 2 }}>
+                  {formatEntityName(entity)}
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
+                  {LEGAL_TYPE_LABEL[entity.legal_type] || entity.legal_type} · Propietaria
+                </Typography.Text>
+                {entity.tax_id && (
+                  <Space size={4} style={{ display: "flex", marginBottom: 4 }}>
+                    <IdcardOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{entity.tax_id}</Typography.Text>
+                  </Space>
+                )}
+                {entity.billing_email && (
+                  <Space size={4} style={{ display: "flex", marginBottom: 4 }}>
+                    <MailOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{entity.billing_email}</Typography.Text>
+                  </Space>
+                )}
+                {entity.phone && (
+                  <Space size={4} style={{ display: "flex" }}>
+                    <PhoneOutlined style={{ color: "#9CA3AF", fontSize: 12 }} />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{entity.phone}</Typography.Text>
+                  </Space>
+                )}
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
     </V2Layout>
   );
 }
