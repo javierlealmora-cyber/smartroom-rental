@@ -1,13 +1,13 @@
 // src/pages/v2/admin/tenants/TenantEdit.jsx
 // Editar Inquilino — Ant Design + manage_lodger Edge Function
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Alert, Button, Card, Col, DatePicker, Descriptions, Form,
-  Input, InputNumber, Modal, Row, Select, Space, Tag, Typography,
+  Input, InputNumber, message, Modal, Popconfirm, Row, Select, Space, Tag, Tooltip, Typography, Upload,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined, SwapOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileOutlined, MailOutlined, PaperClipOutlined, SaveOutlined, SwapOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -16,6 +16,15 @@ import { listAccommodations } from "../../../../services/accommodations.service"
 import { supabase } from "../../../../services/supabaseClient";
 
 const { Title, Text } = Typography;
+
+const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pendiente baja", maintenance: "Mantenimiento" };
+const ROOM_STATUS_COLOR = { free: "success", occupied: "error", pending_checkout: "warning", maintenance: "default" };
+
+const STORAGE_BUCKET = "lodger-documents";
+
+function buildPath(lodgerId, roomId, fileName) {
+  return `${lodgerId}/${roomId}/${fileName}`;
+}
 
 const STATUS_OPTIONS = [
   { value: "invited", label: "Invitado" },
@@ -41,6 +50,15 @@ export default function TenantEdit() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [sendingInvite, setSendingInvite] = useState(false);
+
+  // Documents
+  const [documents, setDocuments] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [renamingDoc, setRenamingDoc] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const activeRoomIdRef = useRef(null);
 
   // Reassign modal state
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -49,6 +67,22 @@ export default function TenantEdit() {
   const [allAccommodations, setAllAccommodations] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
+
+  const loadDocuments = useCallback(async (lodgerId, roomId) => {
+    if (!lodgerId || !roomId) return;
+    setDocsLoading(true);
+    try {
+      const { data, error: listErr } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .list(`${lodgerId}/${roomId}`, { sortBy: { column: "name", order: "asc" } });
+      if (listErr) throw listErr;
+      setDocuments((data || []).filter((f) => f.name !== ".emptyFolderPlaceholder"));
+    } catch (e) {
+      console.error("Docs error:", e.message);
+    } finally {
+      setDocsLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,8 +94,16 @@ export default function TenantEdit() {
       ]);
       setLodger(data);
       setAllAccommodations(accs);
+      const activeAsgn = data.assignments?.find((a) => !a.move_out_date);
+      activeRoomIdRef.current = activeAsgn?.room?.id || null;
+      if (activeAsgn?.room?.id) {
+        loadDocuments(id, activeAsgn.room.id);
+      }
+      const nameParts = (data.full_name || "").trim().split(" ");
       form.setFieldsValue({
-        full_name: data.full_name,
+        first_name: nameParts[0] || "",
+        last_name1: nameParts[1] || "",
+        last_name2: nameParts.slice(2).join(" ") || "",
         email: data.email,
         phone: data.phone || "",
         document_id: data.document_id || "",
@@ -130,8 +172,10 @@ export default function TenantEdit() {
       if (values.status !== lodger.status) {
         await setLodgerStatus(id, values.status);
       }
+      const full_name = [values.first_name, values.last_name1, values.last_name2]
+        .filter(Boolean).join(" ");
       await updateLodger(id, {
-        full_name: values.full_name,
+        full_name,
         phone: values.phone || null,
         document_id: values.document_id || null,
       });
@@ -145,6 +189,80 @@ export default function TenantEdit() {
 
   const activeAssignment = lodger?.assignments?.find((a) => !a.move_out_date);
 
+  const onUploadFile = async (file) => {
+    const roomId = activeRoomIdRef.current;
+    if (!roomId) { message.error("El inquilino no tiene habitación asignada"); return false; }
+    const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const path = buildPath(id, roomId, safeFileName);
+    setUploading(true);
+    try {
+      const { error: upErr } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      message.success(`"${file.name}" subido correctamente`);
+      await loadDocuments(id, roomId);
+    } catch (e) {
+      message.error(`Error al subir: ${e.message}`);
+    } finally {
+      setUploading(false);
+    }
+    return false;
+  };
+
+  const onDeleteDoc = async (docName) => {
+    const roomId = activeRoomIdRef.current;
+    if (!roomId) return;
+    try {
+      const { error: delErr } = await supabase.storage.from(STORAGE_BUCKET).remove([buildPath(id, roomId, docName)]);
+      if (delErr) throw delErr;
+      message.success("Documento eliminado");
+      setDocuments((prev) => prev.filter((d) => d.name !== docName));
+    } catch (e) {
+      message.error(`Error al eliminar: ${e.message}`);
+    }
+  };
+
+  const onRenameDoc = async () => {
+    const roomId = activeRoomIdRef.current;
+    if (!roomId || !renamingDoc || !renameValue.trim()) return;
+    const oldPath = buildPath(id, roomId, renamingDoc);
+    const newName = `${Date.now()}_${renameValue.trim().replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const newPath = buildPath(id, roomId, newName);
+    try {
+      const { error: copyErr } = await supabase.storage.from(STORAGE_BUCKET).copy(oldPath, newPath);
+      if (copyErr) throw copyErr;
+      await supabase.storage.from(STORAGE_BUCKET).remove([oldPath]);
+      message.success("Documento renombrado");
+      setRenamingDoc(null);
+      setRenameValue("");
+      await loadDocuments(id, roomId);
+    } catch (e) {
+      message.error(`Error al renombrar: ${e.message}`);
+    }
+  };
+
+  const getDocUrl = (docName) => {
+    const roomId = activeRoomIdRef.current;
+    if (!roomId) return null;
+    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(buildPath(id, roomId, docName));
+    return data?.publicUrl || null;
+  };
+
+  const onSendInvite = async () => {
+    if (!lodger?.email) return;
+    setSendingInvite(true);
+    try {
+      const { error: invErr } = await supabase.auth.resetPasswordForEmail(lodger.email, {
+        redirectTo: `${window.location.origin}/v2/auth/callback?type=recovery&portal=lodger`,
+      });
+      if (invErr) throw invErr;
+      message.success(`Email de acceso enviado a ${lodger.email}`);
+    } catch (e) {
+      message.error(`Error al enviar: ${e.message}`);
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -156,6 +274,16 @@ export default function TenantEdit() {
         </Col>
         <Col>
           <Space>
+            <Tooltip title="Enviar email de acceso al portal del inquilino">
+              <Button
+                icon={<MailOutlined />}
+                loading={sendingInvite}
+                onClick={onSendInvite}
+                disabled={!lodger?.email}
+              >
+                Enviar acceso
+              </Button>
+            </Tooltip>
             {lodger?.status === "active" && (
               <Button
                 icon={<SwapOutlined />}
@@ -182,10 +310,21 @@ export default function TenantEdit() {
             {!loading && (
               <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Row gutter={[16, 0]}>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label="Nombre completo" name="full_name"
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Nombre" name="first_name"
                       rules={[{ required: true, message: "El nombre es obligatorio" }]}>
-                      <Input />
+                      <Input placeholder="Nombre" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Primer apellido" name="last_name1"
+                      rules={[{ required: true, message: "Obligatorio" }]}>
+                      <Input placeholder="Apellido 1" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Segundo apellido" name="last_name2">
+                      <Input placeholder="Apellido 2" />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
@@ -248,7 +387,14 @@ export default function TenantEdit() {
                   <Text strong>{activeAssignment.accommodation?.name}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Habitación">
-                  <Tag color="geekblue">Hab. {activeAssignment.room?.number}</Tag>
+                  <Space size={6}>
+                    <Tag color="geekblue">Hab. {activeAssignment.room?.number}</Tag>
+                    {activeAssignment.room?.status && (
+                      <Tag color={ROOM_STATUS_COLOR[activeAssignment.room.status] || "default"}>
+                        {ROOM_STATUS_LABEL[activeAssignment.room.status] || activeAssignment.room.status}
+                      </Tag>
+                    )}
+                  </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="Entrada">
                   {fDate(activeAssignment.move_in_date)}
@@ -296,6 +442,103 @@ export default function TenantEdit() {
           )}
         </Col>
       </Row>
+
+      {/* ── Sección Documentos adjuntos ── */}
+      {lodger && (
+        <Card
+          title={<><PaperClipOutlined style={{ marginRight: 6 }} />Documentos adjuntos</>}
+          size="small"
+          style={{ marginTop: 20 }}
+          extra={
+            activeAssignment ? (
+              <Upload beforeUpload={onUploadFile} showUploadList={false} multiple={false}
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                <Button size="small" icon={<UploadOutlined />} loading={uploading}>
+                  Subir documento
+                </Button>
+              </Upload>
+            ) : (
+              <Tooltip title="Asigna una habitación al inquilino para poder subir documentos">
+                <Button size="small" icon={<UploadOutlined />} disabled>Subir documento</Button>
+              </Tooltip>
+            )
+          }
+        >
+          {!activeAssignment && (
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Sin habitación asignada — los documentos se asocian al inquilino y su habitación actual.
+            </Text>
+          )}
+          {activeAssignment && docsLoading && (
+            <Text type="secondary">Cargando documentos...</Text>
+          )}
+          {activeAssignment && !docsLoading && documents.length === 0 && (
+            <Text type="secondary" style={{ fontSize: 13 }}>No hay documentos adjuntos. Sube el contrato u otros archivos.</Text>
+          )}
+          {activeAssignment && !docsLoading && documents.length > 0 && (
+            <Space direction="vertical" style={{ width: "100%" }} size={6}>
+              {documents.map((doc) => {
+                const displayName = doc.name.replace(/^\d+_/, "");
+                const url = getDocUrl(doc.name);
+                const isRenaming = renamingDoc === doc.name;
+                return (
+                  <div key={doc.name} style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "8px 12px", background: "#f9fafb",
+                    borderRadius: 8, border: "1px solid #e5e7eb",
+                  }}>
+                    <FileOutlined style={{ color: "#6B7280", flexShrink: 0 }} />
+                    {isRenaming ? (
+                      <Input
+                        size="small"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onPressEnter={onRenameDoc}
+                        style={{ flex: 1 }}
+                        autoFocus
+                      />
+                    ) : (
+                      <Text style={{ flex: 1, fontSize: 13, wordBreak: "break-all" }}>{displayName}</Text>
+                    )}
+                    <Space size={4} style={{ flexShrink: 0 }}>
+                      {isRenaming ? (
+                        <>
+                          <Button size="small" type="primary" onClick={onRenameDoc}>Guardar</Button>
+                          <Button size="small" onClick={() => { setRenamingDoc(null); setRenameValue(""); }}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <>
+                          {url && (
+                            <Tooltip title="Descargar">
+                              <Button size="small" icon={<DownloadOutlined />}
+                                onClick={() => window.open(url, "_blank")} />
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Renombrar">
+                            <Button size="small" icon={<EditOutlined />}
+                              onClick={() => { setRenamingDoc(doc.name); setRenameValue(displayName); }} />
+                          </Tooltip>
+                          <Popconfirm
+                            title="¿Eliminar este documento?"
+                            okText="Eliminar"
+                            cancelText="Cancelar"
+                            okButtonProps={{ danger: true }}
+                            onConfirm={() => onDeleteDoc(doc.name)}
+                          >
+                            <Tooltip title="Eliminar">
+                              <Button size="small" danger icon={<DeleteOutlined />} />
+                            </Tooltip>
+                          </Popconfirm>
+                        </>
+                      )}
+                    </Space>
+                  </div>
+                );
+              })}
+            </Space>
+          )}
+        </Card>
+      )}
       {/* ── Modal cambio de habitación ── */}
       <Modal
         title={<><SwapOutlined style={{ marginRight: 8 }} />Cambiar habitación</>}

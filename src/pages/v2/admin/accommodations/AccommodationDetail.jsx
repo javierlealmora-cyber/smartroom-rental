@@ -282,7 +282,11 @@ export default function AccommodationDetail() {
                   <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 16px -20px" }} />
 
                   {/* ── 5: Imagen con margen lateral (siempre fija) ── */}
-                  <div style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#fff" }}>
+                  <div
+                    style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#fff", cursor: isOccupied && lodger ? "pointer" : "default" }}
+                    onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
+                    title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
+                  >
                     <img
                       src={ROOM_CARD_IMAGE}
                       alt="Habitación"
