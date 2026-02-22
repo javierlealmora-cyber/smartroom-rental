@@ -240,11 +240,18 @@ export default function TenantEdit() {
     }
   };
 
-  const getDocUrl = (docName) => {
+  const openDocUrl = async (docName) => {
     const roomId = activeRoomIdRef.current;
-    if (!roomId) return null;
-    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(buildPath(id, roomId, docName));
-    return data?.publicUrl || null;
+    if (!roomId) return;
+    try {
+      const { data, error: signErr } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(buildPath(id, roomId, docName), 3600);
+      if (signErr) throw signErr;
+      window.open(data.signedUrl, "_blank");
+    } catch (e) {
+      message.error(`Error al abrir documento: ${e.message}`);
+    }
   };
 
   const onSendInvite = async () => {
@@ -479,7 +486,6 @@ export default function TenantEdit() {
             <Space direction="vertical" style={{ width: "100%" }} size={6}>
               {documents.map((doc) => {
                 const displayName = doc.name.replace(/^\d+_/, "");
-                const url = getDocUrl(doc.name);
                 const isRenaming = renamingDoc === doc.name;
                 return (
                   <div key={doc.name} style={{
@@ -508,12 +514,10 @@ export default function TenantEdit() {
                         </>
                       ) : (
                         <>
-                          {url && (
-                            <Tooltip title="Descargar">
-                              <Button size="small" icon={<DownloadOutlined />}
-                                onClick={() => window.open(url, "_blank")} />
-                            </Tooltip>
-                          )}
+                          <Tooltip title="Descargar / Ver">
+                            <Button size="small" icon={<DownloadOutlined />}
+                              onClick={() => openDocUrl(doc.name)} />
+                          </Tooltip>
                           <Tooltip title="Renombrar">
                             <Button size="small" icon={<EditOutlined />}
                               onClick={() => { setRenamingDoc(doc.name); setRenameValue(displayName); }} />
