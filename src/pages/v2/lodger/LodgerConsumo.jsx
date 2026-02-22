@@ -3,12 +3,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Alert, Button, Card, Col, Empty, Progress, Row,
+  Alert, Button, Card, Col, Descriptions, Empty, Progress, Row,
   Skeleton, Space, Statistic, Tag, Tabs, Timeline, Typography,
 } from "antd";
 import {
   ThunderboltOutlined, FireOutlined, ReloadOutlined,
-  ClockCircleOutlined, BulbOutlined,
+  ClockCircleOutlined, BulbOutlined, HomeOutlined,
 } from "@ant-design/icons";
 import {
   CartesianGrid, Legend, Line, LineChart,
@@ -23,9 +23,31 @@ const { Title, Text } = Typography;
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+// ── Mock data (igual que LodgerDetail admin) ──────────────────────────────────
+function mockConsumptionData(base, variance) {
+  const now = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const monthIdx = (now.getMonth() - 11 + i + 12) % 12;
+    const real        = +(base + (Math.random() - 0.5) * variance).toFixed(1);
+    const estimado    = +(base * 0.95 + (Math.random() - 0.3) * variance * 0.7).toFixed(1);
+    const añoAnterior = +(base * 1.1 + (Math.random() - 0.5) * variance * 1.2).toFixed(1);
+    return { mes: MONTHS[monthIdx], real, estimado, añoAnterior };
+  });
+}
+
+const MOCK_ELECTRICITY = mockConsumptionData(120, 40);
+const MOCK_WATER       = mockConsumptionData(8, 3);
+const MOCK_GAS         = mockConsumptionData(45, 20);
+
+const MOCK_HUCHA = {
+  electricity: { balance: 34.5, deposited: 180, consumed: 145.5 },
+  water:       { balance: -5.2, deposited: 60,  consumed: 65.2  },
+  gas:         { balance: 12.0, deposited: 90,  consumed: 78.0  },
+};
+
 function fDate(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 function fDateTime(iso) {
   if (!iso) return "-";
@@ -118,40 +140,16 @@ export default function LodgerConsumo() {
   const { user } = useAuth();
   const { branding: tenantBranding } = useTenant();
 
-  const [lodger, setLodger] = useState(null);
+  const [lodger, setLodger]           = useState(null);
+  const [assignment, setAssignment]   = useState(null);
   const [settlements, setSettlements] = useState([]);
-  const [auditLog, setAuditLog] = useState([]);
-  const [chartData, setChartData] = useState({ electricity: [], water: [], gas: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [auditLog, setAuditLog]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
 
   const companyBranding = tenantBranding
     ? { name: tenantBranding.name, logoUrl: tenantBranding.logo_url, primaryColor: tenantBranding.primary_color }
     : null;
-
-  // Build chart data from settlements grouped by month
-  function buildChartFromSettlements(data) {
-    const now = new Date();
-    const months = Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-      return { mes: MONTHS[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` };
-    });
-    const byMonth = {};
-    data.forEach((s) => {
-      const d = s.energy_bill?.period_start;
-      if (!d) return;
-      const key = d.slice(0, 7);
-      if (!byMonth[key]) byMonth[key] = { kwh: 0, eur: 0 };
-      byMonth[key].kwh += Number(s.kwh_assigned || 0);
-      byMonth[key].eur += Number(s.amount_total || 0);
-    });
-    return months.map(({ mes, key }) => ({
-      mes,
-      real: byMonth[key]?.kwh ?? 0,
-      estimado: byMonth[key] ? +(byMonth[key].kwh * 0.95).toFixed(1) : 0,
-      añoAnterior: byMonth[key] ? +(byMonth[key].kwh * 1.1).toFixed(1) : 0,
-    }));
-  }
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -167,10 +165,20 @@ export default function LodgerConsumo() {
       setLodger(lodgerData || null);
       if (!lodgerData) return;
 
-      const [{ data: sData, error: sErr }, { data: logData }] = await Promise.all([
+      const [{ data: assignData }, { data: sData, error: sErr }, { data: logData }] = await Promise.all([
+        supabase
+          .from("lodger_room_assignments")
+          .select(`id, move_in_date, billing_start_date, monthly_rent, status,
+            room:rooms(id, number, type, floor, capacity, area_m2),
+            accommodation:accommodations(id, name, address, city)`)
+          .eq("lodger_id", lodgerData.id)
+          .eq("status", "active")
+          .maybeSingle(),
         supabase
           .from("energy_settlements")
-          .select("*, energy_bill:energy_bills(id, supplier, period_start, period_end, total_kwh), room:rooms(id, number), accommodation:accommodations(id, name)")
+          .select(`id, days_present, kwh_assigned, amount_fixed, amount_variable, amount_total, created_at,
+            energy_bill:energy_bills(id, supplier, period_start, period_end, total_kwh),
+            room:rooms(id, number)`)
           .eq("lodger_id", lodgerData.id)
           .order("created_at", { ascending: false })
           .limit(24),
@@ -183,10 +191,9 @@ export default function LodgerConsumo() {
           .limit(20),
       ]);
       if (sErr) throw new Error(sErr.message);
-      const settlementsData = sData || [];
-      setSettlements(settlementsData);
+      setAssignment(assignData || null);
+      setSettlements(sData || []);
       setAuditLog(logData || []);
-      setChartData({ electricity: buildChartFromSettlements(settlementsData), water: [], gas: [] });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -196,14 +203,8 @@ export default function LodgerConsumo() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Hucha totals from settlements
   const totalConsumed = settlements.reduce((a, s) => a + (s.amount_total || 0), 0);
-  const totalKwh = settlements.reduce((a, s) => a + (s.kwh_assigned || 0), 0);
-  const huchaData = {
-    balance: 0,
-    deposited: totalConsumed,
-    consumed: totalConsumed,
-  };
+  const totalKwh      = settlements.reduce((a, s) => a + (s.kwh_assigned || 0), 0);
 
   const tabItems = [
     {
@@ -211,22 +212,17 @@ export default function LodgerConsumo() {
       label: <Space size={4}><ThunderboltOutlined style={{ color: "#F59E0B" }} />Electricidad</Space>,
       children: (
         <div>
-          <HuchaCard
-            icon={<ThunderboltOutlined style={{ fontSize: 16, color: "#F59E0B" }} />}
-            label="Hucha Electricidad"
-            color="#F59E0B"
-            data={huchaData}
-          />
+          <HuchaCard icon={<ThunderboltOutlined style={{ fontSize: 16, color: "#F59E0B" }} />}
+            label="Hucha Electricidad" color="#F59E0B" data={MOCK_HUCHA.electricity} />
           <div style={{ marginTop: 16 }}>
             <Text style={{ color: "#6B7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Consumo últimos 12 meses (kWh)
             </Text>
             <div style={{ marginTop: 8 }}>
-              {chartData.electricity.some((d) => d.real > 0) ? (
-                <ConsumptionChart data={chartData.electricity} unit="kWh" color="#F59E0B" />
-              ) : (
-                <Empty description="Sin datos de consumo aún" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: "20px 0" }} />
-              )}
+              <ConsumptionChart data={MOCK_ELECTRICITY} unit="kWh" color="#F59E0B" />
+            </div>
+            <div style={{ marginTop: 6, padding: "6px 10px", background: "#FFFBEB", borderRadius: 6, border: "1px solid #FEF3C7" }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>⚠️ <strong>Datos simulados</strong> — Pendiente de conectar con liquidaciones reales.</Text>
             </div>
           </div>
         </div>
@@ -237,14 +233,18 @@ export default function LodgerConsumo() {
       label: <Space size={4}><span style={{ fontSize: 13 }}>💧</span>Agua</Space>,
       children: (
         <div>
-          <HuchaCard
-            icon={<span style={{ fontSize: 16 }}>💧</span>}
-            label="Hucha Agua"
-            color="#3B82F6"
-            data={{ balance: 0, deposited: 0, consumed: 0 }}
-          />
+          <HuchaCard icon={<span style={{ fontSize: 16 }}>💧</span>}
+            label="Hucha Agua" color="#3B82F6" data={MOCK_HUCHA.water} />
           <div style={{ marginTop: 16 }}>
-            <Empty description="Sin datos de agua disponibles" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: "20px 0" }} />
+            <Text style={{ color: "#6B7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Consumo últimos 12 meses (m³)
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <ConsumptionChart data={MOCK_WATER} unit="m³" color="#3B82F6" />
+            </div>
+            <div style={{ marginTop: 6, padding: "6px 10px", background: "#EFF6FF", borderRadius: 6, border: "1px solid #DBEAFE" }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>⚠️ <strong>Datos simulados</strong> — Pendiente de conectar con datos reales de agua.</Text>
+            </div>
           </div>
         </div>
       ),
@@ -254,14 +254,18 @@ export default function LodgerConsumo() {
       label: <Space size={4}><FireOutlined style={{ color: "#EF4444" }} />Gas</Space>,
       children: (
         <div>
-          <HuchaCard
-            icon={<FireOutlined style={{ fontSize: 16, color: "#EF4444" }} />}
-            label="Hucha Gas"
-            color="#EF4444"
-            data={{ balance: 0, deposited: 0, consumed: 0 }}
-          />
+          <HuchaCard icon={<FireOutlined style={{ fontSize: 16, color: "#EF4444" }} />}
+            label="Hucha Gas" color="#EF4444" data={MOCK_HUCHA.gas} />
           <div style={{ marginTop: 16 }}>
-            <Empty description="Sin datos de gas disponibles" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: "20px 0" }} />
+            <Text style={{ color: "#6B7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Consumo últimos 12 meses (kWh)
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <ConsumptionChart data={MOCK_GAS} unit="kWh" color="#EF4444" />
+            </div>
+            <div style={{ marginTop: 6, padding: "6px 10px", background: "#FFF5F5", borderRadius: 6, border: "1px solid #FEE2E2" }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>⚠️ <strong>Datos simulados</strong> — Pendiente de conectar con datos reales de gas.</Text>
+            </div>
           </div>
         </div>
       ),
@@ -286,7 +290,7 @@ export default function LodgerConsumo() {
       )}
 
       {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Title level={3} style={{ margin: 0 }}>
             <ThunderboltOutlined style={{ marginRight: 8, color: "#F59E0B" }} />Mi Consumo
@@ -298,8 +302,50 @@ export default function LodgerConsumo() {
         </Col>
       </Row>
 
+      {/* Tarjeta habitación activa */}
+      {assignment ? (
+        <Card
+          size="small"
+          style={{ marginBottom: 16, borderRadius: 10, borderLeft: "3px solid #059669" }}
+          title={<Space><HomeOutlined style={{ color: "#059669" }} /><Text strong>Mi Habitación Actual</Text></Space>}
+        >
+          <Row gutter={[16, 8]}>
+            <Col xs={24} sm={12}>
+              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 120 }}>
+                <Descriptions.Item label="Alojamiento">
+                  <Text strong>{assignment.accommodation?.name || "-"}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Dirección">
+                  {assignment.accommodation?.address || "-"}{assignment.accommodation?.city ? `, ${assignment.accommodation.city}` : ""}
+                </Descriptions.Item>
+                <Descriptions.Item label="Habitación">
+                  <Tag color="geekblue">Hab. {assignment.room?.number}</Tag>
+                  {assignment.room?.type && <Tag style={{ marginLeft: 4 }}>{assignment.room.type}</Tag>}
+                </Descriptions.Item>
+              </Descriptions>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 120 }}>
+                {assignment.room?.floor != null && (
+                  <Descriptions.Item label="Planta">{assignment.room.floor}</Descriptions.Item>
+                )}
+                {assignment.room?.area_m2 && (
+                  <Descriptions.Item label="Superficie">{assignment.room.area_m2} m²</Descriptions.Item>
+                )}
+                <Descriptions.Item label="Entrada">{fDate(assignment.move_in_date)}</Descriptions.Item>
+                {assignment.monthly_rent != null && (
+                  <Descriptions.Item label="Renta">
+                    <Text strong style={{ color: "#059669" }}>{fEur(assignment.monthly_rent)}/mes</Text>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Col>
+          </Row>
+        </Card>
+      ) : null}
+
       {/* Resumen estadísticas */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={12} sm={8}>
           <Card size="small" style={{ textAlign: "center" }}>
             <Statistic title="Total liquidado" value={totalConsumed} precision={2} suffix="€"
@@ -326,7 +372,6 @@ export default function LodgerConsumo() {
           <Card
             size="small"
             title={<Space><BulbOutlined style={{ color: "#F59E0B" }} /><Text strong>Hucha Energética y Consumos</Text></Space>}
-            style={{ marginBottom: 16 }}
           >
             <Tabs items={tabItems} defaultActiveKey="electricity" size="small" />
           </Card>
