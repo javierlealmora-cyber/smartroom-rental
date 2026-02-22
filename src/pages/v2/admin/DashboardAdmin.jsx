@@ -303,7 +303,7 @@ export default function DashboardAdmin() {
           {kpis.map((k) => (
             <div key={k.label} className="dash-kpi-card">
               {k.isEntityImg
-                ? <img src="https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/entidad-icono-model.png" alt="Entidades" style={{ width: 42, height: 42, objectFit: "contain", display: "block", marginBottom: 4 }} />
+                ? <img src="https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/entidad-icono-model.png" alt="Entidades" style={{ width: 126, height: 126, objectFit: "contain", display: "block", marginBottom: 4 }} />
                 : <span className="dash-kpi-icon">{k.icon}</span>
               }
               <div className="dash-kpi-label">{k.label}</div>
