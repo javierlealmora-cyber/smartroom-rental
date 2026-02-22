@@ -245,7 +245,7 @@ export default function EntitiesList() {
             <Col key={entity.id} xs={24} sm={12} md={8} xl={6}>
               <Card
                 hoverable
-                onClick={() => navigate(`/v2/admin/entidades/${entity.id}/editar`)}
+                onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)}
                 style={{
                   cursor: "pointer",
                   borderRadius: 12,

@@ -2,15 +2,18 @@
 // Editar Inquilino — Ant Design + manage_lodger Edge Function
 
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Alert, Button, Card, Col, Descriptions, Form,
-  Input, Row, Select, Space, Tag, Typography,
+  Alert, Button, Card, Col, DatePicker, Descriptions, Form,
+  Input, InputNumber, Modal, Row, Select, Space, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, SaveOutlined, SwapOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { getLodger, updateLodger, setLodgerStatus } from "../../../../services/lodgers.service";
+import { getLodger, updateLodger, setLodgerStatus, reassignRoom } from "../../../../services/lodgers.service";
+import { listAccommodations } from "../../../../services/accommodations.service";
+import { supabase } from "../../../../services/supabaseClient";
 
 const { Title, Text } = Typography;
 
@@ -29,20 +32,34 @@ function fDate(iso) {
 export default function TenantEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { userName, companyBranding } = useAdminLayout();
   const [form] = Form.useForm();
+  const [reassignForm] = Form.useForm();
 
   const [lodger, setLodger] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // Reassign modal state
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassignBusy, setReassignBusy] = useState(false);
+  const [reassignError, setReassignError] = useState(null);
+  const [allAccommodations, setAllAccommodations] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getLodger(id);
+      const [data, accs] = await Promise.all([
+        getLodger(id),
+        listAccommodations({ status: "active" }),
+      ]);
       setLodger(data);
+      setAllAccommodations(accs);
       form.setFieldsValue({
         full_name: data.full_name,
         email: data.email,
@@ -50,14 +67,61 @@ export default function TenantEdit() {
         document_id: data.document_id || "",
         status: data.status,
       });
+      // Auto-open reassign modal if ?action=reassign
+      if (searchParams.get("action") === "reassign") {
+        setReassignOpen(true);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, searchParams]);
 
   useEffect(() => { load(); }, [load]);
+
+  const onAccommodationChange = async (accId) => {
+    reassignForm.setFieldValue("new_room_id", undefined);
+    setAvailableRooms([]);
+    if (!accId) return;
+    setLoadingRooms(true);
+    try {
+      const { data, error: roomsErr } = await supabase
+        .from("rooms")
+        .select("id, number, type, status")
+        .eq("accommodation_id", accId)
+        .eq("status", "free")
+        .order("number");
+      if (roomsErr) throw new Error(roomsErr.message);
+      setAvailableRooms(data || []);
+    } catch (e) {
+      setReassignError(e.message);
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+
+  const onReassignFinish = async (values) => {
+    setReassignBusy(true);
+    setReassignError(null);
+    try {
+      await reassignRoom(id, {
+        newRoomId: values.new_room_id,
+        newAccommodationId: values.new_accommodation_id,
+        moveInDate: values.move_in_date.format("YYYY-MM-DD"),
+        billingStartDate: values.billing_start_date?.format("YYYY-MM-DD") || values.move_in_date.format("YYYY-MM-DD"),
+        monthlyRent: values.monthly_rent || null,
+      });
+      setReassignOpen(false);
+      reassignForm.resetFields();
+      setAvailableRooms([]);
+      await load();
+    } catch (e) {
+      setReassignError(e.message);
+    } finally {
+      setReassignBusy(false);
+    }
+  };
 
   const onFinish = async (values) => {
     setSaving(true);
@@ -91,9 +155,19 @@ export default function TenantEdit() {
           )}
         </Col>
         <Col>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}>
-            Volver
-          </Button>
+          <Space>
+            {lodger?.status === "active" && (
+              <Button
+                icon={<SwapOutlined />}
+                onClick={() => { setReassignError(null); setReassignOpen(true); }}
+              >
+                Cambiar habitación
+              </Button>
+            )}
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}>
+              Volver
+            </Button>
+          </Space>
         </Col>
       </Row>
 
@@ -152,7 +226,22 @@ export default function TenantEdit() {
 
         {/* Info de asignación actual */}
         <Col xs={24} lg={10}>
-          <Card title="Habitación Actual" size="small" loading={loading}>
+          <Card
+            title="Habitación Actual"
+            size="small"
+            loading={loading}
+            extra={
+              activeAssignment && !loading ? (
+                <Button
+                  size="small"
+                  icon={<SwapOutlined />}
+                  onClick={() => { setReassignError(null); setReassignOpen(true); }}
+                >
+                  Cambiar
+                </Button>
+              ) : null
+            }
+          >
             {activeAssignment ? (
               <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 110 }}>
                 <Descriptions.Item label="Alojamiento">
@@ -207,6 +296,108 @@ export default function TenantEdit() {
           )}
         </Col>
       </Row>
+      {/* ── Modal cambio de habitación ── */}
+      <Modal
+        title={<><SwapOutlined style={{ marginRight: 8 }} />Cambiar habitación</>}
+        open={reassignOpen}
+        onCancel={() => { setReassignOpen(false); reassignForm.resetFields(); setAvailableRooms([]); setReassignError(null); }}
+        footer={null}
+        width={520}
+        destroyOnClose
+      >
+        {reassignError && (
+          <Alert type="error" message={reassignError} showIcon style={{ marginBottom: 16 }} />
+        )}
+
+        {/* Asignación actual */}
+        {activeAssignment && (
+          <div style={{ background: "#F9FAFB", borderRadius: 8, padding: "10px 14px", marginBottom: 20, border: "1px solid #E5E7EB" }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Habitación actual:</Text>
+            <div>
+              <Text strong>{activeAssignment.accommodation?.name}</Text>
+              <Tag color="geekblue" style={{ marginLeft: 8 }}>Hab. {activeAssignment.room?.number}</Tag>
+            </div>
+          </div>
+        )}
+
+        <Form
+          form={reassignForm}
+          layout="vertical"
+          onFinish={onReassignFinish}
+          initialValues={{ move_in_date: dayjs() }}
+        >
+          <Form.Item
+            label="Nuevo alojamiento"
+            name="new_accommodation_id"
+            rules={[{ required: true, message: "Selecciona un alojamiento" }]}
+          >
+            <Select
+              showSearch
+              placeholder="Seleccionar alojamiento..."
+              optionFilterProp="label"
+              onChange={onAccommodationChange}
+              options={allAccommodations.map((a) => ({ value: a.id, label: a.name }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Nueva habitación (solo libres)"
+            name="new_room_id"
+            rules={[{ required: true, message: "Selecciona una habitación" }]}
+          >
+            <Select
+              showSearch
+              placeholder={loadingRooms ? "Cargando..." : "Seleccionar habitación..."}
+              loading={loadingRooms}
+              disabled={availableRooms.length === 0 && !loadingRooms}
+              optionFilterProp="label"
+              options={availableRooms.map((r) => ({
+                value: r.id,
+                label: `Hab. ${r.number}${r.type ? ` · ${r.type}` : ""}`,
+              }))}
+              notFoundContent={loadingRooms ? "Cargando..." : "No hay habitaciones libres"}
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Fecha de entrada"
+                name="move_in_date"
+                rules={[{ required: true, message: "Indica la fecha de entrada" }]}
+              >
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Inicio facturación" name="billing_start_date">
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Igual que entrada" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Renta mensual (€)" name="monthly_rent">
+            <InputNumber
+              style={{ width: "100%" }}
+              min={0}
+              precision={2}
+              placeholder="Opcional"
+              addonAfter="€/mes"
+            />
+          </Form.Item>
+
+          <Row justify="end">
+            <Space>
+              <Button onClick={() => { setReassignOpen(false); reassignForm.resetFields(); setAvailableRooms([]); setReassignError(null); }}>
+                Cancelar
+              </Button>
+              <Button type="primary" htmlType="submit" icon={<SwapOutlined />} loading={reassignBusy}>
+                Confirmar cambio
+              </Button>
+            </Space>
+          </Row>
+        </Form>
+      </Modal>
     </V2Layout>
   );
 }

@@ -7,7 +7,7 @@ import {
   Alert, Avatar, Button, Input, Row, Col, Select, Space,
   Table, Tag, Typography, Tooltip,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -174,6 +174,15 @@ export default function TenantsList() {
               onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar`)}
             />
           </Tooltip>
+          {t.status === "active" && (
+            <Tooltip title="Cambiar habitación">
+              <Button
+                size="small"
+                icon={<SwapOutlined />}
+                onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`)}
+              />
+            </Tooltip>
+          )}
           {t.status === "active" && (
             <Tooltip title="Programar baja">
               <Button

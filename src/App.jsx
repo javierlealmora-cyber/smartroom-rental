@@ -82,6 +82,8 @@ import TenantEditV2 from "./pages/v2/admin/tenants/TenantEdit";
 import EntitiesListV2 from "./pages/v2/admin/entities/EntitiesList";
 import EntityCreateV2 from "./pages/v2/admin/entities/EntityCreate";
 import EntityEditV2 from "./pages/v2/admin/entities/EntityEdit";
+import EntityDetailV2 from "./pages/v2/admin/entities/EntityDetail";
+import AccommodationDetailV2 from "./pages/v2/admin/accommodations/AccommodationDetail";
 
 // v2 - Admin Servicios
 import ServicesListAdminV2 from "./pages/v2/admin/services/ServicesList";
@@ -284,7 +286,10 @@ export default function App() {
               <Route path="/v2/admin/dashboard" element={<DashboardAdminV2 />} />
               <Route path="/v2/admin/entidades" element={<EntitiesListV2 />} />
               <Route path="/v2/admin/entidades/nueva" element={<EntityCreateV2 />} />
+              <Route path="/v2/admin/entidades/:id" element={<EntityDetailV2 />} />
               <Route path="/v2/admin/entidades/:id/editar" element={<EntityEditV2 />} />
+              <Route path="/v2/admin/entidades/:entityId/alojamientos/:accId" element={<AccommodationDetailV2 />} />
+              <Route path="/v2/admin/alojamientos/:accId/habitaciones" element={<AccommodationDetailV2 />} />
               <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
               <Route path="/v2/admin/alojamientos/:id/editar" element={<AccommodationEditV2 />} />

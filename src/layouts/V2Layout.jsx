@@ -79,10 +79,26 @@ const BREADCRUMB_ROUTES = {
     { label: "Entidades", path: "/v2/admin/entidades" },
     { label: "Nueva", path: null },
   ],
+  "/v2/admin/entidades/:id": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Entidades", path: "/v2/admin/entidades" },
+    { label: "Detalle", path: null },
+  ],
   "/v2/admin/entidades/:id/editar": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Entidades", path: "/v2/admin/entidades" },
     { label: "Editar", path: null },
+  ],
+  "/v2/admin/entidades/:entityId/alojamientos/:accId": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Entidades", path: "/v2/admin/entidades" },
+    { label: "Entidad", path: null },
+    { label: "Habitaciones", path: null },
+  ],
+  "/v2/admin/alojamientos/:accId/habitaciones": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Alojamientos", path: "/v2/admin/alojamientos" },
+    { label: "Habitaciones", path: null },
   ],
   "/v2/admin/alojamientos": [
     { label: "Dashboard", path: "/v2/admin" },

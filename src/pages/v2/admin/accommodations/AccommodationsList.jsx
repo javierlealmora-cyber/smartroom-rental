@@ -267,7 +267,7 @@ export default function AccommodationsList() {
                 <Col key={acc.id} xs={24} sm={12} xl={8}>
                   <Card
                     hoverable
-                    onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/editar`)}
+                    onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)}
                     style={{
                       cursor: "pointer",
                       borderRadius: 12,
