@@ -50,8 +50,8 @@ export default function LodgerLogin() {
     if (returnUrl) { navigate(decodeURIComponent(returnUrl), { replace: true }); return; }
     // Non-lodger trying to use lodger portal
     if (!isLodgerRole(role)) { setPostLogin("wrong_portal"); return; }
-    if (hasTenant) { navigate("/v2/lodger/dashboard", { replace: true }); return; }
-    setPostLogin("no_tenant");
+    // Lodgers always go to dashboard (hasTenant logic is for admins, not lodgers)
+    navigate("/v2/lodger/dashboard", { replace: true });
   };
 
   // If already authenticated on mount, resolve immediately
