@@ -34,7 +34,7 @@ const LODGER_STATUS_LABEL = { active: "Activo", invited: "Invitado", pending_che
 const KITCHEN_LABEL = { shared: "Compartida", private: "Privada", none: "Sin cocina" };
 const BATHROOM_LABEL = { shared: "Baño compartido", private: "Baño privado", ensuite: "Baño en suite" };
 
-const ROOM_CARD_IMAGE = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/room-card-model.jpg";
+const ROOM_CARD_IMAGE = "/icons/habitacion-icono-model.png";
 
 function formatDate(iso) {
   if (!iso) return "-";

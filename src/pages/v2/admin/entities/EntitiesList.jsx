@@ -11,10 +11,9 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { listEntities, setEntityStatus } from "../../../../services/entities.service";
 import { supabase } from "../../../../services/supabaseClient";
 
-const STORAGE_BASE = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent";
-const IMG_INVERSOR   = `${STORAGE_BASE}/inversor-card-model.png`;
-const IMG_INVERSORA  = `${STORAGE_BASE}/inversora-card-model.png`;
-const IMG_EMPRESA    = `${STORAGE_BASE}/entidad-card-model.jpg`;
+const IMG_INVERSOR   = "/icons/inversor-card-model.png";
+const IMG_INVERSORA  = "/icons/inversora-card-model.png";
+const IMG_EMPRESA    = "/icons/entidad-card-model.jpg";
 
 function getEntityImage(entity) {
   if (!entity) return { src: IMG_EMPRESA, fit: "contain" };

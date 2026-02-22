@@ -20,7 +20,7 @@ const STATUS_TAG = { active: "success", inactive: "warning", archived: "default"
 const STATUS_LABEL = { active: "Activo", inactive: "Inactivo", archived: "Archivado" };
 const STATUS_COLOR = { active: "#16A34A", inactive: "#DC2626", archived: "#6B7280" };
 
-const ACC_CARD_IMAGE = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/alojamiento-card-model.jpg";
+const ACC_CARD_IMAGE = "/icons/alojamiento-card-model.jpg";
 
 const LEGAL_TYPE_LABEL = {
   autonomo: "Autónomo",
