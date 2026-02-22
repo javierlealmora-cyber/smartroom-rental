@@ -163,7 +163,7 @@ export default function EntitiesList() {
             disabled={!canWrite || limitReached}
             onClick={() => navigate("/v2/admin/entidades/nueva")}
           >
-            + Nueva propietaria
+            + Nueva entidad
           </Button>
         </Col>
       </Row>

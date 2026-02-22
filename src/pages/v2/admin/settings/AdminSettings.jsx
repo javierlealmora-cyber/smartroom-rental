@@ -326,12 +326,50 @@ export default function AdminSettings() {
                   <Col xs={24} sm={12}>
                     <Form.Item label="Color primario" name="branding_primary_color"
                       extra="Formato hexadecimal: #RRGGBB">
-                      <Input placeholder="#0071E3" maxLength={7} />
+                      <Form.Item noStyle shouldUpdate={(p, c) => p.branding_primary_color !== c.branding_primary_color}>
+                        {({ getFieldValue, setFieldValue }) => (
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <Input
+                              value={getFieldValue("branding_primary_color") || ""}
+                              onChange={(e) => setFieldValue("branding_primary_color", e.target.value)}
+                              placeholder="#0071E3"
+                              maxLength={7}
+                              style={{ flex: 1 }}
+                            />
+                            <input
+                              type="color"
+                              value={getFieldValue("branding_primary_color") || "#0071E3"}
+                              onChange={(e) => setFieldValue("branding_primary_color", e.target.value)}
+                              style={{ width: 40, height: 32, border: "1px solid #d9d9d9", borderRadius: 6, cursor: "pointer", padding: 2 }}
+                              title="Seleccionar color"
+                            />
+                          </div>
+                        )}
+                      </Form.Item>
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
                     <Form.Item label="Color secundario (opcional)" name="branding_secondary_color">
-                      <Input placeholder="#34C759" maxLength={7} />
+                      <Form.Item noStyle shouldUpdate={(p, c) => p.branding_secondary_color !== c.branding_secondary_color}>
+                        {({ getFieldValue, setFieldValue }) => (
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <Input
+                              value={getFieldValue("branding_secondary_color") || ""}
+                              onChange={(e) => setFieldValue("branding_secondary_color", e.target.value)}
+                              placeholder="#34C759"
+                              maxLength={7}
+                              style={{ flex: 1 }}
+                            />
+                            <input
+                              type="color"
+                              value={getFieldValue("branding_secondary_color") || "#34C759"}
+                              onChange={(e) => setFieldValue("branding_secondary_color", e.target.value)}
+                              style={{ width: 40, height: 32, border: "1px solid #d9d9d9", borderRadius: 6, cursor: "pointer", padding: 2 }}
+                              title="Seleccionar color"
+                            />
+                          </div>
+                        )}
+                      </Form.Item>
                     </Form.Item>
                   </Col>
                 </Row>
