@@ -126,9 +126,7 @@ export default function TenantsList() {
       key: "name",
       render: (_, t) => (
         <Space>
-          <Avatar style={{ backgroundColor: "#111827", flexShrink: 0 }}>
-            {t.full_name.charAt(0).toUpperCase()}
-          </Avatar>
+          <img src="/icons/inquilino-icono-model.png" alt="Inquilino" style={{ width: 32, height: 32, objectFit: "contain", flexShrink: 0 }} />
           <Text strong>{t.full_name}</Text>
         </Space>
       ),

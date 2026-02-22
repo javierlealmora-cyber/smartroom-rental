@@ -266,9 +266,7 @@ export default function LodgerDetail() {
           {loading ? <Skeleton active title={{ width: 200 }} paragraph={false} /> : (
             <Row align="middle" gutter={14}>
               <Col>
-                <Avatar size={52} style={{ backgroundColor: "#111827", fontSize: 20 }}>
-                  {lodger?.full_name?.charAt(0)?.toUpperCase() || "?"}
-                </Avatar>
+                <img src="/icons/inquilino-icono-model.png" alt="Inquilino" style={{ width: 52, height: 52, objectFit: "contain" }} />
               </Col>
               <Col>
                 <Title level={2} style={{ margin: 0 }}>{lodger?.full_name}</Title>

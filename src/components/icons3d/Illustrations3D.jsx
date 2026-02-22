@@ -162,59 +162,12 @@ export function IllustrationEntity({ width = 280, height = 180 }) {
 
 export function IllustrationTenant({ width = 280, height = 180 }) {
   return (
-    <svg width={width} height={height} viewBox="0 0 280 180" fill="none">
-      <defs>
-        <linearGradient id="tbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#F8FAFC"/><stop offset="100%" stopColor="#EFF6FF"/></linearGradient>
-        <linearGradient id="tsk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FDE68A"/><stop offset="100%" stopColor="#F59E0B"/></linearGradient>
-        <linearGradient id="tsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#BFDBFE"/><stop offset="100%" stopColor="#3B82F6"/></linearGradient>
-        <linearGradient id="tpt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E2E8F0"/><stop offset="100%" stopColor="#94A3B8"/></linearGradient>
-        <linearGradient id="tky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FDE68A"/><stop offset="100%" stopColor="#D97706"/></linearGradient>
-        <filter id="tfs"><feDropShadow dx="3" dy="4" stdDeviation="4" floodColor="#64748B" floodOpacity="0.18"/></filter>
-      </defs>
-      <rect x="0" y="0" width="280" height="180" fill="url(#tbg)"/>
-      <circle cx="240" cy="40" r="50" fill="#EFF6FF" opacity="0.6"/>
-      <circle cx="40" cy="150" r="40" fill="#F0FDF4" opacity="0.5"/>
-      {/* Person */}
-      <g filter="url(#tfs)" transform="translate(80,10)">
-        <ellipse cx="60" cy="165" rx="35" ry="8" fill="#94A3B8" opacity="0.2"/>
-        <rect x="44" y="130" width="14" height="35" rx="7" fill="url(#tpt)"/>
-        <rect x="62" y="130" width="14" height="35" rx="7" fill="url(#tpt)"/>
-        <ellipse cx="51" cy="165" rx="10" ry="5" fill="#475569"/>
-        <ellipse cx="69" cy="165" rx="10" ry="5" fill="#475569"/>
-        <path d="M30 95 Q30 80 60 78 Q90 80 90 95 L90 135 Q90 140 60 140 Q30 140 30 135 Z" fill="url(#tsh)"/>
-        <path d="M50 78 L60 90 L70 78" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <path d="M30 100 Q15 110 18 125" stroke="url(#tsh)" strokeWidth="14" strokeLinecap="round" fill="none"/>
-        <path d="M90 100 Q105 110 102 125" stroke="url(#tsh)" strokeWidth="14" strokeLinecap="round" fill="none"/>
-        <circle cx="20" cy="128" r="8" fill="url(#tsk)"/>
-        <circle cx="100" cy="128" r="8" fill="url(#tsk)"/>
-        {/* Key */}
-        <g transform="translate(108,118) rotate(-30)">
-          <circle cx="0" cy="0" r="7" fill="url(#tky)" stroke="#D97706" strokeWidth="1"/>
-          <circle cx="0" cy="0" r="3.5" fill="none" stroke="#D97706" strokeWidth="1.5"/>
-          <rect x="5" y="-1.5" width="14" height="3" rx="1.5" fill="url(#tky)"/>
-          <rect x="14" y="1.5" width="4" height="3" rx="1" fill="url(#tky)"/>
-          <rect x="17" y="-3" width="4" height="3" rx="1" fill="url(#tky)"/>
-        </g>
-        {/* Head */}
-        <circle cx="60" cy="60" r="22" fill="url(#tsk)"/>
-        <ellipse cx="54" cy="52" rx="7" ry="5" fill="white" opacity="0.35"/>
-        {/* Hair */}
-        <path d="M38 55 Q40 38 60 36 Q80 38 82 55 Q78 42 60 40 Q42 42 38 55 Z" fill="#92400E" opacity="0.5"/>
-        {/* Eyes */}
-        <circle cx="52" cy="60" r="3" fill="#1E293B" opacity="0.7"/>
-        <circle cx="68" cy="60" r="3" fill="#1E293B" opacity="0.7"/>
-        <circle cx="53" cy="59" r="1" fill="white" opacity="0.6"/>
-        <circle cx="69" cy="59" r="1" fill="white" opacity="0.6"/>
-        {/* Smile */}
-        <path d="M52 68 Q60 74 68 68" stroke="#92400E" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.6"/>
-      </g>
-      {/* Decorative house icon */}
-      <g transform="translate(190,30)" opacity="0.25">
-        <path d="M30 10 L55 28 L50 28 L50 55 L10 55 L10 28 L5 28 Z" fill="#3B82F6"/>
-        <rect x="20" y="38" width="20" height="17" rx="10" fill="#1D4ED8"/>
-        <rect x="12" y="30" width="12" height="10" rx="2" fill="#93C5FD"/>
-        <rect x="36" y="30" width="12" height="10" rx="2" fill="#93C5FD"/>
-      </g>
-    </svg>
+    <img
+      src="/icons/inquilino-icono-model.png"
+      alt="Inquilino"
+      width={width}
+      height={height}
+      style={{ objectFit: "contain", display: "block" }}
+    />
   );
 }
