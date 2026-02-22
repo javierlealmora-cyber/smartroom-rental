@@ -8,9 +8,10 @@ import {
   Empty, Row, Skeleton, Space, Tag, Typography,
 } from "antd";
 import {
-  HomeOutlined, ThunderboltOutlined, FileTextOutlined,
-  AppstoreOutlined, UserOutlined, CalendarOutlined,
+  HomeOutlined, FileTextOutlined,
+  UserOutlined, CalendarOutlined,
   EuroOutlined, ReloadOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAuth } from "../../../providers/AuthProvider";
