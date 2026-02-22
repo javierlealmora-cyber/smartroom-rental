@@ -184,6 +184,15 @@ const BREADCRUMB_ROUTES = {
     { label: "Boletines", path: "/v2/admin/boletines" },
     { label: "Nuevo Boletín", path: null },
   ],
+  "/v2/admin/inquilinos/:id": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Detalle", path: null },
+  ],
+  "/v2/admin/settings": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Configuración", path: null },
+  ],
   "/v2/admin/inquilinos/servicios": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },

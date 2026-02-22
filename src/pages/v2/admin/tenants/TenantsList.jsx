@@ -4,14 +4,15 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Avatar, Button, Input, Row, Col, Select, Space,
+  Alert, Avatar, Button, Input, message, Row, Col, Select, Space,
   Table, Tag, Typography, Tooltip,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers, scheduleCheckout } from "../../../../services/lodgers.service";
+import { supabase } from "../../../../services/supabaseClient";
 import { listAccommodations } from "../../../../services/accommodations.service";
 
 const { Title, Text } = Typography;
@@ -47,6 +48,7 @@ export default function TenantsList() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAccommodation, setFilterAccommodation] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +100,21 @@ export default function TenantsList() {
       );
     } catch (e) {
       setError(e.message);
+    }
+  };
+
+  const onSendInvite = async (tenant) => {
+    setSendingInvite((prev) => ({ ...prev, [tenant.id]: true }));
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(tenant.email, {
+        redirectTo: `${window.location.origin}/v2/auth/callback?type=recovery&portal=lodger`,
+      });
+      if (error) throw error;
+      message.success(`Email de acceso enviado a ${tenant.email}`);
+    } catch (e) {
+      message.error(`Error al enviar: ${e.message}`);
+    } finally {
+      setSendingInvite((prev) => ({ ...prev, [tenant.id]: false }));
     }
   };
 
@@ -192,6 +209,14 @@ export default function TenantsList() {
               />
             </Tooltip>
           )}
+          <Tooltip title="Enviar email de acceso al portal">
+            <Button
+              size="small"
+              icon={<MailOutlined />}
+              loading={!!sendingInvite[t.id]}
+              onClick={() => onSendInvite(t)}
+            />
+          </Tooltip>
         </Space>
       ),
     },

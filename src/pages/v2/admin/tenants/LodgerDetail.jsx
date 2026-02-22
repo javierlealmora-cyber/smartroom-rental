@@ -259,9 +259,9 @@ export default function LodgerDetail() {
       {/* Header */}
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col flex="auto">
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}
             style={{ marginBottom: 8, paddingLeft: 0, color: "#6B7280" }}>
-            Volver
+            Inquilinos
           </Button>
           {loading ? <Skeleton active title={{ width: 200 }} paragraph={false} /> : (
             <Row align="middle" gutter={14}>
