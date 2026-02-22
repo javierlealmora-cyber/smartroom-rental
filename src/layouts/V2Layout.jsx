@@ -332,11 +332,11 @@ export default function V2Layout({
           background: none; border: none;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           gap: 2px;
-          padding: 4px 9px; border-radius: 11px;
+          padding: 4px 18px; border-radius: 11px;
           cursor: pointer; white-space: nowrap;
           transition: background 0.18s, transform 0.15s;
           font-family: inherit;
-          min-width: 50px;
+          min-width: 80px;
         }
         .v2-nav-btn:hover { background: rgba(0,0,0,0.04); transform: translateY(-1px); }
         .v2-nav-btn.active { background: rgba(0,0,0,0.06); }
@@ -429,7 +429,7 @@ export default function V2Layout({
             {navItems.map((item, i) => {
               const active = isNavActive(item.path, location.pathname);
               const { Icon } = item;
-              const iconSize = 78;
+              const iconSize = 52;
               return (
                 <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
                   <Icon size={iconSize} />
