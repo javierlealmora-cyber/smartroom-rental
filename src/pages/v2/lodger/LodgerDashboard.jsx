@@ -139,28 +139,6 @@ export default function LodgerDashboard() {
         </Row>
       </div>
 
-      {/* ── Navegación rápida ─────────────────────────────────────────── */}
-      <Row gutter={[10, 10]} style={{ marginBottom: 18 }}>
-        {[
-          { icon: <HomeOutlined />, label: "Inicio", path: "/v2/lodger/dashboard", active: true },
-          { icon: <ThunderboltOutlined />, label: "Consumo", path: "/v2/lodger/consumo" },
-          { icon: <FileTextOutlined />, label: "Boletines", path: "/v2/lodger/boletines", badge: unreadBulletins },
-          { icon: <AppstoreOutlined />, label: "Servicios", path: "/v2/lodger/servicios" },
-        ].map((item) => (
-          <Col key={item.path} xs={12} sm={6}>
-            <Button block icon={item.icon} onClick={() => navigate(item.path)}
-              type={item.active ? "primary" : "default"} style={{ height: 42, fontWeight: 500 }}>
-              {item.label}
-              {item.badge > 0 && (
-                <span style={{ marginLeft: 6, background: "#ef4444", color: "#fff", borderRadius: 10, fontSize: 10, padding: "1px 5px", fontWeight: 700 }}>
-                  {item.badge}
-                </span>
-              )}
-            </Button>
-          </Col>
-        ))}
-      </Row>
-
       {/* ── Fila 1: Habitación + Boletines ───────────────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
 
