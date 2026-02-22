@@ -118,13 +118,15 @@ export default function DashboardAdmin() {
   const occupancyRate = stats && stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
 
+  const STORAGE = "https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent";
+
   // KPIs en orden lógico: Entidades > Alojamientos > Habitaciones > Inquilinos > Ocupación
   const kpis = stats ? [
-    { label: "Entidades", value: stats.totalEntities, icon: null, isEntityImg: true, color: "#AF52DE", sub: "propietarias" },
-    { label: "Alojamientos", value: stats.totalAccommodations, icon: "🏠", color: "#0071E3", sub: "activos" },
-    { label: "Habitaciones", value: stats.totalRooms, icon: "🚪", color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
-    { label: "Inquilinos", value: stats.activeTenants, icon: "👥", color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
-    { label: "Ocupación", value: `${occupancyRate}%`, icon: "📊", color: occupancyRate > 80 ? "#34C759" : occupancyRate > 50 ? "#FF9500" : "#FF3B30", sub: "tasa actual", isOccupancy: true, rate: occupancyRate },
+    { label: "Entidades",    value: stats.totalEntities,       imgUrl: `${STORAGE}/entidad-icono-model.png`,      color: "#AF52DE", sub: "propietarias" },
+    { label: "Alojamientos", value: stats.totalAccommodations, imgUrl: `${STORAGE}/alojamiento-card-model.jpg`,   color: "#0071E3", sub: "activos" },
+    { label: "Habitaciones", value: stats.totalRooms,          imgUrl: `${STORAGE}/room-card-model.jpg`,          color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
+    { label: "Inquilinos",   value: stats.activeTenants,       imgUrl: `${STORAGE}/inqulino-card-model.png`,      color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },
+    { label: "Ocupación",    value: `${occupancyRate}%`,       imgUrl: null, icon: "📊",                          color: occupancyRate > 80 ? "#34C759" : occupancyRate > 50 ? "#FF9500" : "#FF3B30", sub: "tasa actual", isOccupancy: true, rate: occupancyRate },
   ] : [];
 
   const quickLinks = [
@@ -177,23 +179,35 @@ export default function DashboardAdmin() {
         }
         .dash-kpi-card {
           background: #fff;
-          border-radius: 10px;
-          padding: 10px 10px 8px;
+          border-radius: 12px;
+          padding: 12px 14px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           cursor: default;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
-          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 12px;
           overflow: hidden;
         }
         .dash-kpi-card:hover {
-          transform: translateY(-3px);
+          transform: translateY(-2px);
           box-shadow: 0 8px 24px rgba(0,0,0,0.10);
         }
-        .dash-kpi-icon { font-size: 14px; margin-bottom: 4px; display: block; }
-        .dash-kpi-value { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; margin-bottom: 2px; }
-        .dash-kpi-label { font-size: 9px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+        .dash-kpi-img {
+          width: 72px; height: 72px;
+          object-fit: contain;
+          flex-shrink: 0;
+        }
+        .dash-kpi-icon-wrap {
+          width: 72px; height: 72px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 36px; flex-shrink: 0;
+        }
+        .dash-kpi-text { display: flex; flex-direction: column; min-width: 0; }
+        .dash-kpi-label { font-size: 9px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 2px; }
+        .dash-kpi-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 2px; }
         .dash-kpi-sub { font-size: 9px; color: #9CA3AF; }
-        .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 10px; overflow: hidden; }
+        .dash-kpi-bar { height: 4px; border-radius: 2px; background: #F3F4F6; margin-top: 6px; overflow: hidden; width: 100%; }
         .dash-kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
         .dash-section-title { font-size: 14px; font-weight: 700; color: #1D1D1F; letter-spacing: -0.3px; margin-bottom: 10px; }
         .dash-quick-grid {
@@ -302,18 +316,20 @@ export default function DashboardAdmin() {
         <div className="dash-kpi-grid">
           {kpis.map((k) => (
             <div key={k.label} className="dash-kpi-card">
-              {k.isEntityImg
-                ? <img src="https://lqwyyyttjamirccdtlvl.supabase.co/storage/v1/object/public/Assets-SmartRent/entidad-icono-model.png" alt="Entidades" style={{ width: 126, height: 126, objectFit: "contain", display: "block", marginBottom: 4 }} />
-                : <span className="dash-kpi-icon">{k.icon}</span>
+              {k.imgUrl
+                ? <img src={k.imgUrl} alt={k.label} className="dash-kpi-img" />
+                : <div className="dash-kpi-icon-wrap">{k.icon}</div>
               }
-              <div className="dash-kpi-label">{k.label}</div>
-              <div className="dash-kpi-value" style={{ color: k.color }}>{k.value}</div>
-              <div className="dash-kpi-sub">{k.sub}</div>
-              {k.isOccupancy && (
-                <div className="dash-kpi-bar">
-                  <div className="dash-kpi-bar-fill" style={{ width: `${k.rate}%`, background: k.color }} />
-                </div>
-              )}
+              <div className="dash-kpi-text">
+                <div className="dash-kpi-label">{k.label}</div>
+                <div className="dash-kpi-value" style={{ color: k.color }}>{k.value}</div>
+                <div className="dash-kpi-sub">{k.sub}</div>
+                {k.isOccupancy && (
+                  <div className="dash-kpi-bar">
+                    <div className="dash-kpi-bar-fill" style={{ width: `${k.rate}%`, background: k.color }} />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
