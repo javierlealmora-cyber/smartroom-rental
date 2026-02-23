@@ -4,11 +4,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert, Button, Card, Col, Input, Progress, Row, Skeleton, Tag, Tooltip, Typography,
+  Alert, Button, Card, Checkbox, Col, Input, Progress, Row, Skeleton, Tag, Tooltip, Typography,
 } from "antd";
 import {
   ArrowLeftOutlined, BankOutlined, EditOutlined, HomeOutlined,
-  PlusOutlined, ToolOutlined,
+  PlusOutlined, ReloadOutlined, ToolOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -53,6 +53,7 @@ export default function EntityDetail() {
   const [entity, setEntity] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -130,17 +131,31 @@ export default function EntityDetail() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
-      {/* Filtro de alojamientos */}
-      <div style={{ marginBottom: 20 }}>
-        <Input.Search
-          placeholder="Buscar alojamiento por nombre o dirección..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onSearch={(v) => setSearchTerm(v)}
-          allowClear
-          style={{ maxWidth: 400 }}
-        />
-      </div>
+      {/* Filtros de alojamientos */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="middle">
+        <Col xs={24} sm={12} md={8}>
+          <Input.Search
+            placeholder="Buscar por nombre, dirección o empresa..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onSearch={(v) => setSearchTerm(v)}
+            allowClear
+          />
+        </Col>
+        <Col>
+          <Checkbox checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}>
+            Mostrar desactivados
+          </Checkbox>
+        </Col>
+        <Col>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => { setSearchTerm(""); setShowInactive(false); }}
+          >
+            Limpiar
+          </Button>
+        </Col>
+      </Row>
 
       {loading ? (
         <Row gutter={[20, 20]}>
@@ -151,13 +166,15 @@ export default function EntityDetail() {
           ))}
         </Row>
       ) : (() => {
-        const filtered = searchTerm
-          ? accommodations.filter((a) =>
-              a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              a.address_line1?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              a.city?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          : accommodations;
+        let filtered = showInactive ? accommodations : accommodations.filter((a) => a.status === "active");
+        if (searchTerm) {
+          const s = searchTerm.toLowerCase();
+          filtered = filtered.filter((a) =>
+            a.name?.toLowerCase().includes(s) ||
+            a.address_line1?.toLowerCase().includes(s) ||
+            a.city?.toLowerCase().includes(s)
+          );
+        }
         if (filtered.length === 0) return (
           <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
             <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
