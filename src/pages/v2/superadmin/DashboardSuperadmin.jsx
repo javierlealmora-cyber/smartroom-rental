@@ -79,7 +79,7 @@ export default function DashboardSuperadmin() {
         supabase.from("accommodations").select("id, status"),
         supabase.from("rooms").select("id, status"),
         supabase.from("lodgers").select("id, status"),
-        supabase.from("audit_log").select("id, entity_type, action, actor_role, new_values, created_at").order("created_at", { ascending: false }).limit(8),
+        supabase.from("audit_log").select("id, entity_type, action, actor_role, new_values, created_at").order("created_at", { ascending: false }).limit(20),
       ]);
 
       const allAccounts = accounts || [];
@@ -333,7 +333,8 @@ export default function DashboardSuperadmin() {
                   Sin actividad registrada aún
                 </div>
               ) : (
-                activity.map((item) => {
+                <>
+                {activity.map((item) => {
                   const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
                   const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
                   const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
@@ -352,7 +353,8 @@ export default function DashboardSuperadmin() {
                       </div>
                     </div>
                   );
-                })
+                })}
+                </>
               )}
             </div>
           </div>
@@ -824,8 +826,12 @@ const styles = {
   activityList: {
     display: "flex",
     flexDirection: "column",
-    gap: 20,
-    flex: 1,
+    gap: 12,
+    maxHeight: 320,
+    overflowY: "auto",
+    scrollbarWidth: "thin",
+    scrollbarColor: "#E5E7EB transparent",
+    paddingRight: 4,
   },
   activityItem: {
     display: "flex",

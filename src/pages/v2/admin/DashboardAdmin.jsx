@@ -104,7 +104,7 @@ export default function DashboardAdmin() {
         .from("audit_log")
         .select("id, entity_type, action, actor_role, metadata, new_values, created_at")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
       setActivity(data || []);
     } catch {
       setActivity([]);
@@ -251,7 +251,16 @@ export default function DashboardAdmin() {
           border-radius: 12px;
           padding: 16px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          display: flex; flex-direction: column;
         }
+        .dash-activity-scroll {
+          max-height: 280px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: #E5E7EB transparent;
+        }
+        .dash-activity-scroll::-webkit-scrollbar { width: 4px; }
+        .dash-activity-scroll::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
         .dash-activity-title {
           font-size: 13px; font-weight: 700; color: #1D1D1F;
           letter-spacing: -0.2px; margin-bottom: 12px;
@@ -365,7 +374,8 @@ export default function DashboardAdmin() {
               <div>Sin actividad registrada aún</div>
             </div>
           ) : (
-            activity.map((item) => {
+            <div className="dash-activity-scroll">
+            {activity.map((item) => {
               const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
               const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
               const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
@@ -384,7 +394,8 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
               );
-            })
+            })}
+            </div>
           )}
         </div>
 
