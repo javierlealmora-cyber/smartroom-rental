@@ -103,16 +103,16 @@ export default function AccommodationDetail() {
     {
       key: "consumos", label: "Consumos",
       subTabs: [
-        { key: "registros", label: "Registros Estimado", path: `/v2/admin/alojamientos/${accId}/consumos/registros` },
-        { key: "visor",     label: "Visor de Consumos",  path: `/v2/admin/alojamientos/${accId}/consumos/visor` },
+        { key: "registros", label: "Registros Estimado" },
+        { key: "visor",     label: "Visor de Consumos" },
       ],
     },
     {
       key: "facturas", label: "Facturas",
       subTabs: [
-        { key: "carga",        label: "Carga de Facturas",        path: `/v2/admin/energia/facturas` },
-        { key: "liquidacion",  label: "Liquidación de Facturas",  path: `/v2/admin/energia/liquidaciones` },
-        { key: "boletines",    label: "Boletines de Facturas",    path: `/v2/admin/boletines` },
+        { key: "carga",       label: "Carga de Facturas" },
+        { key: "liquidacion", label: "Liquidación de Facturas" },
+        { key: "boletines",   label: "Boletines de Facturas" },
       ],
     },
     { key: "hucha", label: "Hucha Energética", subTabs: null },
@@ -130,7 +130,6 @@ export default function AccommodationDetail() {
 
   const handleSubTabClick = (subTab) => {
     setActiveSubTab(subTab.key);
-    navigate(subTab.path);
   };
 
   return (
@@ -208,21 +207,19 @@ export default function AccommodationDetail() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, marginTop: 16 }} />}
 
-      {/* Tab content */}
+      {/* Tab content — sección en construcción para tabs no-habitaciones */}
       {activeTab !== "habitaciones" && (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#9CA3AF" }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
-          <Text type="secondary" style={{ fontSize: 15 }}>Sección en construcción</Text>
+        <div style={{ marginTop: 24, padding: "48px 0", textAlign: "center", background: "#F9FAFB", borderRadius: 12, border: "1px dashed #E5E7EB" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
+          <Text strong style={{ fontSize: 16, color: "#374151", display: "block", marginBottom: 6 }}>
+            {TABS.find((t) => t.key === activeTab)?.subTabs
+              ? TABS.find((t) => t.key === activeTab).subTabs.find((s) => s.key === activeSubTab)?.label
+              : TABS.find((t) => t.key === activeTab)?.label}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 14 }}>Sección en construcción</Text>
         </div>
       )}
 
-      {activeTab === "habitaciones" && (
-      <div style={{ marginTop: 20, marginBottom: 12 }}>
-        <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>
-          Habitaciones ({loading ? "…" : rooms.length})
-        </Text>
-      </div>
-      )}
 
       {activeTab === "habitaciones" && loading ? (
         <Row gutter={[16, 16]}>
