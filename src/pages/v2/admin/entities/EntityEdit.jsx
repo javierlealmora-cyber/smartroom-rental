@@ -279,7 +279,7 @@ export default function EntityEdit() {
                 <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item label="Tipo de vía" name="street"
+                <Form.Item label="Calle / Vía" name="street"
                   extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
                   <Input placeholder="Calle, Avenida, Plaza, Paseo..." />
                 </Form.Item>
@@ -289,18 +289,14 @@ export default function EntityEdit() {
                   <Input placeholder="12" />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={4}>
-                <Form.Item label="Piso" name="floor">
-                  <Input placeholder="2" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={4}>
-                <Form.Item label="Puerta" name="door">
-                  <Input placeholder="A" />
-                </Form.Item>
-              </Col>
               <Col xs={24} md={8}>
-                <Form.Item label="Código Postal" name="zip">
+                <Form.Item label="Piso / Puerta / Escalera" name="address_extra"
+                  extra="Ej: 2º B, Escalera C, Bloque 3...">
+                  <Input placeholder="2º B" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={4}>
+                <Form.Item label="C.P." name="zip">
                   <Input placeholder="28001" maxLength={5} />
                 </Form.Item>
               </Col>
@@ -309,7 +305,7 @@ export default function EntityEdit() {
                   <Input placeholder="Madrid" />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={6}>
                 <Form.Item label="Provincia" name="province">
                   <Select
                     showSearch
@@ -319,15 +315,9 @@ export default function EntityEdit() {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} md={8}>
+              <Col xs={24} md={6}>
                 <Form.Item label="País" name="country">
                   <Input placeholder="España" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={16}>
-                <Form.Item label="Información adicional" name="address_extra"
-                  extra="Escalera, bloque, referencia catastral, etc.">
-                  <Input placeholder="Escalera B, Bloque 3..." />
                 </Form.Item>
               </Col>
             </Row>
