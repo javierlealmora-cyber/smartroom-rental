@@ -137,9 +137,7 @@ export default function EntitiesList() {
           <Typography.Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
             Entidades
           </Typography.Title>
-          <Typography.Text style={{ fontSize: 15, color: "#6B7280" }}>
-            Entidades propietarias de la cuenta
-          </Typography.Text>
+
         </div>
         <Button type="primary" icon={<PlusOutlined />} disabled={!canWrite || limitReached}
           onClick={() => navigate("/v2/admin/entidades/nueva")}
