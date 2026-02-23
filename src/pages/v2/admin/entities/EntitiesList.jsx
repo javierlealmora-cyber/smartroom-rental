@@ -138,7 +138,7 @@ export default function EntitiesList() {
             Entidades
           </Typography.Title>
           <Typography.Text style={{ fontSize: 15, color: "#6B7280" }}>
-            Pagadora y propietarias de la cuenta cliente
+            Entidades propietarias de la cuenta
           </Typography.Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} disabled={!canWrite || limitReached}
@@ -149,68 +149,6 @@ export default function EntitiesList() {
       </Row>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 20 }} />}
-
-      {/* ── Entidad Pagadora ── */}
-      <Typography.Text style={{ color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 11, display: "block", marginBottom: 14 }}>
-        Entidad Pagadora
-      </Typography.Text>
-
-      {loading ? (
-        <Row gutter={[20, 20]} style={{ marginBottom: 40 }}>
-          <Col xs={24} sm={16} md={12} lg={9}><Card style={{ borderRadius: 18 }}><Skeleton active paragraph={{ rows: 2 }} /></Card></Col>
-        </Row>
-      ) : !payer ? (
-        <Card style={{ marginBottom: 40, textAlign: "center", padding: "32px 0", borderStyle: "dashed", borderRadius: 18 }}>
-          <BankOutlined style={{ fontSize: 36, color: "#D1D5DB", marginBottom: 10 }} />
-          <div><Typography.Text type="secondary">Sin entidad pagadora configurada</Typography.Text></div>
-          {canWrite && <Button type="link" onClick={() => navigate("/v2/admin/entidades/nueva")} style={{ marginTop: 6 }}>+ Crear entidad pagadora</Button>}
-        </Card>
-      ) : (
-        <Row gutter={[20, 20]} style={{ marginBottom: 40 }}>
-          <Col xs={24} sm={16} md={12} lg={8}>
-            <Card
-              style={{ borderRadius: 16, border: "1px solid #E5E7EB", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", overflow: "hidden", background: "#fff" }}
-              styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}>
-              {/* ── 1: Nombre + Tipo + Badge ── */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 2 }}>
-                <Typography.Text strong style={{ fontSize: 20, color: "#1D1D1F", letterSpacing: "-0.3px", lineHeight: 1.3, flex: 1, paddingRight: 8 }}>
-                  {formatEntityName(payer)}
-                </Typography.Text>
-                <span style={{ color: "#16A34A", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
-                  {STATUS_LABEL[payer.status] || payer.status}
-                </span>
-              </div>
-              <Typography.Text style={{ fontSize: 13, color: "#6B7280", display: "block", marginBottom: 16 }}>
-                {LEGAL_TYPE_LABEL[payer.legal_type] || payer.legal_type}
-              </Typography.Text>
-              {/* ── 2: Divider ── */}
-              <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 16px -20px" }} />
-              {/* ── 3: Imagen ── */}
-              {(() => { const { src, fit } = getEntityImage(payer); return (
-              <div onClick={() => navigate(`/v2/admin/entidades/${payer.id}`)} style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
-                <img src={src} alt="Entidad"
-                  style={{ width: "100%", display: "block", objectFit: fit, height: 200 }} />
-              </div>
-              ); })()}
-              {/* ── 4: Contacto ── */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                {payer.billing_email && <Space size={8}><MailOutlined style={{ color: "#9CA3AF", fontSize: 13 }} /><Typography.Text style={{ fontSize: 13, color: "#374151" }}>{payer.billing_email}</Typography.Text></Space>}
-                {payer.phone && <Space size={8}><PhoneOutlined style={{ color: "#9CA3AF", fontSize: 13 }} /><Typography.Text style={{ fontSize: 13, color: "#374151" }}>{payer.phone}</Typography.Text></Space>}
-                {payer.tax_id && <Space size={8}><IdcardOutlined style={{ color: "#9CA3AF", fontSize: 13 }} /><Typography.Text style={{ fontSize: 13, color: "#374151" }}>{payer.tax_id}</Typography.Text></Space>}
-              </div>
-              {/* ── 5: Divider + Botones ── */}
-              <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
-              <div style={{ paddingBottom: 16, display: "flex", alignItems: "center" }}>
-                <Button type="primary" size="middle"
-                  style={{ borderRadius: 20, fontWeight: 600, fontSize: 13, marginRight: 16 }}
-                  onClick={() => navigate(`/v2/admin/entidades/${payer.id}/editar`)}>
-                  Editar
-                </Button>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      )}
 
       {/* ── Entidades Propietarias ── */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
