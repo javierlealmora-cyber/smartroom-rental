@@ -118,9 +118,8 @@ export default function DashboardAdmin() {
   const occupancyRate = stats && stats.totalRooms > 0
     ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
 
-  // KPIs en orden lógico: Entidades > Alojamientos > Habitaciones > Inquilinos > Ocupación
+  // KPIs en orden lógico: Alojamientos > Habitaciones > Inquilinos > Ocupación
   const kpis = stats ? [
-    { label: "Entidades",    value: stats.totalEntities,       imgUrl: "/icons/entidad-icono-model.png",      color: "#AF52DE", sub: "propietarias" },
     { label: "Alojamientos", value: stats.totalAccommodations, imgUrl: "/icons/alojamiento-icono-model.png",  color: "#0071E3", sub: "activos" },
     { label: "Habitaciones", value: stats.totalRooms,          imgUrl: "/icons/habitacion-icono-model.png",   color: "#34C759", sub: `${stats.freeRooms} libres · ${stats.occupiedRooms} ocupadas` },
     { label: "Inquilinos",   value: stats.activeTenants,       imgUrl: "/icons/inquilinos-icono-model.png",   color: "#FF9500", sub: stats.pendingTenants > 0 ? `${stats.pendingTenants} pendiente${stats.pendingTenants > 1 ? "s" : ""} de baja` : "activos" },

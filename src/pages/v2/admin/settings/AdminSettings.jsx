@@ -8,7 +8,7 @@ import {
 } from "antd";
 import {
   SaveOutlined, ReloadOutlined, UserOutlined,
-  BgColorsOutlined, CrownOutlined, InfoCircleOutlined,
+  BgColorsOutlined, CrownOutlined, InfoCircleOutlined, BankOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -63,17 +63,47 @@ export default function AdminSettings() {
 
   const [brandingForm] = Form.useForm();
   const [contactForm] = Form.useForm();
+  const [entityForm] = Form.useForm();
+
+  const [entityData, setEntityData] = useState(null);
+  const [savingEntity, setSavingEntity] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: err } = await supabase
-        .from("client_accounts")
-        .select("id, name, slug, plan_code, billing_cycle, status, start_date, end_date, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url, contact_email, contact_phone, created_at")
-        .single();
+      const [{ data, error: err }, { data: entities }] = await Promise.all([
+        supabase.from("client_accounts")
+          .select("id, name, slug, plan_code, billing_cycle, status, start_date, end_date, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url, contact_email, contact_phone, created_at")
+          .single(),
+        supabase.from("entities")
+          .select("id, legal_type, legal_name, first_name, last_name1, last_name2, tax_id, billing_email, phone, country, province, city, zip, street, street_number, address_extra, status")
+          .order("created_at", { ascending: true })
+          .limit(1),
+      ]);
       if (err) throw new Error(err.message);
       setAccountData(data);
+      const entity = entities?.[0] || null;
+      setEntityData(entity);
+      if (entity) {
+        entityForm.setFieldsValue({
+          legal_type: entity.legal_type || null,
+          legal_name: entity.legal_name || "",
+          first_name: entity.first_name || "",
+          last_name1: entity.last_name1 || "",
+          last_name2: entity.last_name2 || "",
+          tax_id: entity.tax_id || "",
+          billing_email: entity.billing_email || "",
+          phone: entity.phone || "",
+          street: entity.street || "",
+          street_number: entity.street_number || "",
+          address_extra: entity.address_extra || "",
+          city: entity.city || "",
+          zip: entity.zip || "",
+          province: entity.province || "",
+          country: entity.country || "",
+        });
+      }
 
       brandingForm.setFieldsValue({
         branding_name: data.branding_name || data.name || "",
@@ -91,7 +121,7 @@ export default function AdminSettings() {
     } finally {
       setLoading(false);
     }
-  }, [brandingForm, contactForm]);
+  }, [brandingForm, contactForm, entityForm]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -137,6 +167,46 @@ export default function AdminSettings() {
       setSavingContact(false);
     }
   };
+
+  const handleSaveEntity = async (values) => {
+    if (!entityData?.id) return;
+    setSavingEntity(true);
+    try {
+      const { error: err } = await supabase
+        .from("entities")
+        .update({
+          legal_type: values.legal_type || null,
+          legal_name: values.legal_name || null,
+          first_name: values.first_name || null,
+          last_name1: values.last_name1 || null,
+          last_name2: values.last_name2 || null,
+          tax_id: values.tax_id || null,
+          billing_email: values.billing_email || null,
+          phone: values.phone || null,
+          street: values.street || null,
+          street_number: values.street_number || null,
+          address_extra: values.address_extra || null,
+          city: values.city || null,
+          zip: values.zip || null,
+          province: values.province || null,
+          country: values.country || null,
+        })
+        .eq("id", entityData.id);
+      if (err) throw new Error(err.message);
+      message.success("Entidad pagadora actualizada");
+      load();
+    } catch (e) {
+      message.error(e.message);
+    } finally {
+      setSavingEntity(false);
+    }
+  };
+
+  const LEGAL_TYPE_OPTIONS = [
+    { value: "persona_fisica", label: "Persona física" },
+    { value: "autonomo", label: "Autónomo" },
+    { value: "persona_juridica", label: "Persona jurídica / Empresa" },
+  ];
 
   const fDate = (d) => d ? new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
@@ -410,6 +480,111 @@ export default function AdminSettings() {
 
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingBranding}>
                   Guardar branding
+                </Button>
+              </Form>
+            </Card>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "entidad",
+      label: <span><BankOutlined /> Entidad Pagadora</span>,
+      children: (
+        <div>
+          {loading ? <Skeleton active paragraph={{ rows: 8 }} /> : !entityData ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="No hay entidad pagadora registrada"
+              description="Crea una entidad desde la sección Entidades para poder gestionarla aquí."
+            />
+          ) : (
+            <Card size="small" title="Datos de la entidad pagadora" extra={<Button size="small" icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>}>
+              <Form form={entityForm} layout="vertical" onFinish={handleSaveEntity}>
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Tipo de entidad" name="legal_type">
+                      <Select options={LEGAL_TYPE_OPTIONS} placeholder="Seleccionar" allowClear />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={16}>
+                    <Form.Item label="Razón social / Nombre legal" name="legal_name">
+                      <Input placeholder="Mi Empresa SL" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Nombre" name="first_name">
+                      <Input placeholder="Juan" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Primer apellido" name="last_name1">
+                      <Input placeholder="García" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Segundo apellido" name="last_name2">
+                      <Input placeholder="López" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="NIF / CIF" name="tax_id">
+                      <Input placeholder="B12345678" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Email de facturación" name="billing_email"
+                      rules={[{ type: "email", message: "Email no válido" }]}>
+                      <Input placeholder="facturacion@empresa.com" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Teléfono" name="phone">
+                      <Input placeholder="+34 600 000 000" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>Dirección</Divider>
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label="Calle" name="street">
+                      <Input placeholder="Calle Mayor" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={4}>
+                    <Form.Item label="Número" name="street_number">
+                      <Input placeholder="12" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Piso / Puerta" name="address_extra">
+                      <Input placeholder="3º B" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Ciudad" name="city">
+                      <Input placeholder="Madrid" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={4}>
+                    <Form.Item label="C.P." name="zip">
+                      <Input placeholder="28001" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Form.Item label="Provincia" name="province">
+                      <Input placeholder="Madrid" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Form.Item label="País" name="country">
+                      <Input placeholder="España" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingEntity}>
+                  Guardar entidad
                 </Button>
               </Form>
             </Card>
