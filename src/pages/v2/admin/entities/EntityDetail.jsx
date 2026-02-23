@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert, Button, Card, Col, Progress, Row, Skeleton, Statistic, Tag, Tooltip, Typography,
+  Alert, Button, Card, Col, Input, Progress, Row, Skeleton, Tag, Tooltip, Typography,
 } from "antd";
 import {
   ArrowLeftOutlined, BankOutlined, EditOutlined, HomeOutlined,
@@ -52,6 +52,7 @@ export default function EntityDetail() {
 
   const [entity, setEntity] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -129,11 +130,16 @@ export default function EntityDetail() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
-      {/* Sección alojamientos */}
-      <div style={{ marginBottom: 12 }}>
-        <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>
-          Alojamientos ({loading ? "…" : accommodations.length})
-        </Text>
+      {/* Filtro de alojamientos */}
+      <div style={{ marginBottom: 20 }}>
+        <Input.Search
+          placeholder="Buscar alojamiento por nombre o dirección..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onSearch={(v) => setSearchTerm(v)}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
       </div>
 
       {loading ? (
@@ -144,24 +150,33 @@ export default function EntityDetail() {
             </Col>
           ))}
         </Row>
-      ) : accommodations.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
-          <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
-          <div>
-            <Text type="secondary">Esta entidad no tiene alojamientos asignados</Text>
-          </div>
-          <Button
-            type="link"
-            icon={<PlusOutlined />}
-            onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
-            style={{ marginTop: 8 }}
-          >
-            Crear alojamiento
-          </Button>
-        </Card>
-      ) : (
+      ) : (() => {
+        const filtered = searchTerm
+          ? accommodations.filter((a) =>
+              a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              a.address_line1?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              a.city?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+          : accommodations;
+        if (filtered.length === 0) return (
+          <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
+            <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
+            <div>
+              <Text type="secondary">
+                {searchTerm ? "No se encontraron alojamientos con ese criterio" : "Esta entidad no tiene alojamientos asignados"}
+              </Text>
+            </div>
+            {!searchTerm && (
+              <Button type="link" icon={<PlusOutlined />}
+                onClick={() => navigate("/v2/admin/alojamientos/nuevo")} style={{ marginTop: 8 }}>
+                Crear alojamiento
+              </Button>
+            )}
+          </Card>
+        );
+        return (
         <Row gutter={[20, 20]}>
-          {accommodations.map((acc) => {
+          {filtered.map((acc) => {
             const { total, occupied, free, pending, rate } = getStats(acc);
             const progressColor = rate > 80 ? "#059669" : rate > 50 ? "#F59E0B" : "#DC2626";
             const isActive = acc.status === "active";
@@ -251,7 +266,8 @@ export default function EntityDetail() {
             );
           })}
         </Row>
-      )}
+        );
+      })()}
     </V2Layout>
   );
 }

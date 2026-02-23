@@ -127,13 +127,20 @@ export default function AccommodationsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      {/* Breadcrumb */}
+      <Button
+        type="text"
+        icon={<BankOutlined />}
+        onClick={() => navigate("/v2/admin/entidades")}
+        style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 8, fontSize: 14 }}
+      >
+        Entidades
+      </Button>
+
       {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 32 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <div>
           <Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>Alojamientos</Title>
-          <Text style={{ fontSize: 15, color: "#6B7280" }}>
-            {loading ? "Cargando..." : `${filtered.length} alojamiento${filtered.length !== 1 ? "s" : ""}`}
-          </Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />}
           onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
@@ -141,6 +148,17 @@ export default function AccommodationsList() {
           Nuevo Alojamiento
         </Button>
       </Row>
+
+      {/* Error */}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+          showIcon
+          action={<Button size="small" onClick={load}>Reintentar</Button>}
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {/* Filtros */}
       <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="middle">
@@ -177,17 +195,6 @@ export default function AccommodationsList() {
           </Button>
         </Col>
       </Row>
-
-      {/* Error */}
-      {error && (
-        <Alert
-          type="error"
-          message={error}
-          showIcon
-          action={<Button size="small" onClick={load}>Reintentar</Button>}
-          style={{ marginBottom: 16 }}
-        />
-      )}
 
       {/* Loading skeleton */}
       {loading && (
@@ -241,7 +248,7 @@ export default function AccommodationsList() {
                 {group.entity ? formatEntityName(group.entity) : "Sin empresa asignada"}
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {group.items.length} alojamiento{group.items.length !== 1 ? "s" : ""}
+                {formatEntityName(group.entity) ? (group.entity?.tax_id || "") : ""}
               </Text>
             </div>
             {group.entity && (
