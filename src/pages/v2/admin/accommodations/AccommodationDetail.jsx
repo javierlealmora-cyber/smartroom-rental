@@ -283,14 +283,14 @@ export default function AccommodationDetail() {
 
                   {/* ── 5: Imagen con margen lateral (siempre fija) ── */}
                   <div
-                    style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#F8FAFC", cursor: isOccupied && lodger ? "pointer" : "default", padding: "8px 16px" }}
+                    style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#F8FAFC", cursor: isOccupied && lodger ? "pointer" : "default" }}
                     onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
                     title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
                   >
                     <img
                       src={ROOM_CARD_IMAGE}
                       alt="Habitación"
-                      style={{ width: "100%", display: "block", objectFit: "contain", height: 220 }}
+                      style={{ width: "100%", display: "block" }}
                     />
                   </div>
 
