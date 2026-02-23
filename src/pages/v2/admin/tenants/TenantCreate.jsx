@@ -92,8 +92,14 @@ export default function TenantCreate() {
     setSaving(true);
     setSaveError(null);
     try {
+      const fullName = [values.first_name, values.last_name1, values.last_name2]
+        .filter(Boolean).join(" ").trim();
       await createLodger({
-        full_name: values.full_name,
+        full_name: fullName,
+        first_name: values.first_name || null,
+        last_name1: values.last_name1 || null,
+        last_name2: values.last_name2 || null,
+        gender: values.gender || null,
         email: values.email,
         phone: values.phone || null,
         document_id: values.document_id || null,
@@ -144,13 +150,47 @@ export default function TenantCreate() {
           {/* Datos personales */}
           <Col xs={24} lg={12}>
             <Card title="Datos Personales" style={{ marginBottom: 24 }}>
-              <Form.Item
-                label="Nombre completo"
-                name="full_name"
-                rules={[{ required: true, message: "El nombre es obligatorio" }]}
-              >
-                <Input placeholder="Nombre y apellidos" />
-              </Form.Item>
+              <Row gutter={16}>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Nombre"
+                    name="first_name"
+                    rules={[{ required: true, message: "El nombre es obligatorio" }]}
+                  >
+                    <Input placeholder="Juan" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Primer apellido"
+                    name="last_name1"
+                    rules={[{ required: true, message: "El primer apellido es obligatorio" }]}
+                  >
+                    <Input placeholder="García" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Segundo apellido" name="last_name2">
+                    <Input placeholder="López" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Género" name="gender">
+                    <Select
+                      placeholder="Seleccionar..."
+                      allowClear
+                      options={[
+                        { value: "male", label: "Masculino" },
+                        { value: "female", label: "Femenino" },
+                        { value: "other", label: "Otro" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
               <Form.Item
                 label="Email"
