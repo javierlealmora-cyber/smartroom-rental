@@ -4,10 +4,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Avatar, Button, Input, message, Row, Col, Select, Space,
-  Table, Tag, Typography, Tooltip,
+  Alert, Button, Input, message, Row, Col, Select, Space,
+  Tag, Typography, Tooltip, Skeleton,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -120,106 +120,6 @@ export default function TenantsList() {
 
   const hasFilters = searchTerm || filterStatus || filterAccommodation;
 
-  const columns = [
-    {
-      title: "Inquilino",
-      key: "name",
-      render: (_, t) => (
-        <Space>
-          <img
-            src={t.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
-            alt="Inquilino"
-            style={{ width: 36, height: 36, objectFit: "contain", flexShrink: 0 }}
-          />
-          <Text strong>{t.full_name}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Contacto",
-      key: "contact",
-      responsive: ["md"],
-      render: (_, t) => (
-        <Space direction="vertical" size={0}>
-          <Text>{t.email}</Text>
-          {t.phone && <Text type="secondary" style={{ fontSize: 12 }}>{t.phone}</Text>}
-        </Space>
-      ),
-    },
-    {
-      title: "Alojamiento / Hab.",
-      key: "assignment",
-      responsive: ["sm"],
-      render: (_, t) => {
-        const asgn = t.active_assignment?.[0];
-        if (!asgn) return <Text type="secondary" italic>Sin asignar</Text>;
-        return (
-          <Space direction="vertical" size={0}>
-            <Text>{asgn.accommodation?.name}</Text>
-            <Tag>Hab. {asgn.room?.number}</Tag>
-          </Space>
-        );
-      },
-    },
-    {
-      title: "Estado",
-      key: "status",
-      render: (_, t) => (
-        <Tag color={STATUS_ANT_COLOR[t.status] || "default"}>
-          {STATUS_LABEL[t.status] || t.status}
-        </Tag>
-      ),
-    },
-    {
-      title: "Alta",
-      dataIndex: "created_at",
-      key: "created_at",
-      responsive: ["lg"],
-      render: (v) => formatDate(v),
-    },
-    {
-      title: "Acciones",
-      key: "actions",
-      render: (_, t) => (
-        <Space>
-          <Tooltip title="Editar">
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar`)}
-            />
-          </Tooltip>
-          {t.status === "active" && (
-            <Tooltip title="Cambiar habitación">
-              <Button
-                size="small"
-                icon={<SwapOutlined />}
-                onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`)}
-              />
-            </Tooltip>
-          )}
-          {t.status === "active" && (
-            <Tooltip title="Programar baja">
-              <Button
-                size="small"
-                icon={<LogoutOutlined />}
-                onClick={() => onScheduleCheckout(t)}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title="Enviar email de acceso al portal">
-            <Button
-              size="small"
-              icon={<MailOutlined />}
-              loading={!!sendingInvite[t.id]}
-              onClick={() => onSendInvite(t)}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
@@ -269,7 +169,7 @@ export default function TenantsList() {
         <Col xs={12} sm={8} md={6} lg={5}>
           <Select
             style={{ width: "100%" }}
-            placeholder="Alojamiento"
+            placeholder="Filtrar por alojamiento"
             value={filterAccommodation || undefined}
             onChange={(v) => setFilterAccommodation(v || "")}
             allowClear
@@ -298,20 +198,115 @@ export default function TenantsList() {
         />
       )}
 
-      {/* Tabla */}
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={tenants}
-        loading={loading}
-        scroll={{ x: true }}
-        pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{
-          emptyText: hasFilters
-            ? <EmptyState icon="🔍" title="Sin resultados" description="No se encontraron inquilinos con los filtros aplicados" />
-            : <EmptyState icon="👥" title="No hay inquilinos" description="Registra tu primer inquilino para empezar" actionLabel="Nuevo Inquilino" onAction={() => navigate("/v2/admin/inquilinos/nuevo")} />,
-        }}
-      />
+      {/* Cards grid */}
+      {loading ? (
+        <Row gutter={[16, 16]}>
+          {[1,2,3,4,5,6].map((i) => (
+            <Col key={i} xs={24} sm={12} md={8} lg={6}>
+              <div style={{ background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                <Skeleton active avatar paragraph={{ rows: 3 }} />
+              </div>
+            </Col>
+          ))}
+        </Row>
+      ) : tenants.length === 0 ? (
+        hasFilters
+          ? <EmptyState icon="🔍" title="Sin resultados" description="No se encontraron inquilinos con los filtros aplicados" />
+          : <EmptyState icon="👥" title="No hay inquilinos" description="Registra tu primer inquilino para empezar" actionLabel="Nuevo Inquilino" onAction={() => navigate("/v2/admin/inquilinos/nuevo")} />
+      ) : (
+        <Row gutter={[16, 16]}>
+          {tenants.map((t) => {
+            const asgn = t.active_assignment?.[0];
+            const accName = asgn?.accommodation?.name;
+            const roomNum = asgn?.room?.number;
+            return (
+              <Col key={t.id} xs={24} sm={12} md={8} lg={6}>
+                <div style={{
+                  background: "#fff", borderRadius: 12, padding: 16,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  border: "1px solid #F3F4F6",
+                  display: "flex", flexDirection: "column", gap: 12,
+                  height: "100%",
+                }}>
+                  {/* Avatar + nombre + estado */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <img
+                      src={t.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+                      alt="Inquilino"
+                      style={{ width: 48, height: 48, objectFit: "contain", flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {t.full_name}
+                      </div>
+                      <Tag
+                        style={{ marginTop: 2, fontSize: 11 }}
+                        color={STATUS_ANT_COLOR[t.status] || "default"}
+                      >
+                        {STATUS_LABEL[t.status] || t.status}
+                      </Tag>
+                    </div>
+                  </div>
+
+                  {/* Alojamiento y habitación */}
+                  <div style={{
+                    background: asgn ? "#F0F9FF" : "#F9FAFB",
+                    borderRadius: 8, padding: "8px 10px",
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    <HomeOutlined style={{ color: asgn ? "#0071E3" : "#9CA3AF", fontSize: 14, flexShrink: 0 }} />
+                    {asgn ? (
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#0071E3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {accName || "—"}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#374151" }}>Habitación {roomNum || "—"}</div>
+                      </div>
+                    ) : (
+                      <Text style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>Sin habitación asignada</Text>
+                    )}
+                  </div>
+
+                  {/* Contacto */}
+                  <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
+                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>
+                    {t.phone && <div>{t.phone}</div>}
+                  </div>
+
+                  {/* Acciones */}
+                  <div style={{ display: "flex", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
+                    <Tooltip title="Editar">
+                      <Button size="small" icon={<EditOutlined />}
+                        onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar`)} />
+                    </Tooltip>
+                    <Tooltip title="Ver detalle">
+                      <Button size="small" icon={<UserOutlined />}
+                        onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)} />
+                    </Tooltip>
+                    {t.status === "active" && (
+                      <Tooltip title="Cambiar habitación">
+                        <Button size="small" icon={<SwapOutlined />}
+                          onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`)} />
+                      </Tooltip>
+                    )}
+                    {t.status === "active" && (
+                      <Tooltip title="Programar baja">
+                        <Button size="small" icon={<LogoutOutlined />}
+                          onClick={() => onScheduleCheckout(t)} />
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Enviar email de acceso">
+                      <Button size="small" icon={<MailOutlined />}
+                        loading={!!sendingInvite[t.id]}
+                        onClick={() => onSendInvite(t)} />
+                    </Tooltip>
+                  </div>
+                </div>
+              </Col>
+            );
+          })}
+        </Row>
+      )}
     </V2Layout>
   );
 }
