@@ -8,7 +8,7 @@ import {
   Select, Skeleton, Space, Tag, Tooltip, Typography,
 } from "antd";
 import {
-  ArrowLeftOutlined, BankOutlined, EditOutlined, HomeOutlined,
+  ArrowLeftOutlined, EditOutlined, HomeOutlined,
   PlusOutlined, SearchOutlined, SwapOutlined, UserAddOutlined, UserOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
@@ -43,20 +43,6 @@ function formatDate(iso) {
 function formatCurrency(v) {
   if (v == null || v === "") return null;
   return Number(v).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
-}
-function BuildingIcon({ size = 20, color = "#3B82F6" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M9 22V12h6v10" />
-      <path d="M3 9h18" />
-      <rect x="7" y="5" width="2" height="2" fill={color} stroke="none" />
-      <rect x="11" y="5" width="2" height="2" fill={color} stroke="none" />
-      <rect x="15" y="5" width="2" height="2" fill={color} stroke="none" />
-      <rect x="7" y="13" width="2" height="2" fill={color} stroke="none" />
-      <rect x="15" y="13" width="2" height="2" fill={color} stroke="none" />
-    </svg>
-  );
 }
 
 export default function AccommodationDetail() {
@@ -108,14 +94,49 @@ export default function AccommodationDetail() {
 
   const backPath = entityId ? `/v2/admin/entidades/${entityId}` : "/v2/admin/alojamientos";
   const backLabel = entityId ? "Entidad" : "Alojamientos";
-  const freeCount = rooms.filter((r) => r.status === "free").length;
-  const occupiedCount = rooms.filter((r) => r.status === "occupied").length;
-  const pendingCount = rooms.filter((r) => r.status === "pending_checkout").length;
+
+  const [activeTab, setActiveTab] = useState("habitaciones");
+  const [activeSubTab, setActiveSubTab] = useState(null);
+
+  const TABS = [
+    { key: "habitaciones", label: "Habitaciones", subTabs: null },
+    {
+      key: "consumos", label: "Consumos",
+      subTabs: [
+        { key: "registros", label: "Registros Estimado", path: `/v2/admin/alojamientos/${accId}/consumos/registros` },
+        { key: "visor",     label: "Visor de Consumos",  path: `/v2/admin/alojamientos/${accId}/consumos/visor` },
+      ],
+    },
+    {
+      key: "facturas", label: "Facturas",
+      subTabs: [
+        { key: "carga",        label: "Carga de Facturas",        path: `/v2/admin/energia/facturas` },
+        { key: "liquidacion",  label: "Liquidación de Facturas",  path: `/v2/admin/energia/liquidaciones` },
+        { key: "boletines",    label: "Boletines de Facturas",    path: `/v2/admin/boletines` },
+      ],
+    },
+    { key: "hucha", label: "Hucha Energética", subTabs: null },
+  ];
+
+  const handleTabClick = (tab) => {
+    if (tab.subTabs) {
+      setActiveTab(tab.key);
+      setActiveSubTab(activeTab === tab.key ? activeSubTab : tab.subTabs[0].key);
+    } else {
+      setActiveTab(tab.key);
+      setActiveSubTab(null);
+    }
+  };
+
+  const handleSubTabClick = (subTab) => {
+    setActiveSubTab(subTab.key);
+    navigate(subTab.path);
+  };
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header — back top-left, title below */}
-      <div style={{ marginBottom: 28 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
           style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
           {backLabel}
@@ -123,30 +144,11 @@ export default function AccommodationDetail() {
         {loading ? <Skeleton active title={{ width: 260 }} paragraph={{ rows: 1 }} /> : (
           <Row justify="space-between" align="top">
             <Col flex="auto">
-              <Row align="middle" gutter={14} style={{ marginBottom: 4 }}>
-                <Col>
-                  <div style={{ width: 52, height: 52, borderRadius: 16, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <BuildingIcon size={26} color="#3B82F6" />
-                  </div>
-                </Col>
-                <Col>
-                  <Title level={2} style={{ margin: 0, fontWeight: 700, fontSize: 28, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
-                    {accommodation?.name}
-                  </Title>
-                </Col>
-              </Row>
+              <Title level={2} style={{ margin: 0, fontWeight: 700, fontSize: 28, letterSpacing: "-0.5px", color: "#1D1D1F", marginBottom: 4 }}>
+                {accommodation?.name}
+              </Title>
               <Text style={{ fontSize: 14, color: "#6B7280" }}>
                 {[accommodation?.address_line1 || accommodation?.street, accommodation?.postal_code, accommodation?.city].filter(Boolean).join(", ") || "Sin dirección"}
-                {accommodation?.owner_entity && (
-                  <span style={{ marginLeft: 10 }}>· <BankOutlined style={{ marginRight: 4, color: "#3B82F6" }} />
-                    <span
-                      style={{ color: "#3B82F6", fontWeight: 500, cursor: "pointer", textDecoration: "underline" }}
-                      onClick={() => navigate(`/v2/admin/entidades/${accommodation.owner_entity.id}`)}
-                    >
-                      {accommodation.owner_entity.legal_name || [accommodation.owner_entity.first_name, accommodation.owner_entity.last_name1].filter(Boolean).join(" ")}
-                    </span>
-                  </span>
-                )}
               </Text>
             </Col>
             <Col style={{ paddingTop: 4 }}>
@@ -161,43 +163,74 @@ export default function AccommodationDetail() {
         )}
       </div>
 
-      {/* Resumen rápido — Apple-style KPI row */}
-      {!loading && rooms.length > 0 && (
-        <Row gutter={[12, 12]} style={{ marginBottom: 28 }}>
-          {[
-            { label: "Total", value: rooms.length, bg: "#F3F4F6", color: "#1D1D1F" },
-            { label: "Ocupadas", value: occupiedCount, bg: "#FFF5F5", color: "#DC2626" },
-            { label: "Libres", value: freeCount, bg: "#F0FDF4", color: "#16A34A" },
-            { label: "Pte. baja", value: pendingCount, bg: "#FFFBEB", color: "#D97706" },
-          ].map((s) => (
-            <Col key={s.label} xs={6}>
-              <div style={{
-                background: s.bg, borderRadius: 10, padding: "6px 4px",
-                textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-              }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: s.color, opacity: 0.7, marginTop: 2, fontWeight: 500 }}>{s.label}</div>
-              </div>
-            </Col>
+      {/* Tab menu */}
+      <div style={{ marginBottom: 0 }}>
+        {/* Main tabs */}
+        <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB", marginBottom: 0 }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabClick(tab)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "10px 20px", fontSize: 14, fontWeight: activeTab === tab.key ? 700 : 500,
+                color: activeTab === tab.key ? "#0071E3" : "#374151",
+                borderBottom: activeTab === tab.key ? "2px solid #0071E3" : "2px solid transparent",
+                marginBottom: "-2px", transition: "all 0.15s", fontFamily: "inherit",
+              }}
+            >
+              {tab.label}
+            </button>
           ))}
-        </Row>
+        </div>
+
+        {/* Sub-tabs */}
+        {TABS.find((t) => t.key === activeTab)?.subTabs && (
+          <div style={{ display: "flex", gap: 0, background: "#F9FAFB", borderBottom: "1px solid #E5E7EB", paddingLeft: 8 }}>
+            {TABS.find((t) => t.key === activeTab).subTabs.map((sub) => (
+              <button
+                key={sub.key}
+                onClick={() => handleSubTabClick(sub)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "7px 16px", fontSize: 13, fontWeight: activeSubTab === sub.key ? 600 : 400,
+                  color: activeSubTab === sub.key ? "#0071E3" : "#6B7280",
+                  borderBottom: activeSubTab === sub.key ? "2px solid #0071E3" : "2px solid transparent",
+                  marginBottom: "-1px", transition: "all 0.15s", fontFamily: "inherit",
+                }}
+              >
+                {sub.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, marginTop: 16 }} />}
+
+      {/* Tab content */}
+      {activeTab !== "habitaciones" && (
+        <div style={{ padding: "40px 0", textAlign: "center", color: "#9CA3AF" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
+          <Text type="secondary" style={{ fontSize: 15 }}>Sección en construcción</Text>
+        </div>
       )}
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
-
-      <div style={{ marginBottom: 12 }}>
+      {activeTab === "habitaciones" && (
+      <div style={{ marginTop: 20, marginBottom: 12 }}>
         <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>
           Habitaciones ({loading ? "…" : rooms.length})
         </Text>
       </div>
+      )}
 
-      {loading ? (
+      {activeTab === "habitaciones" && loading ? (
         <Row gutter={[16, 16]}>
           {[1, 2, 3, 4].map((i) => (
             <Col key={i} xs={24} sm={12} md={8} xl={6}><Card><Skeleton active paragraph={{ rows: 4 }} /></Card></Col>
           ))}
         </Row>
-      ) : rooms.length === 0 ? (
+      ) : activeTab === "habitaciones" && rooms.length === 0 ? (
         <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
           <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
           <div><Text type="secondary">Este alojamiento no tiene habitaciones configuradas</Text></div>
@@ -205,7 +238,7 @@ export default function AccommodationDetail() {
             Ir a editar alojamiento para añadir habitaciones
           </Button>
         </Card>
-      ) : (
+      ) : activeTab === "habitaciones" ? (
         <Row gutter={[20, 20]}>
           {rooms.map((room) => {
             const assignment = room.active_assignment?.[0];
@@ -355,7 +388,7 @@ export default function AccommodationDetail() {
             );
           })}
         </Row>
-      )}
+      ) : null}
 
       {/* Modal: buscar inquilino existente */}
       <Modal

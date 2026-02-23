@@ -22,9 +22,6 @@ const ADMIN_NAV = [
   { label: "Inquilinos",    path: "/v2/admin/inquilinos",            Icon: Icon3DInquilinos },
   { label: "Servicios",     path: "/v2/admin/inquilinos/servicios",  Icon: Icon3DServicios },
   { label: "Catálogo",      path: "/v2/admin/servicios",             Icon: Icon3DCatalogo },
-  { label: "Facturas",      path: "/v2/admin/energia/facturas",      Icon: Icon3DFacturas },
-  { label: "Liquidaciones", path: "/v2/admin/energia/liquidaciones", Icon: Icon3DLiquidaciones },
-  { label: "Boletines",     path: "/v2/admin/boletines",             Icon: Icon3DBoletines },
 ];
 
 const SUPERADMIN_NAV = [
