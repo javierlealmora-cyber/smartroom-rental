@@ -1,6 +1,5 @@
 // src/pages/v2/admin/tenants/LodgerDetail.jsx
-// Detalle de inquilino: hucha energética + gráficas consumo 12 meses (MOCK)
-// TODO: conectar con datos reales de energy_settlements y energy_bills
+// Detalle de inquilino: hucha energética + gráficas consumo 12 meses (datos reales)
 
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -16,35 +15,21 @@ import {
   CartesianGrid, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis,
 } from "recharts";
+import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getLodger } from "../../../../services/lodgers.service";
+import { supabase } from "../../../../services/supabaseClient";
 
 const { Title, Text } = Typography;
 
-// ── Mock data generators ──────────────────────────────────────────────────────
-const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-function mockConsumptionData(base, variance, unit) {
-  const now = new Date();
-  return Array.from({ length: 12 }, (_, i) => {
-    const monthIdx = (now.getMonth() - 11 + i + 12) % 12;
-    const real = +(base + (Math.random() - 0.5) * variance).toFixed(2);
-    const estimated = +(base * 0.95 + (Math.random() - 0.3) * variance * 0.7).toFixed(2);
-    const prevYear = +(base * 1.1 + (Math.random() - 0.5) * variance * 1.2).toFixed(2);
-    return { mes: MONTHS[monthIdx], real, estimado: estimated, añoAnterior: prevYear, unit };
-  });
-}
-
-const MOCK_ELECTRICITY = mockConsumptionData(120, 40, "kWh");
-const MOCK_WATER = mockConsumptionData(8, 3, "m³");
-const MOCK_GAS = mockConsumptionData(45, 20, "kWh");
-
-const MOCK_HUCHA = {
-  electricity: { balance: 34.5, deposited: 180, consumed: 145.5, currency: "€" },
-  water: { balance: -5.2, deposited: 60, consumed: 65.2, currency: "€" },
-  gas: { balance: 12.0, deposited: 90, consumed: 78.0, currency: "€" },
-};
+const EMPTY_HUCHA = { balance: 0, deposited: 0, consumed: 0 };
+const EMPTY_CHART = Array.from({ length: 12 }, (_, i) => ({
+  mes: MONTHS_SHORT[(dayjs().month() - 11 + i + 12) % 12],
+  real: 0, estimado: 0, añoAnterior: 0,
+}));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_COLOR = { active: "#059669", invited: "#3B82F6", pending_checkout: "#F59E0B", inactive: "#9CA3AF" };
@@ -133,6 +118,45 @@ function ConsumptionChart({ data, unit, color }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+function buildChartData(bulletins, utilityType) {
+  const now = dayjs();
+  const byMonth = {};
+  const byMonthPrev = {};
+
+  for (const b of bulletins) {
+    if (b.energy_bill?.utility_type !== utilityType) continue;
+    const d = dayjs(b.period_start);
+    const key = d.format("YYYY-MM");
+    const isCurrentYear = d.year() === now.year();
+    const isPrevYear = d.year() === now.year() - 1;
+    const monthLabel = MONTHS_SHORT[d.month()];
+    if (isCurrentYear) {
+      byMonth[key] = (byMonth[key] || 0) + Number(b.amount_total ?? 0);
+    }
+    if (isPrevYear) {
+      byMonthPrev[monthLabel] = (byMonthPrev[monthLabel] || 0) + Number(b.amount_total ?? 0);
+    }
+  }
+
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = now.subtract(11 - i, "month");
+    const key = d.format("YYYY-MM");
+    const label = MONTHS_SHORT[d.month()];
+    return {
+      mes: label,
+      real: +(byMonth[key] ?? 0).toFixed(2),
+      estimado: 0,
+      añoAnterior: +(byMonthPrev[label] ?? 0).toFixed(2),
+    };
+  });
+}
+
+function buildHuchaData(bulletins, utilityType) {
+  const relevant = bulletins.filter((b) => b.energy_bill?.utility_type === utilityType);
+  const consumed = relevant.reduce((s, b) => s + Number(b.amount_total ?? 0), 0);
+  return { balance: 0, deposited: 0, consumed: +consumed.toFixed(2) };
+}
+
 export default function LodgerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -141,12 +165,20 @@ export default function LodgerDetail() {
   const [lodger, setLodger] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [bulletins, setBulletins] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const data = await getLodger(id);
-      setLodger(data);
+      const [lodgerData, { data: bullData }] = await Promise.all([
+        getLodger(id),
+        supabase.from("bulletins")
+          .select("*, energy_bill:energy_bills(utility_type, bill_number, period_start, period_end, amount_total)")
+          .eq("lodger_id", id)
+          .order("period_start", { ascending: false }),
+      ]);
+      setLodger(lodgerData);
+      setBulletins(bullData || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, [id]);
@@ -154,6 +186,14 @@ export default function LodgerDetail() {
   useEffect(() => { load(); }, [load]);
 
   const activeAssignment = lodger?.assignments?.find((a) => !a.move_out_date);
+
+  const elecChart  = bulletins.length > 0 ? buildChartData(bulletins, "electricity") : EMPTY_CHART;
+  const waterChart = bulletins.length > 0 ? buildChartData(bulletins, "water")       : EMPTY_CHART;
+  const gasChart   = bulletins.length > 0 ? buildChartData(bulletins, "gas")         : EMPTY_CHART;
+
+  const elecHucha  = buildHuchaData(bulletins, "electricity");
+  const waterHucha = buildHuchaData(bulletins, "water");
+  const gasHucha   = buildHuchaData(bulletins, "gas");
 
   const tabItems = [
     {
@@ -170,19 +210,14 @@ export default function LodgerDetail() {
             icon={<ThunderboltOutlined style={{ fontSize: 18, color: "#F59E0B" }} />}
             label="Hucha Electricidad"
             color="#F59E0B"
-            data={MOCK_HUCHA.electricity}
+            data={elecHucha}
           />
           <div style={{ marginTop: 20 }}>
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Consumo últimos 12 meses
+              Importe repartido últimos 12 meses (€)
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={MOCK_ELECTRICITY} unit="kWh" color="#F59E0B" />
-            </div>
-            <div style={{ marginTop: 8, padding: "8px 12px", background: "#FFFBEB", borderRadius: 8, border: "1px solid #FEF3C7" }}>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                ⚠️ <strong>Datos mockeados</strong> — Pendiente de conectar con liquidaciones reales de energía.
-              </Text>
+              <ConsumptionChart data={elecChart} unit="€" color="#F59E0B" />
             </div>
           </div>
         </div>
@@ -202,19 +237,14 @@ export default function LodgerDetail() {
             icon={<span style={{ fontSize: 18 }}>💧</span>}
             label="Hucha Agua"
             color="#3B82F6"
-            data={MOCK_HUCHA.water}
+            data={waterHucha}
           />
           <div style={{ marginTop: 20 }}>
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Consumo últimos 12 meses
+              Importe repartido últimos 12 meses (€)
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={MOCK_WATER} unit="m³" color="#3B82F6" />
-            </div>
-            <div style={{ marginTop: 8, padding: "8px 12px", background: "#EFF6FF", borderRadius: 8, border: "1px solid #DBEAFE" }}>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                ⚠️ <strong>Datos mockeados</strong> — Pendiente de conectar con liquidaciones reales de agua.
-              </Text>
+              <ConsumptionChart data={waterChart} unit="€" color="#3B82F6" />
             </div>
           </div>
         </div>
@@ -234,19 +264,14 @@ export default function LodgerDetail() {
             icon={<FireOutlined style={{ fontSize: 18, color: "#EF4444" }} />}
             label="Hucha Gas"
             color="#EF4444"
-            data={MOCK_HUCHA.gas}
+            data={gasHucha}
           />
           <div style={{ marginTop: 20 }}>
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Consumo últimos 12 meses
+              Importe repartido últimos 12 meses (€)
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={MOCK_GAS} unit="kWh" color="#EF4444" />
-            </div>
-            <div style={{ marginTop: 8, padding: "8px 12px", background: "#FFF5F5", borderRadius: 8, border: "1px solid #FEE2E2" }}>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                ⚠️ <strong>Datos mockeados</strong> — Pendiente de conectar con liquidaciones reales de gas.
-              </Text>
+              <ConsumptionChart data={gasChart} unit="€" color="#EF4444" />
             </div>
           </div>
         </div>
@@ -384,50 +409,40 @@ export default function LodgerDetail() {
               <Row align="middle" gutter={8}>
                 <Col><BulbOutlined style={{ color: "#F59E0B" }} /></Col>
                 <Col><Text strong>Hucha Energética y Consumos</Text></Col>
-                <Col>
-                  <Tag color="warning" style={{ fontSize: 10 }}>MOCK</Tag>
-                </Col>
               </Row>
             }
             style={{ borderRadius: 12 }}
             bodyStyle={{ padding: "16px 20px" }}
           >
-            <div style={{ marginBottom: 16, padding: "10px 14px", background: "#FFFBEB", borderRadius: 8, border: "1px solid #FEF3C7" }}>
-              <Text style={{ fontSize: 12 }}>
-                <strong>Pantalla de maqueta</strong> — Los datos mostrados son simulados. La implementación real
-                conectará con las tablas <code>energy_settlements</code>, <code>energy_bills</code> y <code>energy_readings</code>.
-              </Text>
-            </div>
-
-            {/* Resumen huchas */}
+            {/* Resumen consumo total por tipo */}
             <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
               <Col xs={24} sm={8}>
                 <Statistic
-                  title="Hucha Electricidad"
-                  value={MOCK_HUCHA.electricity.balance}
+                  title="Total Electricidad repartida"
+                  value={elecHucha.consumed}
                   precision={2}
                   suffix="€"
-                  valueStyle={{ color: MOCK_HUCHA.electricity.balance >= 0 ? "#059669" : "#DC2626", fontSize: 18 }}
+                  valueStyle={{ color: "#F59E0B", fontSize: 18 }}
                   prefix={<ThunderboltOutlined />}
                 />
               </Col>
               <Col xs={24} sm={8}>
                 <Statistic
-                  title="Hucha Agua"
-                  value={MOCK_HUCHA.water.balance}
+                  title="Total Agua repartida"
+                  value={waterHucha.consumed}
                   precision={2}
                   suffix="€"
-                  valueStyle={{ color: MOCK_HUCHA.water.balance >= 0 ? "#059669" : "#DC2626", fontSize: 18 }}
+                  valueStyle={{ color: "#3B82F6", fontSize: 18 }}
                   prefix={<span>💧</span>}
                 />
               </Col>
               <Col xs={24} sm={8}>
                 <Statistic
-                  title="Hucha Gas"
-                  value={MOCK_HUCHA.gas.balance}
+                  title="Total Gas repartido"
+                  value={gasHucha.consumed}
                   precision={2}
                   suffix="€"
-                  valueStyle={{ color: MOCK_HUCHA.gas.balance >= 0 ? "#059669" : "#DC2626", fontSize: 18 }}
+                  valueStyle={{ color: "#EF4444", fontSize: 18 }}
                   prefix={<FireOutlined />}
                 />
               </Col>
