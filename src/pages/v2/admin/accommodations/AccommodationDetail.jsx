@@ -4,17 +4,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert, Avatar, Button, Card, Col, Divider, Modal, Row,
-  Select, Skeleton, Space, Tag, Tooltip, Typography,
+  Alert, Avatar, Button, Card, Col, Divider, Form, Input,
+  InputNumber, Modal, Popconfirm, Row,
+  Select, Skeleton, Space, Switch, Table, Tag, Tooltip, Typography,
 } from "antd";
 import {
-  ArrowLeftOutlined, EditOutlined, HomeOutlined,
-  PlusOutlined, SearchOutlined, SwapOutlined, UserAddOutlined, UserOutlined,
+  ArrowLeftOutlined, DeleteOutlined, EditOutlined, HomeOutlined,
+  PlusOutlined, SaveOutlined, SearchOutlined, SwapOutlined, UserAddOutlined, UserOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
 import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D";
+import { listEntities } from "../../../../services/entities.service";
+import { updateAccommodation } from "../../../../services/accommodations.service";
+import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
 
 const { Title, Text } = Typography;
 
@@ -45,6 +49,28 @@ function formatCurrency(v) {
   return Number(v).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
 
+const PROVINCIAS_ES = [
+  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
+  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
+  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
+  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
+  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
+  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
+  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
+  "Ceuta","Melilla",
+].map((p) => ({ value: p, label: p }));
+
+const BATHROOM_OPTIONS = [
+  { value: "shared", label: "Compartido" },
+  { value: "private", label: "Privado" },
+  { value: "suite", label: "Suite" },
+];
+const KITCHEN_OPTIONS = [
+  { value: "shared", label: "Compartida" },
+  { value: "private", label: "Privada" },
+  { value: "suite", label: "Suite" },
+];
+
 export default function AccommodationDetail() {
   const { entityId, accId } = useParams();
   const navigate = useNavigate();
@@ -58,25 +84,62 @@ export default function AccommodationDetail() {
   const [allLodgers, setAllLodgers] = useState([]);
   const [loadingLodgers, setLoadingLodgers] = useState(false);
 
+  // Datos tab state
+  const [accForm] = Form.useForm();
+  const [ownerEntities, setOwnerEntities] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveOk, setSaveOk] = useState(false);
+  // Rooms edit state (dentro del tab Datos)
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [roomForm] = Form.useForm();
+  const [addingRoom, setAddingRoom] = useState(false);
+  const [newRoomForm] = Form.useForm();
+  // Extra costs state
+  const [extraCosts, setExtraCosts] = useState([]);
+
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const { data: acc, error: accErr } = await supabase
-        .from("accommodations")
-        .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
-        .eq("id", accId).single();
+      const [{ data: acc, error: accErr }, { data: roomsData, error: roomsErr }, entities] = await Promise.all([
+        supabase.from("accommodations")
+          .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
+          .eq("id", accId).single(),
+        supabase.from("rooms")
+          .select(`*, active_assignment:lodger_room_assignments(id, move_in_date, monthly_rent, status, lodger:lodgers(id, full_name, email, phone, status))`)
+          .eq("accommodation_id", accId)
+          .eq("lodger_room_assignments.status", "active")
+          .order("number"),
+        listEntities({ type: "owner" }),
+      ]);
       if (accErr) throw new Error(accErr.message);
-      const { data: roomsData, error: roomsErr } = await supabase
-        .from("rooms")
-        .select(`*, active_assignment:lodger_room_assignments(id, move_in_date, monthly_rent, status, lodger:lodgers(id, full_name, email, phone, status))`)
-        .eq("accommodation_id", accId)
-        .eq("lodger_room_assignments.status", "active")
-        .order("number");
       if (roomsErr) throw new Error(roomsErr.message);
-      setAccommodation(acc); setRooms(roomsData || []);
+      setAccommodation(acc);
+      setRooms(roomsData || []);
+      setOwnerEntities((entities || []).filter((e) => e.status === "active"));
+      setExtraCosts(acc.extra_costs || []);
+      accForm.setFieldsValue({
+        name: acc.name,
+        owner_entity_id: acc.owner_entity_id,
+        address_line1: acc.address_line1 || "",
+        address_line2: acc.address_line2 || "",
+        postal_code: acc.postal_code || "",
+        city: acc.city || "",
+        province: acc.province || null,
+        notes: acc.notes || "",
+        status: acc.status,
+        utilities_included: acc.utilities_included !== false,
+        split_electricity: acc.split_electricity || false,
+        split_water: acc.split_water || false,
+        split_gas: acc.split_gas || false,
+        split_mode_electricity: acc.split_mode_electricity || "equal",
+        split_mode_water: acc.split_mode_water || "equal",
+        split_mode_gas: acc.split_mode_gas || "equal",
+        has_individual_meters: acc.has_individual_meters || false,
+      });
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [accId]);
+  }, [accId, accForm]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -98,7 +161,126 @@ export default function AccommodationDetail() {
   const [activeTab, setActiveTab] = useState("habitaciones");
   const [activeSubTab, setActiveSubTab] = useState(null);
 
+  // ── Save accommodation (Datos tab) ──────────────────────────────────────────
+  const onSaveAccommodation = async (values) => {
+    setSaving(true); setSaveError(null); setSaveOk(false);
+    try {
+      await updateAccommodation(accId, {
+        name: values.name,
+        owner_entity_id: values.owner_entity_id,
+        address_line1: values.address_line1 || null,
+        address_line2: values.address_line2 || null,
+        postal_code: values.postal_code || null,
+        city: values.city || null,
+        province: values.province || null,
+        notes: values.notes || null,
+        status: values.status,
+        utilities_included: values.utilities_included,
+        split_electricity: values.split_electricity || false,
+        split_water: values.split_water || false,
+        split_gas: values.split_gas || false,
+        split_mode_electricity: values.split_mode_electricity || "equal",
+        split_mode_water: values.split_mode_water || "equal",
+        split_mode_gas: values.split_mode_gas || "equal",
+        has_individual_meters: values.has_individual_meters || false,
+        extra_costs: extraCosts,
+      });
+      setSaveOk(true);
+      load();
+      setTimeout(() => setSaveOk(false), 3000);
+    } catch (e) { setSaveError(e.message); }
+    finally { setSaving(false); }
+  };
+
+  // ── Room handlers (Datos tab) ────────────────────────────────────────────────
+  const onSaveRoom = async (roomId, values) => {
+    try {
+      const result = await invokeWithAuth("manage_accommodation", {
+        body: { action: "update_room", payload: { id: roomId, ...values } },
+      });
+      if (!result?.ok) throw new Error(result?.error?.message || "Error");
+      setRooms((prev) => prev.map((r) => r.id === roomId ? { ...r, ...values } : r));
+      setEditingRoom(null);
+    } catch (e) { setSaveError(e.message); }
+  };
+
+  const onToggleRoomStatus = async (room) => {
+    const next = room.status === "inactive" ? "free" : "inactive";
+    try {
+      const result = await invokeWithAuth("manage_accommodation", {
+        body: { action: "set_room_status", payload: { id: room.id, status: next } },
+      });
+      if (!result?.ok) throw new Error(result?.error?.message || "Error");
+      setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, status: next } : r));
+    } catch (e) { setSaveError(e.message); }
+  };
+
+  const onAddRoom = async (values) => {
+    try {
+      const result = await invokeWithAuth("manage_accommodation", {
+        body: {
+          action: "add_room",
+          payload: {
+            accommodation_id: accId,
+            number: values.number,
+            monthly_rent: values.monthly_rent || 0,
+            square_meters: values.square_meters || null,
+            bathroom_type: values.bathroom_type || "shared",
+            kitchen_type: values.kitchen_type || "shared",
+            notes: values.notes || null,
+            status: "free",
+          },
+        },
+      });
+      if (!result?.ok) throw new Error(result?.error?.message || "Error");
+      const newRoom = result.data?.room ?? result.data;
+      setRooms((prev) => [...prev, newRoom]);
+      setAddingRoom(false);
+      newRoomForm.resetFields();
+    } catch (e) { setSaveError(e.message); }
+  };
+
+  const ROOM_STATUS_COLOR_TAG = { free: "success", occupied: "error", pending_checkout: "warning", inactive: "default" };
+  const ROOM_STATUS_LABEL_EDIT = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", inactive: "Inactiva" };
+
+  const roomColumns = [
+    { title: "Nº", dataIndex: "number", key: "number", width: 60, render: (v) => <Text strong>{v}</Text> },
+    { title: "Estado", dataIndex: "status", key: "status", width: 110,
+      render: (v) => <Tag color={ROOM_STATUS_COLOR_TAG[v] || "default"}>{ROOM_STATUS_LABEL_EDIT[v] || v}</Tag> },
+    { title: "Precio/mes", dataIndex: "monthly_rent", key: "monthly_rent", width: 110,
+      render: (v) => v != null ? formatCurrency(v) : "-" },
+    { title: "m²", dataIndex: "square_meters", key: "square_meters", width: 70,
+      render: (v) => v ? `${v} m²` : "-" },
+    { title: "Baño", dataIndex: "bathroom_type", key: "bathroom_type", responsive: ["lg"],
+      render: (v) => BATHROOM_OPTIONS.find((o) => o.value === v)?.label || v },
+    { title: "Acciones", key: "actions", render: (_, room) => (
+      <Space>
+        <Button size="small" onClick={() => {
+          setEditingRoom(room.id);
+          roomForm.setFieldsValue({
+            number: room.number, monthly_rent: room.monthly_rent,
+            square_meters: room.square_meters,
+            bathroom_type: room.bathroom_type || "shared",
+            kitchen_type: room.kitchen_type || "shared",
+            notes: room.notes || "",
+          });
+        }}>Editar</Button>
+        {room.status !== "occupied" && (
+          <Popconfirm
+            title={room.status === "inactive" ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
+            onConfirm={() => onToggleRoomStatus(room)} okText="Sí" cancelText="No"
+          >
+            <Button size="small" danger={room.status !== "inactive"}>
+              {room.status === "inactive" ? "Reactivar" : "Desactivar"}
+            </Button>
+          </Popconfirm>
+        )}
+      </Space>
+    )},
+  ];
+
   const TABS = [
+    { key: "datos", label: "Datos del Alojamiento", subTabs: null },
     { key: "habitaciones", label: "Habitaciones", subTabs: null },
     {
       key: "consumos", label: "Consumos",
@@ -111,7 +293,7 @@ export default function AccommodationDetail() {
       key: "facturas", label: "Facturas",
       subTabs: [
         { key: "carga",       label: "Carga de Facturas" },
-        { key: "liquidacion", label: "Liquidación de Facturas" },
+        { key: "lista",       label: "Lista de Facturas" },
         { key: "boletines",   label: "Boletines de Facturas" },
       ],
     },
@@ -152,7 +334,6 @@ export default function AccommodationDetail() {
             </Col>
             <Col style={{ paddingTop: 4 }}>
               <Space>
-                <Button icon={<EditOutlined />} onClick={() => navigate(`/v2/admin/alojamientos/${accId}/editar`)}>Editar</Button>
                 <Button type="primary" icon={<UserAddOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/nuevo?acc=${accId}`)}>
                   Nuevo inquilino
                 </Button>
@@ -207,8 +388,258 @@ export default function AccommodationDetail() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, marginTop: 16 }} />}
 
-      {/* Tab content — sección en construcción para tabs no-habitaciones */}
-      {activeTab !== "habitaciones" && (
+      {/* ── Tab: Datos del Alojamiento ───────────────────────────────────── */}
+      {activeTab === "datos" && (
+        <div style={{ marginTop: 24 }}>
+          {saveError && <Alert type="error" message={saveError} showIcon closable onClose={() => setSaveError(null)} style={{ marginBottom: 16 }} />}
+          {saveOk && <Alert type="success" message="Alojamiento guardado correctamente" showIcon style={{ marginBottom: 16 }} />}
+
+          {loading ? <Skeleton active paragraph={{ rows: 6 }} /> : (
+            <Form form={accForm} layout="vertical" onFinish={onSaveAccommodation}>
+
+              {/* Datos básicos */}
+              <Card title="Datos del Alojamiento" size="small" style={{ marginBottom: 16 }}>
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Form.Item label="Nombre" name="name" rules={[{ required: true, message: "El nombre es obligatorio" }]}>
+                      <Input />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Form.Item label="Entidad Propietaria" name="owner_entity_id" rules={[{ required: true, message: "Selecciona una entidad" }]}>
+                      <Select options={ownerEntities.map((e) => ({ value: e.id, label: e.legal_name || `${e.first_name} ${e.last_name1}` }))} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12} md={4}>
+                    <Form.Item label="Estado" name="status">
+                      <Select options={[{ value: "active", label: "Activo" }, { value: "inactive", label: "Inactivo" }]} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={14}>
+                    <Form.Item label="Calle" name="address_line1">
+                      <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={10}>
+                    <Form.Item label="Bloque / Escalera / Piso (opcional)" name="address_line2">
+                      <Input placeholder="Bloque B, Escalera 2, 3ºA..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={4}>
+                    <Form.Item label="Código Postal" name="postal_code">
+                      <Input placeholder="28001" maxLength={5} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Ciudad" name="city">
+                      <Input placeholder="Madrid" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item label="Provincia" name="province">
+                      <Select showSearch placeholder="Seleccionar provincia..." optionFilterProp="label"
+                        options={PROVINCIAS_ES} allowClear
+                        filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24}>
+                    <Form.Item label="Notas" name="notes">
+                      <Input.TextArea rows={2} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Configuración de consumo */}
+              <Card title="Configuración de Consumo" size="small" style={{ marginBottom: 16 }}>
+                <Form.Item name="utilities_included" valuePropName="checked">
+                  <Space align="center">
+                    <Form.Item name="utilities_included" valuePropName="checked" noStyle>
+                      <Switch />
+                    </Form.Item>
+                    <Text>Los servicios (agua, luz, gas) están <strong>incluidos en el alquiler</strong></Text>
+                  </Space>
+                </Form.Item>
+
+                <Form.Item noStyle shouldUpdate={(prev, cur) => prev.utilities_included !== cur.utilities_included}>
+                  {({ getFieldValue }) => !getFieldValue("utilities_included") && (
+                    <>
+                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280" }}>Servicios a repartir</Divider>
+                      <Row gutter={[24, 8]}>
+                        {/* Electricidad */}
+                        <Col xs={24} sm={8}>
+                          <Form.Item name="split_electricity" valuePropName="checked" noStyle>
+                            <Switch size="small" />
+                          </Form.Item>
+                          <Text style={{ marginLeft: 8 }}>⚡ Electricidad</Text>
+                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_electricity !== c.split_electricity}>
+                            {({ getFieldValue: gfv }) => gfv("split_electricity") && (
+                              <Form.Item name="split_mode_electricity" style={{ marginTop: 8, marginBottom: 0 }}>
+                                <Select size="small" style={{ width: 180 }} options={[
+                                  { value: "equal", label: "Partes iguales" },
+                                  { value: "prorated", label: "Prorrateado por consumo" },
+                                ]} />
+                              </Form.Item>
+                            )}
+                          </Form.Item>
+                        </Col>
+                        {/* Agua */}
+                        <Col xs={24} sm={8}>
+                          <Form.Item name="split_water" valuePropName="checked" noStyle>
+                            <Switch size="small" />
+                          </Form.Item>
+                          <Text style={{ marginLeft: 8 }}>💧 Agua</Text>
+                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_water !== c.split_water}>
+                            {({ getFieldValue: gfv }) => gfv("split_water") && (
+                              <Form.Item name="split_mode_water" style={{ marginTop: 8, marginBottom: 0 }}>
+                                <Select size="small" style={{ width: 180 }} options={[
+                                  { value: "equal", label: "Partes iguales" },
+                                  { value: "prorated", label: "Prorrateado por consumo" },
+                                ]} />
+                              </Form.Item>
+                            )}
+                          </Form.Item>
+                        </Col>
+                        {/* Gas */}
+                        <Col xs={24} sm={8}>
+                          <Form.Item name="split_gas" valuePropName="checked" noStyle>
+                            <Switch size="small" />
+                          </Form.Item>
+                          <Text style={{ marginLeft: 8 }}>🔥 Gas</Text>
+                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_gas !== c.split_gas}>
+                            {({ getFieldValue: gfv }) => gfv("split_gas") && (
+                              <Form.Item name="split_mode_gas" style={{ marginTop: 8, marginBottom: 0 }}>
+                                <Select size="small" style={{ width: 180 }} options={[
+                                  { value: "equal", label: "Partes iguales" },
+                                  { value: "prorated", label: "Prorrateado por consumo" },
+                                ]} />
+                              </Form.Item>
+                            )}
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280", marginTop: 16 }}>Medidores individuales</Divider>
+                      <Space align="center" style={{ marginBottom: 8 }}>
+                        <Form.Item name="has_individual_meters" valuePropName="checked" noStyle>
+                          <Switch size="small" />
+                        </Form.Item>
+                        <Text style={{ fontSize: 13 }}>El alojamiento tiene <strong>medidores individuales</strong> por habitación</Text>
+                      </Space>
+
+                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280", marginTop: 16 }}>Otros gastos adicionales</Divider>
+                      <div style={{ marginBottom: 8 }}>
+                        {extraCosts.map((ec, idx) => (
+                          <Row key={idx} gutter={[8, 8]} align="middle" style={{ marginBottom: 6 }}>
+                            <Col xs={12} sm={8}>
+                              <Input
+                                size="small"
+                                placeholder="Concepto (ej. WiFi, Basura...)"
+                                value={ec.name}
+                                onChange={(e) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))}
+                              />
+                            </Col>
+                            <Col xs={10} sm={6}>
+                              <Select
+                                size="small"
+                                style={{ width: "100%" }}
+                                value={ec.split_mode}
+                                onChange={(v) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, split_mode: v } : x))}
+                                options={[
+                                  { value: "equal", label: "Partes iguales" },
+                                  { value: "prorated", label: "Prorrateado" },
+                                ]}
+                              />
+                            </Col>
+                            <Col xs={2}>
+                              <Button size="small" danger icon={<DeleteOutlined />}
+                                onClick={() => setExtraCosts((prev) => prev.filter((_, i) => i !== idx))} />
+                            </Col>
+                          </Row>
+                        ))}
+                        <Button size="small" icon={<PlusOutlined />}
+                          onClick={() => setExtraCosts((prev) => [...prev, { name: "", split_mode: "equal" }])}>
+                          Añadir gasto adicional
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </Form.Item>
+              </Card>
+
+              {/* Habitaciones */}
+              <Card
+                title={<Space><span>Habitaciones</span><Tag>{rooms.length}</Tag></Space>}
+                size="small"
+                style={{ marginBottom: 16 }}
+                extra={
+                  <Button size="small" icon={<PlusOutlined />} onClick={() => setAddingRoom(true)}>Añadir</Button>
+                }
+              >
+                {addingRoom && (
+                  <Card size="small" style={{ marginBottom: 12, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
+                    <Text strong style={{ display: "block", marginBottom: 10 }}>Nueva Habitación</Text>
+                    <Form form={newRoomForm} layout="inline" onFinish={onAddRoom}>
+                      <Form.Item name="number" rules={[{ required: true, message: "Nº requerido" }]}>
+                        <Input placeholder="Nº" style={{ width: 70 }} />
+                      </Form.Item>
+                      <Form.Item name="monthly_rent">
+                        <InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} />
+                      </Form.Item>
+                      <Form.Item name="square_meters">
+                        <InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} />
+                      </Form.Item>
+                      <Form.Item name="bathroom_type" initialValue="shared">
+                        <Select style={{ width: 130 }} options={BATHROOM_OPTIONS} />
+                      </Form.Item>
+                      <Form.Item name="kitchen_type" initialValue="shared">
+                        <Select style={{ width: 130 }} options={KITCHEN_OPTIONS} />
+                      </Form.Item>
+                      <Form.Item>
+                        <Space>
+                          <Button type="primary" htmlType="submit" size="small">Añadir</Button>
+                          <Button size="small" onClick={() => { setAddingRoom(false); newRoomForm.resetFields(); }}>Cancelar</Button>
+                        </Space>
+                      </Form.Item>
+                    </Form>
+                  </Card>
+                )}
+                {editingRoom && (
+                  <Card size="small" style={{ marginBottom: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
+                    <Text strong style={{ display: "block", marginBottom: 10 }}>Editando Hab. {rooms.find((r) => r.id === editingRoom)?.number}</Text>
+                    <Form form={roomForm} layout="inline" onFinish={(values) => onSaveRoom(editingRoom, values)}>
+                      <Form.Item name="number" rules={[{ required: true }]}><Input placeholder="Nº" style={{ width: 70 }} /></Form.Item>
+                      <Form.Item name="monthly_rent"><InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} /></Form.Item>
+                      <Form.Item name="square_meters"><InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} /></Form.Item>
+                      <Form.Item name="bathroom_type"><Select style={{ width: 130 }} options={BATHROOM_OPTIONS} /></Form.Item>
+                      <Form.Item name="kitchen_type"><Select style={{ width: 130 }} options={KITCHEN_OPTIONS} /></Form.Item>
+                      <Form.Item name="notes"><Input placeholder="Notas" style={{ width: 140 }} /></Form.Item>
+                      <Form.Item>
+                        <Space>
+                          <Button type="primary" htmlType="submit" size="small">Guardar</Button>
+                          <Button size="small" onClick={() => setEditingRoom(null)}>Cancelar</Button>
+                        </Space>
+                      </Form.Item>
+                    </Form>
+                  </Card>
+                )}
+                <Table rowKey="id" columns={roomColumns} dataSource={rooms}
+                  pagination={false} scroll={{ x: true }} size="small"
+                  locale={{ emptyText: "Sin habitaciones" }} />
+              </Card>
+
+              <Row justify="end">
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} size="large">
+                  Guardar Alojamiento
+                </Button>
+              </Row>
+            </Form>
+          )}
+        </div>
+      )}
+
+      {/* ── Tabs no implementados aún ─────────────────────────────────────── */}
+      {activeTab !== "habitaciones" && activeTab !== "datos" && (
         <div style={{ marginTop: 24, padding: "48px 0", textAlign: "center", background: "#F9FAFB", borderRadius: 12, border: "1px dashed #E5E7EB" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
           <Text strong style={{ fontSize: 16, color: "#374151", display: "block", marginBottom: 6 }}>
