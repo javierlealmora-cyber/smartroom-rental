@@ -20,6 +20,7 @@ import { listEntities } from "../../../../services/entities.service";
 import { updateAccommodation } from "../../../../services/accommodations.service";
 import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
 import ConsumoTab from "./tabs/ConsumoTab";
+import FacturasTab from "./tabs/FacturasTab";
 
 const { Title, Text } = Typography;
 
@@ -646,15 +647,18 @@ export default function AccommodationDetail() {
         </div>
       )}
 
-      {/* ── Tabs pendientes (Facturas, Hucha) ───────────────────────── */}
-      {(activeTab === "facturas" || activeTab === "hucha") && (
+      {/* ── Tab: Facturas ──────────────────────────────────────────── */}
+      {activeTab === "facturas" && (
+        <div style={{ marginTop: 24 }}>
+          <FacturasTab accId={accId} subTab={activeSubTab} clientAccountId={accommodation?.client_account_id} />
+        </div>
+      )}
+
+      {/* ── Tab: Hucha Energética (pendiente) ────────────────────────── */}
+      {activeTab === "hucha" && (
         <div style={{ marginTop: 24, padding: "48px 0", textAlign: "center", background: "#F9FAFB", borderRadius: 12, border: "1px dashed #E5E7EB" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
-          <Text strong style={{ fontSize: 16, color: "#374151", display: "block", marginBottom: 6 }}>
-            {TABS.find((t) => t.key === activeTab)?.subTabs
-              ? TABS.find((t) => t.key === activeTab).subTabs.find((s) => s.key === activeSubTab)?.label
-              : TABS.find((t) => t.key === activeTab)?.label}
-          </Text>
+          <Text strong style={{ fontSize: 16, color: "#374151", display: "block", marginBottom: 6 }}>Hucha Energética</Text>
           <Text type="secondary" style={{ fontSize: 14 }}>Sección en construcción</Text>
         </div>
       )}
