@@ -206,9 +206,9 @@ export default function EntitiesList() {
       </Row>
 
       {loading ? (
-        <Row gutter={[20, 20]}>
-          {[1, 2].map((i) => (
-            <Col key={i} xs={24} sm={12}><Card style={{ borderRadius: 18 }}><Skeleton active paragraph={{ rows: 4 }} /></Card></Col>
+        <Row gutter={[12, 12]}>
+          {[1, 2, 3, 4].map((i) => (
+            <Col key={i} xs={24} sm={12} lg={6}><Card style={{ borderRadius: 14 }}><Skeleton active paragraph={{ rows: 3 }} /></Card></Col>
           ))}
         </Row>
       ) : filteredOwners.length === 0 ? (
@@ -218,7 +218,7 @@ export default function EntitiesList() {
               actionLabel="Nueva Entidad" onAction={() => navigate("/v2/admin/entidades/nueva")} />
           : <EmptyState icon="🔍" title="Sin resultados" description="No hay entidades que coincidan con los filtros aplicados" />
       ) : (
-        <Row gutter={[20, 20]}>
+        <Row gutter={[12, 12]}>
           {filteredOwners.map((entity) => {
             const kpi = entityKpis[entity.id] || { accs: 0, free: 0, occupied: 0, pending: 0 };
             const totalRooms = kpi.free + kpi.occupied + kpi.pending;
@@ -229,7 +229,7 @@ export default function EntitiesList() {
               ? entity.legal_name
               : [entity.first_name, entity.last_name1, entity.last_name2].filter(Boolean).join(" ");
             return (
-              <Col key={entity.id} xs={24} sm={12}>
+              <Col key={entity.id} xs={24} sm={12} lg={6}>
                 <Card
                   style={{
                     borderRadius: 16, overflow: "hidden",
@@ -238,90 +238,71 @@ export default function EntitiesList() {
                     boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                     background: "#fff",
                   }}
-                  styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}>
+                  styles={{ body: { padding: "12px 14px 0 14px", background: "#fff" } }}>
 
                   {/* ── 1: Nombre + Badge ── */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 2 }}>
-                    <Typography.Text strong style={{ fontSize: 18, color: "#1D1D1F", letterSpacing: "-0.3px", lineHeight: 1.3, flex: 1, paddingRight: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 1 }}>
+                    <Typography.Text strong style={{ fontSize: 14, color: "#1D1D1F", letterSpacing: "-0.2px", lineHeight: 1.3, flex: 1, paddingRight: 6 }}>
                       {formatEntityName(entity)}
                     </Typography.Text>
-                    <span style={{ color: isActive ? "#16A34A" : "#DC2626", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    <span style={{ color: isActive ? "#16A34A" : "#DC2626", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
                       {STATUS_LABEL[entity.status] || entity.status}
                     </span>
                   </div>
-                  <Typography.Text style={{ fontSize: 12, color: "#6B7280", display: "block", marginBottom: 14 }}>
+                  <Typography.Text style={{ fontSize: 11, color: "#6B7280", display: "block", marginBottom: 8 }}>
                     {LEGAL_TYPE_LABEL[entity.legal_type] || entity.legal_type}
                   </Typography.Text>
 
                   {/* ── 2: 4 KPI boxes con borde ── */}
-                  <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
                     {[
                       { v: kpi.accs,    l: "Aloj.",    c: "#374151" },
-                      { v: totalRooms,  l: "Hab. Tot.", c: "#374151" },
+                      { v: totalRooms,  l: "Hab.",     c: "#374151" },
                       { v: kpi.occupied,l: "Ocup.",    c: "#DC2626" },
                       { v: kpi.free,    l: "Libres",   c: "#16A34A" },
                     ].map(({ v, l, c }) => (
-                      <div key={l} style={{ border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "7px 10px", minWidth: 50, textAlign: "left", flex: "1 1 auto" }}>
-                        <div style={{ fontSize: 10, color: "#6B7280", marginBottom: 2 }}>{l}</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: c, lineHeight: 1 }}>{v}</div>
+                      <div key={l} style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "4px 8px", textAlign: "left", flex: "1 1 0" }}>
+                        <div style={{ fontSize: 9, color: "#6B7280", marginBottom: 1 }}>{l}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: c, lineHeight: 1 }}>{v}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* ── 3: Divider ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -14px 8px -14px" }} />
 
                   {/* ── 4: Imagen ── */}
                   {(() => { const { src, fit } = getEntityImage(entity); return (
-                  <div onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)} style={{ margin: "0 -20px 12px -20px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
+                  <div onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)} style={{ margin: "0 -14px 8px -14px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
                     <img src={src} alt="Entidad"
-                      style={{ width: "100%", display: "block", objectFit: fit, height: 200 }} />
+                      style={{ width: "100%", display: "block", objectFit: fit, height: 120 }} />
                   </div>
                   ); })()}
 
                   {/* ── 5: Barra de ocupación ── */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <Typography.Text style={{ fontSize: 12, color: "#6B7280" }}>Ocupación</Typography.Text>
-                      <Typography.Text style={{ fontSize: 12, color: "#6B7280" }}>{occRate}%</Typography.Text>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                      <Typography.Text style={{ fontSize: 11, color: "#6B7280" }}>Ocupación</Typography.Text>
+                      <Typography.Text style={{ fontSize: 11, color: "#6B7280" }}>{occRate}%</Typography.Text>
                     </div>
-                    <div style={{ height: 6, background: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ height: 5, background: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${occRate}%`, background: progressColor, borderRadius: 3, transition: "width 0.4s" }} />
                     </div>
                   </div>
 
-                  {/* ── 6: Nombre contacto + datos ── */}
-                  <div style={{ marginBottom: 14 }}>
-                    {contactName && (
-                      <Typography.Text strong style={{ fontSize: 14, color: "#1D1D1F", display: "block", marginBottom: 6 }}>
-                        {contactName}
-                      </Typography.Text>
-                    )}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      {entity.billing_email && <Space size={6}><MailOutlined style={{ color: "#9CA3AF", fontSize: 12 }} /><Typography.Text style={{ fontSize: 12, color: "#6B7280" }}>{entity.billing_email}</Typography.Text></Space>}
-                      {entity.phone && <Space size={6}><PhoneOutlined style={{ color: "#9CA3AF", fontSize: 12 }} /><Typography.Text style={{ fontSize: 12, color: "#6B7280" }}>{entity.phone}</Typography.Text></Space>}
-                      {entity.tax_id && <Space size={6}><IdcardOutlined style={{ color: "#9CA3AF", fontSize: 12 }} /><Typography.Text style={{ fontSize: 12, color: "#6B7280" }}>{entity.tax_id}</Typography.Text></Space>}
-                    </div>
-                  </div>
-
-                  {/* ── 7: Divider + Botones ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
-                  <div style={{ paddingBottom: 16, display: "flex", alignItems: "center" }}
+                  {/* ── 6: Divider + Botones ── */}
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -14px 8px -14px" }} />
+                  <div style={{ paddingBottom: 10, display: "flex", alignItems: "center" }}
                     onClick={(e) => e.stopPropagation()}>
-                    <Button type="primary" size="middle"
-                      style={{ borderRadius: 20, fontWeight: 600, fontSize: 13, marginRight: 14 }}
+                    <Button type="primary" size="small"
+                      style={{ borderRadius: 14, fontWeight: 600, fontSize: 12, marginRight: 10 }}
                       onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/entidades/${entity.id}/editar`); }}>
                       Editar
                     </Button>
-                    <Button type="link" size="middle"
-                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500, marginRight: 14 }}
+                    <Button type="link" size="small"
+                      style={{ fontSize: 12, padding: 0, color: "#3B82F6", fontWeight: 500, marginRight: 10 }}
                       onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/entidades/${entity.id}`); }}>
-                      Servicios &gt;
-                    </Button>
-                    <Button type="link" size="middle"
-                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500 }}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/entidades/${entity.id}`); }}>
-                      Habitaciones &gt;
+                      Ver detalle &gt;
                     </Button>
                   </div>
                 </Card>
