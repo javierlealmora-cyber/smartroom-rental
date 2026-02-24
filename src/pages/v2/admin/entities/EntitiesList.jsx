@@ -146,7 +146,7 @@ export default function EntitiesList() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* ── Header ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 10 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 6 }}>
         <div>
           <Typography.Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
             Entidades
@@ -161,7 +161,7 @@ export default function EntitiesList() {
       </Row>
 
       {/* ── Filtros ── */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
+      <Row gutter={[12, 12]} style={{ marginBottom: 8 }} align="middle">
         <Col xs={24} sm={14} md={10}>
           <Search
             placeholder="Buscar por nombre, email o NIF..."
@@ -191,10 +191,10 @@ export default function EntitiesList() {
         )}
       </Row>
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 8 }} />}
 
       {/* ── Entidades Propietarias ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 8 }}>
         <div>
           <Typography.Text style={{ color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 11 }}>
             Entidades Propietarias
@@ -206,9 +206,9 @@ export default function EntitiesList() {
       </Row>
 
       {loading ? (
-        <Row gutter={[12, 12]}>
+        <Row gutter={[10, 10]}>
           {[1, 2, 3, 4].map((i) => (
-            <Col key={i} xs={24} sm={12} lg={6}><Card style={{ borderRadius: 14 }}><Skeleton active paragraph={{ rows: 3 }} /></Card></Col>
+            <Col key={i} xs={24} sm={12} lg={6}><Card style={{ borderRadius: 14 }}><Skeleton active paragraph={{ rows: 2 }} /></Card></Col>
           ))}
         </Row>
       ) : filteredOwners.length === 0 ? (
@@ -218,7 +218,7 @@ export default function EntitiesList() {
               actionLabel="Nueva Entidad" onAction={() => navigate("/v2/admin/entidades/nueva")} />
           : <EmptyState icon="🔍" title="Sin resultados" description="No hay entidades que coincidan con los filtros aplicados" />
       ) : (
-        <Row gutter={[12, 12]}>
+        <Row gutter={[10, 10]}>
           {filteredOwners.map((entity) => {
             const kpi = entityKpis[entity.id] || { accs: 0, free: 0, occupied: 0, pending: 0 };
             const totalRooms = kpi.free + kpi.occupied + kpi.pending;
@@ -238,7 +238,7 @@ export default function EntitiesList() {
                     boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
                     background: "#fff",
                   }}
-                  styles={{ body: { padding: "12px 14px 0 14px", background: "#fff" } }}>
+                  styles={{ body: { padding: "10px 12px 0 12px", background: "#fff" } }}>
 
                   {/* ── 1: Nombre + Badge ── */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 1 }}>
@@ -254,34 +254,34 @@ export default function EntitiesList() {
                   </Typography.Text>
 
                   {/* ── 2: 4 KPI boxes con borde ── */}
-                  <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
+                  <div style={{ display: "flex", gap: 3, marginBottom: 6, flexWrap: "nowrap" }}>
                     {[
                       { v: kpi.accs,    l: "Aloj.",    c: "#374151" },
                       { v: totalRooms,  l: "Hab.",     c: "#374151" },
                       { v: kpi.occupied,l: "Ocup.",    c: "#DC2626" },
                       { v: kpi.free,    l: "Libres",   c: "#16A34A" },
                     ].map(({ v, l, c }) => (
-                      <div key={l} style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "4px 8px", textAlign: "left", flex: "1 1 0" }}>
-                        <div style={{ fontSize: 9, color: "#6B7280", marginBottom: 1 }}>{l}</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: c, lineHeight: 1 }}>{v}</div>
+                      <div key={l} style={{ border: "1px solid #E5E7EB", borderRadius: 6, padding: "3px 6px", textAlign: "left", flex: "1 1 0" }}>
+                        <div style={{ fontSize: 9, color: "#6B7280", marginBottom: 0 }}>{l}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: c, lineHeight: 1.1 }}>{v}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* ── 3: Divider ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -14px 8px -14px" }} />
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -12px 6px -12px" }} />
 
                   {/* ── 4: Imagen ── */}
                   {(() => { const { src, fit } = getEntityImage(entity); return (
-                  <div onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)} style={{ margin: "0 -14px 8px -14px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
+                  <div onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)} style={{ margin: "0 -12px 6px -12px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
                     <img src={src} alt="Entidad"
-                      style={{ width: "100%", display: "block", objectFit: fit, height: 180 }} />
+                      style={{ width: "100%", display: "block", objectFit: fit, height: 130 }} />
                   </div>
                   ); })()}
 
                   {/* ── 5: Barra de ocupación ── */}
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <div style={{ marginBottom: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
                       <Typography.Text style={{ fontSize: 11, color: "#6B7280" }}>Ocupación</Typography.Text>
                       <Typography.Text style={{ fontSize: 11, color: "#6B7280" }}>{occRate}%</Typography.Text>
                     </div>
@@ -291,8 +291,8 @@ export default function EntitiesList() {
                   </div>
 
                   {/* ── 6: Divider + Botones ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -14px 8px -14px" }} />
-                  <div style={{ paddingBottom: 10, display: "flex", alignItems: "center" }}
+                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -12px 6px -12px" }} />
+                  <div style={{ paddingBottom: 8, display: "flex", alignItems: "center" }}
                     onClick={(e) => e.stopPropagation()}>
                     <Button type="primary" size="small"
                       style={{ borderRadius: 14, fontWeight: 600, fontSize: 12, marginRight: 10 }}

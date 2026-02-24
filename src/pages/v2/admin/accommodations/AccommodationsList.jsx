@@ -161,16 +161,6 @@ export default function AccommodationsList() {
             allowClear
           />
         </Col>
-        <Col xs={24} sm={12} md={7}>
-          <Select
-            placeholder="Filtrar por empresa propietaria"
-            value={filterEntityId}
-            onChange={setFilterEntityId}
-            allowClear
-            style={{ width: "100%" }}
-            options={ownerEntities.map((e) => ({ value: e.id, label: formatEntityName(e) }))}
-          />
-        </Col>
         <Col>
           <Checkbox checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}>
             Mostrar desactivados
