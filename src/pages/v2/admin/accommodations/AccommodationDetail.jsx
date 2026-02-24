@@ -19,6 +19,7 @@ import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D
 import { listEntities } from "../../../../services/entities.service";
 import { updateAccommodation } from "../../../../services/accommodations.service";
 import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
+import ConsumoTab from "./tabs/ConsumoTab";
 
 const { Title, Text } = Typography;
 
@@ -638,8 +639,15 @@ export default function AccommodationDetail() {
         </div>
       )}
 
-      {/* ── Tabs no implementados aún ─────────────────────────────────────── */}
-      {activeTab !== "habitaciones" && activeTab !== "datos" && (
+      {/* ── Tab: Consumos Estimados ─────────────────────────────────── */}
+      {activeTab === "consumos" && (
+        <div style={{ marginTop: 24 }}>
+          <ConsumoTab accId={accId} subTab={activeSubTab} rooms={rooms} />
+        </div>
+      )}
+
+      {/* ── Tabs pendientes (Facturas, Hucha) ───────────────────────── */}
+      {(activeTab === "facturas" || activeTab === "hucha") && (
         <div style={{ marginTop: 24, padding: "48px 0", textAlign: "center", background: "#F9FAFB", borderRadius: 12, border: "1px dashed #E5E7EB" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🚧</div>
           <Text strong style={{ fontSize: 16, color: "#374151", display: "block", marginBottom: 6 }}>
