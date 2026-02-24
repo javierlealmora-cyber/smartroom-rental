@@ -219,38 +219,7 @@ export default function AccommodationsList() {
 
       {/* Grupos por empresa */}
       {!loading && grouped.length > 0 && grouped.map((group, gi) => (
-        <div key={gi} style={{ marginBottom: 36 }}>
-          {/* Cabecera de empresa */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            marginBottom: 14, paddingBottom: 10,
-            borderBottom: "2px solid #E5E7EB",
-          }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: group.entity ? "#EFF6FF" : "#F3F4F6",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <BankOutlined style={{ fontSize: 15, color: group.entity ? "#3B82F6" : "#9CA3AF" }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              {group.entity ? (
-                <button
-                  onClick={() => navigate(`/v2/admin/entidades/${group.entity.id}`)}
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  <Text strong style={{ fontSize: 14, color: "#3B82F6", lineHeight: 1.3 }}>
-                    {formatEntityName(group.entity)}
-                  </Text>
-                  {group.entity.tax_id && (
-                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>{group.entity.tax_id}</Text>
-                  )}
-                </button>
-              ) : (
-                <Text strong style={{ fontSize: 14, color: "#6B7280" }}>Sin empresa asignada</Text>
-              )}
-            </div>
-          </div>
-
+        <div key={gi} style={{ marginBottom: 24 }}>
           {/* Cards de alojamientos */}
           <Row gutter={[20, 20]}>
             {group.items.map((acc) => {

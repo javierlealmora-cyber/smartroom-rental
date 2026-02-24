@@ -275,7 +275,7 @@ export default function EntitiesList() {
                   {(() => { const { src, fit } = getEntityImage(entity); return (
                   <div onClick={() => navigate(`/v2/admin/entidades/${entity.id}`)} style={{ margin: "0 -14px 8px -14px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
                     <img src={src} alt="Entidad"
-                      style={{ width: "100%", display: "block", objectFit: fit, height: 120 }} />
+                      style={{ width: "100%", display: "block", objectFit: fit, height: 180 }} />
                   </div>
                   ); })()}
 
