@@ -223,35 +223,32 @@ export default function AccommodationsList() {
           {/* Cabecera de empresa */}
           <div style={{
             display: "flex", alignItems: "center", gap: 10,
-            marginBottom: 16, paddingBottom: 10,
+            marginBottom: 14, paddingBottom: 10,
             borderBottom: "2px solid #E5E7EB",
           }}>
             <div style={{
-              width: 36, height: 36, borderRadius: 9,
+              width: 30, height: 30, borderRadius: 8,
               background: group.entity ? "#EFF6FF" : "#F3F4F6",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              <BankOutlined style={{ fontSize: 18, color: group.entity ? "#3B82F6" : "#9CA3AF" }} />
+              <BankOutlined style={{ fontSize: 15, color: group.entity ? "#3B82F6" : "#9CA3AF" }} />
             </div>
-            <div>
-              <Text strong style={{ fontSize: 15, display: "block", lineHeight: 1.3 }}>
-                {group.entity ? formatEntityName(group.entity) : "Sin empresa asignada"}
-              </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {formatEntityName(group.entity) ? (group.entity?.tax_id || "") : ""}
-              </Text>
+            <div style={{ flex: 1 }}>
+              {group.entity ? (
+                <button
+                  onClick={() => navigate(`/v2/admin/entidades/${group.entity.id}`)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <Text strong style={{ fontSize: 14, color: "#3B82F6", lineHeight: 1.3 }}>
+                    {formatEntityName(group.entity)}
+                  </Text>
+                  {group.entity.tax_id && (
+                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>{group.entity.tax_id}</Text>
+                  )}
+                </button>
+              ) : (
+                <Text strong style={{ fontSize: 14, color: "#6B7280" }}>Sin empresa asignada</Text>
+              )}
             </div>
-            {group.entity && (
-              <Tooltip title="Ver empresa">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  style={{ marginLeft: "auto", color: "#6B7280" }}
-                  onClick={() => navigate(`/v2/admin/entidades/${group.entity.id}/editar`)}
-                />
-              </Tooltip>
-            )}
           </div>
 
           {/* Cards de alojamientos */}

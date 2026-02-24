@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Col, Popconfirm, Row, Skeleton, Space, Tag, Tooltip, Typography } from "antd";
+import { Alert, Button, Card, Col, Input, Row, Select, Skeleton, Space, Tag, Tooltip, Typography } from "antd";
 import { BankOutlined, EditOutlined, HomeOutlined, IdcardOutlined, MailOutlined, PhoneOutlined, PlusOutlined, PoweroffOutlined, UserOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import { IllustrationEntity, IllustrationTenant } from "../../../../components/icons3d/Illustrations3D";
@@ -10,6 +10,8 @@ import { useTenant } from "../../../../providers/TenantProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { listEntities, setEntityStatus } from "../../../../services/entities.service";
 import { supabase } from "../../../../services/supabaseClient";
+
+const { Search } = Input;
 
 const IMG_INVERSOR   = "/icons/inversor-card-model.png";
 const IMG_INVERSORA  = "/icons/inversora-card-model.png";
@@ -55,12 +57,24 @@ export default function EntitiesList() {
   const [error, setError] = useState(null);
   const [maxOwners, setMaxOwners] = useState(null);
   const [entityKpis, setEntityKpis] = useState({});
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const ownersCountForLimit = owners.length;
   const limitReached = useMemo(() =>
     maxOwners != null && maxOwners !== -1 && ownersCountForLimit >= maxOwners,
     [ownersCountForLimit, maxOwners]
   );
+  const filteredOwners = useMemo(() => {
+    let r = owners;
+    if (filterStatus) r = r.filter((e) => e.status === filterStatus);
+    if (search) {
+      const q = search.toLowerCase();
+      r = r.filter((e) => formatEntityName(e).toLowerCase().includes(q) || e.billing_email?.toLowerCase().includes(q) || e.tax_id?.toLowerCase().includes(q));
+    }
+    return r;
+  }, [owners, search, filterStatus]);
+
   const ownerLimitLabel = useMemo(() => {
     if (!planCode || maxOwners == null) return "";
     return maxOwners === -1 ? "Ilimitadas" : `${ownersCountForLimit} / ${maxOwners}`;
@@ -132,7 +146,7 @@ export default function EntitiesList() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* ── Header ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 10 }}>
         <div>
           <Typography.Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
             Entidades
@@ -146,10 +160,41 @@ export default function EntitiesList() {
         </Button>
       </Row>
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 20 }} />}
+      {/* ── Filtros ── */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
+        <Col xs={24} sm={14} md={10}>
+          <Search
+            placeholder="Buscar por nombre, email o NIF..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+          />
+        </Col>
+        <Col xs={12} sm={6} md={5}>
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Estado"
+            value={filterStatus || undefined}
+            onChange={(v) => setFilterStatus(v || "")}
+            allowClear
+            options={[
+              { value: "active", label: "Activo" },
+              { value: "disabled", label: "Deshabilitado" },
+              { value: "inactive", label: "Inactivo" },
+            ]}
+          />
+        </Col>
+        {(search || filterStatus) && (
+          <Col>
+            <Button onClick={() => { setSearch(""); setFilterStatus(""); }}>Limpiar</Button>
+          </Col>
+        )}
+      </Row>
+
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
 
       {/* ── Entidades Propietarias ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
           <Typography.Text style={{ color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 11 }}>
             Entidades Propietarias
@@ -162,17 +207,19 @@ export default function EntitiesList() {
 
       {loading ? (
         <Row gutter={[20, 20]}>
-          {[1, 2, 3].map((i) => (
-            <Col key={i} xs={24} sm={12} md={8} xl={6}><Card style={{ borderRadius: 18 }}><Skeleton active paragraph={{ rows: 4 }} /></Card></Col>
+          {[1, 2].map((i) => (
+            <Col key={i} xs={24} sm={12}><Card style={{ borderRadius: 18 }}><Skeleton active paragraph={{ rows: 4 }} /></Card></Col>
           ))}
         </Row>
-      ) : owners.length === 0 ? (
-        <EmptyState icon="🏠" title="Sin entidades propietarias"
-          description="Crea la primera entidad propietaria para asignar alojamientos"
-          actionLabel="Nueva Entidad" onAction={() => navigate("/v2/admin/entidades/nueva")} />
+      ) : filteredOwners.length === 0 ? (
+        owners.length === 0
+          ? <EmptyState icon="🏠" title="Sin entidades propietarias"
+              description="Crea la primera entidad propietaria para asignar alojamientos"
+              actionLabel="Nueva Entidad" onAction={() => navigate("/v2/admin/entidades/nueva")} />
+          : <EmptyState icon="🔍" title="Sin resultados" description="No hay entidades que coincidan con los filtros aplicados" />
       ) : (
         <Row gutter={[20, 20]}>
-          {owners.map((entity) => {
+          {filteredOwners.map((entity) => {
             const kpi = entityKpis[entity.id] || { accs: 0, free: 0, occupied: 0, pending: 0 };
             const totalRooms = kpi.free + kpi.occupied + kpi.pending;
             const occRate = totalRooms > 0 ? Math.round((kpi.occupied / totalRooms) * 100) : 0;
@@ -182,7 +229,7 @@ export default function EntitiesList() {
               ? entity.legal_name
               : [entity.first_name, entity.last_name1, entity.last_name2].filter(Boolean).join(" ");
             return (
-              <Col key={entity.id} xs={24} sm={12} md={8} xl={6}>
+              <Col key={entity.id} xs={24} sm={12}>
                 <Card
                   style={{
                     borderRadius: 16, overflow: "hidden",
