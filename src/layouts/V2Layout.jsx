@@ -299,7 +299,7 @@ export default function V2Layout({
         *, *::before, *::after { box-sizing: border-box; }
         .v2-topbar {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 0 16px; height: 64px;
+          padding: 0 16px; height: 48px;
           background: rgba(255,255,255,0.92);
           backdrop-filter: saturate(180%) blur(20px);
           -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -328,21 +328,21 @@ export default function V2Layout({
         .v2-nav-btn {
           background: none; border: none;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          gap: 2px;
-          padding: 4px 10px; border-radius: 11px;
+          gap: 1px;
+          padding: 2px 8px; border-radius: 10px;
           cursor: pointer; white-space: nowrap;
           transition: background 0.18s, transform 0.15s;
           font-family: inherit;
-          min-width: 72px;
-          max-width: 88px;
+          min-width: 60px;
+          max-width: 78px;
         }
         .v2-nav-icon-wrap {
-          width: 48px; height: 48px;
+          height: 34px;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
         .v2-nav-icon-wrap img, .v2-nav-icon-wrap svg {
-          max-width: 48px; max-height: 48px;
+          max-width: 34px; max-height: 34px;
           width: auto; height: auto;
           object-fit: contain;
         }
@@ -350,7 +350,7 @@ export default function V2Layout({
         .v2-nav-btn.active { background: rgba(0,0,0,0.06); }
         .v2-nav-btn.active .v2-nav-label { color: ${primaryColor}; font-weight: 600; }
         .v2-nav-label {
-          font-size: 8.5px; font-weight: 500; color: #374151;
+          font-size: 8px; font-weight: 500; color: #374151;
           letter-spacing: -0.01em; line-height: 1;
         }
         .v2-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -374,7 +374,7 @@ export default function V2Layout({
         .v2-hamburger:hover { background: rgba(0,0,0,0.06); }
         .v2-mobile-drawer {
           display: none;
-          position: fixed; top: 64px; left: 0; right: 0;
+          position: fixed; top: 48px; left: 0; right: 0;
           background: rgba(255,255,255,0.97);
           backdrop-filter: blur(20px);
           padding: 12px 16px 20px;
@@ -391,28 +391,28 @@ export default function V2Layout({
         }
         .v2-mobile-drawer .v2-nav-label { font-size: 14px; }
         .v2-overlay {
-          display: none; position: fixed; inset: 0; top: 64px;
+          display: none; position: fixed; inset: 0; top: 48px;
           background: rgba(0,0,0,0.2); z-index: 298;
         }
         .v2-overlay.open { display: block; }
         .v2-breadcrumb {
-          padding: 6px 22px; font-size: 10px; color: #6B7280;
+          padding: 3px 20px; font-size: 10px; color: #6B7280;
           border-bottom: 1px solid #F3F4F6; background: #FAFAFA; flex-shrink: 0;
         }
         .v2-crumb-link { color: ${primaryColor}; cursor: pointer; }
         .v2-crumb-link:hover { text-decoration: underline; }
         .v2-crumb-sep { margin: 0 6px; color: #D1D5DB; }
         .v2-crumb-current { color: #1D1D1F; font-weight: 500; }
-        .v2-main { padding: 22px; flex: 1; }
+        .v2-main { padding: 14px 20px; flex: 1; }
         @media (max-width: 1000px) {
           .v2-topnav { display: none !important; }
           .v2-username { display: none !important; }
           .v2-hamburger { display: flex !important; }
         }
         @media (max-width: 480px) {
-          .v2-topbar { padding: 0 10px; height: 56px; }
-          .v2-main { padding: 12px; }
-          .v2-breadcrumb { padding: 5px 12px; }
+          .v2-topbar { padding: 0 10px; height: 48px; }
+          .v2-main { padding: 10px 12px; }
+          .v2-breadcrumb { padding: 3px 12px; }
         }
       `}</style>
 
@@ -437,7 +437,7 @@ export default function V2Layout({
             {navItems.map((item, i) => {
               const active = isNavActive(item.path, location.pathname);
               const { Icon } = item;
-              const iconSize = 52;
+              const iconSize = 34;
               return (
                 <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
                   <div className="v2-nav-icon-wrap"><Icon size={iconSize} /></div>

@@ -223,7 +223,10 @@ function createErrorMessage(err, fn) {
   if (status) {
     // Intentar extraer el mensaje de error de la respuesta JSON
     if (body && typeof body === "object" && body.error) {
-      return body.error;
+      const e = body.error;
+      if (typeof e === "string") return e;
+      if (e?.message) return e.message;
+      return JSON.stringify(e);
     }
     return body
       ? `Edge Function "${fn}" devolvió HTTP ${status}: ${safeString(body)}`
