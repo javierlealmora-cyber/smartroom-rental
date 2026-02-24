@@ -91,7 +91,12 @@ export default function ServicesList() {
       title: "Entidad",
       key: "entity",
       responsive: ["md"],
-      render: (_, r) => r.owner_entity?.name || <Text type="secondary">-</Text>,
+      render: (_, r) => {
+        const e = r.owner_entity;
+        if (!e) return <Text type="secondary">-</Text>;
+        const n = e.legal_type === "persona_juridica" ? e.legal_name : [e.first_name, e.last_name1, e.last_name2].filter(Boolean).join(" ");
+        return n || <Text type="secondary">-</Text>;
+      },
     },
     {
       title: "Unidad",
@@ -144,7 +149,7 @@ export default function ServicesList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
         <Col flex="auto">
           <Title level={2} style={{ margin: 0 }}>Catálogo de Servicios</Title>
           <Text type="secondary">

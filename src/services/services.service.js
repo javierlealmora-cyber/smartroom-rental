@@ -6,7 +6,7 @@ import { supabase } from "./supabaseClient";
 export async function listServicesCatalog({ status } = {}) {
   let q = supabase
     .from("services_catalog")
-    .select("*, owner_entity:entities(id, name)")
+    .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, last_name2, legal_type)")
     .order("name", { ascending: true });
   if (status) q = q.eq("status", status);
   const { data, error } = await q;
@@ -17,7 +17,7 @@ export async function listServicesCatalog({ status } = {}) {
 export async function getService(id) {
   const { data, error } = await supabase
     .from("services_catalog")
-    .select("*, owner_entity:entities(id, name)")
+    .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, last_name2, legal_type)")
     .eq("id", id)
     .single();
   if (error) throw new Error(error.message);

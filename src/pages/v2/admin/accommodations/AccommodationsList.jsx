@@ -127,18 +127,8 @@ export default function AccommodationsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Breadcrumb */}
-      <Button
-        type="text"
-        icon={<BankOutlined />}
-        onClick={() => navigate("/v2/admin/entidades")}
-        style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 8, fontSize: 14 }}
-      >
-        Entidades
-      </Button>
-
       {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
           <Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>Alojamientos</Title>
         </div>
@@ -161,7 +151,7 @@ export default function AccommodationsList() {
       )}
 
       {/* Filtros */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="middle">
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
         <Col xs={24} sm={12} md={8}>
           <Search
             placeholder="Buscar por nombre, dirección o empresa..."

@@ -123,7 +123,7 @@ export default function TenantsList() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
         <Col flex="auto">
           <Title level={2} style={{ margin: 0 }}>Gestión de Inquilinos</Title>
           <Text type="secondary">
@@ -142,7 +142,7 @@ export default function TenantsList() {
       </Row>
 
       {/* Filtros */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 24 }} align="middle">
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
         <Col xs={24} sm={24} md={8} lg={7}>
           <Search
             placeholder="Buscar por nombre, email o teléfono..."

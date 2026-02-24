@@ -132,7 +132,7 @@ export default function EntitiesList() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* ── Header ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 32 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
           <Typography.Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
             Entidades
