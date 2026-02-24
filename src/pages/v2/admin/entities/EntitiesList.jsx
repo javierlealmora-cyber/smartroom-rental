@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Col, Input, Row, Select, Skeleton, Space, Tag, Tooltip, Typography } from "antd";
+import { Alert, Button, Card, Checkbox, Col, Input, Row, Skeleton, Space, Tag, Tooltip, Typography } from "antd";
 import { BankOutlined, EditOutlined, HomeOutlined, IdcardOutlined, MailOutlined, PhoneOutlined, PlusOutlined, PoweroffOutlined, UserOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import { IllustrationEntity, IllustrationTenant } from "../../../../components/icons3d/Illustrations3D";
@@ -58,7 +58,7 @@ export default function EntitiesList() {
   const [maxOwners, setMaxOwners] = useState(null);
   const [entityKpis, setEntityKpis] = useState({});
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const ownersCountForLimit = owners.length;
   const limitReached = useMemo(() =>
@@ -67,13 +67,13 @@ export default function EntitiesList() {
   );
   const filteredOwners = useMemo(() => {
     let r = owners;
-    if (filterStatus) r = r.filter((e) => e.status === filterStatus);
+    if (!showInactive) r = r.filter((e) => e.status === "active");
     if (search) {
       const q = search.toLowerCase();
       r = r.filter((e) => formatEntityName(e).toLowerCase().includes(q) || e.billing_email?.toLowerCase().includes(q) || e.tax_id?.toLowerCase().includes(q));
     }
     return r;
-  }, [owners, search, filterStatus]);
+  }, [owners, search, showInactive]);
 
   const ownerLimitLabel = useMemo(() => {
     if (!planCode || maxOwners == null) return "";
@@ -161,8 +161,8 @@ export default function EntitiesList() {
       </Row>
 
       {/* ── Filtros ── */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 8 }} align="middle">
-        <Col xs={24} sm={14} md={10}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
+        <Col xs={24} sm={12} md={8}>
           <Search
             placeholder="Buscar por nombre, email o NIF..."
             value={search}
@@ -170,25 +170,14 @@ export default function EntitiesList() {
             allowClear
           />
         </Col>
-        <Col xs={12} sm={6} md={5}>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Estado"
-            value={filterStatus || undefined}
-            onChange={(v) => setFilterStatus(v || "")}
-            allowClear
-            options={[
-              { value: "active", label: "Activo" },
-              { value: "disabled", label: "Deshabilitado" },
-              { value: "inactive", label: "Inactivo" },
-            ]}
-          />
+        <Col>
+          <Checkbox checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}>
+            Mostrar desactivados
+          </Checkbox>
         </Col>
-        {(search || filterStatus) && (
-          <Col>
-            <Button onClick={() => { setSearch(""); setFilterStatus(""); }}>Limpiar</Button>
-          </Col>
-        )}
+        <Col>
+          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(""); setShowInactive(false); }}>Limpiar</Button>
+        </Col>
       </Row>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 8 }} />}
