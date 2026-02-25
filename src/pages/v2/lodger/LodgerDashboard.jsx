@@ -62,7 +62,7 @@ export default function LodgerDashboard() {
       const [{ data: asgn }, { data: bulls }, { data: svcs }] = await Promise.all([
         supabase
           .from("lodger_room_assignments")
-          .select("id, move_in_date, billing_start_date, monthly_rent, status, room:rooms(id,number,floor,type), accommodation:accommodations(id,name,address,city)")
+          .select("id, move_in_date, billing_start_date, monthly_rent, status, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_line1,city)")
           .eq("lodger_id", lodgerData.id)
           .is("move_out_date", null)
           .maybeSingle(),
@@ -146,26 +146,26 @@ export default function LodgerDashboard() {
       {/* ── Fila 1: Habitación (grande) + Mis Datos ───────────────────── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
 
-        <Col xs={24} md={14} lg={16}>
+        <Col xs={24} md={12}>
           <Card size="small" title={<Space><HomeOutlined /><span>Mi Habitación</span></Space>} style={{ height: "100%" }}>
             {assignment ? (
               <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 110 }}>
                 <Descriptions.Item label="Alojamiento">
                   <Text strong>{assignment.accommodation?.name}</Text>
                 </Descriptions.Item>
-                {assignment.accommodation?.address && (
-                  <Descriptions.Item label="Dirección">{assignment.accommodation.address}{assignment.accommodation.city ? `, ${assignment.accommodation.city}` : ""}</Descriptions.Item>
+                {assignment.accommodation?.address_line1 && (
+                  <Descriptions.Item label="Dirección">{assignment.accommodation.address_line1}{assignment.accommodation.city ? `, ${assignment.accommodation.city}` : ""}</Descriptions.Item>
                 )}
                 <Descriptions.Item label="Habitación">
                   <Tag color="geekblue" style={{ fontSize: 13, padding: "1px 10px" }}>
                     Hab. {assignment.room?.number}
                   </Tag>
-                  {assignment.room?.type && (
-                    <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>{assignment.room.type}</Text>
+                  {assignment.room?.bathroom_type && (
+                    <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>Baño: {assignment.room.bathroom_type}</Text>
                   )}
                 </Descriptions.Item>
-                {assignment.room?.floor != null && (
-                  <Descriptions.Item label="Planta">{assignment.room.floor}</Descriptions.Item>
+                {assignment.room?.square_meters && (
+                  <Descriptions.Item label="Superficie">{assignment.room.square_meters} m²</Descriptions.Item>
                 )}
                 <Descriptions.Item label={<Space size={4}><CalendarOutlined />Entrada</Space>}>
                   {fDate(assignment.move_in_date)}
@@ -188,7 +188,7 @@ export default function LodgerDashboard() {
           </Card>
         </Col>
 
-        <Col xs={24} md={10} lg={8}>
+        <Col xs={24} md={12}>
           <Card size="small"
             title={<Space><UserOutlined /><span>Mis Datos</span></Space>}
             extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/perfil")}>Editar →</Button>}
@@ -220,7 +220,7 @@ export default function LodgerDashboard() {
       {/* ── Fila 2: Boletines + Servicios ─────────────────────────────── */}
       <Row gutter={[16, 16]}>
 
-        <Col xs={24} md={14} lg={16}>
+        <Col xs={24} md={12}>
           <Card size="small"
             title={<Space><FileTextOutlined /><span>Mis Boletines</span></Space>}
             extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/boletines")}>Ver todos →</Button>}
@@ -253,7 +253,7 @@ export default function LodgerDashboard() {
           </Card>
         </Col>
 
-        <Col xs={24} md={10} lg={8}>
+        <Col xs={24} md={12}>
           <Card size="small"
             title={<Space><AppstoreOutlined /><span>Servicios Activos</span></Space>}
             extra={<Button type="link" size="small" onClick={() => navigate("/v2/lodger/servicios")}>Ver todos →</Button>}
