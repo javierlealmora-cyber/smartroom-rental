@@ -220,16 +220,15 @@ function VisorConsumo({ accId, rooms }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterRoom, setFilterRoom] = useState("all");
-  const [filterYear, setFilterYear] = useState(dayjs().year());
-  const [filterMonth, setFilterMonth] = useState(dayjs().month() + 1);
 
   const COLORS = ["#0071E3", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const start = `${filterYear}-${String(filterMonth).padStart(2, "0")}-01`;
-      const end = dayjs(start).endOf("month").format("YYYY-MM-DD");
+      // Últimos 12 meses: desde hace 11 meses hasta fin del mes actual
+      const start = dayjs().subtract(11, "month").startOf("month").format("YYYY-MM-DD");
+      const end = dayjs().endOf("month").format("YYYY-MM-DD");
 
       let q = supabase
         .from("energy_readings")
@@ -244,35 +243,33 @@ function VisorConsumo({ accId, rooms }) {
       const { data: rows, error: err } = await q;
       if (err) throw new Error(err.message);
 
-      // Pivot: date → { date, "Hab.01": kwh, ... }
-      const byDate = {};
+      // Pivot: mes (MMM YY) → { month, "Hab. 01": kWh total, ... }
+      const byMonth = {};
       (rows || []).forEach((r) => {
-        const d = r.reading_date;
-        if (!byDate[d]) byDate[d] = { date: dayjs(d).format("DD/MM") };
+        const monthKey = dayjs(r.reading_date).format("MMM YY");
+        const monthSort = dayjs(r.reading_date).format("YYYY-MM");
+        if (!byMonth[monthKey]) byMonth[monthKey] = { month: monthKey, _sort: monthSort };
         const label = `Hab. ${r.room?.number ?? r.room_id.slice(0, 4)}`;
-        byDate[d][label] = (byDate[d][label] || 0) + Number(r.kwh);
+        byMonth[monthKey][label] = (byMonth[monthKey][label] || 0) + Number(r.kwh);
       });
-      setData(Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)));
+
+      const sorted = Object.values(byMonth).sort((a, b) => a._sort.localeCompare(b._sort));
+      sorted.forEach((d) => delete d._sort);
+      setData(sorted);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [accId, filterRoom, filterYear, filterMonth]);
+  }, [accId, filterRoom]);
 
   useEffect(() => { load(); }, [load]);
 
-  const MONTHS = [
-    "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-    "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
-  ];
-  const years = Array.from({ length: 5 }, (_, i) => dayjs().year() - i);
-
   // Líneas a mostrar
   const lineKeys = data.length > 0
-    ? Object.keys(data[0]).filter((k) => k !== "date")
+    ? Object.keys(data[0]).filter((k) => k !== "month")
     : [];
 
   return (
     <div>
-      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Visor de Consumo</Title>
+      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Visor de Consumo — Últimos 12 meses</Title>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
 
@@ -282,16 +279,6 @@ function VisorConsumo({ accId, rooms }) {
           <Select style={{ width: "100%" }} value={filterRoom} onChange={setFilterRoom}>
             <Option value="all">Todas las habitaciones</Option>
             {rooms.map((r) => <Option key={r.id} value={r.id}>Hab. {r.number}</Option>)}
-          </Select>
-        </Col>
-        <Col xs={12} sm={4} md={3}>
-          <Select style={{ width: "100%" }} value={filterMonth} onChange={setFilterMonth}>
-            {MONTHS.map((m, i) => <Option key={i + 1} value={i + 1}>{m}</Option>)}
-          </Select>
-        </Col>
-        <Col xs={12} sm={4} md={3}>
-          <Select style={{ width: "100%" }} value={filterYear} onChange={setFilterYear}>
-            {years.map((y) => <Option key={y} value={y}>{y}</Option>)}
           </Select>
         </Col>
         <Col>
@@ -304,14 +291,14 @@ function VisorConsumo({ accId, rooms }) {
       ) : data.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📈</div>
-          <Text type="secondary">No hay datos de consumo para el período seleccionado</Text>
+          <Text type="secondary">No hay datos de consumo para los últimos 12 meses</Text>
         </div>
       ) : (
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E5E7EB", padding: "20px 12px" }}>
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => `${v} kWh`} width={65} />
               <ChartTooltip
@@ -326,8 +313,8 @@ function VisorConsumo({ accId, rooms }) {
                   dataKey={key}
                   stroke={COLORS[i % COLORS.length]}
                   strokeWidth={2}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
               ))}
             </LineChart>
