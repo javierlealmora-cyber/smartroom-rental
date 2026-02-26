@@ -9,7 +9,7 @@ function extractEdgeError(result) {
 
 // ─── Accommodations ───────────────────────────────────────────────────────────
 
-export async function listAccommodations({ status } = {}) {
+export async function listAccommodations({ status, clientAccountId } = {}) {
   let q = supabase
     .from("accommodations")
     .select(`
@@ -19,6 +19,11 @@ export async function listAccommodations({ status } = {}) {
     `)
     .order("created_at", { ascending: false });
 
+  // Filtro tenant (defensa en profundidad)
+  if (clientAccountId) {
+    q = q.eq("client_account_id", clientAccountId);
+  }
+
   if (status) q = q.eq("status", status);
 
   const { data, error } = await q;
@@ -26,17 +31,22 @@ export async function listAccommodations({ status } = {}) {
   return data || [];
 }
 
-export async function getAccommodation(id) {
-  const { data, error } = await supabase
+export async function getAccommodation(id, clientAccountId = null) {
+  let q = supabase
     .from("accommodations")
     .select(`
       *,
       owner_entity:entities(id, legal_name, first_name, last_name1, legal_type),
       rooms(*)
     `)
-    .eq("id", id)
-    .single();
+    .eq("id", id);
 
+  // Filtro tenant (defensa en profundidad)
+  if (clientAccountId) {
+    q = q.eq("client_account_id", clientAccountId);
+  }
+
+  const { data, error } = await q.single();
   if (error) throw new Error(error.message);
   return data;
 }
