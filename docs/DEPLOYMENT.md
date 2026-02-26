@@ -1,6 +1,13 @@
-# Deployment Guide — SmartRent
+# Deployment Guide - SmartRoom Rental Platform
 
-Guía de deployment para SmartRent en Vercel con entornos staging y producción.
+Este documento describe el proceso de deployment de la aplicación SmartRoom Rental en Vercel, incluyendo la configuración de entornos, variables de entorno y mejores prácticas.
+
+## 📊 Proyectos Supabase
+
+| Entorno | Project ID | URL |
+|---------|------------|-----|
+| **Producción** | `oeofdvkilcuidxainuow` | https://oeofdvkilcuidxainuow.supabase.co |
+| **Staging** | `lopdwrsmkmtboeczxotj` | https://lopdwrsmkmtboeczxotj.supabase.co |
 
 ---
 
