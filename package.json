@@ -9,7 +9,19 @@
     "build:pre": "vite build --mode staging",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:auth": "vitest run src/tests/auth/",
+    "test:permisos": "vitest run src/tests/permisos/",
+    "test:alojamientos": "vitest run src/tests/alojamientos/",
+    "test:entidades": "vitest run src/tests/entidades/",
+    "test:inquilinos": "vitest run src/tests/inquilinos/",
+    "test:consumos": "vitest run src/tests/consumos/",
+    "test:servicios": "vitest run src/tests/servicios/",
+    "test:superadmin": "vitest run src/tests/superadmin/",
+    "test:integracion": "vitest run src/tests/integracion/"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -24,6 +36,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
@@ -33,8 +48,11 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jsdom": "^25.0.1",
+    "msw": "^2.12.10",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^2.1.9"
   }
 }
