@@ -132,7 +132,8 @@ USING (
 -- ============================================================================
 ALTER TABLE public.lodger_services ENABLE ROW LEVEL SECURITY;
 
--- SELECT: superadmin ve todo, admin ve su tenant, lodger ve sus propios servicios
+-- SELECT: superadmin ve todo, admin ve su tenant
+-- Nota: lodgers no tienen profile_id, se gestionan por email/invitación
 CREATE POLICY "lodger_services_select_policy"
 ON public.lodger_services
 FOR SELECT
@@ -140,13 +141,6 @@ TO authenticated
 USING (
   get_my_role() = 'superadmin'
   OR client_account_id = get_my_client_account_id()
-  OR (
-    -- Lodger puede ver sus propios servicios
-    get_my_role() = 'lodger'
-    AND lodger_id IN (
-      SELECT id FROM lodgers WHERE profile_id = auth.uid()
-    )
-  )
 );
 
 -- INSERT: superadmin o admin de su tenant
@@ -215,7 +209,7 @@ COMMENT ON POLICY "accommodation_services_select_policy" ON public.accommodation
 'Superadmin ve todo, admin ve servicios de alojamientos de su tenant';
 
 COMMENT ON POLICY "lodger_services_select_policy" ON public.lodger_services IS 
-'Superadmin ve todo, admin ve su tenant, lodger ve sus propios servicios';
+'Superadmin ve todo, admin ve servicios de lodgers de su tenant';
 
 COMMENT ON TABLE public.stripe_events IS 
 'Solo accesible por service_role. RLS habilitado sin políticas = denegado a usuarios autenticados';
