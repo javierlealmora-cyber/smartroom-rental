@@ -7,11 +7,16 @@ function extractEdgeError(result) {
   return "Error desconocido";
 }
 
-export async function listEntities({ type } = {}) {
+export async function listEntities({ type, clientAccountId } = {}) {
   let q = supabase
     .from("entities")
     .select("*")
     .order("created_at", { ascending: false });
+
+  // Filtro tenant (defensa en profundidad)
+  if (clientAccountId) {
+    q = q.eq("client_account_id", clientAccountId);
+  }
 
   if (type) q = q.eq("type", type);
 

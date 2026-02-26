@@ -3,7 +3,7 @@ import { invokeWithAuth } from "./supabaseInvoke.services";
 
 // ─── Lecturas directas con RLS ────────────────────────────────────────────────
 
-export async function listLodgers({ status } = {}) {
+export async function listLodgers({ status, clientAccountId } = {}) {
   let q = supabase
     .from("lodgers")
     .select(`
@@ -17,6 +17,11 @@ export async function listLodgers({ status } = {}) {
     .eq("lodger_room_assignments.status", "active")
     .order("created_at", { ascending: false });
 
+  // Filtro tenant (defensa en profundidad)
+  if (clientAccountId) {
+    q = q.eq("client_account_id", clientAccountId);
+  }
+
   if (status) q = q.eq("status", status);
 
   const { data, error } = await q;
@@ -24,8 +29,8 @@ export async function listLodgers({ status } = {}) {
   return data || [];
 }
 
-export async function getLodger(id) {
-  const { data, error } = await supabase
+export async function getLodger(id, clientAccountId = null) {
+  let q = supabase
     .from("lodgers")
     .select(`
       *,
@@ -35,9 +40,14 @@ export async function getLodger(id) {
         accommodation:accommodations(id, name)
       )
     `)
-    .eq("id", id)
-    .single();
+    .eq("id", id);
 
+  // Filtro tenant (defensa en profundidad)
+  if (clientAccountId) {
+    q = q.eq("client_account_id", clientAccountId);
+  }
+
+  const { data, error } = await q.single();
   if (error) throw new Error(error.message);
   return data;
 }
