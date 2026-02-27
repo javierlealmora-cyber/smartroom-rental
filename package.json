@@ -21,7 +21,8 @@
     "test:consumos": "vitest run src/tests/consumos/",
     "test:servicios": "vitest run src/tests/servicios/",
     "test:superadmin": "vitest run src/tests/superadmin/",
-    "test:integracion": "vitest run src/tests/integracion/"
+    "test:integracion": "vitest run src/tests/integracion/",
+    "test:rendimiento": "vitest run src/tests/rendimiento/"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
