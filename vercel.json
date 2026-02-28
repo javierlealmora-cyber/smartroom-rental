@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build && cp public/maintenance.html dist/index.html",
+  "buildCommand": "npm run build:maintenance",
   "outputDirectory": "dist",
   "framework": "vite",
 
