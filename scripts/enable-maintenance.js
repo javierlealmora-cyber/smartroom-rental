@@ -10,6 +10,15 @@ const projectRoot = path.resolve(__dirname, '..');
 const maintenanceSource = path.join(projectRoot, 'public', 'maintenance.html');
 const distIndex = path.join(projectRoot, 'dist', 'index.html');
 
+// Check if maintenance mode is enabled via environment variable
+const maintenanceMode = process.env.MAINTENANCE_MODE === 'true';
+
+if (!maintenanceMode) {
+  console.log('ℹ️  MAINTENANCE_MODE not enabled. Skipping maintenance mode.');
+  console.log('   Set MAINTENANCE_MODE=true to enable maintenance mode.');
+  process.exit(0);
+}
+
 try {
   if (!fs.existsSync(maintenanceSource)) {
     console.error('❌ maintenance.html not found in public/');
