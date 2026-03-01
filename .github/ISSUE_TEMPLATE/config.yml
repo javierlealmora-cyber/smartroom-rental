@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentación
+    url: https://github.com/javier-leal-mora/smartroom-rental/wiki
+    about: Consulta la documentación del proyecto
+  - name: 💬 Discusiones
+    url: https://github.com/javier-leal-mora/smartroom-rental/discussions
+    about: Para preguntas generales o discusiones
