@@ -1,0 +1,356 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: v1
+
+jobs:
+  # Job 1: Build and Lint
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: dist/
+          retention-days: 7
+
+  # Job 2: Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:run
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(npm run test:coverage -- --silent | grep -o '[0-9]*\.[0-9]*' | head -1)
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below 80%"
+            exit 1
+          else
+            echo "✅ Coverage $COVERAGE% meets threshold"
+          fi
+
+  # Job 3: BDD Tests
+  bdd-tests:
+    name: BDD Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run BDD tests
+        run: npm run test:features
+
+      - name: Upload BDD test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bdd-test-results
+          path: |
+            test-results/
+            coverage/
+          retention-days: 7
+
+  # Job 4: E2E Tests (Smoke)
+  e2e-smoke:
+    name: E2E Smoke Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run E2E smoke tests
+        run: npm run test:e2e:smoke
+        env:
+          CI: true
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-smoke-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  # Job 5: Security Scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Upload Snyk results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  # Job 6: Database Schema Check
+  db-schema:
+    name: Database Schema Check
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'database') || contains(github.event.pull_request.title, 'migration')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Check migration files
+        run: |
+          echo "🔍 Checking migration files..."
+          if [ -d "supabase/migrations" ]; then
+            echo "✅ Migration directory exists"
+            ls -la supabase/migrations/
+          else
+            echo "❌ No migration directory found"
+            exit 1
+          fi
+
+      - name: Validate migration syntax
+        run: |
+          for file in supabase/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              echo "🔍 Validating $file"
+              # Basic SQL syntax check
+              if ! grep -q "CREATE\|ALTER\|DROP\|INSERT\|UPDATE\|DELETE" "$file"; then
+                echo "⚠️ Warning: $file might not contain SQL operations"
+              fi
+            fi
+          done
+
+  # Job 7: Performance Check
+  performance:
+    name: Performance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Analyze bundle size
+        run: |
+          echo "🔍 Analyzing bundle size..."
+          du -sh dist/*
+          # Check if bundle size is reasonable (< 5MB)
+          BUNDLE_SIZE=$(du -s dist/ | cut -f1)
+          if [ $BUNDLE_SIZE -gt 5120 ]; then
+            echo "⚠️ Warning: Bundle size $BUNDLE_SIZE KB is large"
+          else
+            echo "✅ Bundle size $BUNDLE_SIZE KB is acceptable"
+          fi
+
+  # Job 8: Summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [build, unit-tests, bdd-tests, e2e-smoke, security]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.payload.pull_request.number;
+            
+            // Get job results
+            const buildResult = '${{ needs.build.result }}';
+            const unitTestsResult = '${{ needs.unit-tests.result }}';
+            const bddTestsResult = '${{ needs.bdd-tests.result }}';
+            const e2eSmokeResult = '${{ needs.e2e-smoke.result }}';
+            const securityResult = '${{ needs.security.result }}';
+            
+            // Create summary
+            let summary = '## 🤖 Automated Checks Summary\n\n';
+            summary += '| Check | Status |\n';
+            summary += '|-------|--------|\n';
+            summary += `| 🏗️ Build | ${buildResult === 'success' ? '✅ Passed' : '❌ Failed'} |\n`;
+            summary += `| 🧪 Unit Tests | ${unitTestsResult === 'success' ? '✅ Passed' : '❌ Failed'} |\n`;
+            summary += `| 🎯 BDD Tests | ${bddTestsResult === 'success' ? '✅ Passed' : '❌ Failed'} |\n`;
+            summary += `| 🌐 E2E Smoke | ${e2eSmokeResult === 'success' ? '✅ Passed' : '❌ Failed'} |\n`;
+            summary += `| 🔒 Security | ${securityResult === 'success' ? '✅ Passed' : '❌ Failed'} |\n\n`;
+            
+            // Add recommendations
+            if (buildResult !== 'success' || unitTestsResult !== 'success' || bddTestsResult !== 'success' || e2eSmokeResult !== 'success') {
+              summary += '### 🚨 Action Required\n';
+              summary += 'Please fix the failing checks before merging this PR.\n\n';
+            } else {
+              summary += '### ✅ Ready for Review\n';
+              summary += 'All automated checks passed! This PR is ready for manual review.\n\n';
+            }
+            
+            summary += '### 📊 Additional Information\n';
+            summary += '- Build artifacts are available for download\n';
+            summary += '- Test reports and coverage reports are attached\n';
+            summary += '- Security scan results are available\n';
+            
+            // Post comment
+            github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr_number,
+              body: summary
+            });
+
+  # Job 9: Preview Deploy (optional)
+  preview-deploy:
+    name: Preview Deploy
+    runs-on: ubuntu-latest
+    needs: [build, unit-tests, bdd-tests]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: dist/
+
+      - name: Deploy to Vercel Preview
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+          alias-domains: |
+            pr-${{ github.event.number }}.smartroom-rental.vercel.app
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.payload.pull_request.number;
+            
+            const comment = `### 🚀 Preview Deploy\n\n`;
+            comment += `🌐 **Preview URL**: https://pr-${pr_number}.smartroom-rental.vercel.app\n\n`;
+            comment += `This preview will be available until the PR is merged or closed.\n`;
+            
+            github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr_number,
+              body: comment
+            });
