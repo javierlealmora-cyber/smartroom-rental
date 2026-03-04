@@ -332,10 +332,7 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
           working-directory: ./
-          alias-domains: |
-            pr-${{ github.event.number }}.smartroom-rental.vercel.app
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
