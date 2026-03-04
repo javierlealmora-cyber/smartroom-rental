@@ -326,23 +326,34 @@ jobs:
           name: build-files
           path: dist/
 
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
       - name: Deploy to Vercel Preview
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
+        id: deploy
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $DEPLOYMENT_URL"
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         with:
           script: |
             const { owner, repo } = context.repo;
             const pr_number = context.payload.pull_request.number;
+            const deployment_url = process.env.DEPLOYMENT_URL;
             
             const comment = `### 🚀 Preview Deploy\n\n`;
-            comment += `🌐 **Preview URL**: https://pr-${pr_number}.smartroom-rental.vercel.app\n\n`;
+            comment += `🌐 **Preview URL**: ${deployment_url}\n\n`;
             comment += `This preview will be available until the PR is merged or closed.\n`;
             
             github.rest.issues.createComment({
