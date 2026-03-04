@@ -177,7 +177,6 @@ const styles = {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 8,
     margin: 0,
     marginBottom: 8,
   },
