@@ -37,11 +37,35 @@ Ningún deployment puede ir a staging o production sin un plan de rollback docum
 
 - [ ] **Plan de rollback documentado**
 - [ ] **Migración de rollback creada** (si aplica)
+- [ ] **🔴 CRÍTICO: Backup de DATOS creado** (para migraciones destructivas)
 - [ ] **Rollback testeado en development**
-- [ ] **Backup de BBDD creado** (staging/production)
+- [ ] **Backup de BBDD completo creado** (staging/production)
 - [ ] **Deployment ID anterior identificado** (para rollback de código)
 - [ ] **Ventana de tiempo definida** para validación post-deploy
 - [ ] **Criterios de KO/OK documentados**
+
+### 🔴 CRÍTICO: Backup de Datos para Migraciones Destructivas
+
+**Si tu migración incluye DROP TABLE, DROP COLUMN, o ALTER TABLE que elimina datos:**
+
+1. **Exportar datos ANTES de la migración**:
+   ```bash
+   # Exportar estructura
+   npx supabase db dump --project-id [PROJECT_ID] --schema public --table [TABLA] > backup_[tabla]_structure.sql
+   
+   # Exportar datos
+   npx supabase db dump --project-id [PROJECT_ID] --data-only --schema public --table [TABLA] > backup_[tabla]_data.sql
+   ```
+
+2. **Generar rollback con datos**:
+   ```bash
+   node scripts/generate-rollback-with-data.js [env] [tabla]
+   ```
+
+3. **Incluir INSERT statements en migración de rollback**:
+   - La migración de rollback DEBE incluir los datos existentes
+   - No solo la estructura, sino TODOS los registros
+   - Verificar que el rollback restaura EXACTAMENTE el estado anterior
 
 ### Durante el Deployment
 

@@ -1,8 +1,14 @@
 -- ============================================================================
--- ROLLBACK MIGRATION: Restaurar tabla companies y company_id
+-- ROLLBACK MIGRATION: Restaurar tabla companies y company_id CON DATOS
 -- Fecha: 2026-03-05
 -- Descripción: Revierte las migraciones 20260305200000 y 20260305200001
 --              Restaura tabla companies y columna company_id en profiles y client_accounts
+--              INCLUYE restauración de datos existentes
+-- 
+-- ⚠️  IMPORTANTE: Antes de aplicar la migración destructiva, debes:
+--     1. Exportar datos: npx supabase db dump --data-only --table companies
+--     2. Agregar INSERT statements en PASO 2 de este archivo
+--     3. Verificar que TODOS los datos están incluidos
 -- ============================================================================
 
 -- ============================================================================
@@ -25,7 +31,27 @@ CREATE TABLE IF NOT EXISTS public.companies (
 );
 
 -- ============================================================================
--- PASO 2: Recrear company_id en profiles
+-- PASO 2: Insertar datos existentes de companies
+-- ============================================================================
+-- ⚠️  CRÍTICO: Aquí debes insertar TODOS los datos que existían en la tabla
+--              antes de la migración destructiva.
+--
+-- Ejemplo de cómo obtener los datos:
+--   npx supabase db dump --project-id [PROJECT_ID] --data-only --table companies
+--
+-- Los INSERT statements deben verse así:
+-- INSERT INTO public.companies (id, name, tax_id, email, phone, address, city, state, country, postal_code, status, created_at, updated_at)
+-- VALUES 
+--   ('uuid-1', 'Empresa 1', 'B12345678', 'empresa1@example.com', '+34600000001', 'Calle 1', 'Madrid', 'Madrid', 'ES', '28001', 'active', '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00'),
+--   ('uuid-2', 'Empresa 2', 'B87654321', 'empresa2@example.com', '+34600000002', 'Calle 2', 'Barcelona', 'Barcelona', 'ES', '08001', 'active', '2024-01-02 00:00:00+00', '2024-01-02 00:00:00+00');
+--
+-- NOTA: Si no había datos, deja esta sección vacía pero documentada.
+
+-- TODO: Agregar INSERT statements de datos reales aquí
+-- (Actualmente la tabla está vacía, pero este es el lugar donde irían los datos)
+
+-- ============================================================================
+-- PASO 3: Recrear company_id en profiles
 -- ============================================================================
 DO $$ 
 BEGIN

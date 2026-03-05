@@ -46,7 +46,9 @@
     "rollback:prod": "node scripts/rollback-migracion-bbdd.js prod",
     "rollback:full:dev": "node scripts/rollback-deployment-all.js dev",
     "rollback:full:staging": "node scripts/rollback-deployment-all.js staging",
-    "rollback:full:prod": "node scripts/rollback-deployment-all.js prod"
+    "rollback:full:prod": "node scripts/rollback-deployment-all.js prod",
+    "backup:data": "node scripts/backup-data-before-migration.js",
+    "generate:rollback:with-data": "node scripts/generate-rollback-with-data.js"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

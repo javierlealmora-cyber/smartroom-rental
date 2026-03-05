@@ -501,17 +501,69 @@ npm run validate:[ambiente]
 Antes de ANY deployment a staging/production:
 
 - [ ] **Migración de rollback creada** (si aplica cambios en BBDD)
-- [ ] **Rollback testeado en development**
-- [ ] **Backup de BBDD creado**
+- [ ] **🔴 CRÍTICO: Backup de DATOS exportado** (si migración es destructiva)
+- [ ] **INSERT statements incluidos en rollback** (para restaurar datos exactos)
+- [ ] **Rollback testeado en development CON DATOS**
+- [ ] **Backup de BBDD completo creado**
 - [ ] **Deployment ID anterior identificado**
 - [ ] **Criterios de KO/OK documentados**
 - [ ] **Plan de rollback documentado**
+
+### 🔴 Proceso para Migraciones Destructivas
+
+**Si tu migración incluye DROP TABLE, DROP COLUMN, o TRUNCATE:**
+
+#### 1. Exportar Datos ANTES de la Migración
+
+```bash
+# Exportar estructura de la tabla
+npx supabase db dump --project-id [PROJECT_ID] --schema public --table [TABLA] > backup_[tabla]_structure.sql
+
+# Exportar DATOS de la tabla
+npx supabase db dump --project-id [PROJECT_ID] --data-only --schema public --table [TABLA] > backup_[tabla]_data.sql
+```
+
+#### 2. Generar Rollback con Datos
+
+```bash
+# Opción 1: Usar generador automático
+node scripts/generate-rollback-with-data.js [env] [tabla]
+
+# Opción 2: Manual
+# - Copiar estructura de backup_[tabla]_structure.sql
+# - Copiar INSERT statements de backup_[tabla]_data.sql
+# - Crear migración de rollback que incluya AMBOS
+```
+
+#### 3. Verificar Rollback Completo
+
+La migración de rollback DEBE incluir:
+- ✅ CREATE TABLE (estructura)
+- ✅ INSERT statements (TODOS los datos existentes)
+- ✅ CREATE INDEX (índices)
+- ✅ ALTER TABLE (constraints)
+- ✅ CREATE POLICY (políticas RLS)
+- ✅ Verificación de cantidad de registros
+
+#### 4. Testear Rollback en Development
+
+```bash
+# Aplicar migración destructiva
+npm run migrate:dev
+
+# Aplicar rollback
+npm run rollback:dev
+
+# Verificar que los datos están EXACTAMENTE igual
+SELECT COUNT(*) FROM [tabla];
+SELECT * FROM [tabla] LIMIT 10;
+```
 
 Ver documentación completa: `.windsurf/ROLLBACK-POLICY.md`
 
 ---
 
-## �🚀 Próximos Pasos
+## �� Próximos Pasos
 
 1. ✅ Crear seeds de datos para desarrollo
 2. ✅ Configurar CI/CD para validación automática
