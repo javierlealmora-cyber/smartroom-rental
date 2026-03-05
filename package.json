@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite --mode development",
     "build": "vite build --mode production",
+    "build:maintenance": "vite build --mode production && node scripts/enable-maintenance.js",
     "build:pre": "vite build --mode staging",
     "build:dev": "vite build --mode development",
+    "maintenance:enable": "node scripts/enable-maintenance.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
@@ -22,7 +24,11 @@
     "test:servicios": "vitest run src/tests/servicios/",
     "test:superadmin": "vitest run src/tests/superadmin/",
     "test:integracion": "vitest run src/tests/integracion/",
-    "test:rendimiento": "vitest run src/tests/rendimiento/"
+    "test:rendimiento": "vitest run src/tests/rendimiento/",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:ui": "playwright test --ui",
+    "test:features": "vitest run src/tests/features/"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

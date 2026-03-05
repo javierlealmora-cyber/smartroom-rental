@@ -1,20 +1,8 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:maintenance",
   "outputDirectory": "dist",
   "framework": "vite",
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "/maintenance.html",
-      "permanent": false
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
+
   "headers": [
     {
       "source": "/(.*)",
@@ -33,9 +21,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key"
-  }
+  ]
 }
