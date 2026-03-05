@@ -41,12 +41,12 @@
     "validate:dev": "node scripts/validate-deployment.js dev",
     "validate:staging": "node scripts/validate-deployment.js staging",
     "validate:prod": "node scripts/validate-deployment.js prod",
-    "rollback:dev": "node scripts/rollback-migration.js dev",
-    "rollback:staging": "node scripts/rollback-migration.js staging",
-    "rollback:prod": "node scripts/rollback-migration.js prod",
-    "rollback:full:dev": "node scripts/rollback-deployment.js dev",
-    "rollback:full:staging": "node scripts/rollback-deployment.js staging",
-    "rollback:full:prod": "node scripts/rollback-deployment.js prod"
+    "rollback:dev": "node scripts/rollback-migracion-bbdd.js dev",
+    "rollback:staging": "node scripts/rollback-migracion-bbdd.js staging",
+    "rollback:prod": "node scripts/rollback-migracion-bbdd.js prod",
+    "rollback:full:dev": "node scripts/rollback-deployment-all.js dev",
+    "rollback:full:staging": "node scripts/rollback-deployment-all.js staging",
+    "rollback:full:prod": "node scripts/rollback-deployment-all.js prod"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
