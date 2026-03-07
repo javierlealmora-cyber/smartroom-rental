@@ -1,0 +1,7 @@
+DEPLOYED FROM: main
+DATE: 2026-02-28
+TIME: 11:40 UTC+1
+
+This file confirms the deployment is from MAIN branch.
+Main is now the only production branch.
+Master branch has been deleted.
