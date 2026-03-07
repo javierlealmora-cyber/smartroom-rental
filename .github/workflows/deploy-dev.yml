@@ -95,8 +95,6 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./
           scope: ${{ secrets.VERCEL_ORG_ID }}
-          alias-domains: |
-            dev.smartroom-rental.vercel.app
 
       - name: Run smoke tests against dev
         continue-on-error: true
