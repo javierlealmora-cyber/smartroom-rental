@@ -349,6 +349,7 @@ jobs:
           scope: ${{ secrets.VERCEL_ORG_ID }}
 
       - name: Comment PR with preview URL
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
