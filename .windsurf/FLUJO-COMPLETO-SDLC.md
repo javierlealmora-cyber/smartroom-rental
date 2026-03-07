@@ -34,8 +34,8 @@
 | Entorno | Branch GitHub | Vercel URL | Supabase Project ID | Auto-Deploy |
 |---------|---------------|------------|---------------------|-------------|
 | **DEV** | `develop` | dev.smartroom-rental.vercel.app | lqwyyyttjamirccdtlvl | ✅ Sí |
-| **STAGING** | `staging` | staging.smartroomrentalplatform.com | [STAGING_ID] | ✅ Sí |
-| **PRODUCTION** | `main` | smartroomrentalplatform.com | lqwyyyttjamirccdtlvl | ✅ Sí |
+| **STAGING** | `staging` | staging.smartroomrentalplatform.com | lopdwrsmkmtboeczxotj | ✅ Sí |
+| **PRODUCTION** | `main` | smartroomrentalplatform.com | oeofdvkilcuidxainuow | ✅ Sí |
 
 ---
 
@@ -1245,8 +1245,8 @@ VERCEL_PROJECT_ID                 # ID del proyecto
 
 # Supabase - Project Refs (para CLI)
 DEV_SUPABASE_PROJECT_REF          # lqwyyyttjamirccdtlvl
-STAGING_SUPABASE_PROJECT_REF      # [Pendiente configurar]
-PRODUCTION_SUPABASE_PROJECT_REF   # lqwyyyttjamirccdtlvl
+STAGING_SUPABASE_PROJECT_REF      # lopdwrsmkmtboeczxotj
+PRODUCTION_SUPABASE_PROJECT_REF   # oeofdvkilcuidxainuow
 SUPABASE_ACCESS_TOKEN             # Token personal de Supabase CLI
 
 # Supabase - URLs y Keys por entorno
@@ -1286,14 +1286,17 @@ SLACK_WEBHOOK_URL                 # Para notificaciones
 ```bash
 # Obtener desde URL del proyecto en Supabase Dashboard
 # Ejemplo: https://supabase.com/dashboard/project/lqwyyyttjamirccdtlvl
-# El ID es: lqwyyyttjamirccdtlvl
+# Los IDs son:
+# DEV: lqwyyyttjamirccdtlvl
+# STAGING: lopdwrsmkmtboeczxotj
+# PRODUCTION: oeofdvkilcuidxainuow
 ```
 
 ---
 
 ## 📝 Notas Importantes
 
-1. **Project ID DEV y PROD**: Ambos usan `lqwyyyttjamirccdtlvl` (confirmado)
+1. **Project IDs Supabase**: DEV=`lqwyyyttjamirccdtlvl`, STAGING=`lopdwrsmkmtboeczxotj`, PROD=`oeofdvkilcuidxainuow`
 2. **Auto-merge**: Añade label `auto-merge` a PRs para activar merge automático
 3. **Tests con tags**: Jobs tienen `continue-on-error: true` hasta crear tests con `@regression`, `@accessibility`, `@performance`, `@visual`
 4. **Errores de lint**: Los warnings sobre `secrets` en workflows son normales y no afectan funcionalidad
