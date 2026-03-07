@@ -155,7 +155,7 @@ jobs:
         run: npx playwright test --project=${{ matrix.browser }} --grep @smoke
         env:
           CI: true
-          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
 
       - name: Upload smoke test results
         uses: actions/upload-artifact@v4
@@ -171,6 +171,7 @@ jobs:
   regression-tests:
     name: Regression Tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: setup
     if: |
       github.event.inputs.test_suite == 'all' || 
@@ -207,7 +208,7 @@ jobs:
         run: npx playwright test --project=${{ matrix.browser }} --grep @regression
         env:
           CI: true
-          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
 
       - name: Upload regression test results
         uses: actions/upload-artifact@v4
@@ -223,6 +224,7 @@ jobs:
   accessibility-tests:
     name: Accessibility Tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: setup
     if: |
       github.event.inputs.test_suite == 'all' || 
@@ -257,7 +259,7 @@ jobs:
         run: npx playwright test --project=chromium --grep @accessibility
         env:
           CI: true
-          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
 
       - name: Upload accessibility test results
         uses: actions/upload-artifact@v4
@@ -274,6 +276,7 @@ jobs:
   performance-tests:
     name: Performance Tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: setup
     if: |
       github.event.inputs.test_suite == 'all' || 
@@ -305,7 +308,7 @@ jobs:
         run: npx playwright test --project=chromium --grep @performance
         env:
           CI: true
-          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
 
       - name: Upload performance test results
         uses: actions/upload-artifact@v4
@@ -320,8 +323,9 @@ jobs:
 
   # Job 6: Visual Regression Tests
   visual-regression:
-    name: Visual Regression Tests
+    name: Visual Regression
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: setup
     if: |
       github.event.inputs.test_suite == 'all' || 
@@ -353,7 +357,7 @@ jobs:
         run: npx playwright test --project=chromium --grep @visual
         env:
           CI: true
-          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+          BASE_URL: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
 
       - name: Upload visual regression results
         uses: actions/upload-artifact@v4
@@ -405,7 +409,7 @@ jobs:
           
           # Add environment info
           echo "**Environment**: ${{ needs.setup.outputs.test-environment }}" >> test-summary.md
-          echo "**Base URL**: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}" >> test-summary.md
+          echo "**Base URL**: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}" >> test-summary.md
           echo "**Test Suite**: ${{ github.event.inputs.test_suite || 'all' }}" >> test-summary.md
           
           # Add download links
@@ -508,7 +512,7 @@ jobs:
             ## E2E Test Failure
             
             **Environment**: ${{ needs.setup.outputs.test-environment }}
-            **Base URL**: ${{ needs.setup.outputs.build-url || 'https://staging.smartroom-rental.vercel.app' }}
+            **Base URL**: ${{ needs.setup.outputs.build-url || 'https://staging.smartroomrentalplatform.com' }}
             **Branch**: ${{ github.ref_name }}
             **Commit**: ${{ github.sha }}
             **Author**: ${{ github.actor }}

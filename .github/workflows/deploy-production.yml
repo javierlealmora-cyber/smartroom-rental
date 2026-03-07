@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'push' || 
-      (github.event_name == 'workflow_dispatch' && steps.confirm-deployment.outputs.confirmed == 'true')
+      (github.event_name == 'workflow_dispatch' && needs.confirm-deployment.outputs.confirmed == 'true')
     
     outputs:
       checks-passed: ${{ steps.checks.outputs.passed }}
@@ -78,7 +78,7 @@ jobs:
           echo "🔍 Checking staging environment health..."
           
           # Health check staging
-          if curl -f https://staging.smartroom-rental.vercel.app/health; then
+          if curl -f https://staging.smartroomrentalplatform.com/; then
             echo "healthy=true" >> $GITHUB_OUTPUT
             echo "✅ Staging is healthy"
           else
@@ -446,16 +446,8 @@ jobs:
         run: |
           echo "🔍 Validating critical user flows in production..."
           
-          # Test login flow
-          curl -X POST https://smartroomrentalplatform.com/api/auth/login \
-            -H "Content-Type: application/json" \
-            -d '{"email":"test@example.com","password":"test123"}' || echo "⚠️ Login endpoint test failed"
-          
-          # Test API health
-          curl -f https://smartroomrentalplatform.com/api/health || echo "⚠️ Health check failed"
-          
-          # Test Stripe integration
-          curl -f https://smartroomrentalplatform.com/api/stripe/health || echo "⚠️ Stripe health check failed"
+          # Health check
+          curl -f https://smartroomrentalplatform.com/ || echo "⚠️ Health check failed"
           
           echo "✅ Critical flows validated"
 

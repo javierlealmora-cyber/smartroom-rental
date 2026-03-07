@@ -1,0 +1,149 @@
+name: Auto Merge PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    name: Auto Merge PR
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.draft == false &&
+      (contains(github.event.pull_request.labels.*.name, 'auto-merge') ||
+       github.event.pull_request.user.login == 'github-actions[bot]')
+    
+    steps:
+      - name: Check if all checks passed
+        id: check-status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.payload.pull_request.number;
+            
+            // Get PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pr_number
+            });
+            
+            // Get check runs for the PR
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: pr.head.sha
+            });
+            
+            // Check if all required checks passed
+            const failedChecks = checkRuns.check_runs.filter(
+              check => check.conclusion !== 'success' && check.conclusion !== 'skipped'
+            );
+            
+            if (failedChecks.length > 0) {
+              console.log('❌ Some checks failed or are pending');
+              console.log('Failed checks:', failedChecks.map(c => c.name));
+              core.setOutput('ready', 'false');
+              return;
+            }
+            
+            // Get PR reviews
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: pr_number
+            });
+            
+            const approvedReviews = reviews.filter(
+              review => review.state === 'APPROVED'
+            );
+            
+            const changesRequestedReviews = reviews.filter(
+              review => review.state === 'CHANGES_REQUESTED'
+            );
+            
+            if (changesRequestedReviews.length > 0) {
+              console.log('❌ Changes requested on PR');
+              core.setOutput('ready', 'false');
+              return;
+            }
+            
+            // For PRs to main, require at least one approval
+            if (pr.base.ref === 'main' && approvedReviews.length === 0) {
+              console.log('❌ PR to main requires at least one approval');
+              core.setOutput('ready', 'false');
+              return;
+            }
+            
+            console.log('✅ All checks passed, PR is ready to merge');
+            core.setOutput('ready', 'true');
+
+      - name: Auto-merge PR
+        if: steps.check-status.outputs.ready == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr_number = context.payload.pull_request.number;
+            
+            try {
+              // Merge the PR
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: pr_number,
+                merge_method: 'squash',
+                commit_title: context.payload.pull_request.title,
+                commit_message: context.payload.pull_request.body || ''
+              });
+              
+              console.log('✅ PR merged successfully');
+              
+              // Add comment
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pr_number,
+                body: '🤖 **Auto-merged** by GitHub Actions\n\nAll checks passed and PR was automatically merged.'
+              });
+              
+            } catch (error) {
+              console.error('❌ Failed to merge PR:', error.message);
+              
+              // Comment on PR about failure
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pr_number,
+                body: `❌ **Auto-merge failed**\n\nError: ${error.message}\n\nPlease merge manually.`
+              });
+            }
+
+      - name: Delete branch after merge
+        if: steps.check-status.outputs.ready == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            
+            // Only delete feature branches, not develop/staging/main
+            const protectedBranches = ['develop', 'staging', 'main'];
+            if (protectedBranches.includes(pr.head.ref)) {
+              console.log('⚠️ Not deleting protected branch:', pr.head.ref);
+              return;
+            }
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${pr.head.ref}`
+              });
+              console.log('✅ Branch deleted:', pr.head.ref);
+            } catch (error) {
+              console.log('⚠️ Could not delete branch:', error.message);
+            }

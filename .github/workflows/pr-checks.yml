@@ -2,7 +2,7 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, staging ]
     types: [ opened, synchronize, reopened ]
 
 env:
@@ -341,7 +341,6 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
           working-directory: ./
           alias-domains: |
             pr-${{ github.event.number }}.smartroom-rental.vercel.app

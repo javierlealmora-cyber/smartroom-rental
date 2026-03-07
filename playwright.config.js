@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    baseURL: process.env.VITE_APP_URL || 'http://localhost:5173',
+    baseURL: process.env.BASE_URL || process.env.VITE_APP_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
