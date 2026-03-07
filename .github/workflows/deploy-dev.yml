@@ -135,13 +135,14 @@ jobs:
           
           if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
             echo "Found migration files, applying to dev..."
-            npx supabase db push --project-ref ${{ secrets.DEV_SUPABASE_PROJECT_REF }}
+            npx supabase db push --project-ref $SUPABASE_PROJECT_REF
             echo "✅ Migrations applied successfully"
           else
             echo "No migration files found"
           fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.DEV_SUPABASE_PROJECT_REF }}
 
       - name: Apply static data
         run: |
