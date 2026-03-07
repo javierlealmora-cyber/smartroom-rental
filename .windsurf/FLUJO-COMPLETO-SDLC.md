@@ -1221,13 +1221,15 @@ npm run rollback:full:prod
 
 ### Mejoras Implementadas
 
-- ✅ Añadidas dependencias: `@playwright/test`, `@vitest/coverage-v8`
+- ✅ Añadidas dependencias: `@playwright/test`, `@vitest/coverage-v8`, `@axe-core/playwright`
 - ✅ Fix `playwright.config.js` para leer `BASE_URL`
 - ✅ Añadido `staging` a branches del PR trigger
 - ✅ URLs unificadas a `staging.smartroomrentalplatform.com`
 - ✅ Eliminado job Lighthouse CI (no configurado)
 - ✅ Creado workflow `auto-merge-pr.yml`
 - ✅ Añadido `continue-on-error` a tests con tags inexistentes
+- ✅ Eliminado trigger duplicado en `e2e-tests.yml` (solo schedule y manual)
+- ✅ Corregida instalación de axe-core (ahora usa `@axe-core/playwright`)
 
 ---
 
