@@ -12,9 +12,6 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  db: { schema: 'public' }
-})
 
 async function inspectRLS() {
   console.log('='.repeat(100))

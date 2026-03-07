@@ -94,7 +94,7 @@ export default function LodgerDashboard() {
   const nameParts = fullName.trim().split(" ");
   const firstName = nameParts[0] || "Inquilino";
   const lastName = nameParts.slice(1).join(" ") || "";
-  const unreadBulletins = bulletins.filter((b) => b.status === "published" && !b.acknowledged_at).length;
+  const _unreadBulletins = bulletins.filter((b) => b.status === "published" && !b.acknowledged_at).length;
 
   if (loading) {
     return (

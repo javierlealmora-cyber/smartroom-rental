@@ -246,7 +246,7 @@ export default function V2Layout({
   companyBranding = {},
   userName = "Usuario",
   customBreadcrumbs = null,
-  onSettings = null,
+  _onSettings = null,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,10 +255,6 @@ export default function V2Layout({
   const navItems = getNavItems(role);
 
   const primaryColor = companyBranding?.primaryColor || "#0071E3";
-  const darkerColor = companyBranding?.primaryColor
-    ? companyBranding.primaryColor
-    : "#0062c8";
-
   const branding = {
     name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
     logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),

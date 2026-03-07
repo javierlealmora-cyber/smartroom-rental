@@ -42,7 +42,7 @@ function extractEdgeError(result) {
 export default function AccommodationEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId: _clientAccountId } = useAdminLayout();
   const [form] = Form.useForm();
 
   const [accommodation, setAccommodation] = useState(null);

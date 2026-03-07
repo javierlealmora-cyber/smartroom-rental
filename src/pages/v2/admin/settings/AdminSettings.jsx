@@ -53,7 +53,7 @@ const STATUS_LABELS = {
 
 export default function AdminSettings() {
   const { userName, companyBranding } = useAdminLayout();
-  const { tenant, planCode, billingCycle, accountStatus, branding } = useTenant();
+  const { tenant: _tenant, planCode, billingCycle, accountStatus, branding: _branding } = useTenant();
 
   const [accountData, setAccountData] = useState(null);
   const [loading, setLoading] = useState(true);

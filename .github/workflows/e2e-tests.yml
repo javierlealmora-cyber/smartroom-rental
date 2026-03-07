@@ -66,9 +66,7 @@ jobs:
       - name: Determine test environment
         id: env
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "environment=preview" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref_name }}" == "main" ]; then
+          if [ "${{ github.ref_name }}" == "main" ]; then
             echo "environment=production" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref_name }}" == "staging" ]; then
             echo "environment=staging" >> $GITHUB_OUTPUT

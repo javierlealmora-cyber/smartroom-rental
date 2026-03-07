@@ -51,7 +51,7 @@ export default function EntitiesList() {
 
   const canWrite = role !== "viewer";
 
-  const [payer, setPayer] = useState(null);
+  const [_payer, setPayer] = useState(null);
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,7 +75,7 @@ export default function EntitiesList() {
     return r;
   }, [owners, search, showInactive]);
 
-  const ownerLimitLabel = useMemo(() => {
+  const _ownerLimitLabel = useMemo(() => {
     if (!planCode || maxOwners == null) return "";
     return maxOwners === -1 ? "Ilimitadas" : `${ownersCountForLimit} / ${maxOwners}`;
   }, [planCode, maxOwners, ownersCountForLimit]);
@@ -132,7 +132,7 @@ export default function EntitiesList() {
     load();
   }, [planCode]);
 
-  const onToggleStatus = async (entity) => {
+  const _onToggleStatus = async (entity) => {
     if (!canWrite) return;
     const next = entity.status === "active" ? "disabled" : "active";
     if (!confirm(next === "disabled" ? "¿Deshabilitar esta entidad?" : "¿Reactivar esta entidad?")) return;
@@ -202,7 +202,7 @@ export default function EntitiesList() {
             const occRate = totalRooms > 0 ? Math.round((kpi.occupied / totalRooms) * 100) : 0;
             const progressColor = occRate > 80 ? "#059669" : occRate > 50 ? "#F59E0B" : "#DC2626";
             const isActive = entity.status === "active";
-            const contactName = entity.legal_type === "persona_juridica"
+            const _contactName = entity.legal_type === "persona_juridica"
               ? entity.legal_name
               : [entity.first_name, entity.last_name1, entity.last_name2].filter(Boolean).join(" ");
             return (

@@ -53,8 +53,8 @@ const ENTITY_LABELS = {
 
 export default function DashboardAdmin() {
   const navigate = useNavigate();
-  const { role } = useAuth();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { role: _role } = useAuth();
+  const { userName, companyBranding, clientAccountId: _clientAccountId } = useAdminLayout();
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);

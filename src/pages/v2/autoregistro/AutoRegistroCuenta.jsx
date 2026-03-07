@@ -37,6 +37,7 @@ export default function AutoRegistroCuenta() {
   // Determinar vista segun estado de auth y onboarding
   useEffect(() => {
     if (authLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setView(VIEW.LOADING);
       return;
     }
@@ -116,7 +117,7 @@ export default function AutoRegistroCuenta() {
       setSubmitError(err?.message || "Error al procesar el registro. Intentalo de nuevo.");
       setSubmitting(false);
     }
-  }, []);
+  }, [navigate, refreshProfile]);
 
   const handleCancel = useCallback(() => {
     if (confirm("¿Desea cancelar el registro? Se perderan los datos introducidos.")) {

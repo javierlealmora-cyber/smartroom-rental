@@ -50,6 +50,7 @@ export default function SessionResolver({ resolveDestination }) {
     if (typeof result === "string") {
       navigate(result, { replace: true });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolved(result);
     }
   }, [auth.loading, auth.user, auth.profile, auth.tenantState, profileTimedOut]);

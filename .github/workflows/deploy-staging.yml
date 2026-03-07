@@ -147,9 +147,6 @@ jobs:
             echo "✅ Bundle size $BUNDLE_SIZE KB is within limits"
           fi
 
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
   # Job 3: Database Operations
   database-operations:
     name: Database Operations

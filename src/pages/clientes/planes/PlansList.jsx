@@ -7,7 +7,6 @@ import {
   archivePlan,
   duplicatePlan,
   calculateAnnualPrice,
-  calculatePriceWithVAT,
   planStatuses,
 } from "../../../mocks/plans.mock";
 import { getServiceByKey } from "../../../mocks/services.mock";
@@ -40,6 +39,7 @@ export default function PlansList() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlans();
   }, [filters]);
 

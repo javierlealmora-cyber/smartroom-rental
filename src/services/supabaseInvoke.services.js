@@ -85,7 +85,7 @@ if (bc) {
       breakerOpenUntil = Math.max(breakerOpenUntil, msg.payload?.breakerOpenUntil ?? 0);
       try {
         await supabase.auth.signOut({ scope: "local" });
-      } catch {}
+      } catch { /* intentional: ignore sign-out errors */ }
     }
   };
 }
@@ -107,7 +107,7 @@ if (typeof window !== "undefined" && typeof window.addEventListener === "functio
         breakerOpenUntil = Math.max(breakerOpenUntil, msg.breakerOpenUntil ?? 0);
         await supabase.auth.signOut({ scope: "local" });
       }
-    } catch {}
+    } catch { /* intentional: ignore message parse errors */ }
   });
 }
 

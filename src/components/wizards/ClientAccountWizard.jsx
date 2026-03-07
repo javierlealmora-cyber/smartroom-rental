@@ -90,7 +90,7 @@ const generateSlug = (name) => {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Validacion por paso
-const validateStep = (stepIndex, formData, mode) => {
+const validateStep = (stepIndex, formData, _mode) => {
   const errs = {};
 
   // Paso A: Contrato
@@ -195,7 +195,9 @@ export default function ClientAccountWizard({
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(() => {
-    const base = initialData || getInitialFormData();
+    const src = initialData || getInitialFormData();
+    // Shallow copy to avoid mutating props; admins array entries also copied
+    const base = { ...src, admins: src.admins ? src.admins.map(a => ({ ...a })) : [] };
     if (initialPlanCode) base.plan_code = initialPlanCode;
     if (initialBillingCycle) base.billing_cycle = initialBillingCycle;
     // Pre-fill from authenticated user data

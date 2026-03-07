@@ -16,6 +16,7 @@ function useStorageImageUrl(key) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!key) { setFailed(true); return; }
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(key);
     if (data?.publicUrl) {
@@ -59,6 +60,7 @@ export default function ManagerLogin() {
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile) {
       console.log("[ManagerLogin] Already authenticated, resolving...");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       resolvePostLogin(auth);
     }
   }, [auth.loading, auth.user, auth.profile, auth.tenantState]);
@@ -95,6 +97,7 @@ export default function ManagerLogin() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resolvePostLogin(auth);
   }, [postLogin, auth.loading, auth.user, auth.profile, auth.tenantState, profileTimedOut]);
 
