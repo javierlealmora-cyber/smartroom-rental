@@ -37,6 +37,8 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          VITE_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -352,7 +354,7 @@ jobs:
             const { owner, repo } = context.repo;
             const pr_number = context.payload.pull_request.number;
             
-            const comment = `### 🚀 Preview Deploy\n\n`;
+            let comment = `### 🚀 Preview Deploy\n\n`;
             comment += `🌐 **Preview URL**: https://pr-${pr_number}.smartroom-rental.vercel.app\n\n`;
             comment += `This preview will be available until the PR is merged or closed.\n`;
             
