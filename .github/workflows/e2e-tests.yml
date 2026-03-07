@@ -1,18 +1,6 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [ main, develop, staging ]
-    paths:
-      - 'src/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.*'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'src/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.*'
   schedule:
     # Run E2E tests daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -252,8 +240,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Install accessibility tools
-        run: npm install -g axe-core
 
       - name: Run accessibility tests
         run: npx playwright test --project=chromium --grep @accessibility
