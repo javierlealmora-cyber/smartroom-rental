@@ -610,6 +610,7 @@ jobs:
 
       - name: Send Slack notification
         if: secrets.SLACK_WEBHOOK_URL != ''
+        continue-on-error: true
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ steps.report.outputs.status }}
@@ -630,6 +631,7 @@ jobs:
 
       - name: Send email notification
         if: secrets.EMAIL_SENDER != ''
+        continue-on-error: true
         run: |
           echo "📧 Sending email notification..."
           
