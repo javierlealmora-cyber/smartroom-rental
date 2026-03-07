@@ -39,3 +39,5 @@ supabase/backups
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*.local
