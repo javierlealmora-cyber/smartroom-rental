@@ -50,6 +50,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     // Cargar datos del inquilino actual
     const t = mockTenants.find((t) => t.id === CURRENT_TENANT_ID);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTenant(t);
 
     // Cargar datos de consumo
@@ -111,7 +112,7 @@ export default function StudentDashboard() {
         <button
           style={{
             ...styles.quickNavItem,
-            ...(true ? styles.quickNavItemActive : {}),
+            ...styles.quickNavItemActive,
           }}
           onClick={() => {}}
         >

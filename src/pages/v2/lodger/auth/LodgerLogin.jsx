@@ -16,7 +16,8 @@ function useStorageImageUrl(key) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!key) { setFailed(true); return; }
+    if (!key) { // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFailed(true); return; }
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(key);
     if (data?.publicUrl) {
       const img = new Image();
@@ -57,6 +58,7 @@ export default function LodgerLogin() {
   // If already authenticated on mount, resolve immediately
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       resolvePostLogin(auth);
     }
   }, [auth.loading, auth.user, auth.profile, auth.tenantState]);
@@ -85,6 +87,7 @@ export default function LodgerLogin() {
 
     if (!auth.profile) {
       console.warn("[LodgerLogin] No profile loaded, showing no_tenant");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPostLogin("no_tenant");
       return;
     }

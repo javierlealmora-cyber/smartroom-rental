@@ -16,7 +16,6 @@ import {
   getStatusLabel,
   getStatusColor,
   formatDate,
-  formatCurrency,
 } from "../../../mocks/clientAccountsData";
 
 export default function ClientAccountDetail() {

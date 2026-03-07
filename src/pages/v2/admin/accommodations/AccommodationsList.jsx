@@ -50,7 +50,7 @@ export default function AccommodationsList() {
   const [showInactive, setShowInactive] = useState(false);
   const [filterEntityId, setFilterEntityId] = useState(null);
   const [allAccommodations, setAllAccommodations] = useState([]);
-  const [ownerEntities, setOwnerEntities] = useState([]);
+  const [_ownerEntities, setOwnerEntities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -112,7 +112,7 @@ export default function AccommodationsList() {
       .map(([, group]) => group);
   }, [filtered]);
 
-  const onToggleStatus = async (acc, e) => {
+  const _onToggleStatus = async (acc, e) => {
     e?.stopPropagation();
     const next = acc.status === "active" ? "inactive" : "active";
     try {

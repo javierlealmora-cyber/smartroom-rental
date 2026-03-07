@@ -18,6 +18,7 @@ export default function PlanesPage() {
   // Read flash message from navigation state (e.g. from RequireTenant redirect)
   useEffect(() => {
     if (location.state?.message) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFlashMessage(location.state.message);
       // Clean up so message doesn't persist on browser back/forward
       window.history.replaceState({}, document.title);

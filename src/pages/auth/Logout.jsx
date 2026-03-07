@@ -46,7 +46,7 @@ export default function Logout() {
             window.indexedDB.deleteDatabase(db.name);
           }
         }
-      } catch (e) {
+      } catch {
         // No soportado en todos los navegadores
       }
 

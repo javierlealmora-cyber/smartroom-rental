@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { supabase } from "../services/supabaseClient";
-import { invokeWithAuth } from "../services/supabaseInvoke.services";
 
 export default function AuthDebug() {
   const { user, profile } = useAuth();

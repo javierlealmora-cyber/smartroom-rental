@@ -7,8 +7,7 @@
 
 import { mockPlans, getPlanByCode, formatCurrency, getPlanColor, getPlanLabel } from "../../../mocks/clientAccountsData";
 
-export default function StepContrato({ formData, errors, onChange, mode, onChangeField }) {
-  const handleChange = onChangeField || onChange;
+export default function StepContrato({ formData, errors, onChange, _mode, _onChangeField }) {
   const activePlans = mockPlans.filter(
     (p) => p.status === "active" && p.visible_for_new_accounts
   );

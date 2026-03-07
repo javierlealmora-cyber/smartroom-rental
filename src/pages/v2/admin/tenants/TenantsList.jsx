@@ -30,7 +30,7 @@ const STATUS_COLOR = {
   inactive: "#6B7280",
 };
 
-function formatDate(iso) {
+function _formatDate(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 }

@@ -78,7 +78,7 @@ async function checkKnownTables() {
 
   for (const tableName of knownTables) {
     try {
-      const { data, error, count } = await supabase
+      const { error, count } = await supabase
         .from(tableName)
         .select('*', { count: 'exact', head: true })
 

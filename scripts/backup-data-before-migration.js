@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import readline from 'readline';
-
 // Configuración de ambientes
 const ENVIRONMENTS = {
   dev: {

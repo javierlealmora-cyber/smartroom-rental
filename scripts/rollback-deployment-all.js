@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import readline from 'readline';
-import { execSync } from 'child_process';
 
 // Configuración de ambientes
 const ENVIRONMENTS = {

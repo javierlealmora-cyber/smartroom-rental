@@ -1,7 +1,7 @@
 // src/mocks/plans.mock.js
 // Planes de suscripción para SmartRoom Rental Platform
 
-import { getServiceByKey, getActiveServices } from "./services.mock";
+import { getServiceByKey } from "./services.mock";
 
 // Datos iniciales de planes
 let plansCatalog = [

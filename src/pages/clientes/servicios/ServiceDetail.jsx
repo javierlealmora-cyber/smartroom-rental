@@ -31,6 +31,7 @@ export default function ServiceDetail() {
   useEffect(() => {
     const found = getServiceById(id);
     if (found) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setService(found);
     } else {
       navigate("/clientes/servicios");

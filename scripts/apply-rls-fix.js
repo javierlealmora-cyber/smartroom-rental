@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import { readFileSync } from 'fs'
 
@@ -13,7 +12,6 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function applyMigration() {
   console.log('='.repeat(100))

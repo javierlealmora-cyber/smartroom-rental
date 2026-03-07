@@ -17,6 +17,7 @@ export default function StorageImage({
 
   useEffect(() => {
     if (!storageKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFailed(true);
       return;
     }

@@ -10,7 +10,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import V2Layout from "../../../../layouts/V2Layout";
 import {
-  mockPlans,
   PLAN_STATUS,
   AVAILABLE_SERVICES,
   getPlanById,
@@ -35,6 +34,7 @@ export default function PlanDetail() {
   useEffect(() => {
     const foundPlan = getPlanById(id);
     if (foundPlan) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlan(foundPlan);
       setFormData({ ...foundPlan });
     }

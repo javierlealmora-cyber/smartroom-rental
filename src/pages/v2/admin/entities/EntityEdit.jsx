@@ -54,7 +54,7 @@ export default function EntityEdit() {
     return !!form.first_name && !!form.last_name1;
   }, [form, isCompany]);
 
-  const set = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+  const _set = (key, value) => setForm((p) => ({ ...p, [key]: value }));
 
   useEffect(() => {
     const load = async () => {

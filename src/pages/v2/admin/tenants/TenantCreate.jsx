@@ -22,7 +22,7 @@ const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout
 export default function TenantCreate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId: _clientAccountId } = useAdminLayout();
   const [form] = Form.useForm();
 
   const preselectedAccId = searchParams.get("acc") || null;

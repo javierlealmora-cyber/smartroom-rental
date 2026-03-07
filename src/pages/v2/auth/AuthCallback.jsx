@@ -23,7 +23,7 @@ export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState(STATUS.LOADING);
   const [message, setMessage] = useState("Verificando tu cuenta...");
-  const [errorDetail, setErrorDetail] = useState(null);
+  const [_errorDetail, setErrorDetail] = useState(null);
 
   useEffect(() => {
     const handleCallback = async () => {

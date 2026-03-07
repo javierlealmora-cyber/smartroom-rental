@@ -7,9 +7,7 @@ import { useAuth } from "../../../providers/AuthProvider";
 export default function ApartmentEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { profile } = useAuth();
-  const isSuperadmin = profile?.role === "superadmin";
-
+  const { profile: _profile } = useAuth();
   // Estado del formulario
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState("");

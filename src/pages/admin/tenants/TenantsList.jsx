@@ -23,15 +23,6 @@ export default function TenantsList() {
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
 
-  // Cargar lista de empresas para superadmin
-  useEffect(() => {
-    if (isSuperadmin) {
-      loadCompanies();
-    } else if (userCompanyId) {
-      setSelectedCompanyId(userCompanyId);
-    }
-  }, [isSuperadmin, userCompanyId]);
-
   const loadCompanies = async () => {
     try {
       const data = await getCompanies();
@@ -45,6 +36,16 @@ export default function TenantsList() {
       console.error("[TenantsList] Error loading companies:", err);
     }
   };
+
+  // Cargar lista de empresas para superadmin
+  useEffect(() => {
+    if (isSuperadmin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadCompanies();
+    } else if (userCompanyId) {
+      setSelectedCompanyId(userCompanyId);
+    }
+  }, [isSuperadmin, userCompanyId]);
 
   const sidebarItems = [
     { label: "Visión General", path: "/alojamientos", icon: "⊞" },

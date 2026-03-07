@@ -19,6 +19,7 @@ export default function CommercialLogin() {
   // If already authenticated, show resolver immediately
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowResolver(true);
     }
   }, [auth.loading, auth.user, auth.profile]);

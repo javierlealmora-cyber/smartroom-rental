@@ -13,7 +13,7 @@
  *   (supabaseInvoke.services.js usa estado global de módulo: breakerOpenUntil,
  *    consecutiveAuthFailures, refreshInFlight, cooldownUntil)
  */
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { buildChain } from '../helpers/chainMock'
 
 // ─── Mocks hoisted (para C-01 a C-04, C-09, C-10) ───────────────────────────
