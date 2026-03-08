@@ -113,24 +113,11 @@ export function AuthProvider({ children }) {
       setProfileLoading(true);
 
       try {
-        // Intentar con columnas v2 (client_account_id, etc.)
         let { data, error } = await supabase
           .from("profiles")
-          .select("id, role, company_id, client_account_id, onboarding_status, is_primary_admin, full_name, email, phone, created_at")
+          .select("id, role, client_account_id, onboarding_status, is_primary_admin, full_name, email, created_at")
           .eq("id", user.id)
           .maybeSingle();
-
-        // Fallback: si falla por columnas inexistentes, usar solo las legacy
-        if (error && error.message?.includes("does not exist")) {
-          console.warn("[AuthProvider] v2 columns not found, falling back to legacy SELECT");
-          const fallback = await supabase
-            .from("profiles")
-            .select("id, role, company_id, full_name, email, phone, created_at")
-            .eq("id", user.id)
-            .maybeSingle();
-          data = fallback.data;
-          error = fallback.error;
-        }
 
         if (cancelled) return;
 
@@ -219,7 +206,7 @@ export function AuthProvider({ children }) {
     setProfileLoading(true);
     const { data } = await supabase
       .from("profiles")
-      .select("id, role, company_id, client_account_id, onboarding_status, is_primary_admin, full_name, email, phone, created_at")
+      .select("id, role, client_account_id, onboarding_status, is_primary_admin, full_name, email, created_at")
       .eq("id", user.id)
       .maybeSingle();
     if (mountedRef.current && data) {
