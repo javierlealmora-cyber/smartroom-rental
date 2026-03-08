@@ -271,6 +271,8 @@ jobs:
 
       - name: Deploy to Vercel Staging
         uses: amondnet/vercel-action@v25
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.STAGING_VERCEL_PROJECT_ID }}
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
