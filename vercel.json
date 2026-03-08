@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:maintenance",
+  "buildCommand": "npm run build:pre",
   "outputDirectory": "dist",
   "framework": "vite",
 

@@ -265,12 +265,9 @@ jobs:
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          vercel-project-id: ${{ secrets.STAGING_VERCEL_PROJECT_ID }}
           working-directory: ./
           scope: ${{ secrets.VERCEL_ORG_ID }}
-          alias-domains: |
-            staging.smartroomrentalplatform.com
 
       - name: Wait for deployment
         run: |
