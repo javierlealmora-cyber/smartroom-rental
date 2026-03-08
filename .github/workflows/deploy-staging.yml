@@ -270,6 +270,7 @@ jobs:
           retention-days: 7
 
       - name: Deploy to Vercel Staging
+        id: deploy
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -278,38 +279,28 @@ jobs:
           working-directory: ./
           scope: ${{ secrets.VERCEL_ORG_ID }}
 
-      - name: Wait for deployment
-        run: |
-          echo "⏳ Waiting for deployment to be ready..."
-          sleep 60
-
       - name: Health check
         run: |
-          echo "🏥 Running health checks..."
-          
-          # Check if staging is responding
+          echo "🏥 Running health checks against ${{ steps.deploy.outputs.preview-url }}..."
+
           for i in {1..10}; do
-            if curl -f https://staging.smartroomrentalplatform.com/; then
+            if curl -f "${{ steps.deploy.outputs.preview-url }}/"; then
               echo "✅ Staging environment is healthy"
               break
             else
               echo "⏳ Waiting for staging to be ready... ($i/10)"
-              sleep 30
+              sleep 15
             fi
           done
 
       - name: Run smoke tests against staging
         run: |
-          echo "🧪 Running smoke tests against staging..."
-          
-          # Install Playwright for smoke tests
-          npx playwright install --with-deps
-          
-          # Run smoke tests
+          echo "🧪 Running smoke tests against ${{ steps.deploy.outputs.preview-url }}..."
+          npx playwright install --with-deps chromium
           npm run test:e2e:smoke
         env:
           CI: true
-          BASE_URL: https://staging.smartroomrentalplatform.com
+          BASE_URL: ${{ steps.deploy.outputs.preview-url }}
 
       - name: Upload smoke test results
         uses: actions/upload-artifact@v4
