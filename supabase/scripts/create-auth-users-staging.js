@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 /**
  * Script para crear usuarios en auth.users de STAGING
  * Usa Supabase Admin API
