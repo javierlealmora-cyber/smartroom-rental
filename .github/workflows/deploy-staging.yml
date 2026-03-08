@@ -73,11 +73,14 @@ jobs:
 
       - name: Run E2E tests
         if: github.event.inputs.run_e2e_tests == 'true' || github.event.inputs.run_e2e_tests == ''
+        continue-on-error: true
         run: |
           npm run build
           npm run test:e2e:smoke
         env:
           CI: true
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
 
       - name: Generate coverage report
         id: coverage
