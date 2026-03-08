@@ -7,7 +7,7 @@ import { getCompanies } from "../../../services/companies.service";
 export default function OccupancyHistory() {
   const { profile } = useAuth();
   const role = profile?.role;
-  const userCompanyId = profile?.company_id;
+  const userCompanyId = profile?.client_account_id;
   const isSuperadmin = role === "superadmin";
 
   // Estado para filtro de empresa (solo visible para superadmin)
@@ -17,15 +17,6 @@ export default function OccupancyHistory() {
   const currentYear = new Date().getFullYear();
   const [selectedApartment, setSelectedApartment] = useState("1");
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
-
-  // Cargar lista de empresas para superadmin
-  useEffect(() => {
-    if (isSuperadmin) {
-      loadCompanies();
-    } else if (userCompanyId) {
-      setSelectedCompanyId(userCompanyId);
-    }
-  }, [isSuperadmin, userCompanyId]);
 
   const loadCompanies = async () => {
     try {
@@ -39,6 +30,16 @@ export default function OccupancyHistory() {
       console.error("[OccupancyHistory] Error loading companies:", err);
     }
   };
+
+  // Cargar lista de empresas para superadmin
+  useEffect(() => {
+    if (isSuperadmin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadCompanies();
+    } else if (userCompanyId) {
+      setSelectedCompanyId(userCompanyId);
+    }
+  }, [isSuperadmin, userCompanyId]);
 
   const sidebarItems = [
     { label: "Visión General", path: "/alojamientos", icon: "⊞" },
@@ -128,7 +129,7 @@ export default function OccupancyHistory() {
     },
   ];
 
-  const selectedApartmentData = apartments.find((apt) => apt.id === selectedApartment);
+  const _selectedApartmentData = apartments.find((apt) => apt.id === selectedApartment);
 
   return (
     <div style={styles.pageContainer}>
