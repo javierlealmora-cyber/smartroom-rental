@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 /**
  * Script para crear usuarios en auth.users de STAGING
  * Usa Supabase Admin API
@@ -89,37 +88,13 @@ const users = [
     full_name: 'Agent Entity 6'
   },
   
-  // Lodgers (inquilinos)
-  { 
-    email: 'inquilino1@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
+  // Lodgers (inquilinos) - 80 usuarios con password común
+  ...Array.from({ length: 80 }, (_, i) => ({
+    email: `inquilino${i + 1}@housingspacesolutions.com`,
+    password: 'Test123456!',
     role: 'lodger',
-    full_name: 'Inquilino 1'
-  },
-  { 
-    email: 'inquilino2@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'lodger',
-    full_name: 'Inquilino 2'
-  },
-  { 
-    email: 'inquilino3@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'lodger',
-    full_name: 'Inquilino 3'
-  },
-  { 
-    email: 'inquilino4@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'lodger',
-    full_name: 'Inquilino 4'
-  },
-  { 
-    email: 'inquilino5@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'lodger',
-    full_name: 'Inquilino 5'
-  }
+    full_name: `Inquilino ${i + 1}`
+  }))
 ]
 
 async function createUsers() {

@@ -37,9 +37,9 @@ export default [
   
   // Node.js scripts
   {
-    files: ['scripts/**/*.js', '*.config.js'],
+    files: ['scripts/**/*.js', 'supabase/scripts/**/*.js', '*.config.js'],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       globals: {
         ...globals.node,
         ...globals.es2021,
@@ -84,7 +84,7 @@ export default [
   {
     files: ['tests/e2e/**/*.{js,jsx}', 'playwright.config.js'],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       globals: {
         ...globals.node,
         ...globals.browser,
