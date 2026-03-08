@@ -98,7 +98,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // 2) cargar profile (role, company_id, etc.) cuando cambie user
+  // 2) cargar profile (role, client_account_id, etc.) cuando cambie user
   useEffect(() => {
     let cancelled = false;
 
@@ -272,8 +272,8 @@ export function AuthProvider({ children }) {
       profile,
       profileLoading,
       role: profile?.role ?? null,
-      companyId: profile?.company_id ?? null,
-      clientAccountId: _clientAccountId,
+      companyId: profile?.client_account_id ?? null, // Mantener companyId para compatibilidad
+      clientAccountId: profile?.client_account_id ?? null,
       onboardingStatus: _onboardingStatus,
       isPrimaryAdmin: profile?.is_primary_admin ?? false,
       isAuthenticated: !!session,

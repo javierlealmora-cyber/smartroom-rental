@@ -9,7 +9,7 @@ import { getCompanies } from "../../../services/companies.service";
 export default function TenantsList() {
   const { profile } = useAuth();
   const role = profile?.role;
-  const userCompanyId = profile?.company_id;
+  const userCompanyId = profile?.client_account_id;
   const isSuperadmin = role === "superadmin";
 
   // Estado para filtro de empresa (solo visible para superadmin)

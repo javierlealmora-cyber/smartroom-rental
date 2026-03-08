@@ -36,6 +36,35 @@ Cascade debe:
 
 ## Defectos Pendientes
 
-_No hay defectos abiertos actualmente._
+---
 
-<!-- Última ejecución: 2026-02-26 — 100/100 tests pasados ✅ -->
+## BUG-002 [CERRADO] — ESLint falla en create-auth-users-staging.js por env Node no declarado
+**Módulo:** supabase/scripts/create-auth-users-staging.js
+**Test que falla:** CI deploy-staging.yml > Comprehensive Tests > Lint code
+**Error obtenido:**
+  'console' is not defined (lines 14, 125, 149, 152, 156, 160, 166)
+  'process' is not defined (lines 10, 11, 15)
+
+**Comportamiento esperado:** El script es un Node.js script y debe tener acceso a `console` y `process`. El ESLint debe reconocerlo como entorno Node (env: node: true) ya sea via configuración global o via comentario `/* eslint-env node */` al inicio del archivo.
+
+**Pasos para reproducir:**
+1. `gh workflow run deploy-staging.yml --ref develop`
+2. El job "Comprehensive Tests" falla en el step "Lint code"
+3. Observar anotaciones: `'console' is not defined` y `'process' is not defined` en supabase/scripts/create-auth-users-staging.js
+
+---
+
+## BUG-003 [CERRADO] — npm audit encuentra vulnerabilidades high-severity bloqueando el deploy
+**Módulo:** package.json / dependencias del proyecto
+**Test que falla:** CI deploy-staging.yml > Security & Performance > Security audit
+**Error obtenido:**
+  `npm audit --audit-level=high` sale con exit code 1
+
+**Comportamiento esperado:** Las dependencias no deben tener vulnerabilidades de severidad alta. Revisar con `npm audit` localmente e identificar qué paquete las introduce. Actualizar o reemplazar el paquete afectado.
+
+**Pasos para reproducir:**
+1. `npm audit --audit-level=high`
+2. Observar la lista de vulnerabilidades high/critical
+3. Resolver con `npm audit fix` o actualización manual de la dependencia afectada
+
+<!-- Última ejecución: 2026-03-08 — workflow deploy-staging run #17 falló en lint + audit -->

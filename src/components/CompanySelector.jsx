@@ -22,13 +22,13 @@ export default function CompanySelector({
   const [error, setError] = useState(null);
 
   const role = profile?.role;
-  const userCompanyId = profile?.company_id;
+  const userCompanyId = profile?.client_account_id;
 
-  // Si es admin o tenant, usar automáticamente su company_id
+  // Si es admin o tenant, usar automáticamente su client_account_id
   const isSuperadmin = role === "superadmin";
 
   useEffect(() => {
-    // Si NO es superadmin, establecer automáticamente el company_id del perfil
+    // Si NO es superadmin, establecer automáticamente el client_account_id del perfil
     if (!isSuperadmin && userCompanyId && onChange) {
       onChange(userCompanyId);
     }
@@ -123,13 +123,13 @@ export default function CompanySelector({
   );
 }
 
-// Hook para usar en formularios que necesitan company_id
+// Hook para usar en formularios que necesitan client_account_id
 export function useCompanyId() {
   const { profile } = useAuth();
   const role = profile?.role;
-  const userCompanyId = profile?.company_id;
+  const userCompanyId = profile?.client_account_id;
 
-  // Si NO es superadmin, devolver automáticamente su company_id
+  // Si NO es superadmin, devolver automáticamente su client_account_id
   if (role !== "superadmin") {
     return {
       companyId: userCompanyId,

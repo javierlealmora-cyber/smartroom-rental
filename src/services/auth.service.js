@@ -128,7 +128,7 @@ export async function getProfile(userId = null) {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, role, company_id, full_name, email, phone, created_at')
+      .select('id, role, client_account_id, full_name, email, phone, created_at')
       .eq('id', uid)
       .maybeSingle()
 
@@ -270,7 +270,7 @@ export async function belongsToCompany(companyId, profile = null) {
 
     if (!userProfile) return false
 
-    return userProfile.company_id === companyId
+    return userProfile.client_account_id === companyId
   } catch (err) {
     console.error('[auth.service] belongsToCompany error:', err)
     return false

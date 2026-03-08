@@ -20,15 +20,30 @@ export default async function globalSetup() {
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL });
 
-  console.log(`[global-setup] Logging in as ${email} at ${baseURL}/v2/manager/auth/login ...`);
+  console.log(`[global-setup] Logging in as ${email} at ${baseURL}/v2/admin/auth/login ...`);
 
-  await page.goto('/v2/manager/auth/login');
+  await page.goto('/v2/admin/auth/login');
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
 
-  // Esperar redirect post-login
-  await page.waitForURL('**/v2/manager/dashboard', { timeout: 20_000 });
+  console.log('[global-setup] Submitted form, waiting for redirect...');
+
+  // Esperar redirect post-login: superadmin → /v2/superadmin, admin → /v2/admin/dashboard
+  // Excluir la propia URL de login para no resolver prematuramente
+  try {
+    await page.waitForURL(
+      /\/(v2\/superadmin|v2\/admin\/dashboard|v2\/admin$|v2\/planes)/,
+      { timeout: 20_000 }
+    );
+  } catch {
+    const currentUrl = page.url();
+    console.error(`[global-setup] waitForURL timed out. Current URL: ${currentUrl}`);
+    await page.screenshot({ path: 'tests/e2e/.auth/login-debug.png' });
+    throw new Error(`Login failed or did not redirect. Current URL: ${currentUrl}`);
+  }
+
+  console.log(`[global-setup] Redirected to: ${page.url()}`);
 
   // Guardar sesión (cookies + localStorage)
   await page.context().storageState({ path: 'tests/e2e/.auth/manager.json' });
