@@ -1,184 +1,123 @@
-# 🌱 Development Seeds
+# Seeds de Development - SmartRoom Rental Platform
 
-Seeds de datos para el ambiente de **desarrollo local**.
+⚠️ **IMPORTANTE:** Los inquilinos (lodgers) son usuarios con login. NO existe tabla `lodgers` separada.
+
+## � Ejecución Automática (Recomendado)
+
+### **Método 1: Script Todo-en-Uno**
+
+```powershell
+# 1. Configurar variables de entorno
+$env:DEV_SUPABASE_URL = "https://lqwyyyttjamirccdtlvl.supabase.co"
+$env:DEV_SUPABASE_SERVICE_KEY = "tu-service-role-key"
+
+# 2. Ejecutar desde la raíz del proyecto
+.\supabase\seeds\development\run-all-seeds.ps1
+```
+
+Este script ejecuta automáticamente:
+1. ✅ Limpieza de datos (preserva superadmin)
+2. ✅ Creación de usuarios vía Admin API
+3. ✅ Ejecución de seeds SQL en orden
 
 ---
 
-## 📋 Orden de Ejecución
+## 📋 Ejecución Manual (Paso a Paso)
 
-Los seeds deben ejecutarse en este orden (respetando dependencias):
-
-1. ~~`01_companies.sql` - Empresas~~ **DEPRECATED** (tabla eliminada)
-2. `02_client_accounts.sql` - Cuentas de cliente
-3. `03_entities.sql` - Entidades propietarias
-4. `04_accommodations.sql` - Alojamientos
-5. `05_rooms.sql` - Habitaciones
-6. `06_lodgers.sql` - Inquilinos
-
-**Nota**: La tabla `companies` fue eliminada en la migración `20260305200001_remove_companies_table.sql`
-
----
-
-## 🚀 Cómo Aplicar
-
-### Opción 1: Script Automático (Recomendado)
+### **PASO 1: Limpiar Datos**
 
 ```bash
-npm run seed:dev
+psql $env:DATABASE_URL -f supabase/seeds/development/00_cleanup_client_data.sql
 ```
 
-### Opción 2: Manual con psql
+### **PASO 2: Crear Usuarios con SQL** ⚠️ **OBLIGATORIO**
 
 ```bash
-# Desde la raíz del proyecto
-cd supabase/seeds/development
-
-# Aplicar en orden
-psql $DATABASE_URL -f 01_companies.sql
-psql $DATABASE_URL -f 02_client_accounts.sql
-psql $DATABASE_URL -f 03_entities.sql
-psql $DATABASE_URL -f 04_accommodations.sql
-psql $DATABASE_URL -f 05_rooms.sql
-psql $DATABASE_URL -f 06_lodgers.sql
+psql $env:DATABASE_URL -f supabase/seeds/development/00_create_auth_users.sql
 ```
 
-### Opción 3: Con Supabase CLI
+**✅ CONFIRMADO:** Este método SQL directo con bcrypt funciona perfectamente:
+- Los usuarios SÍ aparecen en el dashboard de Supabase
+- Los usuarios SÍ pueden hacer login
+- UUIDs fijos para integridad referencial
+
+### **PASO 3: Ejecutar Seeds SQL**
 
 ```bash
-# Reset completo (borra todo y aplica migraciones + seeds)
-supabase db reset
+# Orden de ejecución:
+01_profiles.sql                  # Sincroniza profiles con auth.users
+02_client_accounts.sql           # Crea 8 cuentas cliente
+03_entities.sql                  # Crea 14 entidades legales
+04_accommodations.sql            # Crea 8 alojamientos
+05_rooms.sql                     # Crea 24 habitaciones
+07_lodger_room_assignments.sql  # Asigna 8 lodgers a habitaciones
 ```
 
----
-
-## 📊 Datos Incluidos
-
-### 🏢 Companies (3)
-- **SmartRoom Demo** - Madrid
-- **Alojamientos García** - Barcelona
-- **Residencias López** - Valencia
-
-### 👥 Client Accounts (3)
-- Cuenta Demo Principal
-- Cuenta García Madrid
-- Cuenta López Valencia
-
-### 🏛️ Entities (3)
-- Propiedades Demo S.L. (company)
-- García Inmobiliaria (company)
-- Juan López Pérez (individual)
-
-### 🏠 Accommodations (4)
-- **Piso Centro Madrid** - 4 habitaciones
-- **Residencia Universitaria Barcelona** - 10 habitaciones (5 en seed)
-- **Apartamento Malasaña** - 2 habitaciones
-- **Piso Estudiantes Valencia** - 3 habitaciones
-
-### 🚪 Rooms (14)
-- Diferentes tipos: shared, private, suite
-- Estados: free, occupied, reserved, maintenance
-- Rentas: 350€ - 500€/mes
-
-### 👤 Lodgers (9)
-- 7 activos
-- 1 invitado (pendiente)
-- 1 inactivo (ex-inquilino)
-
----
-
-## 🔑 UUIDs de Referencia
-
-Para usar en tests o desarrollo:
-
-### Companies
-```
-11111111-1111-1111-1111-111111111111  # SmartRoom Demo
-22222222-2222-2222-2222-222222222222  # Alojamientos García
-33333333-3333-3333-3333-333333333333  # Residencias López
+**Ejecutar todos:**
+```powershell
+Get-ChildItem supabase\seeds\development\*.sql | Where-Object { $_.Name -match '^\d+_' } | Sort-Object Name | ForEach-Object {
+    Write-Host "Ejecutando $($_.Name)..." -ForegroundColor Green
+    psql $env:DATABASE_URL -f $_.FullName
+}
 ```
 
-### Client Accounts
-```
-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa  # Cuenta Demo Principal
-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb  # Cuenta García Madrid
-cccccccc-cccc-cccc-cccc-cccccccccccc  # Cuenta López Valencia
-```
+## 📊 Datos que se Crearán
 
-### Entities
-```
-e1111111-1111-1111-1111-111111111111  # Propiedades Demo S.L.
-e2222222-2222-2222-2222-222222222222  # García Inmobiliaria
-e3333333-3333-3333-3333-333333333333  # Juan López Pérez
-```
+- **21 Usuarios en auth.users** (1 superadmin + 8 admins + 12 lodgers)
+- **8 Cuentas Cliente** (2 Basic, 2 Investor, 2 Business, 2 Agency)
+- **14 Entidades Legales** (8 payer + 6 owner)
+- **8 Alojamientos** (1 por cuenta cliente)
+- **24 Habitaciones** (16 libres + 8 ocupadas)
+- **12 Lodgers** (como profiles con role='lodger')
+- **8 Asignaciones** activas de lodgers a habitaciones
 
-### Accommodations
-```
-a1111111-1111-1111-1111-111111111111  # Piso Centro Madrid
-a2222222-2222-2222-2222-222222222222  # Residencia Universitaria Barcelona
-a3333333-3333-3333-3333-333333333333  # Apartamento Malasaña
-a4444444-4444-4444-4444-444444444444  # Piso Estudiantes Valencia
-```
+## ⚠️ Notas Importantes
 
----
+1. **NO ejecutar en producción** - Solo para desarrollo
+2. **Backup antes de ejecutar** - Por si necesitas revertir
+3. **Orden de ejecución** - Respetar el orden numérico de los archivos
+4. **Usuarios primero** - Siempre crear usuarios de auth antes de los seeds SQL
 
-## ✅ Verificación
+## 🔍 Verificación
 
-Después de aplicar los seeds, verifica:
+Después de ejecutar los seeds, verifica:
 
 ```sql
--- Contar registros
-SELECT 'companies' as table_name, COUNT(*) as count FROM public.companies
-UNION ALL
-SELECT 'client_accounts', COUNT(*) FROM public.client_accounts
-UNION ALL
-SELECT 'entities', COUNT(*) FROM public.entities
-UNION ALL
-SELECT 'accommodations', COUNT(*) FROM public.accommodations
-UNION ALL
-SELECT 'rooms', COUNT(*) FROM public.rooms
-UNION ALL
-SELECT 'lodgers', COUNT(*) FROM public.lodgers;
+-- Verificar cuentas
+SELECT name, slug, status FROM client_accounts;
 
--- Resultado esperado:
--- companies:        3
--- client_accounts:  3
--- entities:         3
--- accommodations:   4
--- rooms:           14
--- lodgers:          9
+-- Verificar entidades
+SELECT e.name, ca.name as cuenta 
+FROM entities e 
+JOIN client_accounts ca ON e.account_id = ca.id;
+
+-- Verificar alojamientos
+SELECT a.name, e.name as entidad 
+FROM accommodations a 
+JOIN entities e ON a.entity_id = e.id;
+
+-- Verificar habitaciones
+SELECT r.name, a.name as alojamiento, r.status
+FROM rooms r 
+JOIN accommodations a ON r.accommodation_id = a.id;
+
+-- Verificar inquilinos
+SELECT l.first_name, l.last_name, ca.name as cuenta
+FROM lodgers l
+JOIN client_accounts ca ON l.account_id = ca.id;
 ```
 
----
+## 🚀 Ejecución Rápida (Todo en Uno)
 
-## 🔄 Idempotencia
+```bash
+# 1. Limpiar datos
+psql $env:DATABASE_URL -f supabase/seeds/dev/00_cleanup_client_data.sql
 
-Todos los seeds son **idempotentes**:
-- Usan `ON CONFLICT DO UPDATE` o `ON CONFLICT DO NOTHING`
-- Pueden ejecutarse múltiples veces sin errores
-- Actualizan datos existentes si ya existen
+# 2. Crear usuarios (requiere script Node.js)
+node supabase/scripts/create-auth-users-dev.js
 
----
-
-## 🧪 Uso en Tests
-
-Estos datos son ideales para:
-- Tests unitarios
-- Tests de integración
-- Tests E2E
-- Desarrollo local
-- Demos
-
-Ejemplo en test:
-```javascript
-const DEMO_COMPANY_ID = '11111111-1111-1111-1111-111111111111';
-const DEMO_ACCOMMODATION_ID = 'a1111111-1111-1111-1111-111111111111';
+# 3. Ejecutar todos los seeds
+Get-ChildItem supabase/seeds/dev/*.sql | Where-Object { $_.Name -match '^\d+_' } | Sort-Object Name | ForEach-Object {
+    psql $env:DATABASE_URL -f $_.FullName
+}
 ```
-
----
-
-## 📝 Notas
-
-- **No incluye usuarios de auth**: Los usuarios deben crearse en Supabase Auth
-- **Datos ficticios**: Todos los datos son de ejemplo
-- **No usar en producción**: Solo para desarrollo
-- **Actualizar si cambia schema**: Mantener sincronizado con migraciones

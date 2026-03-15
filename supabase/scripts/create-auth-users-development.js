@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Script para crear usuarios en auth.users de STAGING
+ * Script para crear usuarios en auth.users de DEVELOPMENT
  * Usa Supabase Admin API
  */
 
@@ -18,15 +18,15 @@ const projectRoot = join(__dirname, '..', '..')
 dotenv.config({ path: join(projectRoot, '.env.local') })
 
 // Configuración desde variables de entorno
-const supabaseUrl = process.env.STAGING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.STAGING_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.DEV_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
+const supabaseServiceKey = process.env.DEV_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseServiceKey) {
   console.error('❌ Error: Service role key no encontrada')
   console.log('💡 Verifica que .env.local contenga una de estas variables:')
-  console.log('   - STAGING_SUPABASE_URL y STAGING_SUPABASE_SERVICE_KEY')
-  console.log('   - NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY')
-  console.log('💡 Obtén el service_role key de: https://supabase.com/dashboard/project/lopdwrsmkmtboeczxotj/settings/api')
+  console.log('   - DEV_SUPABASE_SERVICE_KEY')
+  console.log('   - SUPABASE_SERVICE_ROLE_KEY')
+  console.log('💡 Obtén el service_role key de: https://supabase.com/dashboard/project/lqwyyyttjamirccdtlvl/settings/api')
   process.exit(1)
 }
 
@@ -38,82 +38,78 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 })
 
 // Usuarios a crear
+// NOTA: Superadmin ya existe, no se incluye aquí
 const users = [
-  // Superadmin
+  // Admins de cuentas cliente (8 usuarios - 1 por cuenta) con UUIDs fijos
   { 
-    email: 'javierlealmora@housingspacesolutions.com', 
+    id: '10000000-0000-0000-0000-000000000001',
+    email: 'admin.basic1@housingspacesolutions.com', 
     password: '@2#H2s060722', 
-    role: 'superadmin',
-    full_name: 'Javier Leal Mora'
+    role: 'admin',
+    full_name: 'Admin Basic 1'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000002',
+    email: 'admin.basic2@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Basic 2'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000003',
+    email: 'admin.investor1@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Investor 1'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000004',
+    email: 'admin.investor2@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Investor 2'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000005',
+    email: 'admin.business1@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Business 1'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000006',
+    email: 'admin.business2@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Business 2'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000007',
+    email: 'admin.agency1@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Agency 1'
+  },
+  { 
+    id: '10000000-0000-0000-0000-000000000008',
+    email: 'admin.agency2@housingspacesolutions.com', 
+    password: '@2#H2s060722', 
+    role: 'admin',
+    full_name: 'Admin Agency 2'
   },
   
-  // Basic users
-  { 
-    email: 'basicuser1@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Basic User 1'
-  },
-  { 
-    email: 'basicuser2@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Basic User 2'
-  },
-  
-  // Investor users
-  { 
-    email: 'investorentidad1@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Investor Entity 1'
-  },
-  { 
-    email: 'investorentidad4@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Investor Entity 4'
-  },
-  
-  // Business users
-  { 
-    email: 'businessentidad2@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Business Entity 2'
-  },
-  { 
-    email: 'businessentidad5@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Business Entity 5'
-  },
-  
-  // Agency users
-  { 
-    email: 'agententidad3@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Agent Entity 3'
-  },
-  { 
-    email: 'agententidad6@housingspacesolutions.com', 
-    password: '@2#H2s060722', 
-    role: 'admin',
-    full_name: 'Agent Entity 6'
-  },
-  
-  // Lodgers (inquilinos) - 80 usuarios con password común
-  ...Array.from({ length: 80 }, (_, i) => ({
-    email: `inquilino${i + 1}@housingspacesolutions.com`,
-    password: 'Test123456!',
+  // Inquilinos (lodgers) - 12 usuarios con login y UUIDs fijos
+  ...Array.from({ length: 12 }, (_, i) => ({
+    id: `20000000-0000-0000-0000-${(i + 1).toString(16).padStart(12, '0')}`,
+    email: `lodger${i + 1}@example.com`,
+    password: '@2#H2s060722',
     role: 'lodger',
     full_name: `Inquilino ${i + 1}`
   }))
 ]
 
 async function createUsers() {
-  console.log('🚀 Creando usuarios en auth.users de STAGING...\n')
+  console.log('🚀 Creando usuarios en auth.users de DEVELOPMENT...\n')
   
   const results = {
     created: [],
@@ -123,8 +119,9 @@ async function createUsers() {
   
   for (const user of users) {
     try {
-      // Intentar crear el usuario
+      // Intentar crear el usuario con UUID fijo
       const { data, error } = await supabase.auth.admin.createUser({
+        id: user.id,
         email: user.email,
         password: user.password,
         email_confirm: true,
@@ -161,6 +158,17 @@ async function createUsers() {
   console.log(`⚠️  Usuarios existentes: ${results.existing.length}`)
   console.log(`❌ Errores: ${results.errors.length}`)
   
+  if (results.created.length > 0) {
+    console.log('\n📋 Usuarios creados por rol:')
+    const byRole = results.created.reduce((acc, u) => {
+      acc[u.role] = (acc[u.role] || 0) + 1
+      return acc
+    }, {})
+    Object.entries(byRole).forEach(([role, count]) => {
+      console.log(`  - ${role}: ${count}`)
+    })
+  }
+  
   if (results.errors.length > 0) {
     console.log('\n❌ Errores detallados:')
     results.errors.forEach(err => {
@@ -169,6 +177,8 @@ async function createUsers() {
   }
   
   console.log('\n✅ Script completado')
+  console.log('📝 Total de usuarios creados por este script: 20 (8 admins + 12 lodgers)')
+  console.log('📝 Total de usuarios que deberían existir en la BD: 21 (1 superadmin existente + 20 nuevos)')
   
   // Exit code basado en si hubo errores críticos
   process.exit(results.errors.length > 0 ? 1 : 0)

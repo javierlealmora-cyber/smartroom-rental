@@ -219,35 +219,11 @@ CREATE TABLE public.rooms (
 );
 
 -- ============================================================================
--- TABLA 7: lodgers
+-- NOTA: TABLA lodgers ELIMINADA
 -- ============================================================================
-CREATE TABLE public.lodgers (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
-  room_id uuid REFERENCES public.rooms(id) ON DELETE SET NULL,
-  
-  -- Datos personales
-  full_name text NOT NULL,
-  first_name text,
-  last_name1 text,
-  last_name2 text,
-  email text NOT NULL,
-  phone text,
-  document_id text,
-  gender text CHECK (gender IN ('male', 'female', 'other')),
-  
-  -- Fechas
-  check_in_date date,
-  check_out_date date,
-  
-  -- Estado
-  status text NOT NULL DEFAULT 'invited' CHECK (status IN ('invited', 'active', 'inactive', 'blocked')),
-  notes text,
-  
-  -- Auditoria
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- Los inquilinos ahora son solo usuarios con role='lodger' en la tabla profiles
+-- No se necesita tabla separada para datos extendidos de inquilinos
+-- ============================================================================
 
 -- ============================================================================
 -- TABLA 8: services_catalog
@@ -295,7 +271,7 @@ CREATE TABLE public.accommodation_services (
 -- ============================================================================
 CREATE TABLE public.lodger_services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lodger_id uuid NOT NULL REFERENCES public.lodgers(id) ON DELETE CASCADE,
+  lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   service_id uuid NOT NULL REFERENCES public.services_catalog(id) ON DELETE CASCADE,
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
   
@@ -390,7 +366,7 @@ CREATE TABLE public.energy_settlements (
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
   energy_bill_id uuid NOT NULL REFERENCES public.energy_bills(id) ON DELETE CASCADE,
   room_id uuid NOT NULL REFERENCES public.rooms(id) ON DELETE CASCADE,
-  lodger_id uuid REFERENCES public.lodgers(id) ON DELETE SET NULL,
+  lodger_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   
   -- Datos de liquidación
   days_present int NOT NULL DEFAULT 0,
@@ -411,7 +387,7 @@ CREATE TABLE public.bulletins (
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
   accommodation_id uuid NOT NULL REFERENCES public.accommodations(id) ON DELETE CASCADE,
   room_id uuid NOT NULL REFERENCES public.rooms(id) ON DELETE CASCADE,
-  lodger_id uuid NOT NULL REFERENCES public.lodgers(id) ON DELETE CASCADE,
+  lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   energy_bill_id uuid REFERENCES public.energy_bills(id) ON DELETE SET NULL,
   
   -- Periodo y datos
@@ -468,7 +444,7 @@ CREATE TABLE public.audit_log (
 CREATE TABLE public.incidents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
-  lodger_id uuid REFERENCES public.lodgers(id) ON DELETE SET NULL,
+  lodger_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   room_id uuid REFERENCES public.rooms(id) ON DELETE SET NULL,
   accommodation_id uuid REFERENCES public.accommodations(id) ON DELETE SET NULL,
   
@@ -491,7 +467,7 @@ CREATE TABLE public.incidents (
 CREATE TABLE public.lodger_room_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
-  lodger_id uuid NOT NULL REFERENCES public.lodgers(id) ON DELETE CASCADE,
+  lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   room_id uuid NOT NULL REFERENCES public.rooms(id) ON DELETE CASCADE,
   
   -- Periodo de asignación

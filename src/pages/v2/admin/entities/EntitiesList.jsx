@@ -82,19 +82,35 @@ export default function EntitiesList() {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true); setError(null);
+      setLoading(true); 
+      setError(null);
       try {
         const [payerEntities, ownerEntities] = await Promise.all([
           listEntities({ type: "payer" }),
           listEntities({ type: "owner" }),
         ]);
+        
         setPayer(payerEntities[0] || null);
-        setOwners(ownerEntities || []);
+        
+        // Para plan Basic, mostrar payer como owner si no hay owners
+        const hasOwners = ownerEntities && ownerEntities.length > 0;
+        const hasPayer = payerEntities && payerEntities.length > 0;
+        
+        let displayEntities;
+        if (planCode === 'basic' && hasPayer && !hasOwners) {
+          displayEntities = [payerEntities[0]];
+        } else {
+          displayEntities = ownerEntities || [];
+        }
+        
+        setOwners(displayEntities);
 
-        if (ownerEntities.length > 0) {
+        // Cargar KPIs para todas las entidades
+        const entitiesToLoadKpis = displayEntities.length > 0 ? displayEntities : [];
+        if (entitiesToLoadKpis.length > 0) {
           const { data: accs } = await supabase
             .from("accommodations").select("id, owner_entity_id")
-            .in("owner_entity_id", ownerEntities.map((e) => e.id));
+            .in("owner_entity_id", entitiesToLoadKpis.map((e) => e.id));
           const accIds = (accs || []).map((a) => a.id);
           let roomsByAcc = {};
           if (accIds.length > 0) {
@@ -107,7 +123,7 @@ export default function EntitiesList() {
             });
           }
           const kpis = {};
-          ownerEntities.forEach((e) => {
+          entitiesToLoadKpis.forEach((e) => {
             const myAccs = (accs || []).filter((a) => a.owner_entity_id === e.id);
             const myRooms = myAccs.flatMap((a) => roomsByAcc[a.id] || []);
             kpis[e.id] = {

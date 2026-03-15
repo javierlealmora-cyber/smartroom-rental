@@ -1,167 +1,64 @@
 -- ============================================================================
--- SEED: Accommodations (Alojamientos)
--- Ambiente: development
--- Descripción: Alojamientos de ejemplo con diferentes configuraciones
+-- SEEDS: accommodations
+-- Ambiente: DEVELOPMENT
+-- Fecha: 2026-03-15
+-- Descripción: Alojamientos (1 por entidad owner = 14 total) - idempotente
 -- ============================================================================
 
--- Insertar alojamientos de ejemplo
+-- Crear alojamientos para cada entidad owner
 INSERT INTO public.accommodations (
-  id,
-  client_account_id,
-  owner_entity_id,
-  name,
-  address_line1,
-  address_line2,
-  postal_code,
-  city,
-  province,
-  country,
-  status,
-  utilities_included,
-  split_electricity,
-  split_water,
-  split_gas,
-  split_mode_electricity,
-  split_mode_water,
-  split_mode_gas,
-  extra_costs,
-  has_individual_meters,
-  notes,
-  created_at,
-  updated_at
+  client_account_id, owner_entity_id, name, 
+  address_line1, city, province, postal_code, country, status,
+  utilities_included
 )
-VALUES
-  (
-    'a1111111-1111-1111-1111-111111111111',
-    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    'e1111111-1111-1111-1111-111111111111',
-    'Piso Centro Madrid',
-    'Calle Gran Vía 45',
-    'Piso 3º Derecha',
-    '28013',
-    'Madrid',
-    'Madrid',
-    'España',
-    'active',
-    true,
-    true,
-    true,
-    false,
-    'equal',
-    'equal',
-    'equal',
-    '[{"name": "Internet", "amount": 30, "frequency": "monthly"}, {"name": "Limpieza zonas comunes", "amount": 20, "frequency": "monthly"}]'::jsonb,
-    false,
-    'Piso céntrico con 4 habitaciones. Totalmente amueblado.',
-    now(),
-    now()
-  ),
-  (
-    'a2222222-2222-2222-2222-222222222222',
-    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    'e2222222-2222-2222-2222-222222222222',
-    'Residencia Universitaria Barcelona',
-    'Avenida Diagonal 123',
-    'Edificio A',
-    '08028',
-    'Barcelona',
-    'Barcelona',
-    'España',
-    'active',
-    true,
-    true,
-    true,
-    true,
-    'prorated',
-    'equal',
-    'prorated',
-    '[{"name": "Internet", "amount": 40, "frequency": "monthly"}, {"name": "Gimnasio", "amount": 15, "frequency": "monthly"}]'::jsonb,
-    true,
-    'Residencia moderna con 10 habitaciones. Incluye gimnasio y sala de estudio.',
-    now(),
-    now()
-  ),
-  (
-    'a3333333-3333-3333-3333-333333333333',
-    'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    'e3333333-3333-3333-3333-333333333333',
-    'Apartamento Malasaña',
-    'Calle Pez 20',
-    NULL,
-    '28004',
-    'Madrid',
-    'Madrid',
-    'España',
-    'active',
-    false,
-    false,
-    false,
-    false,
-    'meter',
-    'meter',
-    'meter',
-    '[]'::jsonb,
-    true,
-    'Apartamento pequeño con 2 habitaciones. Contadores individuales.',
-    now(),
-    now()
-  ),
-  (
-    'a4444444-4444-4444-4444-444444444444',
-    'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    'e3333333-3333-3333-3333-333333333333',
-    'Piso Estudiantes Valencia',
-    'Calle Colón 88',
-    '2º Izquierda',
-    '46004',
-    'Valencia',
-    'Valencia',
-    'España',
-    'active',
-    true,
-    true,
-    true,
-    false,
-    'equal',
-    'equal',
-    'equal',
-    '[{"name": "Internet Fibra", "amount": 35, "frequency": "monthly"}]'::jsonb,
-    false,
-    'Piso ideal para estudiantes. 3 habitaciones, cerca de universidades.',
-    now(),
-    now()
-  )
-ON CONFLICT (id) DO UPDATE SET
-  client_account_id = EXCLUDED.client_account_id,
-  owner_entity_id = EXCLUDED.owner_entity_id,
-  name = EXCLUDED.name,
-  address_line1 = EXCLUDED.address_line1,
-  address_line2 = EXCLUDED.address_line2,
-  postal_code = EXCLUDED.postal_code,
-  city = EXCLUDED.city,
-  province = EXCLUDED.province,
-  country = EXCLUDED.country,
-  status = EXCLUDED.status,
-  utilities_included = EXCLUDED.utilities_included,
-  split_electricity = EXCLUDED.split_electricity,
-  split_water = EXCLUDED.split_water,
-  split_gas = EXCLUDED.split_gas,
-  split_mode_electricity = EXCLUDED.split_mode_electricity,
-  split_mode_water = EXCLUDED.split_mode_water,
-  split_mode_gas = EXCLUDED.split_mode_gas,
-  extra_costs = EXCLUDED.extra_costs,
-  has_individual_meters = EXCLUDED.has_individual_meters,
-  notes = EXCLUDED.notes,
-  updated_at = now();
+SELECT 
+  e.client_account_id,
+  e.id,
+  e.legal_name || ' - Apartamento Principal',
+  'Calle Principal 123',
+  'Madrid',
+  'Madrid',
+  '28001',
+  'España',
+  'active',
+  true
+FROM entities e
+WHERE e.type = 'owner'
+ON CONFLICT DO NOTHING;
+
+-- Crear alojamientos para cuentas basic (usan entidad payer)
+INSERT INTO public.accommodations (
+  client_account_id, owner_entity_id, name, 
+  address_line1, city, province, postal_code, country, status,
+  utilities_included
+)
+SELECT 
+  e.client_account_id,
+  e.id,
+  e.legal_name || ' - Apartamento Principal',
+  'Calle Principal 123',
+  'Madrid',
+  'Madrid',
+  '28001',
+  'España',
+  'active',
+  true
+FROM entities e
+JOIN client_accounts ca ON e.client_account_id = ca.id
+WHERE e.type = 'payer' AND ca.plan_code = 'basic'
+ON CONFLICT DO NOTHING
+;
 
 -- Verificación
+SELECT 'Alojamientos insertados/actualizados:' as status;
+SELECT COUNT(*) as total_accommodations FROM public.accommodations;
+
 SELECT 
-  a.id,
-  a.name,
-  a.city,
-  a.status,
-  e.name as owner_name,
-  (SELECT COUNT(*) FROM public.rooms WHERE accommodation_id = a.id) as num_rooms
+  ca.plan_code,
+  e.legal_name as entity,
+  COUNT(a.id) as num_accommodations
 FROM public.accommodations a
 JOIN public.entities e ON a.owner_entity_id = e.id
-ORDER BY a.created_at;
+JOIN public.client_accounts ca ON a.client_account_id = ca.id
+GROUP BY ca.plan_code, e.legal_name
+ORDER BY ca.plan_code, e.legal_name;

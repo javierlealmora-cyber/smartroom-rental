@@ -8,11 +8,31 @@
  * @param {string} optionText - texto visible de la opción a seleccionar
  */
 export async function antdSelect(page, fieldId, optionText) {
-  await page.locator(`#${fieldId}`).click();
-  await page.locator('.ant-select-dropdown:visible')
-    .getByText(optionText, { exact: true })
-    .click();
-  // Esperar a que el dropdown se cierre
+  // Esperar a que el input del Select esté en el DOM
+  await page.waitForSelector(`#${fieldId}`, { timeout: 10_000 });
+
+  // Usar XPath para subir desde el input hasta .ant-select-selector y hacer click
+  // Esto evita problemas con :has() y es más robusto con todas las versiones de AntD
+  const selectorDiv = page.locator(`xpath=//div[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
+  await selectorDiv.click();
+
+  const dropdown = page.locator('.ant-select-dropdown:visible');
+  await dropdown.waitFor({ state: 'visible', timeout: 5_000 });
+
+  // Intentar click directo (funciona cuando la lista es corta)
+  const option = dropdown.getByText(optionText, { exact: true }).first();
+  try {
+    await option.click({ timeout: 3_000 });
+  } catch {
+    // Lista larga (showSearch): escribir en el input del wrapper para filtrar
+    const antSelectInput = page.locator(`#${fieldId}`)
+      .locator('xpath=ancestor::div[contains(@class,"ant-select")][1]')
+      .locator('input').first();
+    await antSelectInput.fill(optionText);
+    await page.waitForTimeout(400);
+    await dropdown.getByText(optionText, { exact: true }).first().click({ timeout: 5_000 });
+  }
+
   await page.locator('.ant-select-dropdown:visible').waitFor({ state: 'hidden' }).catch(() => {});
 }
 
@@ -20,12 +40,22 @@ export async function antdSelect(page, fieldId, optionText) {
  * Igual que antdSelect pero busca dentro de un localizador padre (ej: modal).
  */
 export async function antdSelectInScope(scope, fieldId, optionText) {
-  await scope.locator(`#${fieldId}`).click();
-  // El dropdown se renderiza en el body (fuera del modal), por eso usamos page
   const page = scope.page ? scope.page() : scope;
-  await page.locator('.ant-select-dropdown:visible')
-    .getByText(optionText, { exact: true })
-    .click();
+  const selectorDiv = scope.locator(`xpath=.//div[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
+  await selectorDiv.click();
+
+  const dropdown = page.locator('.ant-select-dropdown:visible');
+  await dropdown.waitFor({ state: 'visible' });
+
+  const option = dropdown.getByText(optionText, { exact: true }).first();
+  try {
+    await option.click({ timeout: 3_000 });
+  } catch {
+    await antSelect.locator('input').first().type(optionText, { delay: 40 });
+    await page.waitForTimeout(400);
+    await dropdown.getByText(optionText, { exact: true }).first().click({ timeout: 5_000 });
+  }
+
   await page.locator('.ant-select-dropdown:visible').waitFor({ state: 'hidden' }).catch(() => {});
 }
 

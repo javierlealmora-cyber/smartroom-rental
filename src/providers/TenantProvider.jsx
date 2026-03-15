@@ -49,20 +49,29 @@ export function TenantProvider({ children }) {
         return;
       }
 
-      // Cargar datos via whoami
+      // Cargar datos directamente de client_accounts (evita Edge Function whoami)
       setLoading(true);
       try {
-        const fnName = import.meta.env.VITE_FN_WHOAMI || "whoami";
-        const { data, error: fnError } = await supabase.functions.invoke(fnName);
-        if (fnError) throw fnError;
+        const { data: account, error: accountError } = await supabase
+          .from("client_accounts")
+          .select("name, plan_code, billing_cycle, status, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url")
+          .eq("id", clientAccountId)
+          .single();
 
-        if (data?.ok && data?.client_account_id) {
+        if (accountError) throw accountError;
+
+        if (account) {
           const tenantData = {
-            client_account_id: data.client_account_id,
-            plan_code: data.plan_code,
-            billing_cycle: data.billing_cycle,
-            account_status: data.account_status,
-            branding: data.branding || DEFAULT_BRANDING,
+            client_account_id: clientAccountId,
+            plan_code: account.plan_code,
+            billing_cycle: account.billing_cycle,
+            account_status: account.status,
+            branding: {
+              name: account.branding_name || account.name,
+              logo_url: account.branding_logo_url,
+              primary_color: account.branding_primary_color,
+              secondary_color: account.branding_secondary_color,
+            },
           };
           setTenant(tenantData);
           applyCssVars(tenantData.branding);
@@ -71,7 +80,7 @@ export function TenantProvider({ children }) {
           applyCssVars(DEFAULT_BRANDING);
         }
       } catch (err) {
-        console.warn("[TenantProvider] whoami error (non-blocking):", err.message);
+        console.warn("[TenantProvider] client_accounts error (non-blocking):", err.message);
         setTenant(null);
         applyCssVars(DEFAULT_BRANDING);
       } finally {

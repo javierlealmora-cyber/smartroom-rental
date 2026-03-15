@@ -45,7 +45,7 @@ export default function PlanCreate() {
     max_accommodations: 3,
     max_rooms: 20,
     max_admin_users: 1,
-    max_associated_users: 0,
+    max_associated_admins: 0,
     max_api_users: 0,
     max_viewer_users: 0,
 
@@ -528,8 +528,8 @@ export default function PlanCreate() {
                     type="number"
                     min="0"
                     max="2"
-                    value={formData.max_associated_users}
-                    onChange={(e) => handleChange("max_associated_users", parseInt(e.target.value))}
+                    value={formData.max_associated_admins}
+                    onChange={(e) => handleChange("max_associated_admins", parseInt(e.target.value))}
                     style={styles.input}
                   />
                   <span style={styles.helpText}>0-2 típicamente</span>

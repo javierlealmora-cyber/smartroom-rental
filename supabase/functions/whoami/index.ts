@@ -98,6 +98,7 @@ serve(async (req) => {
         result.plan_code = account.plan_code;
         result.billing_cycle = account.billing_cycle;
         result.account_status = account.status;
+        result.account_name = account.name;
         result.branding = {
           name: account.branding_name || account.name,
           logo_url: account.branding_logo_url,

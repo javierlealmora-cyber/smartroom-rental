@@ -6,29 +6,84 @@
 // NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
 // =============================================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { message } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import {
-  mockPlans,
+  getPlans,
   PLAN_STATUS,
-  getPlanStatusLabel,
-  getPlanStatusColor,
-  formatDate,
-  formatCurrency,
-  formatLimit,
-} from "../../../../mocks/clientAccountsData";
+} from "../../../../services/plans.service";
+
+// Helpers de formato
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+};
+
+const formatDate = (date) => {
+  if (!date) return '-';
+  return new Date(date).toLocaleDateString('es-ES');
+};
+
+const formatLimit = (value) => {
+  if (value === -1) return 'Ilimitado';
+  return value.toString();
+};
+
+const getPlanStatusLabel = (status) => {
+  const labels = {
+    draft: 'Borrador',
+    active: 'Activo',
+    deprecated: 'Obsoleto',
+    expired: 'Expirado',
+    disabled: 'Desactivado',
+  };
+  return labels[status] || status;
+};
+
+const getPlanStatusColor = (status) => {
+  const colors = {
+    draft: 'gray',
+    active: 'green',
+    deprecated: 'orange',
+    expired: 'red',
+    disabled: 'red',
+  };
+  return colors[status] || 'gray';
+};
 
 export default function PlansList() {
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterVisible, setFilterVisible] = useState("");
   const [filterVigente, setFilterVigente] = useState("");
 
+  // Cargar planes desde Supabase
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const data = await getPlans();
+        setPlans(data);
+      } catch (error) {
+        console.error('Error al cargar planes:', error);
+        message.error('Error al cargar los planes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
+
   // Filtrar planes
   const filteredPlans = useMemo(() => {
-    let result = [...mockPlans];
+    let result = [...plans];
 
     // Filtrar por búsqueda (nombre o código)
     if (searchTerm) {
@@ -63,27 +118,67 @@ export default function PlansList() {
     }
 
     return result;
-  }, [searchTerm, filterStatus, filterVisible, filterVigente]);
+  }, [plans, searchTerm, filterStatus, filterVisible, filterVigente]);
 
-  const handleToggleVisible = (plan) => {
+  const handleToggleVisible = async (plan) => {
     const action = plan.visible_for_new_accounts ? "ocultar" : "mostrar";
     if (window.confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} el plan "${plan.name}" para nuevas altas?`)) {
-      alert(`Plan "${plan.name}" ${plan.visible_for_new_accounts ? "ocultado" : "visible"} para nuevas altas (mock)`);
+      try {
+        const { toggleVisibility } = await import('../../../../services/plans.service');
+        await toggleVisibility(plan.id);
+        message.success(`Plan "${plan.name}" ${plan.visible_for_new_accounts ? "ocultado" : "visible"} para nuevas altas`);
+        // Recargar planes
+        const data = await getPlans();
+        setPlans(data);
+      } catch (error) {
+        console.error('Error al cambiar visibilidad:', error);
+        message.error('Error al cambiar la visibilidad del plan');
+      }
     }
   };
 
-  const handleDeactivate = (plan) => {
+  const handleDeactivate = async (plan) => {
     if (window.confirm(`¿Desactivar el plan "${plan.name}"? Esta acción marcará el plan como desactivado.`)) {
-      alert(`Plan "${plan.name}" desactivado (mock)`);
+      try {
+        const { deactivatePlan } = await import('../../../../services/plans.service');
+        await deactivatePlan(plan.id);
+        message.success(`Plan "${plan.name}" desactivado`);
+        // Recargar planes
+        const data = await getPlans();
+        setPlans(data);
+      } catch (error) {
+        console.error('Error al desactivar plan:', error);
+        message.error('Error al desactivar el plan');
+      }
     }
   };
 
-  const handleSetEndDate = (plan) => {
+  const handleSetEndDate = async (plan) => {
     const date = prompt("Fecha de fin de vigencia (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
     if (date) {
-      alert(`Fecha de fin establecida para "${plan.name}": ${date} (mock)`);
+      try {
+        const { setEndDate } = await import('../../../../services/plans.service');
+        await setEndDate(plan.id, date);
+        message.success(`Fecha de fin establecida para "${plan.name}": ${date}`);
+        // Recargar planes
+        const data = await getPlans();
+        setPlans(data);
+      } catch (error) {
+        console.error('Error al establecer fecha de fin:', error);
+        message.error(error.message || 'Error al establecer fecha de fin');
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <V2Layout role="superadmin" userName="Administrador">
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Cargando planes...</p>
+        </div>
+      </V2Layout>
+    );
+  }
 
   return (
     <V2Layout role="superadmin" userName="Administrador">
@@ -92,7 +187,7 @@ export default function PlansList() {
         <div>
           <h1 style={styles.title}>Gestión de Planes de Cliente</h1>
           <p style={styles.subtitle}>
-            {filteredPlans.length} de {mockPlans.length} planes
+            {loading ? 'Cargando...' : `${filteredPlans.length} de ${plans.length} planes`}
           </p>
         </div>
       </div>
@@ -273,7 +368,7 @@ export default function PlansList() {
                           {formatLimit(plan.max_rooms)} hab.
                         </span>
                         <span style={styles.limitItem} title="Max Usuarios">
-                          {plan.max_admin_users + plan.max_associated_users} usuarios
+                          {plan.max_admin_users + plan.max_associated_admins} usuarios
                         </span>
                       </div>
                     </td>

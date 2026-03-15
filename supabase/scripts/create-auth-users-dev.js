@@ -1,32 +1,19 @@
 #!/usr/bin/env node
 /**
- * Script para crear usuarios en auth.users de STAGING
+ * Script para crear usuarios en auth.users de DEV (Local)
  * Usa Supabase Admin API
  */
 
 import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-// Obtener directorio del proyecto
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const projectRoot = join(__dirname, '..', '..')
-
-// Cargar variables de entorno desde .env.local
-dotenv.config({ path: join(projectRoot, '.env.local') })
 
 // Configuración desde variables de entorno
-const supabaseUrl = process.env.STAGING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.STAGING_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.DEV_SUPABASE_URL || 'http://localhost:54321'
+const supabaseServiceKey = process.env.DEV_SUPABASE_SERVICE_KEY
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Error: Service role key no encontrada')
-  console.log('💡 Verifica que .env.local contenga una de estas variables:')
-  console.log('   - STAGING_SUPABASE_URL y STAGING_SUPABASE_SERVICE_KEY')
-  console.log('   - NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY')
-  console.log('💡 Obtén el service_role key de: https://supabase.com/dashboard/project/lopdwrsmkmtboeczxotj/settings/api')
+if (!supabaseServiceKey) {
+  console.error('❌ Error: DEV_SUPABASE_SERVICE_KEY es requerida')
+  console.log('💡 Tip: Obtén la service key de tu Supabase local con:')
+  console.log('   supabase status')
   process.exit(1)
 }
 
@@ -37,7 +24,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
-// Usuarios a crear
+// Usuarios a crear (mismos que en staging)
 const users = [
   // Superadmin
   { 
@@ -113,7 +100,7 @@ const users = [
 ]
 
 async function createUsers() {
-  console.log('🚀 Creando usuarios en auth.users de STAGING...\n')
+  console.log('🚀 Creando usuarios en auth.users de DEV (Local)...\n')
   
   const results = {
     created: [],

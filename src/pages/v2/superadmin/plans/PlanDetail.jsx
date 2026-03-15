@@ -8,17 +8,61 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { message } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import {
-  PLAN_STATUS,
-  AVAILABLE_SERVICES,
   getPlanById,
-  getPlanStatusLabel,
-  getPlanStatusColor,
-  formatCurrency,
-  formatDate,
-  formatLimit,
-} from "../../../../mocks/clientAccountsData";
+  updatePlan,
+  deactivatePlan,
+  PLAN_STATUS,
+} from "../../../../services/plans.service";
+
+// Helpers de formato (mantener localmente)
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+};
+
+const formatDate = (date) => {
+  if (!date) return '-';
+  return new Date(date).toLocaleDateString('es-ES');
+};
+
+const formatLimit = (value) => {
+  if (value === -1) return 'Ilimitado';
+  return value.toString();
+};
+
+const getPlanStatusLabel = (status) => {
+  const labels = {
+    draft: 'Borrador',
+    active: 'Activo',
+    deprecated: 'Obsoleto',
+    expired: 'Expirado',
+    disabled: 'Desactivado',
+  };
+  return labels[status] || status;
+};
+
+const getPlanStatusColor = (status) => {
+  const colors = {
+    draft: 'gray',
+    active: 'green',
+    deprecated: 'orange',
+    expired: 'red',
+    disabled: 'red',
+  };
+  return colors[status] || 'gray';
+};
+
+// Servicios disponibles (temporal - mover a BD después)
+const AVAILABLE_SERVICES = [
+  { id: 'energy_management', name: 'Gestión de Energía', description: 'Control de consumos' },
+  { id: 'maintenance', name: 'Mantenimiento', description: 'Gestión de incidencias' },
+  { id: 'reports', name: 'Informes', description: 'Reportes avanzados' },
+];
 
 export default function PlanDetail() {
   const navigate = useNavigate();
@@ -32,24 +76,41 @@ export default function PlanDetail() {
   const [formData, setFormData] = useState(null);
 
   useEffect(() => {
-    const foundPlan = getPlanById(id);
-    if (foundPlan) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPlan(foundPlan);
-      setFormData({ ...foundPlan });
-    }
-  }, [id]);
+    const loadPlan = async () => {
+      try {
+        const foundPlan = await getPlanById(id);
+        if (foundPlan) {
+          setPlan(foundPlan);
+          // Asegurar que los campos numéricos tienen valores válidos
+          setFormData({
+            ...foundPlan,
+            max_owners: foundPlan.max_owners ?? -1,
+            max_accommodations: foundPlan.max_accommodations ?? -1,
+            max_rooms: foundPlan.max_rooms ?? -1,
+            max_admin_users: foundPlan.max_admin_users ?? -1,
+            max_associated_admins: foundPlan.max_associated_admins ?? -1,
+            max_api_users: foundPlan.max_api_users ?? -1,
+            max_viewer_users: foundPlan.max_viewer_users ?? -1,
+            tax_percent: foundPlan.tax_percent ?? 0,
+            services_included: Array.isArray(foundPlan.services_included) ? foundPlan.services_included : [],
+          });
+        } else {
+          message.error('Plan no encontrado');
+          navigate('/v2/superadmin/planes');
+        }
+      } catch (error) {
+        console.error('Error al cargar plan:', error);
+        message.error('Error al cargar el plan');
+        navigate('/v2/superadmin/planes');
+      }
+    };
+    
+    loadPlan();
+  }, [id, navigate]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-
-      // Auto-calcular precio anual
-      if (field === "price_monthly" || field === "annual_discount_months") {
-        const monthly = field === "price_monthly" ? parseFloat(value) || 0 : parseFloat(prev.price_monthly) || 0;
-        const discount = field === "annual_discount_months" ? parseInt(value) || 0 : prev.annual_discount_months;
-        newData.price_annual = (monthly * (12 - discount)).toFixed(2);
-      }
 
       // Si no permite multi-owner, max_owners debe ser 1
       if (field === "allows_multi_owner" && !value) {
@@ -77,8 +138,8 @@ export default function PlanDetail() {
     const newErrors = {};
 
     if (!formData.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!formData.price_monthly || parseFloat(formData.price_monthly) < 0) {
-      newErrors.price_monthly = "El precio mensual es obligatorio y no puede ser negativo";
+    if (!formData.monthly_price || parseFloat(formData.monthly_price) < 0) {
+      newErrors.monthly_price = "El precio mensual es obligatorio y no puede ser negativo";
     }
 
     // No permitir bajar límites por debajo del uso real (warning)
@@ -92,22 +153,50 @@ export default function PlanDetail() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    console.log("Guardar plan:", formData);
-    alert("Plan actualizado correctamente (mock)");
-    navigate("/v2/superadmin/planes");
+    try {
+      // Convertir campos numéricos de string a integer/float
+      // Manejar valores undefined/null con valores por defecto
+      const dataToSend = {
+        ...formData,
+        monthly_price: parseFloat(formData.monthly_price) || 0,
+        tax_percent: parseFloat(formData.tax_percent ?? 0),
+        max_owners: parseInt(formData.max_owners ?? -1) || -1,
+        max_accommodations: parseInt(formData.max_accommodations ?? -1) || -1,
+        max_rooms: parseInt(formData.max_rooms ?? -1) || -1,
+        max_admin_users: parseInt(formData.max_admin_users ?? -1) || -1,
+        max_associated_admins: parseInt(formData.max_associated_admins ?? -1) || -1,
+        max_api_users: parseInt(formData.max_api_users ?? -1) || -1,
+        max_viewer_users: parseInt(formData.max_viewer_users ?? -1) || -1,
+      };
+
+      console.log('Datos a enviar:', dataToSend);
+
+      await updatePlan(id, dataToSend);
+      message.success('Plan actualizado correctamente');
+      navigate('/v2/superadmin/planes');
+    } catch (error) {
+      console.error('Error al actualizar plan:', error);
+      message.error(error.message || 'Error al actualizar el plan');
+    }
   };
 
-  const handleDeactivate = () => {
+  const handleDeactivate = async () => {
     if (window.confirm(`¿Desactivar el plan "${plan.name}"? Esta acción marcará el plan como desactivado.`)) {
-      alert(`Plan "${plan.name}" desactivado (mock)`);
-      navigate("/v2/superadmin/planes");
+      try {
+        await deactivatePlan(id);
+        message.success(`Plan "${plan.name}" desactivado correctamente`);
+        navigate('/v2/superadmin/planes');
+      } catch (error) {
+        console.error('Error al desactivar plan:', error);
+        message.error(error.message || 'Error al desactivar el plan');
+      }
     }
   };
 
@@ -273,7 +362,7 @@ export default function PlanDetail() {
             </div>
             <div style={styles.detailRow}>
               <span style={styles.detailLabel}>Max Asociados</span>
-              <span style={styles.detailValue}>{plan.max_associated_users}</span>
+              <span style={styles.detailValue}>{plan.max_associated_admins}</span>
             </div>
             <div style={styles.detailRow}>
               <span style={styles.detailLabel}>Max API</span>
@@ -305,7 +394,7 @@ export default function PlanDetail() {
           {/* Card: Servicios */}
           <div style={styles.card}>
             <h3 style={styles.cardTitle}>Servicios Incluidos</h3>
-            {plan.services_included.length === 0 ? (
+            {!Array.isArray(plan.services_included) || plan.services_included.length === 0 ? (
               <p style={styles.noServices}>Ningún servicio incluido</p>
             ) : (
               <div style={styles.servicesList}>
@@ -409,6 +498,8 @@ export default function PlanDetail() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
+                    maxLength={100}
+                    required
                     style={{ ...styles.input, ...(errors.name ? styles.inputError : {}) }}
                   />
                   {errors.name && <span style={styles.errorText}>{errors.name}</span>}
@@ -428,6 +519,7 @@ export default function PlanDetail() {
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleChange("description", e.target.value)}
+                    maxLength={1000}
                     style={styles.textarea}
                     rows={3}
                   />
@@ -521,32 +613,25 @@ export default function PlanDetail() {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.price_monthly}
-                    onChange={(e) => handleChange("price_monthly", e.target.value)}
-                    style={{ ...styles.input, ...(errors.price_monthly ? styles.inputError : {}) }}
+                    value={formData.monthly_price}
+                    onChange={(e) => handleChange("monthly_price", e.target.value)}
+                    required
+                    style={{ ...styles.input, ...(errors.monthly_price ? styles.inputError : {}) }}
                   />
-                  {errors.price_monthly && <span style={styles.errorText}>{errors.price_monthly}</span>}
+                  {errors.monthly_price && <span style={styles.errorText}>{errors.monthly_price}</span>}
                 </div>
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Meses gratis (anual)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="6"
-                    value={formData.annual_discount_months}
-                    onChange={(e) => handleChange("annual_discount_months", e.target.value)}
-                    style={styles.input}
-                  />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Precio anual (EUR)</label>
+                  <label style={styles.label}>IVA (%)</label>
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.price_annual}
-                    onChange={(e) => handleChange("price_annual", e.target.value)}
+                    min="0"
+                    max="100"
+                    value={formData.tax_percent || 0}
+                    onChange={(e) => handleChange("tax_percent", e.target.value)}
                     style={styles.input}
                   />
+                  <span style={styles.helpText}>Porcentaje de IVA a aplicar (0-100)</span>
                 </div>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>IVA aplicable</label>
@@ -637,8 +722,8 @@ export default function PlanDetail() {
                     type="number"
                     min="0"
                     max="2"
-                    value={formData.max_associated_users}
-                    onChange={(e) => handleChange("max_associated_users", parseInt(e.target.value))}
+                    value={formData.max_associated_admins}
+                    onChange={(e) => handleChange("max_associated_admins", parseInt(e.target.value))}
                     style={styles.input}
                   />
                 </div>
@@ -1006,6 +1091,9 @@ const styles = {
   },
   required: {
     color: "#DC2626",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 2,
   },
   input: {
     padding: "10px 14px",
@@ -1079,13 +1167,16 @@ const styles = {
   servicesGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, 1fr)",
-    gap: 12,
+    gap: 16,
+    marginTop: 16,
   },
   serviceCard: {
     padding: 16,
     border: "2px solid #E5E7EB",
     borderRadius: 12,
     cursor: "pointer",
+    backgroundColor: "#FFFFFF",
+    transition: "all 0.2s ease",
   },
   serviceCardSelected: {
     borderColor: "#111827",

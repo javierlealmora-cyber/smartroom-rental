@@ -1,58 +1,193 @@
 // =============================================================================
 // src/pages/v2/superadmin/DashboardSuperadmin.jsx
 // =============================================================================
-// DBSU - Dashboard Superadmin (SmartRoom Rental Platform)
-// Pantalla principal del Dashboard para el rol Superadmin
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// DBSU - Dashboard Superadmin — Rediseño v2
 // =============================================================================
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+
+// ─── Responsive hook ──────────────────────────────────────────────────────────
+function useBreakpoint() {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+}
 import V2Layout from "../../../layouts/V2Layout";
 import { supabase } from "../../../services/supabaseClient";
 
-const PLAN_COLORS_MAP = {
-  basic: "#6B7280",
-  agent: "#3B82F6",
-  pro: "#8B5CF6",
-  enterprise: "#F59E0B",
+// ─── Data helpers ─────────────────────────────────────────────────────────────
+const PLAN_COLORS = {
+  basic: "#64748B",
+  investor: "#2563EB",
+  business: "#7C3AED",
+  agency: "#D97706",
 };
-const PLAN_LABELS_MAP = {
-  basic: "Basic",
-  agent: "Agent",
-  pro: "Pro",
-  enterprise: "Enterprise",
-};
-const getPlanLabel = (p) => PLAN_LABELS_MAP[p] || p || "—";
-const getPlanColor = (p) => PLAN_COLORS_MAP[p] || "#6B7280";
-const getStatusLabel = (s) => ({ active: "Activa", suspended: "Suspendida", cancelled: "Cancelada", trial: "Prueba" }[s] || s);
-const getStatusColor = (s) => ({ active: "#059669", suspended: "#F59E0B", cancelled: "#DC2626", trial: "#3B82F6" }[s] || "#6B7280");
-const formatDate = (d) => d ? new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const PLAN_LABELS = { basic: "Basic", investor: "Investor", business: "Business", agency: "Agency" };
+const getPlanLabel = (p) => PLAN_LABELS[p] || p || "—";
+const getPlanColor = (p) => PLAN_COLORS[p] || "#64748B";
 
-const ACTION_LABELS = {
-  create: { label: "Creado", color: "#34C759", icon: "+" },
-  update: { label: "Actualizado", color: "#0071E3", icon: "✎" },
-  delete: { label: "Eliminado", color: "#FF3B30", icon: "✕" },
-  set_status: { label: "Estado cambiado", color: "#FF9500", icon: "◉" },
-  set_room_status: { label: "Hab. actualizada", color: "#FF9500", icon: "🚪" },
+const STATUS_LABEL = { active: "Activa", suspended: "Suspendida", cancelled: "Cancelada", trial: "Prueba" };
+const STATUS_COLOR = { active: "#059669", suspended: "#D97706", cancelled: "#DC2626", trial: "#2563EB" };
+const getStatusLabel = (s) => STATUS_LABEL[s] || s;
+const getStatusColor = (s) => STATUS_COLOR[s] || "#64748B";
+
+const ACTION_META = {
+  create:         { label: "Creado",           color: "#059669" },
+  update:         { label: "Actualizado",       color: "#2563EB" },
+  delete:         { label: "Eliminado",         color: "#DC2626" },
+  set_status:     { label: "Estado cambiado",   color: "#D97706" },
+  set_room_status:{ label: "Habitación",        color: "#D97706" },
 };
-const ENTITY_LABELS = {
+const ENTITY_LABEL = {
   accommodation: "Alojamiento", room: "Habitación", lodger: "Inquilino",
   entity: "Entidad", service: "Servicio", energy_bill: "Factura", bulletin: "Boletín",
 };
+
+const formatDate = (d) =>
+  d ? new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Ahora mismo";
-  if (mins < 60) return `Hace ${mins} min`;
+  if (mins < 1) return "Ahora";
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs}h`;
+  if (hrs < 24) return `${hrs}h`;
   const days = Math.floor(hrs / 24);
-  return days === 1 ? "Ayer" : `Hace ${days} días`;
+  return days === 1 ? "Ayer" : `${days}d`;
 }
 
+// ─── SVG Donut ────────────────────────────────────────────────────────────────
+function DonutChart({ value, size = 128, stroke = 11, color = "#0B2E6D" }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const pct = Math.min(Math.max(value / 100, 0), 1);
+  return (
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke="rgba(11,46,109,0.08)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={`${pct * circ} ${(1 - pct) * circ}`}
+        style={{ transition: "stroke-dasharray 0.6s ease" }} />
+    </svg>
+  );
+}
+
+// ─── Multi-segment donut ──────────────────────────────────────────────────────
+function MultiDonut({ segments, size = 128, stroke = 11 }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  let cum = 0;
+  return (
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke="rgba(11,46,109,0.08)" strokeWidth={stroke} />
+      {total > 0 && segments.filter(s => s.value > 0).map((seg, i) => {
+        const dash = (seg.value / total) * circ;
+        const off = cum;
+        cum += dash;
+        return (
+          <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none"
+            stroke={seg.color} strokeWidth={stroke} strokeLinecap="butt"
+            strokeDasharray={`${dash} ${circ - dash}`}
+            strokeDashoffset={-off}
+            style={{ transition: "stroke-dasharray 0.5s ease" }} />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
+function KpiCard({ label, value, sub, color = "#0F172A", loading }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      style={{
+        ...S.kpiCard,
+        transform: hov ? "translateY(-3px)" : "translateY(0)",
+        boxShadow: hov ? "0 8px 20px rgba(11,46,109,0.1)" : "none",
+        borderColor: hov ? "rgba(11,46,109,0.18)" : "rgba(11,46,109,0.08)",
+        transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+        cursor: "default",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <span style={S.kpiLabel}>{label}</span>
+      <span style={{ ...S.kpiValue, color: loading ? "#CBD5E1" : color }}>
+        {loading ? "—" : value}
+      </span>
+      <span style={S.kpiSub}>{sub}</span>
+    </div>
+  );
+}
+
+// ─── Nav button with hover ────────────────────────────────────────────────────
+function NavBtn({ label, path, disabled, navigate }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      style={{
+        ...S.qnBtn,
+        ...(disabled ? S.qnBtnOff : {}),
+        ...(hov && !disabled ? {
+          background: "#0B2E6D",
+          color: "#fff",
+          borderColor: "#0B2E6D",
+          transform: "translateY(-1px)",
+        } : {}),
+        transition: "all 0.15s ease",
+      }}
+      onClick={() => !disabled && path && navigate(path)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      disabled={disabled}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ─── Hoverable card wrapper ────────────────────────────────────────────────────
+function HoverCard({ style, children }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      style={{
+        ...S.card,
+        height: "100%",
+        boxSizing: "border-box",
+        ...style,
+        transform: hov ? "translateY(-3px)" : "translateY(0)",
+        boxShadow: hov ? "0 8px 20px rgba(11,46,109,0.1)" : "none",
+        borderColor: hov ? "rgba(11,46,109,0.18)" : "rgba(11,46,109,0.08)",
+        transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function DashboardSuperadmin() {
   const navigate = useNavigate();
+  const vw = useBreakpoint();
+  const isMobile = vw < 768;
+  const isTablet = vw < 1024;
+
   const [stats, setStats] = useState({
     totalAccounts: 0, activeAccounts: 0, suspendedAccounts: 0, cancelledAccounts: 0,
     totalEntities: 0, totalAccommodations: 0, totalRooms: 0, occupiedRooms: 0, freeRooms: 0,
@@ -62,6 +197,7 @@ export default function DashboardSuperadmin() {
   const [planDistribution, setPlanDistribution] = useState([]);
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,58 +210,49 @@ export default function DashboardSuperadmin() {
         { data: lodgers },
         { data: auditLog },
       ] = await Promise.all([
-        supabase.from("client_accounts").select("id, name, slug, plan_code, billing_cycle, status, start_date, created_at, contact_email").order("created_at", { ascending: false }),
-        supabase.from("entities").select("id, client_account_id, type, status"),
-        supabase.from("accommodations").select("id, status"),
-        supabase.from("rooms").select("id, status"),
-        supabase.from("lodgers").select("id, status"),
-        supabase.from("audit_log").select("id, entity_type, action, actor_role, new_values, created_at").order("created_at", { ascending: false }).limit(20),
+        supabase.from("client_accounts").select("id,name,slug,plan_code,billing_cycle,status,start_date,created_at,contact_email").order("created_at", { ascending: false }),
+        supabase.from("entities").select("id,client_account_id,type,status"),
+        supabase.from("accommodations").select("id,status"),
+        supabase.from("rooms").select("id,status"),
+        supabase.from("lodgers").select("id,status"),
+        supabase.from("audit_log").select("id,entity_type,action,actor_role,new_values,created_at").order("created_at", { ascending: false }).limit(20),
       ]);
 
-      const allAccounts = accounts || [];
-      const allEntities = entities || [];
-      const allRooms = rooms || [];
-      const allLodgers = lodgers || [];
+      const allAccounts      = accounts || [];
+      const allEntities      = entities || [];
+      const allRooms         = rooms    || [];
+      const allLodgers       = lodgers  || [];
 
-      const activeAccounts = allAccounts.filter((a) => a.status === "active").length;
-      const suspendedAccounts = allAccounts.filter((a) => a.status === "suspended").length;
-      const cancelledAccounts = allAccounts.filter((a) => a.status === "cancelled").length;
-      const occupiedRooms = allRooms.filter((r) => r.status === "occupied").length;
-      const freeRooms = allRooms.filter((r) => r.status === "free").length;
+      const activeAccounts    = allAccounts.filter(a => a.status === "active").length;
+      const suspendedAccounts = allAccounts.filter(a => a.status === "suspended").length;
+      const cancelledAccounts = allAccounts.filter(a => a.status === "cancelled").length;
+      const occupiedRooms     = allRooms.filter(r => r.status === "occupied").length;
+      const freeRooms         = allRooms.filter(r => r.status === "free").length;
 
       setStats({
-        totalAccounts: allAccounts.length,
-        activeAccounts,
-        suspendedAccounts,
-        cancelledAccounts,
+        totalAccounts: allAccounts.length, activeAccounts, suspendedAccounts, cancelledAccounts,
         totalEntities: allEntities.length,
         totalAccommodations: (accommodations || []).length,
-        totalRooms: allRooms.length,
-        occupiedRooms,
-        freeRooms,
+        totalRooms: allRooms.length, occupiedRooms, freeRooms,
         totalLodgers: allLodgers.length,
-        activeLodgers: allLodgers.filter((l) => l.status === "active").length,
+        activeLodgers: allLodgers.filter(l => l.status === "active").length,
       });
 
-      // Distribución por plan
-      const planCodes = ["basic", "agent", "pro", "enterprise"];
-      const distribution = planCodes.map((plan) => {
-        const count = allAccounts.filter((a) => a.plan_code === plan).length;
-        const percentage = allAccounts.length > 0 ? Math.round((count / allAccounts.length) * 100) : 0;
-        return { plan, count, percentage };
-      }).filter((d) => d.count > 0 || true);
-      setPlanDistribution(distribution);
+      const planCodes = ["basic", "investor", "business", "agency"];
+      setPlanDistribution(planCodes.map(plan => {
+        const count = allAccounts.filter(a => a.plan_code === plan).length;
+        return { plan, count, percentage: allAccounts.length > 0 ? Math.round((count / allAccounts.length) * 100) : 0 };
+      }));
 
-      // Últimas 5 cuentas
-      const entitiesByAccountId = allEntities.reduce((acc, e) => {
+      const byAccountId = allEntities.reduce((acc, e) => {
         if (e.client_account_id) acc[e.client_account_id] = (acc[e.client_account_id] || 0) + 1;
         return acc;
       }, {});
-      setRecentAccounts(allAccounts.slice(0, 5).map((a) => ({ ...a, __entitiesCount: entitiesByAccountId[a.id] || 0 })));
-
+      setRecentAccounts(allAccounts.slice(0, 6).map(a => ({ ...a, __entities: byAccountId[a.id] || 0 })));
       setActivity(auditLog || []);
+      setLastUpdated(new Date());
     } catch (err) {
-      console.error("[DashboardSuperadmin] load error:", err);
+      console.error("[DashboardSuperadmin] error:", err);
     } finally {
       setLoading(false);
     }
@@ -134,556 +261,278 @@ export default function DashboardSuperadmin() {
   useEffect(() => { load(); }, [load]);
 
   const occupancyRate = stats.totalRooms > 0
-    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
-    : 0;
+    ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0;
+
+  const occupancyColor = occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#D97706" : "#DC2626";
+
+  const activeRate = stats.totalAccounts > 0
+    ? Math.round((stats.activeAccounts / stats.totalAccounts) * 100) : 0;
 
   return (
     <V2Layout role="superadmin" userName="Javier">
-      {/* Header con título */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Dashboard Superadmin</h1>
-          <p style={styles.subtitle}>Visión general del sistema SaaS</p>
-        </div>
-      </div>
+      <div style={S.root}>
 
-      {/* =========================================
-          DBSU-K1: KPIs Grupo 1
-          Nº Cuentas Cliente activas/inactivas, Nº Entidades totales, Nº Alojamientos totales
-          ========================================= */}
-      <div style={styles.kpiSection}>
-        <h3 style={styles.sectionLabel}>KPIs Principales</h3>
-        <div style={styles.kpiGrid}>
-          {/* Total Cuentas Cliente */}
-          <div style={styles.kpiCard}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏢</span>
-              <span style={styles.kpiTitle}>Cuentas Cliente</span>
-            </div>
-            <div style={styles.kpiValue}>{stats.totalAccounts}</div>
-            <div style={styles.kpiBreakdown}>
-              <span style={{ ...styles.kpiBreakdownItem, color: "#059669" }}>
-                {stats.activeAccounts} activas
-              </span>
-              <span style={styles.kpiBreakdownSeparator}>·</span>
-              <span style={{ ...styles.kpiBreakdownItem, color: "#F59E0B" }}>
-                {stats.suspendedAccounts} suspendidas
-              </span>
-            </div>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div style={{ ...S.header, ...(isMobile && { flexDirection: "column", alignItems: "flex-start" }) }}>
+          <div>
+            <h1 style={S.pageTitle}>Control Center</h1>
+            <p style={S.pageSubtitle}>
+              {lastUpdated ? `Actualizado hace ${timeAgo(lastUpdated.toISOString())}` : "Cargando datos..."}
+            </p>
           </div>
-
-          {/* Cuentas Activas */}
-          <div style={{ ...styles.kpiCard, borderLeftColor: "#059669" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>✓</span>
-              <span style={styles.kpiTitle}>Activas</span>
-            </div>
-            <div style={{ ...styles.kpiValue, color: "#059669" }}>{stats.activeAccounts}</div>
-            <div style={styles.kpiSubtext}>
-              {stats.totalAccounts > 0
-                ? Math.round((stats.activeAccounts / stats.totalAccounts) * 100)
-                : 0}% del total
-            </div>
-          </div>
-
-          {/* Cuentas Inactivas (Suspendidas + Canceladas) */}
-          <div style={{ ...styles.kpiCard, borderLeftColor: "#F59E0B" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>⚠</span>
-              <span style={styles.kpiTitle}>Inactivas</span>
-            </div>
-            <div style={{ ...styles.kpiValue, color: "#F59E0B" }}>
-              {stats.suspendedAccounts + stats.cancelledAccounts}
-            </div>
-            <div style={styles.kpiBreakdown}>
-              <span style={styles.kpiBreakdownItem}>{stats.suspendedAccounts} suspendidas</span>
-              <span style={styles.kpiBreakdownSeparator}>·</span>
-              <span style={styles.kpiBreakdownItem}>{stats.cancelledAccounts} canceladas</span>
-            </div>
-          </div>
-
-          {/* Total Entidades */}
-          <div style={{ ...styles.kpiCard, borderLeftColor: "#8B5CF6" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏛️</span>
-              <span style={styles.kpiTitle}>Entidades Totales</span>
-            </div>
-            <div style={{ ...styles.kpiValue, color: "#8B5CF6" }}>{stats.totalEntities}</div>
-            <div style={styles.kpiSubtext}>Legal + Internas</div>
-          </div>
-
-          {/* Total Alojamientos */}
-          <div style={{ ...styles.kpiCard, borderLeftColor: "#3B82F6" }}>
-            <div style={styles.kpiHeader}>
-              <span style={styles.kpiIcon}>🏠</span>
-              <span style={styles.kpiTitle}>Alojamientos</span>
-            </div>
-            <div style={{ ...styles.kpiValue, color: "#3B82F6" }}>{stats.totalAccommodations}</div>
-            <div style={styles.kpiSubtext}>En todas las cuentas</div>
+          <div style={S.headerBtns}>
+            <button style={S.refreshBtn} onClick={load} title="Actualizar">
+              ↻
+            </button>
+            <button style={S.primaryBtn} onClick={() => navigate("/v2/superadmin/cuentas/nueva")}>
+              + Nueva cuenta
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* =========================================
-          KPIs Grupo 2: Ocupación + Incidencias + Encuestas (2x2) + Actividad Reciente
-          ========================================= */}
-      <div style={styles.kpiSection}>
-        <div style={styles.kpiGroupTwoLayout}>
-          {/* Columna izquierda: 2x2 KPIs */}
-          <div style={styles.kpiGridTwoByTwo}>
-            {/* Habitaciones Totales */}
-            <div>
-              <h3 style={styles.sectionLabel}>Métricas de Ocupación</h3>
-              <div style={{ ...styles.kpiCard, borderLeftColor: "#EC4899" }}>
-                <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>🚪</span>
-                  <span style={styles.kpiTitle}>Habitaciones Totales</span>
-                </div>
-                <div style={{ ...styles.kpiValue, color: "#EC4899" }}>{stats.totalRooms}</div>
-                <div style={styles.kpiBreakdown}>
-                  <span style={{ ...styles.kpiBreakdownItem, color: "#059669" }}>
-                    {stats.occupiedRooms} ocupadas
-                  </span>
-                  <span style={styles.kpiBreakdownSeparator}>·</span>
-                  <span style={{ ...styles.kpiBreakdownItem, color: "#3B82F6" }}>
-                    {stats.totalRooms - stats.occupiedRooms} libres
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ocupación Global */}
-            <div>
-              <h3 style={styles.sectionLabel}>Ocupación Global</h3>
-              <div style={{ ...styles.kpiCard, borderLeftColor: "#10B981" }}>
-                <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>📊</span>
-                  <span style={styles.kpiTitle}>Ocupación actual</span>
-                </div>
-                <div style={{
-                  ...styles.kpiValue,
-                  color: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626"
-                }}>
-                  {occupancyRate}%
-                </div>
-                <div style={styles.occupancyBarLarge}>
-                  <div
-                    style={{
-                      ...styles.occupancyFill,
-                      width: `${occupancyRate}%`,
-                      backgroundColor: occupancyRate > 80 ? "#059669" : occupancyRate > 50 ? "#F59E0B" : "#DC2626"
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Inquilinos */}
-            <div>
-              <h3 style={styles.sectionLabel}>Inquilinos</h3>
-              <div style={{ ...styles.kpiCard, borderLeftColor: "#DC2626" }}>
-                <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>👥</span>
-                  <span style={styles.kpiTitle}>Inquilinos</span>
-                </div>
-                <div style={{ ...styles.kpiValue, color: "#DC2626" }}>
-                  {stats.activeLodgers}
-                </div>
-                <div style={styles.kpiBreakdown}>
-                  <span style={{ ...styles.kpiBreakdownItem, color: "#059669" }}>
-                    {stats.activeLodgers} activos
-                  </span>
-                  <span style={styles.kpiBreakdownSeparator}>·</span>
-                  <span style={styles.kpiBreakdownItem}>
-                    {stats.totalLodgers} total
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Habitaciones libres */}
-            <div>
-              <h3 style={styles.sectionLabel}>Disponibilidad</h3>
-              <div style={{ ...styles.kpiCard, borderLeftColor: "#6366F1" }}>
-                <div style={styles.kpiHeader}>
-                  <span style={styles.kpiIcon}>�</span>
-                  <span style={styles.kpiTitle}>Habitaciones libres</span>
-                </div>
-                <div style={{ ...styles.kpiValue, color: "#6366F1" }}>
-                  {stats.freeRooms}
-                </div>
-                <div style={styles.kpiBreakdown}>
-                  <span style={styles.kpiBreakdownItem}>
-                    de {stats.totalRooms} totales
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Columna derecha: Actividad Reciente — datos reales de audit_log */}
-          <div style={styles.activityCard}>
-            <h2 style={styles.activityTitle}>Actividad Reciente</h2>
-            <div style={styles.activityList}>
-              {loading ? (
-                <div style={{ color: "#9CA3AF", fontSize: 13, padding: "12px 0" }}>Cargando...</div>
-              ) : activity.length === 0 ? (
-                <div style={{ color: "#9CA3AF", fontSize: 13, textAlign: "center", padding: "24px 0" }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
-                  Sin actividad registrada aún
-                </div>
-              ) : (
-                <>
-                {activity.map((item) => {
-                  const act = ACTION_LABELS[item.action] || { label: item.action, color: "#6B7280", icon: "·" };
-                  const entityLabel = ENTITY_LABELS[item.entity_type] || item.entity_type;
-                  const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
-                  return (
-                    <div key={item.id} style={styles.activityItem}>
-                      <div style={{ ...styles.activityDot, backgroundColor: act.color }}>
-                        <span style={styles.activityDotIcon}>{act.icon}</span>
-                      </div>
-                      <div style={styles.activityContent}>
-                        <span style={styles.activityText}>
-                          <strong>{act.label}</strong> · {entityLabel}{name ? `: ${name}` : ""}
-                        </span>
-                        <span style={styles.activityTime}>
-                          {item.actor_role} · {timeAgo(item.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sección de dos columnas: Distribución + Accesos Rápidos */}
-      <div style={styles.sectionGrid}>
-        {/* =========================================
-            DBSU-DP: Distribución por Plan (%)
-            ========================================= */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Distribución por Plan</h2>
-          <div style={styles.plansList}>
-            {planDistribution.map(({ plan, count, percentage }) => (
-              <div key={plan} style={styles.planRow}>
-                <div style={styles.planInfo}>
-                  <span
-                    style={{
-                      ...styles.planBadge,
-                      backgroundColor: getPlanColor(plan),
-                    }}
-                  >
-                    {getPlanLabel(plan)}
-                  </span>
-                  <span style={styles.planCount}>{count} cuentas</span>
-                </div>
-                <div style={styles.progressBar}>
-                  <div
-                    style={{
-                      ...styles.progressFill,
-                      width: `${percentage}%`,
-                      backgroundColor: getPlanColor(plan),
-                    }}
-                  />
-                </div>
-                <span style={styles.planPercentage}>{percentage}%</span>
-              </div>
+        {/* ── Quick nav ──────────────────────────────────────────────────── */}
+        <div style={S.quickNavWrap}>
+          <div style={S.quickNav}>
+            {[
+              { label: "Cuentas",    path: "/v2/superadmin/cuentas" },
+              { label: "Planes",     path: "/v2/superadmin/planes" },
+              { label: "Servicios",  path: "/v2/superadmin/servicios" },
+              { label: "Cobros",     disabled: true },
+              { label: "Incidencias",disabled: true },
+              { label: "Config.",    disabled: true },
+            ].map(({ label, path, disabled }) => (
+              <NavBtn key={label} label={label} path={path} disabled={disabled} navigate={navigate} />
             ))}
           </div>
         </div>
 
-        {/* =========================================
-            Accesos Rápidos (DBSU-VC, DBSU-CC, DBSU-AR, DBSU-PC, DBSU-CG, DBSU-GS, DBSU-GC, DBSU-GP)
-            ========================================= */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Accesos Rápidos</h2>
-          <div style={styles.quickActionsGrid}>
-            {/* DBSU-VC: Ver todas las Cuentas Clientes */}
-            <button
-              style={styles.actionButton}
-              onClick={() => navigate("/v2/superadmin/cuentas")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>👤</span>
-              <span style={styles.actionLabel}>Ver Cuentas</span>
-              <span style={styles.actionCode}>DBSU-VC</span>
-            </button>
-
-            {/* DBSU-CC: Crear Cuenta Cliente */}
-            <button
-              style={styles.actionButton}
-              onClick={() => navigate("/v2/superadmin/cuentas/nueva")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>➕</span>
-              <span style={styles.actionLabel}>Crear Cuenta</span>
-              <span style={styles.actionCode}>DBSU-CC</span>
-            </button>
-
-            {/* DBSU-GE: Gestión de Encuestas */}
-            <button
-              style={styles.actionButton}
-              onClick={() => alert("Gestión de Encuestas - En construcción")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>📋</span>
-              <span style={styles.actionLabel}>Encuestas</span>
-              <span style={styles.actionCode}>DBSU-GE</span>
-            </button>
-
-            {/* DBSU-PC: Gestión de Planes de Clientes */}
-            <button
-              style={styles.actionButton}
-              onClick={() => navigate("/v2/superadmin/planes")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>💳</span>
-              <span style={styles.actionLabel}>Gestión Planes</span>
-              <span style={styles.actionCode}>DBSU-PC</span>
-            </button>
-
-            {/* DBSU-CG: Configuración Global */}
-            <button
-              style={styles.actionButton}
-              onClick={() => alert("Configuración Global (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>⚙️</span>
-              <span style={styles.actionLabel}>Config. Global</span>
-              <span style={styles.actionCode}>DBSU-CG</span>
-            </button>
-
-            {/* DBSU-GS: Gestión de Servicios */}
-            <button
-              style={styles.actionButton}
-              onClick={() => navigate("/v2/superadmin/servicios")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>🛎️</span>
-              <span style={styles.actionLabel}>Servicios</span>
-              <span style={styles.actionCode}>DBSU-GS</span>
-            </button>
-
-            {/* DBSU-GC: Gestión de Cobros */}
-            <button
-              style={styles.actionButton}
-              onClick={() => alert("Gestión de Cobros (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>💰</span>
-              <span style={styles.actionLabel}>Cobros</span>
-              <span style={styles.actionCode}>DBSU-GC</span>
-            </button>
-
-            {/* DBSU-GP: Gestión de Incidencias */}
-            <button
-              style={styles.actionButton}
-              onClick={() => alert("Gestión de Incidencias (próximamente)")}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <span style={styles.actionIcon}>🎫</span>
-              <span style={styles.actionLabel}>Incidencias</span>
-              <span style={styles.actionCode}>DBSU-GP</span>
-            </button>
+        {/* ── KPI strip ──────────────────────────────────────────────────── */}
+        <div style={S.kpiScrollWrap}>
+          <div style={{
+            ...S.kpiStrip,
+            gridTemplateColumns: isMobile
+              ? "none"
+              : isTablet ? "repeat(3, 1fr)" : "repeat(5, 1fr)",
+            display: isMobile ? "flex" : "grid",
+          }}>
+            <KpiCard label="Cuentas cliente"    value={stats.totalAccounts}   sub={`${stats.activeAccounts} activas · ${stats.suspendedAccounts} susp.`} loading={loading} />
+            <KpiCard label="Tasa activas"       value={`${activeRate}%`}      sub={`${stats.activeAccounts} de ${stats.totalAccounts}`} color="#059669" loading={loading} />
+            <KpiCard label="Ocupación"          value={`${occupancyRate}%`}   sub={`${stats.occupiedRooms} de ${stats.totalRooms} hab.`} color={occupancyColor} loading={loading} />
+            <KpiCard label="Habitaciones"       value={stats.totalRooms}      sub={`${stats.freeRooms} libres`} loading={loading} />
+            <KpiCard label="Inquilinos activos" value={stats.activeLodgers}   sub={`de ${stats.totalLodgers} total`} color="#2563EB" loading={loading} />
           </div>
         </div>
-      </div>
 
-      {/* =========================================
-          DBSU-UC: Últimas Cuentas Cliente
-          Listado con las últimas cuentas de clientes
-          ========================================= */}
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>
-          <div>
-            <h2 style={styles.cardTitle}>Últimas Cuentas Cliente</h2>
-            <span style={styles.cardCode}>DBSU-UC</span>
-          </div>
-          <button
-            style={styles.linkButton}
-            onClick={() => navigate("/v2/superadmin/cuentas")}
-          >
-            Ver todas →
-          </button>
+        {/* ── Charts row: Ocupación + Distribución por plan ──────────────── */}
+        <div style={{
+          ...S.chartsRow,
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr",
+        }}>
+          {/* Donut: planes contratados */}
+          <HoverCard>
+            <p style={S.cardLabel}>Planes contratados</p>
+            <div style={S.donutWrap}>
+              <div style={S.donutSvgWrap}>
+                <MultiDonut
+                  segments={planDistribution.map(d => ({ value: d.count, color: getPlanColor(d.plan) }))}
+                />
+                <div style={S.donutOverlay}>
+                  <span style={{ ...S.donutPct, color: "#0B2E6D" }}>{stats.totalAccounts}</span>
+                  <span style={S.donutSub}>cuentas</span>
+                </div>
+              </div>
+              <div style={S.donutLegend}>
+                {planDistribution.map(({ plan, count }) => (
+                  <div key={plan} style={S.legendRow}>
+                    <div style={{ ...S.legendDot, background: getPlanColor(plan) }} />
+                    <span style={S.legendText}>{getPlanLabel(plan)}</span>
+                    <span style={{ ...S.legendText, marginLeft: "auto", fontWeight: 600, color: "#334155" }}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </HoverCard>
+
+          {/* Donut: ocupación */}
+          <HoverCard>
+            <p style={S.cardLabel}>Ocupación global</p>
+            <div style={S.donutWrap}>
+              <div style={S.donutSvgWrap}>
+                <DonutChart value={occupancyRate} color={occupancyColor} />
+                <div style={S.donutOverlay}>
+                  <span style={{ ...S.donutPct, color: occupancyColor }}>{occupancyRate}%</span>
+                  <span style={S.donutSub}>ocupado</span>
+                </div>
+              </div>
+              <div style={S.donutLegend}>
+                <div style={S.legendRow}>
+                  <div style={{ ...S.legendDot, background: occupancyColor }} />
+                  <span style={S.legendText}>{stats.occupiedRooms} ocupadas</span>
+                </div>
+                <div style={S.legendRow}>
+                  <div style={{ ...S.legendDot, background: "rgba(11,46,109,0.12)" }} />
+                  <span style={S.legendText}>{stats.freeRooms} libres</span>
+                </div>
+                <div style={S.legendRow}>
+                  <div style={{ ...S.legendDot, background: "#CBD5E1" }} />
+                  <span style={S.legendText}>{stats.totalRooms - stats.occupiedRooms - stats.freeRooms} otros</span>
+                </div>
+              </div>
+            </div>
+          </HoverCard>
+
+          {/* Plan distribution */}
+          <HoverCard>
+            <p style={S.cardLabel}>Distribución por plan</p>
+            <div style={S.stackedBar}>
+              {planDistribution.filter(d => d.count > 0).map(({ plan, percentage }) => (
+                <div key={plan} title={`${getPlanLabel(plan)}: ${percentage}%`}
+                  style={{
+                    width: `${percentage}%`, height: "100%",
+                    background: getPlanColor(plan),
+                    transition: "width 0.5s ease",
+                    minWidth: percentage > 0 ? 4 : 0,
+                  }}
+                />
+              ))}
+              {planDistribution.every(d => d.count === 0) && (
+                <div style={{ width: "100%", height: "100%", background: "#E2E8F0" }} />
+              )}
+            </div>
+            <div style={S.planLegend}>
+              {planDistribution.map(({ plan, count, percentage }) => (
+                <div key={plan} style={S.planLegendRow}>
+                  <div style={{ ...S.legendDot, background: getPlanColor(plan) }} />
+                  <span style={S.planName}>{getPlanLabel(plan)}</span>
+                  <span style={S.planCount}>{count} cuentas</span>
+                  <span style={S.planPct}>{percentage}%</span>
+                </div>
+              ))}
+            </div>
+            <div style={S.recapRow}>
+              <div style={S.recapItem}>
+                <span style={S.recapNum}>{stats.totalEntities}</span>
+                <span style={S.recapLabel}>Entidades</span>
+              </div>
+              <div style={S.recapDivider} />
+              <div style={S.recapItem}>
+                <span style={S.recapNum}>{stats.totalAccommodations}</span>
+                <span style={S.recapLabel}>Alojamientos</span>
+              </div>
+            </div>
+          </HoverCard>
         </div>
 
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Cuenta Cliente</th>
-                <th style={styles.th}>Plan</th>
-                <th style={styles.th}>Estado</th>
-                <th style={styles.th}>Entidades</th>
-                <th style={styles.th}>Alojamientos</th>
-                <th style={styles.th}>Habitaciones</th>
-                <th style={styles.th}>Ocupación</th>
-                <th style={styles.th}>Fecha Alta</th>
-                <th style={styles.th}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentAccounts.map((account) => {
-                const occRate = account.stats?.total_rooms > 0
-                  ? Math.round((account.stats.occupied_rooms / account.stats.total_rooms) * 100)
-                  : 0;
-                const accountEntities = account.__entitiesCount || 0;
-
-                return (
-                  <tr key={account.id} style={styles.tr}>
-                    <td style={styles.td}>
-                      <div style={styles.accountCell}>
-                        {account.logo_url ? (
-                          <img src={account.logo_url} alt="" style={styles.accountLogo} />
-                        ) : (
-                          <div
-                            style={{
-                              ...styles.accountLogoPlaceholder,
-                              backgroundColor: account.theme_primary_color || "#6B7280",
-                            }}
-                          >
-                            {account.name.charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <div style={styles.accountNameText}>{account.name}</div>
-                          <div style={styles.accountSlug}>{account.slug}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <span
-                        style={{
-                          ...styles.badge,
-                          backgroundColor: `${getPlanColor(account.plan)}15`,
-                          color: getPlanColor(account.plan),
-                          border: `1px solid ${getPlanColor(account.plan)}40`,
-                        }}
-                      >
-                        {getPlanLabel(account.plan)}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span
-                        style={{
-                          ...styles.badge,
-                          backgroundColor: `${getStatusColor(account.status)}15`,
-                          color: getStatusColor(account.status),
-                          border: `1px solid ${getStatusColor(account.status)}40`,
-                        }}
-                      >
-                        {getStatusLabel(account.status)}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.statNumber}>{accountEntities}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.statNumber}>{account.stats?.total_accommodations || 0}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.statNumber}>{account.stats?.total_rooms || 0}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.miniProgressContainer}>
-                        <div style={styles.miniProgressBar}>
-                          <div
-                            style={{
-                              ...styles.miniProgressFill,
-                              width: `${occRate}%`,
-                              backgroundColor: occRate > 80 ? "#059669" : occRate > 50 ? "#F59E0B" : "#DC2626",
-                            }}
-                          />
-                        </div>
-                        <span style={styles.miniProgressText}>{occRate}%</span>
-                      </div>
-                    </td>
-                    <td style={styles.td}>{formatDate(account.created_at)}</td>
-                    <td style={styles.td}>
-                      <div style={styles.tableActions}>
-                        <button
-                          style={styles.tableActionButton}
-                          onClick={() => navigate(`/v2/superadmin/cuentas/${account.id}`)}
-                          title="Ver detalle"
-                        >
-                          👁
-                        </button>
-                        <button
-                          style={styles.tableActionButton}
-                          onClick={() => navigate(`/v2/superadmin/cuentas/${account.id}/editar`)}
-                          title="Editar"
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    </td>
+        {/* ── Últimas cuentas + Actividad reciente ───────────────────────── */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+          gap: 16,
+          alignItems: "stretch",
+        }}>
+          {/* Últimas cuentas */}
+          <HoverCard>
+            <div style={S.tableHead}>
+              <p style={{ ...S.cardLabel, margin: 0 }}>Últimas cuentas cliente</p>
+              <button style={S.linkBtn} onClick={() => navigate("/v2/superadmin/cuentas")}>
+                Ver todas →
+              </button>
+            </div>
+            <div style={S.tableWrap}>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    {["Cuenta", "Plan", "Estado", "Entidades", "Alta", ""].map((h, i) => (
+                      <th key={i} style={S.th}>{h}</th>
+                    ))}
                   </tr>
+                </thead>
+                <tbody>
+                  {recentAccounts.length === 0 && !loading ? (
+                    <tr>
+                      <td colSpan={6} style={{ ...S.td, color: "#94A3B8", textAlign: "center", padding: "32px 0" }}>
+                        Sin cuentas registradas
+                      </td>
+                    </tr>
+                  ) : recentAccounts.map((a) => (
+                    <tr key={a.id} style={S.tr}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <td style={S.td}>
+                        <div style={S.accountCell}>
+                          <div style={{ ...S.avatar, background: "#0B2E6D" }}>
+                            {a.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={S.accountName}>{a.name}</div>
+                            <div style={S.accountSlug}>{a.slug}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={S.td}>
+                        <span style={{
+                          ...S.badge,
+                          color: getPlanColor(a.plan_code),
+                          background: `${getPlanColor(a.plan_code)}14`,
+                          borderColor: `${getPlanColor(a.plan_code)}30`,
+                        }}>
+                          {getPlanLabel(a.plan_code)}
+                        </span>
+                      </td>
+                      <td style={S.td}>
+                        <span style={{
+                          ...S.badge,
+                          color: getStatusColor(a.status),
+                          background: `${getStatusColor(a.status)}14`,
+                          borderColor: `${getStatusColor(a.status)}30`,
+                        }}>
+                          {getStatusLabel(a.status)}
+                        </span>
+                      </td>
+                      <td style={{ ...S.td, ...S.tdNum }}>{a.__entities}</td>
+                      <td style={{ ...S.td, color: "#64748B" }}>{formatDate(a.created_at)}</td>
+                      <td style={S.td}>
+                        <button style={S.rowBtn} onClick={() => navigate(`/v2/superadmin/cuentas/${a.id}`)}>
+                          Ver →
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </HoverCard>
+
+          {/* Actividad reciente */}
+          <HoverCard style={S.activityCard}>
+            <p style={S.cardLabel}>Actividad reciente</p>
+            <div style={S.feed}>
+              {loading ? (
+                <p style={S.empty}>Cargando...</p>
+              ) : activity.length === 0 ? (
+                <p style={S.empty}>Sin actividad registrada</p>
+              ) : activity.slice(0, 20).map((item) => {
+                const act = ACTION_META[item.action] || { label: item.action, color: "#94A3B8" };
+                const entity = ENTITY_LABEL[item.entity_type] || item.entity_type;
+                const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
+                return (
+                  <div key={item.id} style={S.feedItem}>
+                    <div style={{ ...S.feedBar, background: act.color }} />
+                    <div style={S.feedBody}>
+                      <span style={S.feedAction}>
+                        <span style={{ color: act.color }}>{act.label}</span>
+                        {" · "}{entity}{name ? `: ${name}` : ""}
+                      </span>
+                      <span style={S.feedMeta}>{item.actor_role} · {timeAgo(item.created_at)}</span>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </HoverCard>
         </div>
+
       </div>
     </V2Layout>
   );
@@ -692,420 +541,461 @@ export default function DashboardSuperadmin() {
 // =============================================================================
 // ESTILOS
 // =============================================================================
-const styles = {
-  // Header principal
+const S = {
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
+    paddingBottom: 40,
+  },
+
+  // Header
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 3,
-  },
-  primaryButton: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "opacity 0.2s ease",
-  },
-
-  // KPIs
-  kpiSection: {
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    marginBottom: 10,
-  },
-  kpiGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: 14,
-  },
-  kpiGroupTwoLayout: {
-    display: "grid",
-    gridTemplateColumns: "3fr 2fr",
-    gap: 18,
-    alignItems: "start",
-  },
-  kpiGridTwoByTwo: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 14,
-  },
-  kpiCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 10,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    borderLeft: "3px solid #111827",
-  },
-  kpiHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 4,
-  },
-  kpiIcon: {
-    fontSize: 10,
-  },
-  kpiTitle: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: "#6B7280",
-  },
-  kpiValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 3,
-  },
-  kpiSubtext: {
-    fontSize: 10,
-    color: "#9CA3AF",
-  },
-  kpiBreakdown: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    fontSize: 10,
-  },
-  kpiBreakdownItem: {
-    color: "#6B7280",
-  },
-  kpiBreakdownSeparator: {
-    color: "#D1D5DB",
-  },
-  occupancyBarLarge: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 8,
-  },
-  occupancyFill: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-
-  // Actividad Reciente
-  activityCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    alignSelf: "stretch",
-    display: "flex",
-    flexDirection: "column",
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 20px 0",
-  },
-  activityList: {
-    display: "flex",
-    flexDirection: "column",
+    flexWrap: "wrap",
     gap: 12,
-    maxHeight: 320,
-    overflowY: "auto",
-    scrollbarWidth: "thin",
-    scrollbarColor: "#E5E7EB transparent",
-    paddingRight: 4,
   },
-  activityItem: {
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: "#0B2E6D",
+    margin: 0,
+    letterSpacing: "-0.3px",
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    color: "#94A3B8",
+    margin: "3px 0 0 0",
+  },
+  headerBtns: {
     display: "flex",
-    gap: 14,
-    alignItems: "flex-start",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap",
   },
-  activityDot: {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
+  refreshBtn: {
+    width: 36,
+    height: 36,
+    border: "1px solid rgba(11,46,109,0.15)",
+    borderRadius: 8,
+    background: "#fff",
+    color: "#0B2E6D",
+    fontSize: 18,
+    cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    transition: "background 0.15s",
+  },
+  primaryBtn: {
+    height: 36,
+    padding: "0 16px",
+    background: "#0B2E6D",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "opacity 0.15s",
+    whiteSpace: "nowrap",
+  },
+
+  // Quick nav
+  quickNavWrap: {
+    overflowX: "auto",
+    marginLeft: -2,
+    marginRight: -2,
+    paddingBottom: 2,
+    scrollbarWidth: "none",
+  },
+  quickNav: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "nowrap",
+    paddingLeft: 2,
+    paddingRight: 2,
+  },
+  qnBtn: {
+    padding: "6px 14px",
+    border: "1px solid rgba(11,46,109,0.2)",
+    borderRadius: 20,
+    background: "#fff",
+    color: "#0B2E6D",
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.15s",
+    whiteSpace: "nowrap",
+  },
+  qnBtnOff: {
+    color: "#CBD5E1",
+    borderColor: "#E2E8F0",
+    cursor: "default",
+  },
+
+  // KPI strip
+  kpiScrollWrap: {
+    overflowX: "auto",
+    scrollbarWidth: "none",
+    marginLeft: -2,
+    marginRight: -2,
+    paddingBottom: 2,
+  },
+  kpiStrip: {
+    gap: 12,
+    paddingLeft: 2,
+    paddingRight: 2,
+  },
+  kpiCard: {
+    background: "#fff",
+    border: "1px solid rgba(11,46,109,0.08)",
+    borderRadius: 12,
+    padding: "18px 20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    minWidth: 160,
     flexShrink: 0,
   },
-  activityDotIcon: {
-    color: "#FFFFFF",
-    fontSize: 14,
+  kpiLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
   },
-  activityContent: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 2,
+  kpiValue: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#0F172A",
+    letterSpacing: "-0.5px",
+    lineHeight: 1.1,
+    fontVariantNumeric: "tabular-nums",
   },
-  activityText: {
-    fontSize: 14,
-    color: "#111827",
-    lineHeight: "1.4",
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-
-  ticketBarContainer: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 8,
-  },
-  ticketBarFill: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
+  kpiSub: {
+    fontSize: 11,
+    color: "#94A3B8",
   },
 
-  // Grid de secciones
-  sectionGrid: {
+  // Charts row
+  chartsRow: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 24,
-    marginBottom: 32,
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: 16,
+    alignItems: "start",
   },
 
-  // Cards
+  // Card base
   card: {
-    backgroundColor: "#FFFFFF",
+    background: "#fff",
+    border: "1px solid rgba(11,46,109,0.08)",
     borderRadius: 12,
-    padding: 24,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    margin: 0,
-  },
-  cardCode: {
-    fontSize: 10,
-    color: "#9CA3AF",
-    fontFamily: "monospace",
-    marginTop: 4,
-  },
-  linkButton: {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "#3B82F6",
-    fontSize: 14,
-    fontWeight: "500",
-    cursor: "pointer",
-  },
-
-  // Distribución por Plan (DBSU-DP)
-  plansList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-  },
-  planRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-  },
-  planInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    minWidth: 140,
-  },
-  planBadge: {
-    padding: "4px 12px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  planCount: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  progressBar: {
-    flex: 1,
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
+    padding: "20px 24px",
     overflow: "hidden",
+    minWidth: 0,
   },
-  progressFill: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-  planPercentage: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-    minWidth: 40,
-    textAlign: "right",
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    margin: "0 0 16px 0",
   },
 
-  // Accesos rápidos
-  quickActionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: 12,
+  // Donut
+  donutWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 20,
+    flexWrap: "wrap",
   },
-  actionButton: {
+  donutSvgWrap: {
+    position: "relative",
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  donutOverlay: {
+    position: "absolute",
+    inset: 0,
     display: "flex",
     flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+  },
+  donutPct: {
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: "-0.5px",
+    fontVariantNumeric: "tabular-nums",
+  },
+  donutSub: {
+    fontSize: 10,
+    color: "#94A3B8",
+    fontWeight: 500,
+    textTransform: "uppercase",
+    letterSpacing: "0.3px",
+  },
+  donutLegend: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    flex: 1,
+  },
+  legendRow: {
+    display: "flex",
     alignItems: "center",
     gap: 8,
-    padding: 16,
-    backgroundColor: "#F9FAFB",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    position: "relative",
   },
-  actionIcon: {
-    fontSize: 24,
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    flexShrink: 0,
   },
-  actionLabel: {
+  legendText: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "#374151",
-    textAlign: "center",
-  },
-  actionCode: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    fontSize: 8,
-    color: "#D1D5DB",
-    fontFamily: "monospace",
+    color: "#475569",
   },
 
-  // Tabla
-  tableContainer: {
+  // Plan distribution
+  stackedBar: {
+    height: 10,
+    borderRadius: 5,
+    overflow: "hidden",
+    display: "flex",
+    marginBottom: 16,
+    background: "#F1F5F9",
+  },
+  planLegend: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    marginBottom: 20,
+  },
+  planLegendRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  planName: {
+    fontSize: 12,
+    color: "#334155",
+    flex: 1,
+    fontWeight: 500,
+  },
+  planCount: {
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+  planPct: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#334155",
+    minWidth: 34,
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
+  },
+  recapRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 0,
+    paddingTop: 16,
+    borderTop: "1px solid rgba(11,46,109,0.06)",
+  },
+  recapItem: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
+  },
+  recapNum: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: "#0B2E6D",
+    fontVariantNumeric: "tabular-nums",
+  },
+  recapLabel: {
+    fontSize: 10,
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: "0.4px",
+    fontWeight: 600,
+  },
+  recapDivider: {
+    width: 1,
+    height: 32,
+    background: "rgba(11,46,109,0.08)",
+  },
+
+  // Activity
+  activityCard: {
+    display: "flex",
+    flexDirection: "column",
+    alignSelf: "stretch",
+  },
+  feed: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 0,
+    maxHeight: 420,
+    overflowY: "auto",
+    scrollbarWidth: "thin",
+    scrollbarColor: "#E2E8F0 transparent",
+  },
+  feedItem: {
+    display: "flex",
+    gap: 12,
+    alignItems: "flex-start",
+    padding: "12px 0",
+    borderBottom: "1px solid rgba(11,46,109,0.06)",
+  },
+  feedBar: {
+    width: 3,
+    minHeight: 36,
+    borderRadius: 2,
+    flexShrink: 0,
+    marginTop: 3,
+  },
+  feedBody: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+  },
+  feedAction: {
+    fontSize: 13,
+    color: "#334155",
+    lineHeight: 1.5,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: "100%",
+  },
+  feedMeta: {
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+  empty: {
+    fontSize: 12,
+    color: "#CBD5E1",
+    textAlign: "center",
+    padding: "32px 0",
+    margin: 0,
+  },
+
+  // Table card
+  tableHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  linkBtn: {
+    background: "none",
+    border: "none",
+    color: "#2563EB",
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: "pointer",
+    padding: 0,
+  },
+  tableWrap: {
     overflowX: "auto",
+    overflowY: "auto",
+    maxHeight: 336,
+    marginLeft: -24,
+    marginRight: -24,
+    paddingLeft: 24,
+    paddingRight: 24,
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
+    minWidth: 520,
   },
   th: {
     textAlign: "left",
-    padding: "12px 16px",
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#6B7280",
+    padding: "8px 12px",
+    fontSize: 10,
+    fontWeight: 600,
+    color: "#94A3B8",
     textTransform: "uppercase",
-    borderBottom: "1px solid #E5E7EB",
-    backgroundColor: "#F9FAFB",
+    letterSpacing: "0.4px",
+    borderBottom: "1px solid rgba(11,46,109,0.08)",
+    whiteSpace: "nowrap",
+    position: "sticky",
+    top: 0,
+    background: "#fff",
+    zIndex: 1,
   },
   tr: {
-    borderBottom: "1px solid #F3F4F6",
+    transition: "background 0.1s",
   },
   td: {
-    padding: "14px 16px",
-    fontSize: 14,
-    color: "#374151",
+    padding: "12px 12px",
+    fontSize: 13,
+    color: "#334155",
+    borderBottom: "1px solid rgba(11,46,109,0.04)",
     verticalAlign: "middle",
+  },
+  tdNum: {
+    fontVariantNumeric: "tabular-nums",
+    fontWeight: 600,
+    color: "#0F172A",
   },
   accountCell: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
-  accountLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    objectFit: "cover",
-  },
-  accountLogoPlaceholder: {
-    width: 36,
-    height: 36,
+  avatar: {
+    width: 32,
+    height: 32,
     borderRadius: 8,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: 700,
+    flexShrink: 0,
   },
-  accountNameText: {
-    fontWeight: "600",
-    color: "#111827",
+  accountName: {
+    fontWeight: 600,
+    color: "#0F172A",
+    fontSize: 13,
   },
   accountSlug: {
-    fontSize: 12,
-    color: "#9CA3AF",
+    fontSize: 11,
+    color: "#94A3B8",
   },
   badge: {
     display: "inline-block",
-    padding: "4px 10px",
+    padding: "3px 9px",
     borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 11,
+    fontWeight: 600,
+    border: "1px solid",
+    whiteSpace: "nowrap",
   },
-  statNumber: {
-    fontWeight: "600",
-    color: "#111827",
-  },
-  miniProgressContainer: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  miniProgressBar: {
-    width: 60,
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  miniProgressFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  miniProgressText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  tableActions: {
-    display: "flex",
-    gap: 4,
-  },
-  tableActionButton: {
-    padding: "6px 10px",
-    backgroundColor: "transparent",
-    border: "1px solid #E5E7EB",
+  rowBtn: {
+    background: "none",
+    border: "1px solid rgba(11,46,109,0.15)",
     borderRadius: 6,
+    padding: "4px 10px",
+    fontSize: 12,
+    color: "#0B2E6D",
     cursor: "pointer",
-    fontSize: 14,
-    transition: "all 0.2s ease",
+    fontWeight: 500,
+    whiteSpace: "nowrap",
   },
 };
+
