@@ -8,7 +8,7 @@ import {
   Alert, Button, Card, Checkbox, Col, DatePicker, Form, InputNumber,
   Row, Select, Space, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, CheckOutlined, InfoCircleOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, CheckOutlined, ClearOutlined, InfoCircleOutlined, SaveOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { createLodger } from "../../../../services/lodgers.service";
@@ -74,12 +74,39 @@ export default function TenantCreate() {
   const onAccommodationChange = (accId) => {
     setSelectedRoomId(null);
     form.setFieldValue("room_id", undefined);
-    if (!accId) { setAvailableRooms([]); return; }
+    if (!accId) { 
+      setAvailableRooms([]);
+      // Limpiar campos de asignación cuando se deselecciona alojamiento
+      form.setFieldsValue({
+        move_in_date: dayjs(),
+        deposit_amount: undefined,
+        commission_amount: undefined,
+        first_month_amount: undefined,
+        end_of_month_amount: undefined
+      });
+      setPayUntilEndOfMonth(false);
+      return;
+    }
     setLoadingRooms(true);
     listRooms(accId)
       .then(setAvailableRooms)
       .catch(() => setAvailableRooms([]))
       .finally(() => setLoadingRooms(false));
+  };
+
+  const clearRoomAssignment = () => {
+    form.setFieldsValue({
+      accommodation_id: undefined,
+      room_id: undefined,
+      move_in_date: dayjs(),
+      deposit_amount: undefined,
+      commission_amount: undefined,
+      first_month_amount: undefined,
+      end_of_month_amount: undefined
+    });
+    setSelectedRoomId(null);
+    setAvailableRooms([]);
+    setPayUntilEndOfMonth(false);
   };
 
   const backPath = preselectedAccId
@@ -243,7 +270,23 @@ export default function TenantCreate() {
 
           {/* Asignación */}
           <Col xs={24} lg={12}>
-            <Card title="Asignación de Habitación (Opcional)" style={{ marginBottom: 24 }}>
+            <Card 
+              title="Asignación de Habitación (Opcional)" 
+              extra={
+                form.getFieldValue("accommodation_id") && (
+                  <Button 
+                    type="text" 
+                    icon={<ClearOutlined />}
+                    onClick={clearRoomAssignment}
+                    danger
+                    size="small"
+                  >
+                    Limpiar Asignación
+                  </Button>
+                )
+              }
+              style={{ marginBottom: 24 }}
+            >
               <Form.Item
                 label="Alojamiento"
                 name="accommodation_id"
@@ -259,6 +302,12 @@ export default function TenantCreate() {
               <Form.Item
                 label="Habitación"
                 name="room_id"
+                rules={[
+                  { 
+                    required: !!form.getFieldValue("accommodation_id"), 
+                    message: "Debes seleccionar una habitación" 
+                  }
+                ]}
               >
                 {loadingRooms ? (
                   <Text type="secondary">Cargando habitaciones...</Text>
@@ -304,7 +353,12 @@ export default function TenantCreate() {
               <Form.Item
                 label="Fecha de Check-In"
                 name="move_in_date"
-                rules={[{ required: !!selectedRoomId, message: "La fecha de check-in es obligatoria" }]}
+                rules={[
+                  { 
+                    required: !!form.getFieldValue("accommodation_id"), 
+                    message: "La fecha de check-in es obligatoria" 
+                  }
+                ]}
               >
                 <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
@@ -323,7 +377,12 @@ export default function TenantCreate() {
                   <Form.Item
                     label="Importe a pagar hasta fin de mes"
                     name="end_of_month_amount"
-                    rules={[{ required: true, message: "El importe es obligatorio" }]}
+                    rules={[
+                      { 
+                        required: payUntilEndOfMonth && !!form.getFieldValue("accommodation_id"), 
+                        message: "El importe es obligatorio" 
+                      }
+                    ]}
                   >
                     <InputNumber
                       style={{ width: "100%" }}
@@ -363,7 +422,12 @@ export default function TenantCreate() {
                   <Form.Item
                     label="Importe de la Fianza (€)"
                     name="deposit_amount"
-                    rules={[{ required: !!selectedRoomId, message: "El importe de la fianza es obligatorio" }]}
+                    rules={[
+                      { 
+                        required: !!form.getFieldValue("accommodation_id"), 
+                        message: "El importe de la fianza es obligatorio" 
+                      }
+                    ]}
                   >
                     <InputNumber
                       style={{ width: "100%" }}
