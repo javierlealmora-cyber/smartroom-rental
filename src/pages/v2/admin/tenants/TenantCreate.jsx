@@ -36,7 +36,6 @@ export default function TenantCreate() {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
-  const [billingSameAsMoveIn, setBillingSameAsMoveIn] = useState(true);
   const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
   const [createdLodgerId, setCreatedLodgerId] = useState(null);
   const [createdLodgerName, setCreatedLodgerName] = useState("");
@@ -137,14 +136,11 @@ export default function TenantCreate() {
       if (selectedRoomId && values.accommodation_id) {
         const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
         const moveInDate = values.move_in_date.format("YYYY-MM-DD");
-        const billingDate = billingSameAsMoveIn
-          ? moveInDate
-          : (values.billing_start_date?.format("YYYY-MM-DD") || moveInDate);
         
         payload.room_id = selectedRoomId;
         payload.accommodation_id = values.accommodation_id;
         payload.move_in_date = moveInDate;
-        payload.billing_start_date = billingDate;
+        payload.billing_start_date = moveInDate;
         payload.monthly_rent = selectedRoom?.monthly_rent ?? null;
         payload.deposit_amount = values.deposit_amount || 0;
         payload.commission_amount = values.commission_amount || null;
