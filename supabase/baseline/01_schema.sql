@@ -1,6 +1,7 @@
 -- ============================================================================
 -- BASELINE CERO: Schema Completo - SmartRoom Rental
--- Descripción: Estructura completa de base de datos (18 tablas)
+-- Descripción: Estructura completa de base de datos (19 tablas)
+-- Última actualización: 2026-03-22 - Añadidos campos de inquilino y tabla payer_rental
 -- ============================================================================
 
 -- ============================================================================
@@ -115,6 +116,19 @@ CREATE TABLE public.profiles (
   onboarding_status text NOT NULL DEFAULT 'none'
     CHECK (onboarding_status IN ('none','in_progress','payment_pending','active')),
   is_primary_admin boolean NOT NULL DEFAULT false,
+  
+  -- Campos de inquilino (añadidos 2026-03-17)
+  first_name text,
+  last_name text,
+  last_name2 text,
+  document_type text CHECK (document_type IN ('dni','nie','passport','other')),
+  document_id text,
+  gender text CHECK (gender IN ('male','female','other')),
+  birth_date date,
+  nationality text,
+  phone text,
+  emergency_contact_name text,
+  emergency_contact_phone text,
   
   -- Auditoria
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -290,7 +304,27 @@ CREATE TABLE public.lodger_services (
 );
 
 -- ============================================================================
--- TABLA 11: stripe_events
+-- TABLA 11: payer_rental (añadida 2026-03-22)
+-- ============================================================================
+CREATE TABLE public.payer_rental (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
+  lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  entity_id uuid REFERENCES public.entities(id) ON DELETE SET NULL,
+  
+  -- Estado
+  is_active boolean NOT NULL DEFAULT true,
+  
+  -- Auditoria
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  
+  -- Constraint: un pagador único por inquilino y entidad
+  UNIQUE (lodger_id, entity_id)
+);
+
+-- ============================================================================
+-- TABLA 12: stripe_events
 -- ============================================================================
 CREATE TABLE public.stripe_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -303,7 +337,7 @@ CREATE TABLE public.stripe_events (
 );
 
 -- ============================================================================
--- TABLA 12: energy_bills
+-- TABLA 13: energy_bills
 -- ============================================================================
 CREATE TABLE public.energy_bills (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -343,7 +377,7 @@ CREATE TABLE public.energy_bills (
 );
 
 -- ============================================================================
--- TABLA 13: energy_readings
+-- TABLA 14: energy_readings
 -- ============================================================================
 CREATE TABLE public.energy_readings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -361,7 +395,7 @@ CREATE TABLE public.energy_readings (
 );
 
 -- ============================================================================
--- TABLA 14: energy_settlements
+-- TABLA 15: energy_settlements
 -- ============================================================================
 CREATE TABLE public.energy_settlements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -382,7 +416,7 @@ CREATE TABLE public.energy_settlements (
 );
 
 -- ============================================================================
--- TABLA 15: bulletins
+-- TABLA 16: bulletins
 -- ============================================================================
 CREATE TABLE public.bulletins (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -416,7 +450,7 @@ CREATE TABLE public.bulletins (
 );
 
 -- ============================================================================
--- TABLA 16: audit_log
+-- TABLA 17: audit_log
 -- ============================================================================
 CREATE TABLE public.audit_log (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -441,7 +475,7 @@ CREATE TABLE public.audit_log (
 );
 
 -- ============================================================================
--- TABLA 17: incidents
+-- TABLA 18: incidents
 -- ============================================================================
 CREATE TABLE public.incidents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -464,7 +498,7 @@ CREATE TABLE public.incidents (
 );
 
 -- ============================================================================
--- TABLA 18: lodger_room_assignments
+-- TABLA 19: lodger_room_assignments
 -- ============================================================================
 CREATE TABLE public.lodger_room_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

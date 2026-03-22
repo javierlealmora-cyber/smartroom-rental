@@ -99,7 +99,9 @@ SELECT 'Habitaciones', COUNT(*) FROM rooms
 UNION ALL
 SELECT 'Lodgers (profiles)', COUNT(*) FROM profiles WHERE role = 'lodger'
 UNION ALL
-SELECT 'Asignaciones', COUNT(*) FROM lodger_room_assignments;
+SELECT 'Asignaciones', COUNT(*) FROM lodger_room_assignments
+UNION ALL
+SELECT 'Pagadores', COUNT(*) FROM payer_rental;
 "@
 
 psql $env:DATABASE_URL -c $verifyQuery
