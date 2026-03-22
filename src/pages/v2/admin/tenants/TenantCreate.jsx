@@ -37,6 +37,7 @@ export default function TenantCreate() {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
   const [billingSameAsMoveIn, setBillingSameAsMoveIn] = useState(true);
+  const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
   const [createdLodgerId, setCreatedLodgerId] = useState(null);
   const [createdLodgerName, setCreatedLodgerName] = useState("");
 
@@ -120,7 +121,7 @@ export default function TenantCreate() {
         payload.monthly_rent = selectedRoom?.monthly_rent ?? null;
         payload.deposit_amount = values.deposit_amount || 0;
         payload.commission_amount = values.commission_amount || null;
-        payload.first_month_amount = values.first_month_amount || null;
+        payload.first_month_amount = payUntilEndOfMonth ? values.end_of_month_amount : (values.first_month_amount || null);
       }
 
       const newLodger = await createLodger(payload);
@@ -310,17 +311,51 @@ export default function TenantCreate() {
 
               <Form.Item>
                 <Checkbox
-                  checked={billingSameAsMoveIn}
-                  onChange={(e) => setBillingSameAsMoveIn(e.target.checked)}
+                  checked={payUntilEndOfMonth}
+                  onChange={(e) => setPayUntilEndOfMonth(e.target.checked)}
                 >
-                  Facturar desde la fecha de check-in
+                  El inquilino va a pagar desde la fecha de Check-in hasta fin de mes
                 </Checkbox>
               </Form.Item>
 
-              {!billingSameAsMoveIn && (
-                <Form.Item label="Fecha de Inicio Cobro" name="billing_start_date">
-                  <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-                </Form.Item>
+              {payUntilEndOfMonth && (
+                <>
+                  <Form.Item
+                    label="Importe a pagar hasta fin de mes"
+                    name="end_of_month_amount"
+                    rules={[{ required: true, message: "El importe es obligatorio" }]}
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      precision={2}
+                      placeholder="Ej: 450"
+                      addonAfter="€"
+                    />
+                  </Form.Item>
+
+                  <Form.Item label="Fecha del próximo pago">
+                    <input
+                      type="text"
+                      readOnly
+                      value={(() => {
+                        const moveInDate = form.getFieldValue('move_in_date');
+                        if (!moveInDate) return '';
+                        const nextMonth = moveInDate.add(1, 'month').startOf('month');
+                        return nextMonth.format('DD/MM/YYYY');
+                      })()}
+                      style={{
+                        width: '100%',
+                        padding: '4px 11px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        backgroundColor: '#f5f5f5',
+                        cursor: 'not-allowed',
+                        color: '#000'
+                      }}
+                    />
+                  </Form.Item>
+                </>
               )}
 
               <Row gutter={16}>
@@ -352,15 +387,17 @@ export default function TenantCreate() {
                 </Col>
               </Row>
 
-              <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={0}
-                  precision={2}
-                  placeholder="Para entradas a mitad de mes (opcional)"
-                  addonAfter="€"
-                />
-              </Form.Item>
+              {!payUntilEndOfMonth && (
+                <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    min={0}
+                    precision={2}
+                    placeholder="Para entradas a mitad de mes (opcional)"
+                    addonAfter="€"
+                  />
+                </Form.Item>
+              )}
             </Card>
           </Col>
         </Row>
