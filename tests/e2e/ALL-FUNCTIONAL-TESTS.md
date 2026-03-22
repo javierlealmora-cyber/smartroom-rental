@@ -18,14 +18,24 @@
 
 ## Usuarios de test necesarios
 
-| Usuario | Rol | Variable en `.env.e2e` | Estado |
-|---------|-----|------------------------|--------|
-| Gestor principal | `admin` | `TEST_MANAGER_EMAIL` / `TEST_MANAGER_PASSWORD` | ✅ Configurado |
-| Viewer (solo lectura) | `viewer` | `TEST_VIEWER_EMAIL` / `TEST_VIEWER_PASSWORD` | 🚧 Pendiente crear |
-| Inquilino activo | `lodger` | `TEST_LODGER_EMAIL` / `TEST_LODGER_PASSWORD` | 🚧 Pendiente crear |
-| SuperAdmin | `superadmin` | `TEST_SUPERADMIN_EMAIL` / `TEST_SUPERADMIN_PASSWORD` | 🚧 Pendiente crear |
+| Usuario | Rol | Plan | Variable en `.env.e2e` | Estado |
+|---------|-----|------|------------------------|--------|
+| Gestor principal | `admin` | — | `TEST_MANAGER_EMAIL` / `TEST_MANAGER_PASSWORD` | ✅ Configurado |
+| Gestor plan Basic | `admin` | `basic` | `TEST_MANAGER_BASIC_EMAIL` / `TEST_MANAGER_BASIC_PASSWORD` | 🚧 Pendiente crear |
+| Gestor plan Investor | `admin` | `investor` | `TEST_MANAGER_INVESTOR_EMAIL` / `TEST_MANAGER_INVESTOR_PASSWORD` | 🚧 Pendiente crear |
+| Gestor plan Business | `admin` | `business` | `TEST_MANAGER_BUSINESS_EMAIL` / `TEST_MANAGER_BUSINESS_PASSWORD` | 🚧 Pendiente crear |
+| Gestor plan Agency | `admin` | `agency` | `TEST_MANAGER_AGENCY_EMAIL` / `TEST_MANAGER_AGENCY_PASSWORD` | 🚧 Pendiente crear |
+| Viewer (solo lectura) | `viewer` | — | `TEST_VIEWER_EMAIL` / `TEST_VIEWER_PASSWORD` | 🚧 Pendiente crear |
+| Inquilino activo | `lodger` | — | `TEST_LODGER_EMAIL` / `TEST_LODGER_PASSWORD` | 🚧 Pendiente crear |
+| SuperAdmin | `superadmin` | — | `TEST_SUPERADMIN_EMAIL` / `TEST_SUPERADMIN_PASSWORD` | 🚧 Pendiente crear |
 
 > Los tests de Gestor/Admin usan credenciales de staging con un tenant que tiene datos de ejemplo.
+>
+> **Casos de uso por plan:**
+> - `basic` — max 1 entidad propietaria, 3 alojamientos, 20 habitaciones, sin branding, sin multi-owner. Botón "Nueva entidad" deshabilitado al tener 1 owner. Muestra payer como fallback si no hay owners.
+> - `investor` — max 5 entidades, 8 alojamientos, 60 habitaciones, branding activo, permite multi-owner.
+> - `business` — max 10 entidades, alojamientos y habitaciones ilimitados, branding activo, permite multi-owner.
+> - `agency` — entidades, alojamientos y habitaciones ilimitados, branding activo, permite multi-owner y cambio de propietario (`allows_owner_change: true`).
 
 ---
 
@@ -111,41 +121,101 @@
 
 ### 3.1 Dashboard Gestor
 
-| # | Test | Rol mínimo | Estado |
-|---|------|------------|--------|
-| DB-01 | Dashboard gestor carga sin errores | viewer | 🚧 No implementado |
-| DB-02 | KPIs globales del tenant visibles (Inquilinos, Alojamientos, Hab. Libres) | viewer | 🚧 No implementado |
+| # | Test | Rol mínimo | Plan | Estado |
+|---|------|------------|------|--------|
+| DB-01 | Dashboard gestor carga sin errores | viewer | todos | 🚧 No implementado |
+| DB-02 | KPIs globales del tenant visibles (Inquilinos, Alojamientos, Hab. Libres) | viewer | todos | 🚧 No implementado |
+| DB-03 | Dashboard Basic: branding por defecto (sin logo personalizado) | viewer | `basic` | 🚧 No implementado |
+| DB-04 | Dashboard Investor/Business/Agency: branding personalizado visible en header | viewer | `investor`, `business`, `agency` | 🚧 No implementado |
 
 ### 3.2 Entidades Propietarias
 
-| # | Test | Rol mínimo | Estado | Fichero |
-|---|------|------------|--------|---------|
-| E-01 | Lista de entidades carga con título y botón "Nueva entidad" | viewer | ⚠️ Pendiente | `entities.spec.js · 01` |
-| E-02 | Crear entidad tipo Persona física con dirección | admin | ⚠️ Pendiente | `entities.spec.js · 02` |
-| E-03 | Crear entidad tipo Persona jurídica (razón social) | admin | 🚧 No implementado | — |
-| E-04 | Crear entidad tipo Autónomo | admin | 🚧 No implementado | — |
-| E-05 | Navegar al detalle de entidad y obtener ID desde URL | viewer | ⚠️ Pendiente | `entities.spec.js · 03` |
-| E-06 | Editar entidad: cambiar teléfono y verificar persistencia | admin | ⚠️ Pendiente | `entities.spec.js · 04` |
-| E-07 | Ver detalle de la entidad (nombre visible en página) | viewer | ⚠️ Pendiente | `entities.spec.js · 05` |
-| E-08 | KPIs de entidad visibles en lista (Aloj., Libres) | viewer | ⚠️ Pendiente | `entities.spec.js · 06` |
-| E-09 | Buscar entidad por nombre en el buscador | viewer | 🚧 No implementado | — |
-| E-10 | Viewer NO ve botón "Nueva entidad" (solo lectura) | viewer | 🚧 No implementado | — |
+| # | Test | Rol mínimo | Plan | Estado | Fichero |
+|---|------|------------|------|--------|---------|
+| E-01 | Lista de entidades carga con título y botón "Nueva entidad" | viewer | todos | ⚠️ Pendiente | `entities.spec.js · 01` |
+| E-02 | Crear entidad tipo Persona física con dirección | admin | todos | ⚠️ Pendiente | `entities.spec.js · 02` |
+| E-03 | Crear entidad tipo Persona jurídica (razón social) | admin | todos | 🚧 No implementado | — |
+| E-04 | Crear entidad tipo Autónomo | admin | todos | 🚧 No implementado | — |
+| E-05 | Navegar al detalle de entidad y obtener ID desde URL | viewer | todos | ⚠️ Pendiente | `entities.spec.js · 03` |
+| E-06 | Editar entidad: cambiar teléfono y verificar persistencia | admin | todos | ⚠️ Pendiente | `entities.spec.js · 04` |
+| E-07 | Ver detalle de la entidad (nombre visible en página) | viewer | todos | ⚠️ Pendiente | `entities.spec.js · 05` |
+| E-08 | KPIs de entidad visibles en lista (Aloj., Libres) | viewer | todos | ⚠️ Pendiente | `entities.spec.js · 06` |
+| E-09 | Buscar entidad por nombre en el buscador | viewer | todos | 🚧 No implementado | — |
+| E-10 | Viewer NO ve botón "Nueva entidad" (solo lectura) | viewer | todos | 🚧 No implementado | — |
+
+#### 3.2.1 Plan BASIC — Restricciones de entidades
+
+> Credencial: `TEST_MANAGER_BASIC_EMAIL` · max_owners: 1 · allows_multi_owner: false
+> Spec: `admin-basic.spec.js` · Proyecto Playwright: `regression-basic`
+
+| # | Test | Spec | Estado |
+|---|------|------|--------|
+| E-B01 | Sin owners: lista muestra la entidad payer como fallback | test 04 | ⚠️ Pendiente credencial |
+| E-B02 | Con 1 owner: botón "Nueva entidad" aparece deshabilitado | test 05 + 31 | ⚠️ Pendiente credencial |
+| E-B03 | Obtener ID de entidad owner existente (seed) | test 06 | ⚠️ Pendiente credencial |
+| E-B04 | Ver detalle de entidad | test 07 | ⚠️ Pendiente credencial |
+| E-B05 | Editar entidad: cambiar teléfono y verificar persistencia | test 08 | ⚠️ Pendiente credencial |
+| E-B06 | KPIs de entidad visibles en lista | test 09 | ⚠️ Pendiente credencial |
+
+#### 3.2.2 Plan INVESTOR — Restricciones de entidades
+
+> Credencial: `TEST_MANAGER_INVESTOR_EMAIL` · max_owners: 5 · allows_multi_owner: true
+
+| # | Test | Estado |
+|---|------|--------|
+| E-I01 | Lista muestra múltiples owners correctamente | 🚧 No implementado |
+| E-I02 | Con 4 owners: botón "Nueva entidad" sigue habilitado | 🚧 No implementado |
+| E-I03 | Con 5 owners: botón "Nueva entidad" aparece deshabilitado | 🚧 No implementado |
+| E-I04 | Contador progresivo visible: "N / 5" | 🚧 No implementado |
+| E-I05 | NO usa payer como fallback aunque no haya owners | 🚧 No implementado |
+
+#### 3.2.3 Plan BUSINESS — Restricciones de entidades
+
+> Credencial: `TEST_MANAGER_BUSINESS_EMAIL` · max_owners: 10 · allows_multi_owner: true
+
+| # | Test | Estado |
+|---|------|--------|
+| E-BU01 | Lista muestra múltiples owners correctamente | 🚧 No implementado |
+| E-BU02 | Con 9 owners: botón "Nueva entidad" sigue habilitado | 🚧 No implementado |
+| E-BU03 | Con 10 owners: botón "Nueva entidad" aparece deshabilitado | 🚧 No implementado |
+| E-BU04 | Contador muestra "N / 10" | 🚧 No implementado |
+
+#### 3.2.4 Plan AGENCY — Restricciones de entidades
+
+> Credencial: `TEST_MANAGER_AGENCY_EMAIL` · max_owners: ilimitado · allows_owner_change: true
+
+| # | Test | Estado |
+|---|------|--------|
+| E-AG01 | Lista muestra múltiples owners sin límite | 🚧 No implementado |
+| E-AG02 | Botón "Nueva entidad" siempre habilitado (sin límite) | 🚧 No implementado |
+| E-AG03 | Contador muestra "Ilimitadas" en lugar de "N / X" | 🚧 No implementado |
 
 ### 3.3 Alojamientos
 
-| # | Test | Rol mínimo | Estado | Fichero |
-|---|------|------------|--------|---------|
-| A-01 | Lista de alojamientos carga con botón "Nuevo Alojamiento" | viewer | ⚠️ Pendiente | `accommodations.spec.js · 01` |
-| A-02 | Crear alojamiento: wizard paso 1 (datos + entidad propietaria) | admin | ⚠️ Pendiente | `accommodations.spec.js · 02` |
-| A-03 | Crear alojamiento: wizard paso 2 (configurar habitaciones) | admin | ⚠️ Pendiente | `accommodations.spec.js · 02` |
-| A-04 | Obtener ID del alojamiento desde URL (navegación a Editar) | viewer | ⚠️ Pendiente | `accommodations.spec.js · 03` |
-| A-05 | Ver habitaciones del alojamiento (AccommodationDetail) | viewer | ⚠️ Pendiente | `accommodations.spec.js · 04` |
-| A-06 | Habitaciones muestran badge de estado (Libre / Ocupada) | viewer | ⚠️ Pendiente | `accommodations.spec.js · 04` |
-| A-07 | Editar alojamiento: cambiar nombre | admin | ⚠️ Pendiente | `accommodations.spec.js · 05` |
-| A-08 | Añadir habitación desde AccommodationEdit | admin | ⚠️ Pendiente | `accommodations.spec.js · 06` |
-| A-09 | KPIs del alojamiento visibles (Total, Ocupado, Libres) | viewer | ⚠️ Pendiente | `accommodations.spec.js · 07` |
-| A-10 | Asignar servicios a un alojamiento | admin | 🚧 No implementado | — |
-| A-11 | Buscar alojamiento por nombre | viewer | 🚧 No implementado | — |
+| # | Test | Rol mínimo | Plan | Estado | Fichero |
+|---|------|------------|------|--------|---------|
+| A-01 | Lista de alojamientos carga con botón "Nuevo Alojamiento" | viewer | todos | ⚠️ Pendiente | `accommodations.spec.js · 01` |
+| A-02 | Crear alojamiento: wizard paso 1 (datos + entidad propietaria) | admin | todos | ⚠️ Pendiente | `accommodations.spec.js · 02` |
+| A-03 | Crear alojamiento: wizard paso 2 (configurar habitaciones) | admin | todos | ⚠️ Pendiente | `accommodations.spec.js · 02` |
+| A-04 | Obtener ID del alojamiento desde URL (navegación a Editar) | viewer | todos | ⚠️ Pendiente | `accommodations.spec.js · 03` |
+| A-05 | Ver habitaciones del alojamiento (AccommodationDetail) | viewer | todos | ⚠️ Pendiente | `accommodations.spec.js · 04` |
+| A-06 | Habitaciones muestran badge de estado (Libre / Ocupada) | viewer | todos | ⚠️ Pendiente | `accommodations.spec.js · 04` |
+| A-07 | Editar alojamiento: cambiar nombre | admin | todos | ⚠️ Pendiente | `accommodations.spec.js · 05` |
+| A-08 | Añadir habitación desde AccommodationEdit | admin | todos | ⚠️ Pendiente | `accommodations.spec.js · 06` |
+| A-09 | KPIs del alojamiento visibles (Total, Ocupado, Libres) | viewer | todos | ⚠️ Pendiente | `accommodations.spec.js · 07` |
+| A-10 | Asignar servicios a un alojamiento | admin | todos | 🚧 No implementado | — |
+| A-11 | Buscar alojamiento por nombre | viewer | todos | 🚧 No implementado | — |
+
+#### 3.3.1 Restricciones por plan — Alojamientos
+
+| # | Test | Plan | Límite | Estado |
+|---|------|------|--------|--------|
+| A-B01 | Con 3 alojamientos: botón "Nuevo Alojamiento" deshabilitado | `basic` | max 3 | 🚧 No implementado |
+| A-B02 | Contador muestra "N / 3" en la lista | `basic` | max 3 | 🚧 No implementado |
+| A-I01 | Con 8 alojamientos: botón "Nuevo Alojamiento" deshabilitado | `investor` | max 8 | 🚧 No implementado |
+| A-I02 | Con 7 alojamientos: botón sigue habilitado | `investor` | max 8 | 🚧 No implementado |
+| A-BU01 | Botón "Nuevo Alojamiento" siempre habilitado | `business` | ilimitado | 🚧 No implementado |
+| A-AG01 | Botón "Nuevo Alojamiento" siempre habilitado | `agency` | ilimitado | 🚧 No implementado |
 
 ### 3.4 Inquilinos
 
@@ -162,6 +232,28 @@
 | T-09 | Habitación queda "Libre" tras ejecutarse la baja | viewer | 🚧 No implementado | — |
 | T-10 | Buscar inquilino por nombre en el buscador | viewer | 🚧 No implementado | — |
 | T-11 | Asignar servicio a un inquilino desde su detalle | admin | 🚧 No implementado | — |
+
+#### 3.4.1 Pagadores del Inquilino (`payer_rental`)
+
+> Un inquilino puede tener múltiples pagadores activos simultáneamente (ej: padre y madre de un estudiante).
+> Los pagadores son potenciales: cualquiera puede hacer la transferencia bancaria cada mes.
+> Acceso: `TenantEdit` → sección "Pagadores" · Componente: `PayersList.jsx`
+
+| # | Test | Tipo pagador | Estado |
+|---|------|-------------|--------|
+| PAY-01 | Abrir edición de inquilino → sección "Pagadores" visible con botón "Añadir Pagador" | — | 🚧 No implementado |
+| PAY-02 | Inquilino sin pagadores → lista vacía con mensaje informativo | — | 🚧 No implementado |
+| PAY-03 | Añadir pagador persona física (nombre + primer apellido) | `individual` | 🚧 No implementado |
+| PAY-04 | Añadir pagador persona jurídica (razón social) | `company` | 🚧 No implementado |
+| PAY-05 | Lista muestra 2 pagadores activos simultáneamente | `individual` x2 | 🚧 No implementado |
+| PAY-06 | Lista muestra mix de persona física + empresa activos a la vez | `individual` + `company` | 🚧 No implementado |
+| PAY-07 | Pagador activo muestra badge "Activo" en verde | — | 🚧 No implementado |
+| PAY-08 | Desactivar pagador → badge cambia a "Inactivo" pero sigue visible en lista | — | 🚧 No implementado |
+| PAY-09 | Reactivar pagador inactivo → badge vuelve a "Activo" | — | 🚧 No implementado |
+| PAY-10 | Editar pagador existente → cambiar notas y verificar persistencia | — | 🚧 No implementado |
+| PAY-11 | Formulario "Añadir Pagador": cambiar tipo `individual` → `company` → campos cambian | — | 🚧 No implementado |
+| PAY-12 | Reasignar habitación → pagadores del inquilino se mantienen tras la reasignación | — | 🚧 No implementado |
+| PAY-13 | Crear inquilino → redirige a `/editar` para poder añadir pagadores inmediatamente | — | 🚧 No implementado |
 
 ### 3.5 Energía y Facturas
 
@@ -195,6 +287,28 @@
 | # | Test | Rol mínimo | URL | Estado |
 |---|------|------------|-----|--------|
 | SET-01 | Página de configuración del tenant carga sin errores | admin | `/v2/admin/settings` | 🚧 No implementado |
+
+### 3.9 Borrado y Desactivación
+
+> Cubre operaciones de eliminación y desactivación disponibles para el rol `admin`.
+> Soft delete = cambio de `status` a `inactive`. Hard delete = eliminación física con cascada.
+> Spec: `admin-basic.spec.js` tests 36–43 · Proyecto: `regression-basic`
+
+| # | Test | Operación | Entidad | Spec | Estado |
+|---|------|-----------|---------|------|--------|
+| BD-01 | Desactivar entidad: `status → inactive` desde formulario edición | Soft delete | Entidad propietaria | test 36 | ⚠️ Pendiente credencial |
+| BD-02 | Reactivar entidad: `status → active` (restaurar para tests siguientes) | Soft restore | Entidad propietaria | test 37 | ⚠️ Pendiente credencial |
+| BD-03 | Desactivar habitación libre (`set_room_status → inactive`, Popconfirm) | Soft delete | Habitación | test 38 | ⚠️ Pendiente credencial |
+| BD-04 | Reactivar habitación desactivada (`set_room_status → active`) | Soft restore | Habitación | test 39 | ⚠️ Pendiente credencial |
+| BD-05 | Desactivar inquilino: `status → inactive` desde `TenantEdit` | Soft delete | Inquilino | test 40 | ⚠️ Pendiente credencial |
+| BD-06 | Eliminar factura eléctrica (hard delete con cascada a boletines y storage) | Hard delete | Factura + boletines + PDF | test 41 | ⚠️ Pendiente credencial |
+| BD-07 | Desactivar servicio del catálogo (`StopOutlined` icon, `status → inactive`) | Soft delete | Servicio | test 42 | ⚠️ Pendiente credencial |
+| BD-08 | Boletín NO tiene borrado propio — solo se elimina en cascada con su factura | Documentativo | Boletín | test 43 | ⚠️ Pendiente credencial |
+
+> **Reglas de cascada en hard delete de Factura:**
+> - Se eliminan todos los `energy_settlements` asociados
+> - Se eliminan todos los `bulletins` del periodo
+> - Se elimina el PDF del bucket de Supabase Storage
 
 ---
 
@@ -290,35 +404,69 @@
 
 ### 8.1 Entidad Propietaria — `/v2/admin/entidades/nueva`
 
+> Fuente verificada: `EntityCreate.jsx` + `EntityFormFields.jsx` (2026-03-22)
+
 #### Campos del formulario
 
-| Campo | Tipo | Oblig. | Máx | Validación extra |
-|-------|------|:------:|:---:|-----------------|
-| `legal_type` | `select` | ✅ | — | Valores: `persona_fisica`, `persona_juridica`, `autonomo` |
-| `legal_name` | `text` | ✅ si jurídica | 200 | Solo visible si `legal_type = persona_juridica` |
-| `first_name` | `text` | ✅ si física/autónomo | 100 | Oculto si `legal_type = persona_juridica` |
-| `last_name1` | `text` | ✅ si física/autónomo | 100 | Oculto si `legal_type = persona_juridica` |
-| `last_name2` | `text` | ❌ | 100 | — |
-| `billing_email` | `email` | ❌ | 255 | Formato email válido si se rellena |
-| `phone` | `text` | ❌ | 20 | Solo dígitos y `+`, `-`, espacios |
-| `tax_id` | `text` | ❌ | 20 | NIF/CIF — sin validación de formato en E2E |
-| `city` | `text` | ❌ | 100 | — |
-| `province` | `select` | ❌ | — | Lista de 52 provincias españolas |
-| `zip` | `text` | ❌ | 5 | Solo dígitos, exactamente 5 si se rellena |
-| `street` | `text` | ❌ | 200 | — |
-| `street_number` | `text` | ❌ | 10 | — |
+**Selector de tipo (siempre visible)**
+
+| Campo | Tipo | Oblig. | Validación extra |
+|-------|------|:------:|-----------------|
+| `legal_type` | `select` | ✅ | Valores: `persona_juridica` (default), `persona_fisica`, `autonomo` |
+
+**Datos de nombre — condicional por tipo**
+
+| Campo | Tipo | Oblig. | Mín | Máx | Validación extra |
+|-------|------|:------:|:---:|:---:|-----------------|
+| `legal_name` | `text` | ✅ solo jurídica | 2 | 200 | Oculto si `persona_fisica` o `autonomo` |
+| `first_name` | `text` | ✅ física/autónomo | 2 | 50 | Pattern: solo letras y espacios (`/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/`) |
+| `last_name1` | `text` | ✅ física/autónomo | 2 | 50 | Pattern: solo letras y espacios |
+| `last_name2` | `text` | ❌ | — | 50 | Pattern: solo letras, espacios o vacío |
+| `nickname` | `text` | ❌ | — | 50 | Sin restricciones adicionales |
+| `gender` | `select` | ❌ | — | — | Solo para física/autónomo |
+
+**Datos fiscales y contacto (todos los tipos)**
+
+| Campo | Tipo | Oblig. | Mín | Máx | Validación extra |
+|-------|------|:------:|:---:|:---:|-----------------|
+| `tax_id` | `text` | ✅ | 9 | 9 (exacto) | Empresa: `/^[A-Z]\d{8}$\|^\d{8}[A-Z]$/`· Persona: `/^\d{8}[A-Z]$\|^[XYZ]\d{7}[A-Z]$/`. Campo en UPPERCASE |
+| `billing_email` | `email` | ✅ | — | 100 | Formato email válido |
+| `phone` | `text` | ❌ | — | 20 | Pattern: `/^\+?[0-9\s-]{9,15}$/` |
+
+**Dirección (todos los tipos, todos obligatorios excepto floor/door/address_extra)**
+
+| Campo | Tipo | Oblig. | Mín | Máx | Validación extra |
+|-------|------|:------:|:---:|:---:|-----------------|
+| `street` | `text` | ✅ | 3 | 200 | — |
+| `street_number` | `text` | ✅ | — | — | — |
+| `floor` | `text` | ❌ | — | — | — |
+| `door` | `text` | ❌ | — | — | — |
+| `zip` | `text` | ✅ | — | 5 (maxLength) | Pattern: `/^\d{5}$/` exactamente 5 dígitos |
+| `city` | `text` | ✅ | 2 | 100 | — |
+| `province` | `select` | ✅ | — | — | Lista de 52 provincias españolas |
+| `country` | `text` | ✅ | — | — | Default: `"España"` |
+| `address_extra` | `text` | ❌ | — | — | — |
 
 #### Tests E2E
 
 | # | Test | Estado |
 |---|------|--------|
-| FV-E01 | Enviar formulario vacío → errores en `legal_type`, `first_name`/`legal_name` | 🚧 No implementado |
-| FV-E02 | `legal_type = persona_juridica` → campo `legal_name` es obligatorio | 🚧 No implementado |
-| FV-E03 | `legal_type = persona_fisica` → campos `first_name` y `last_name1` obligatorios | 🚧 No implementado |
-| FV-E04 | `billing_email` con formato inválido (`noesun@email`) → error visible | 🚧 No implementado |
-| FV-E05 | `zip` con letras (`ABCDE`) → error visible | 🚧 No implementado |
-| FV-E06 | `zip` con 4 dígitos (demasiado corto) → error visible | 🚧 No implementado |
-| FV-E07 | Cambiar `legal_type` de jurídica a física → `legal_name` desaparece, `first_name` aparece | 🚧 No implementado |
+| FV-E01 | Enviar formulario vacío → errores en `legal_type`, `legal_name` (default jurídica), `tax_id`, `billing_email`, `street`, `zip`, `city`, `province` | 🚧 No implementado |
+| FV-E02 | `legal_type = persona_juridica` → `legal_name` obligatorio; campos `first_name`/`last_name1` ocultos | 🚧 No implementado |
+| FV-E03 | `legal_type = persona_fisica` → `first_name` y `last_name1` obligatorios; `legal_name` oculto | 🚧 No implementado |
+| FV-E04 | `legal_type = autonomo` → mismos campos que `persona_fisica` | 🚧 No implementado |
+| FV-E05 | `first_name` con dígitos (`"Juan1"`) → error de patrón "solo letras" | 🚧 No implementado |
+| FV-E06 | `first_name` con 1 carácter → error "mínimo 2 caracteres" | 🚧 No implementado |
+| FV-E07 | `tax_id` empresa con formato inválido (`"12345678"`, sin letra final) → error de patrón | 🚧 No implementado |
+| FV-E08 | `tax_id` persona con 8 dígitos sin letra final → error de patrón | 🚧 No implementado |
+| FV-E09 | `tax_id` con 8 caracteres (1 menos) → error "exactamente 9 caracteres" | 🚧 No implementado |
+| FV-E10 | `billing_email` con formato inválido (`"noesun@email"`) → error visible | 🚧 No implementado |
+| FV-E11 | `zip` con letras (`"ABCDE"`) → error de patrón | 🚧 No implementado |
+| FV-E12 | `zip` con 4 dígitos → error "exactamente 5 dígitos" | 🚧 No implementado |
+| FV-E13 | `street` con 2 caracteres → error "mínimo 3 caracteres" | 🚧 No implementado |
+| FV-E14 | `city` con 1 carácter → error "mínimo 2 caracteres" | 🚧 No implementado |
+| FV-E15 | Cambiar `legal_type` de jurídica a física → `legal_name` desaparece, `first_name`/`last_name1` aparecen | 🚧 No implementado |
+| FV-E16 | `phone` con letras (`"abc-def"`) → error de patrón | 🚧 No implementado |
 
 ---
 
@@ -361,28 +509,49 @@
 
 ### 8.3 Inquilino — `/v2/admin/inquilinos/nuevo`
 
-#### Campos del formulario
+> Fuente verificada: `TenantCreate.jsx` + `LodgerFormFields.jsx` (2026-03-22)
 
-| Campo | Tipo | Oblig. | Máx | Validación extra |
-|-------|------|:------:|:---:|-----------------|
-| `first_name` | `text` | ✅ | 100 | — |
-| `last_name1` | `text` | ✅ | 100 | — |
-| `email` | `email` | ✅ | 255 | Formato email válido, único en el tenant |
-| `phone` | `text` | ❌ | 20 | Solo dígitos y separadores |
-| `room_id` | `select` | ✅ | — | Solo habitaciones con estado "Libre" |
-| `start_date` | `date` | ✅ | — | No puede ser en el pasado (o configurable) |
-| `end_date` | `date` | ❌ | — | Debe ser posterior a `start_date` |
+#### Campos del formulario — Datos personales (`LodgerFormFields`)
+
+| Campo | Tipo | Oblig. | Validación extra |
+|-------|------|:------:|-----------------|
+| `first_name` | `text` | ✅ | Sin restricción de longitud ni patrón |
+| `last_name1` | `text` | ✅ | Sin restricción de longitud ni patrón |
+| `last_name2` | `text` | ✅ | Sin restricción de longitud ni patrón |
+| `nickname` | `text` | ❌ | Nombre preferido, sin restricciones |
+| `email` | `email` | ✅ | Formato email válido (`type: "email"`) |
+| `phone` | `text` | ✅ | Sin patrón — acepta cualquier texto |
+| `document_id` | `text` | ✅ | DNI/NIE/Pasaporte — sin validación de formato |
+| `gender` | `select` | ✅ | `male`, `female`, `other` |
+
+#### Campos del formulario — Asignación de habitación (`TenantCreate`)
+
+> ⚠️ **Plan Windsurf pendiente:** Los campos `deposit_amount`, `commission_amount`, `first_month_amount` y `check_out_date` se añadirán cuando Cascade implemente la migración de BD y los componentes. Ver sección 8.8 y 9.
+
+| Campo | Tipo | Oblig. | Validación extra |
+|-------|------|:------:|-----------------|
+| `accommodation_id` | `select` | ❌ | Pre-cargado desde query param `?acc=` |
+| `room_id` | `select` | ❌ | Solo habitaciones con `status = "free"`. Pre-cargado desde `?room=` |
+| `move_in_date` / `check_in_date` | `date` | ⚠️ Condicional | **Obligatorio solo si `room_id` está seleccionado**. Label: "Fecha de Check-In". Default: hoy |
+| `billing_start_date` | `date` | ❌ | Visible solo si `billingSameAsMoveIn = false`. Default = `check_in_date` |
+| `deposit_amount` | `number` | ✅ *(pendiente)* | Calculado como X meses de renta (selector 1/2/3 meses o manual). `deposit_amount = monthly_rent * months` |
+| `commission_amount` | `number` | ❌ *(pendiente)* | Comisión de agencia. Acepta 0 o null |
+| `first_month_amount` | `number` | ❌ *(pendiente)* | Importe primer mes (entrada a mitad de mes). ≤ `monthly_rent` |
+| `check_out_date` | `date` | ❌ *(pendiente)* | No visible en alta. Solo en edición/visualización |
+| `send_onboarding` | `boolean` | ❌ | Default: `true`. Envía email de bienvenida |
 
 #### Tests E2E
 
 | # | Test | Estado |
 |---|------|--------|
-| FV-T01 | Enviar formulario vacío → errores en `first_name`, `email`, `room_id` | 🚧 No implementado |
-| FV-T02 | `email` con formato inválido → error visible | 🚧 No implementado |
-| FV-T03 | `email` ya registrado en el tenant → error de duplicado | 🚧 No implementado |
-| FV-T04 | Selector de habitación solo muestra las "Libres" (no las ocupadas) | 🚧 No implementado |
-| FV-T05 | `end_date` anterior a `start_date` → error visible | 🚧 No implementado |
-| FV-T06 | `phone` con letras (`abc123`) → campo rechaza o muestra error | 🚧 No implementado |
+| FV-T01 | Enviar formulario vacío → errores en `first_name`, `last_name1`, `last_name2`, `email`, `phone`, `document_id`, `gender` | 🚧 No implementado |
+| FV-T02 | `email` con formato inválido (`"usuario@"`) → error visible | 🚧 No implementado |
+| FV-T03 | `email` ya registrado en el tenant → error de duplicado (validado en backend) | 🚧 No implementado |
+| FV-T04 | Seleccionar `accommodation_id` → selector `room_id` muestra solo habitaciones libres | 🚧 No implementado |
+| FV-T05 | Seleccionar `room_id` → campo `move_in_date` pasa a ser obligatorio | 🚧 No implementado |
+| FV-T06 | Sin `room_id` → `move_in_date` es opcional (se puede enviar sin fecha) | 🚧 No implementado |
+| FV-T07 | `phone` con texto libre (`"abc-123"`) → se acepta (sin patrón en frontend) | 🚧 No implementado |
+| FV-T08 | `gender` no seleccionado → error "Campo obligatorio" | 🚧 No implementado |
 
 ---
 
@@ -512,7 +681,48 @@
 
 ---
 
-### 8.5 Servicio del Tenant — `/v2/admin/servicios/nuevo`
+### 8.5 Habitación — desde `AccommodationDetail` (tab "Datos del Alojamiento")
+
+> Fuente verificada: `AccommodationDetail.jsx` formulario inline "Nueva Habitación" (2026-03-22)
+> URL: `/v2/admin/alojamientos/:accId/habitaciones` → tab "Datos del Alojamiento"
+
+#### Campos del formulario "Añadir habitación"
+
+| Campo | Tipo | Oblig. | Mín | Máx | Default | Validación extra |
+|-------|------|:------:|:---:|:---:|:-------:|-----------------|
+| `number` | `text` | ✅ | — | 10 (maxLength + rule) | — | No puede estar vacío ni ser solo espacios (`whitespace: true`) |
+| `monthly_rent` | `number` | ✅ | 0 | — | `0` | Debe ser ≥ 0. Precio negativo → error |
+| `square_meters` | `number` | ❌ | 1 | 999 | — | Si se rellena debe ser entre 1 y 999 |
+| `bathroom_type` | `select` | ✅ | — | — | `"shared"` (Compartido) | Valores: `shared`, `private`, `suite` |
+| `kitchen_type` | `select` | ✅ | — | — | `"shared"` (Compartida) | Valores: `shared`, `private`, `suite` |
+
+#### Campos del formulario "Editar habitación" (inline en tabla)
+
+| Campo | Tipo | Oblig. | Mín | Validación extra |
+|-------|------|:------:|:---:|-----------------|
+| `number` | `text` | ✅ | — | Sin maxLength explícito en edición |
+| `monthly_rent` | `number` | ❌ | 0 | Mín 0 |
+| `square_meters` | `number` | ❌ | 1 | Mín 1 |
+
+#### Tests E2E — "Añadir habitación"
+
+| # | Test | Comportamiento esperado | Estado |
+|---|------|------------------------|--------|
+| FV-H01 | Enviar formulario sin `number` → error "El número es obligatorio" | Campo requerido + whitespace | 🚧 No implementado |
+| FV-H02 | `number` con solo espacios → error "No puede estar vacío" | Regla `whitespace` | 🚧 No implementado |
+| FV-H03 | `number` con 11 caracteres → truncado a 10 por `maxLength` | Bloqueado en input | 🚧 No implementado |
+| FV-H04 | `monthly_rent` vacío → se acepta (tiene `initialValue=0`) | Precio por defecto 0 | 🚧 No implementado |
+| FV-H05 | `monthly_rent` negativo (`-1`) → error "Debe ser mayor o igual a 0" | Regla `min: 0` | 🚧 No implementado |
+| FV-H06 | `square_meters` vacío → se acepta (campo opcional) | No requerido | 🚧 No implementado |
+| FV-H07 | `square_meters = 0` → error "Debe ser mayor a 0" | Regla `min: 1` | 🚧 No implementado |
+| FV-H08 | `square_meters = 1000` → error "Máximo 999 m²" | Regla `max: 999` | 🚧 No implementado |
+| FV-H09 | `bathroom_type` y `kitchen_type` ya tienen valor por defecto al abrir el formulario | `initialValue="shared"` | 🚧 No implementado |
+| FV-H10 | Añadir habitación correctamente (Nº + precio) → aparece en tabla | Happy path | 🚧 No implementado |
+| FV-H11 | Editar habitación: cambiar número → nuevo número visible en tabla | Edit inline | 🚧 No implementado |
+
+---
+
+### 8.6 Servicio del Tenant — `/v2/admin/servicios/nuevo`
 
 #### Campos del formulario
 
@@ -561,47 +771,257 @@
 
 ---
 
+### 8.7 Pagadores del Inquilino — Formulario `PayersList` / `TenantEdit`
+
+> Fuente: plan `mejoras-inquilino-asignacion-95e41a.md` · Componente: `PayersList.jsx` (pendiente de crear)
+> Tabla BD: `payer_rental` (pendiente de migración)
+
+#### Campos del formulario "Añadir Pagador"
+
+| Campo | Tipo | Oblig. | Condición | Validación extra |
+|-------|------|:------:|-----------|-----------------|
+| `payer_type` | `radio` | ✅ | Siempre | Valores: `individual` (default), `company` |
+| `first_name` | `text` | ✅ | Solo si `individual` | Campo oculto si `company` |
+| `last_name1` | `text` | ✅ | Solo si `individual` | Campo oculto si `company` |
+| `last_name2` | `text` | ❌ | Solo si `individual` | Opcional |
+| `legal_name` | `text` | ✅ | Solo si `company` | Campo oculto si `individual` |
+| `notes` | `textarea` | ❌ | Siempre | Ej: "Padre del inquilino" |
+| `is_active` | `boolean` | — | — | Default: `true`. Gestionado por botón toggle (no en alta) |
+
+#### Constraint en BD (`payer_data_check`)
+
+- Tipo `individual`: `first_name IS NOT NULL AND last_name1 IS NOT NULL`
+- Tipo `company`: `legal_name IS NOT NULL`
+- Violación → error visible en UI
+
+#### Tests E2E
+
+| # | Test | Estado |
+|---|------|--------|
+| FV-PAY01 | Añadir pagador `individual` sin `first_name` → error "El nombre es obligatorio" | 🚧 No implementado |
+| FV-PAY02 | Añadir pagador `individual` sin `last_name1` → error "El primer apellido es obligatorio" | 🚧 No implementado |
+| FV-PAY03 | Añadir pagador `company` sin `legal_name` → error "El nombre de la empresa es obligatorio" | 🚧 No implementado |
+| FV-PAY04 | Cambiar tipo `individual` → `company` → campos `first_name`/`last_name1` desaparecen, `legal_name` aparece | 🚧 No implementado |
+| FV-PAY05 | Cambiar tipo `company` → `individual` → `legal_name` desaparece, `first_name`/`last_name1` aparecen | 🚧 No implementado |
+| FV-PAY06 | Añadir 2 pagadores individuales activos para el mismo inquilino → ambos aparecen en lista | 🚧 No implementado |
+| FV-PAY07 | Añadir pagador persona física + empresa simultáneamente → ambos activos y visibles | 🚧 No implementado |
+| FV-PAY08 | Desactivar pagador activo → `is_active = false`, badge cambia a "Inactivo" | 🚧 No implementado |
+| FV-PAY09 | Reactivar pagador inactivo → `is_active = true`, badge "Activo" | 🚧 No implementado |
+| FV-PAY10 | Editar pagador → modal se abre con datos existentes precargados | 🚧 No implementado |
+| FV-PAY11 | Editar pagador → guardar cambios y verificar persistencia en lista | 🚧 No implementado |
+| FV-PAY12 | `notes` vacío → se acepta (campo opcional) | 🚧 No implementado |
+
+---
+
+### 8.8 Asignación de Habitación — Campos Financieros
+
+> Fuente: plan `mejoras-inquilino-asignacion-95e41a.md` · Formulario: `TenantCreate.jsx` / `TenantEdit.jsx`
+> Tabla BD: `lodger_room_assignments` — campos nuevos: `deposit_amount`, `commission_amount`, `first_month_amount`, `check_out_date`
+> **Pendiente:** Requiere migración de BD previa
+
+#### Campos y reglas
+
+| Campo | Tipo | Oblig. | Regla de validación |
+|-------|------|:------:|---------------------|
+| `deposit_amount` | `number` | ✅ | ≥ 0. Default: 1 mes de renta. Calculado por selector "1 mes / 2 meses / 3 meses / Personalizado" |
+| `commission_amount` | `number` | ❌ | Acepta 0 o null. Sin límite superior |
+| `first_month_amount` | `number` | ❌ | ≤ `monthly_rent`. Para entradas a mitad de mes |
+| `check_out_date` | `date` | ❌ | Solo visible en edición. Null al crear |
+
+#### Cálculo automático de fianza
+
+`deposit_amount = monthly_rent × N_meses` (N = 1, 2 o 3)
+
+Cuando el usuario selecciona una habitación, el campo se pre-calcula y es editable manualmente.
+
+#### Tests E2E
+
+| # | Test | Fórmula/Regla | Estado |
+|---|------|---------------|--------|
+| FV-FIN01 | Enviar sin `deposit_amount` → error "La fianza es obligatoria" | Campo requerido | 🚧 No implementado |
+| FV-FIN02 | `deposit_amount` negativo → error "Debe ser ≥ 0" | `min: 0` | 🚧 No implementado |
+| FV-FIN03 | Seleccionar "1 mes" con renta 450 € → `deposit_amount = 450` (auto) | `450 × 1` | 🚧 No implementado |
+| FV-FIN04 | Seleccionar "2 meses" con renta 450 € → `deposit_amount = 900` | `450 × 2` | 🚧 No implementado |
+| FV-FIN05 | Seleccionar "3 meses" con renta 450 € → `deposit_amount = 1350` | `450 × 3` | 🚧 No implementado |
+| FV-FIN06 | Cambiar habitación (renta diferente) → `deposit_amount` se recalcula automáticamente | `nueva_renta × months` | 🚧 No implementado |
+| FV-FIN07 | Seleccionar "Personalizado" → campo editable manualmente | Manual override | 🚧 No implementado |
+| FV-FIN08 | `commission_amount = 0` → se acepta | Campo opcional | 🚧 No implementado |
+| FV-FIN09 | `commission_amount` vacío → se acepta (null) | Campo opcional | 🚧 No implementado |
+| FV-FIN10 | `first_month_amount` vacío → se acepta (null) | Campo opcional | 🚧 No implementado |
+| FV-FIN11 | `first_month_amount > monthly_rent` → error visible | `first_month ≤ rent` | 🚧 No implementado |
+| FV-FIN12 | `check_out_date` no visible al crear inquilino | Solo en edición | 🚧 No implementado |
+| FV-FIN13 | `check_out_date` visible en modo edición (`TenantEdit`) | Solo en edición | 🚧 No implementado |
+| FV-FIN14 | `billing_start_date` por defecto igual a `check_in_date` | Default sincronizado | 🚧 No implementado |
+| FV-FIN15 | `billing_start_date` puede ser diferente de `check_in_date` | Sin restricción | 🚧 No implementado |
+| FV-FIN16 | Label renombrado: "Fecha de Check-In" (no "Fecha de entrada") | UI rename | 🚧 No implementado |
+| FV-FIN17 | Label renombrado: "Fecha de Inicio Cobro" (no "Fecha inicio facturación") | UI rename | 🚧 No implementado |
+
+---
+
+---
+
+## 9. TESTS UNITARIOS E INTEGRACIÓN (Vitest) — Funcionalidad `payer_rental`
+
+> Fuente: plan `mejoras-inquilino-asignacion-95e41a.md`
+> Tipo: tests Vitest (no E2E). Requieren: migración de BD + `payers.service.js` + `PayersList.jsx`
+> **Prerrequisito:** Todas las migraciones de BD del plan deben estar aplicadas en staging.
+
+---
+
+### 9.1 Migración de BD — Estructura `payer_rental` y `lodger_room_assignments`
+
+| # | Test | Estado |
+|---|------|--------|
+| UT-DB01 | Tabla `payer_rental` existe y se puede consultar sin error | 🚧 No implementado |
+| UT-DB02 | `payer_rental` tiene todas las columnas requeridas (`id`, `client_account_id`, `lodger_id`, `payer_type`, `first_name`, `last_name1`, `last_name2`, `legal_name`, `is_active`, `notes`, `created_at`, `updated_at`) | 🚧 No implementado |
+| UT-DB03 | `lodger_room_assignments` tiene las nuevas columnas (`deposit_amount`, `commission_amount`, `first_month_amount`, `check_out_date`) | 🚧 No implementado |
+| UT-DB04 | `deposit_amount` tiene valor por defecto `0` al insertar sin especificar el campo | 🚧 No implementado |
+| UT-DB05 | Constraint `payer_data_check`: tipo `individual` sin `first_name` o `last_name1` → error de BD | 🚧 No implementado |
+| UT-DB06 | Constraint `payer_data_check`: tipo `company` sin `legal_name` → error de BD | 🚧 No implementado |
+
+---
+
+### 9.2 Servicio `payers.service.js` — CRUD
+
+| # | Test | Estado |
+|---|------|--------|
+| UT-SVC01 | `listPayers(lodgerId)` devuelve array vacío si no hay pagadores | 🚧 No implementado |
+| UT-SVC02 | `listPayers(lodgerId)` devuelve los 3 pagadores creados (2 activos + 1 inactivo) | 🚧 No implementado |
+| UT-SVC03 | `createPayer()` crea pagador `individual` con todos los campos | 🚧 No implementado |
+| UT-SVC04 | `createPayer()` crea pagador `company` con `legal_name` | 🚧 No implementado |
+| UT-SVC05 | `updatePayer()` actualiza el campo `notes` y mantiene el resto | 🚧 No implementado |
+| UT-SVC06 | `togglePayerStatus()` cambia `is_active` de `true` a `false` | 🚧 No implementado |
+| UT-SVC07 | `togglePayerStatus()` cambia `is_active` de `false` a `true` | 🚧 No implementado |
+| UT-SVC08 | Crear 4 pagadores activos simultáneamente para el mismo `lodger_id` → todos activos en BD | 🚧 No implementado |
+| UT-SVC09 | `listPayers` filtra por `lodger_id` (no mezcla pagadores de otros inquilinos) | 🚧 No implementado |
+
+---
+
+### 9.3 Servicio `lodgers.service.js` — Nuevos campos financieros
+
+| # | Test | Estado |
+|---|------|--------|
+| UT-LDG01 | `createLodger()` con payload incluyendo `deposit_amount`, `commission_amount`, `first_month_amount` → asignación en BD tiene los valores correctos | 🚧 No implementado |
+| UT-LDG02 | `assignRoomToLodger()` incluye nuevos campos financieros en el INSERT a `lodger_room_assignments` | 🚧 No implementado |
+| UT-LDG03 | `reassignRoom()` incluye nuevos campos financieros en la nueva asignación | 🚧 No implementado |
+
+---
+
+### 9.4 Escenarios de múltiples pagadores simultáneos (integración)
+
+| # | Escenario | Estado |
+|---|-----------|--------|
+| UT-INT01 | Inquilino estudiante con padre y madre como pagadores activos simultáneos → ambos se listan y están activos | 🚧 No implementado |
+| UT-INT02 | Inquilino con beca (empresa) + padre (individual) activos a la vez → mix de tipos correcto | 🚧 No implementado |
+| UT-INT03 | Desactivar un pagador → los otros 2 siguen activos; el desactivado queda en BD (historial) | 🚧 No implementado |
+| UT-INT04 | Añadir nuevo pagador a inquilino que ya tiene 2 activos → 3 activos sin afectar los existentes | 🚧 No implementado |
+
+---
+
+### 9.5 Flujo completo con pagadores (integración)
+
+| # | Test | Estado |
+|---|------|--------|
+| UT-INT05 | Crear inquilino + asignar habitación con campos financieros + añadir 3 pagadores → todo correcto en BD | 🚧 No implementado |
+| UT-INT06 | Reasignar habitación con nuevos términos financieros → asignación anterior `status=ended`, nueva `status=active` con valores nuevos | 🚧 No implementado |
+| UT-INT07 | Pagadores persisten al cambiar de habitación (no se borran al reasignar) | 🚧 No implementado |
+
+---
+
+### 9.6 Cálculo de fianza (unit puro)
+
+| # | Test | Fórmula | Estado |
+|---|------|---------|--------|
+| UT-DEP01 | `monthly_rent=450` + 1 mes → `deposit_amount=450` | `450 × 1` | 🚧 No implementado |
+| UT-DEP02 | `monthly_rent=450` + 2 meses → `deposit_amount=900` | `450 × 2` | 🚧 No implementado |
+| UT-DEP03 | `monthly_rent=450` + 3 meses → `deposit_amount=1350` | `450 × 3` | 🚧 No implementado |
+| UT-DEP04 | Modo "Personalizado" → acepta cualquier valor ≥ 0 | Manual | 🚧 No implementado |
+| UT-DEP05 | Cambiar habitación de `rent=400` a `rent=500` con "2 meses" → `deposit_amount` recalcula de 800 a 1000 | `500 × 2` | 🚧 No implementado |
+
+---
+
+### 9.7 Componente `PayersList.jsx` (React Testing Library)
+
+| # | Test | Estado |
+|---|------|--------|
+| UT-CMP01 | Renderiza con título "Pagadores" y botón "Añadir Pagador" | 🚧 No implementado |
+| UT-CMP02 | Muestra 3 pagadores activos simultáneos con sus badges "Activo" y tipo | 🚧 No implementado |
+| UT-CMP03 | Pagador inactivo muestra badge "Inactivo" con estilo diferente | 🚧 No implementado |
+| UT-CMP04 | Click "Añadir Pagador" → modal abre con tipo `individual` por defecto | 🚧 No implementado |
+| UT-CMP05 | Validación: enviar modal sin `first_name` → error visible | 🚧 No implementado |
+| UT-CMP06 | Validación: enviar modal sin `last_name1` → error visible | 🚧 No implementado |
+| UT-CMP07 | Validación empresa: enviar modal sin `legal_name` → error visible | 🚧 No implementado |
+| UT-CMP08 | Crear pagador individual correctamente → llama a `createPayer()` con payload correcto | 🚧 No implementado |
+| UT-CMP09 | Crear pagador empresa correctamente → `first_name`/`last_name1` = null en payload | 🚧 No implementado |
+| UT-CMP10 | Click toggle "Desactivar" → llama a `togglePayerStatus()` con id correcto | 🚧 No implementado |
+| UT-CMP11 | Click editar → modal abre con datos del pagador precargados | 🚧 No implementado |
+
+---
+
 ## Resumen de cobertura
 
 | Módulo | Con spec .js | Pendiente (⚠️) | Sin spec (🚧) | Total |
 |--------|:---:|:---:|:---:|:---:|
 | Auth / Login | 0 | 7 | 6 | 13 |
 | SuperAdmin | 0 | 0 | 11 | 11 |
-| Admin — Dashboard | 0 | 0 | 2 | 2 |
-| Admin — Entidades | 0 | 6 | 4 | 10 |
-| Admin — Alojamientos | 0 | 8 | 3 | 11 |
+| Admin — Dashboard | 0 | 2 | 0 | 2 |
+| Admin — Entidades (general) | 0 | 6 | 4 | 10 |
+| Admin — Entidades Basic (E-B) | 6 | 0 | 0 | 6 |
+| Admin — Entidades Investor/Business/Agency | 0 | 0 | 12 | 12 |
+| Admin — Alojamientos (general) | 0 | 8 | 3 | 11 |
+| Admin — Alojamientos restricciones plan | 0 | 0 | 6 | 6 |
 | Admin — Inquilinos | 0 | 8 | 3 | 11 |
-| Admin — Energía | 0 | 0 | 5 | 5 |
-| Admin — Boletines | 0 | 0 | 3 | 3 |
-| Admin — Servicios | 0 | 0 | 4 | 4 |
+| Admin — Pagadores (`payer_rental`) E2E | 0 | 0 | 13 | 13 |
+| Admin — Energía | 4 | 0 | 1 | 5 |
+| Admin — Boletines | 3 | 0 | 0 | 3 |
+| Admin — Servicios | 2 | 0 | 2 | 4 |
+| Admin — Borrado y desactivación | 8 | 0 | 0 | 8 |
 | Admin — Settings | 0 | 0 | 1 | 1 |
+| Admin — Restricciones plan Basic | 5 | 0 | 0 | 5 |
 | Inquilino (lodger) | 0 | 0 | 9 | 9 |
 | Web pública | 0 | 1 | 5 | 6 |
 | Control de acceso | 0 | 0 | 8 | 8 |
 | Reglas de negocio | 0 | 0 | 6 | 6 |
-| Validaciones formulario | 0 | 0 | 73 | 73 |
-| **Total** | **0** | **30** | **143** | **173** |
+| Validaciones — Entidades, Alojamientos, Inquilinos | 0 | 0 | 57 | 57 |
+| Validaciones — Pagadores (FV-PAY) | 0 | 0 | 12 | 12 |
+| Validaciones — Asignación financiera (FV-FIN) | 0 | 0 | 17 | 17 |
+| Validaciones — Planes, Servicios, Energía, Habitaciones | 0 | 0 | 55 | 55 |
+| Tests Vitest — BD Migración | 0 | 0 | 6 | 6 |
+| Tests Vitest — `payers.service` | 0 | 0 | 9 | 9 |
+| Tests Vitest — `lodgers.service` financiero | 0 | 0 | 3 | 3 |
+| Tests Vitest — Escenarios pagadores múltiples | 0 | 0 | 7 | 7 |
+| Tests Vitest — Cálculo fianza | 0 | 0 | 5 | 5 |
+| Tests Vitest — `PayersList` componente | 0 | 0 | 11 | 11 |
+| **Total** | **28** | **32** | **272** | **332** |
 
-> **Columnas**: "Con spec .js" = fichero escrito y pasando en staging · "Pendiente" = spec escrito pero no verificado · "Sin spec" = solo en este catálogo
+> **Columnas**: "Con spec .js" = fichero escrito (pendiente credenciales staging) · "Pendiente" = spec escrito, sin credenciales · "Sin spec" = solo en este catálogo
+>
+> **Specs escritos**: `smoke.spec.js`, `entities.spec.js`, `accommodations.spec.js`, `tenants.spec.js`, `admin-basic.spec.js` (43 tests)
+>
+> **Pendiente de implementar** (requiere plan Windsurf): `payers.service.js`, `PayersList.jsx`, migración BD `payer_rental` y campos financieros en `lodger_room_assignments`
 
 ---
 
 ## Specs `.js` existentes
 
-| Fichero | Tests que cubre |
-|---------|-----------------|
-| `smoke.spec.js` | PUB-01, AUTH-01, AUTH-04 (básico) |
-| `entities.spec.js` | E-01 a E-08 |
-| `accommodations.spec.js` | A-01 a A-09 |
-| `tenants.spec.js` | T-01 a T-08 |
-| `superadmin.spec.js` | SA-01 a SA-09 — 🚧 **Por escribir** |
-| `lodger.spec.js` | LG-01 a LG-07 — 🚧 **Por escribir** |
-| `energy.spec.js` | EN-01 a EN-05 — 🚧 **Por escribir** |
-| `bulletins.spec.js` | BL-01 a BL-03 — 🚧 **Por escribir** |
-| `services.spec.js` | SV-01 a SV-04 — 🚧 **Por escribir** |
-| `access-control.spec.js` | AC-01 a AC-08 — 🚧 **Por escribir** |
-| `business-rules.spec.js` | RN-01 a RN-06 — 🚧 **Por escribir** |
-| `form-validations.spec.js` | FV-E01..07, FV-A01..07, FV-T01..06, FV-P01..38, FV-S01..04, FV-EN01..06 — 🚧 **Por escribir** |
+| Fichero | Proyecto Playwright | Tests que cubre | Estado |
+|---------|---------------------|-----------------|--------|
+| `smoke.spec.js` | `chromium`, `firefox`, `webkit` | PUB-01, AUTH-01, AUTH-04 (básico) | ✅ Escrito |
+| `entities.spec.js` | `regression` | E-01 a E-08 | ✅ Escrito |
+| `accommodations.spec.js` | `regression` | A-01 a A-09 | ✅ Escrito |
+| `tenants.spec.js` | `regression` | T-01 a T-08 | ✅ Escrito |
+| `admin-basic.spec.js` | `regression-basic` | DB-01..03, E-B01..06, A-B (básico), T (Basic), EN-01..03, BL-01..03, SV-01..02, BD-01..08, Restricciones plan Basic | ✅ Escrito (43 tests) |
+| `admin-investor.spec.js` | `regression-investor` | E-I01..05, A-I01..02, operativa Investor | 🚧 Por escribir |
+| `admin-business.spec.js` | `regression-business` | E-BU01..04, operativa Business | 🚧 Por escribir |
+| `admin-agency.spec.js` | `regression-agency` | E-AG01..03, operativa Agency | 🚧 Por escribir |
+| `superadmin.spec.js` | `regression` | SA-01 a SA-09 | 🚧 Por escribir |
+| `lodger.spec.js` | `regression` | LG-01 a LG-07 | 🚧 Por escribir |
+| `energy.spec.js` | `regression` | EN-01 a EN-05 | 🚧 Por escribir |
+| `bulletins.spec.js` | `regression` | BL-01 a BL-03 | 🚧 Por escribir |
+| `services.spec.js` | `regression` | SV-01 a SV-04 | 🚧 Por escribir |
+| `access-control.spec.js` | `regression` | AC-01 a AC-08 | 🚧 Por escribir |
+| `business-rules.spec.js` | `regression` | RN-01 a RN-06 | 🚧 Por escribir |
+| `form-validations.spec.js` | `regression` | FV-E01..07, FV-A01..07, FV-T01..06, FV-P01..38, FV-S01..04, FV-EN01..06 | 🚧 Por escribir |
 
 ---
 
@@ -614,7 +1034,7 @@ npm run test:e2e:smoke
 # Todos los regression con auth
 npm run test:e2e:regression
 
-# Por módulo (con auth)
+# Por módulo (con auth — gestor principal)
 npx playwright test entities.spec.js --project=regression
 npx playwright test accommodations.spec.js --project=regression
 npx playwright test tenants.spec.js --project=regression
@@ -627,6 +1047,15 @@ npx playwright test access-control.spec.js --project=regression
 npx playwright test business-rules.spec.js --project=regression
 npx playwright test form-validations.spec.js --project=regression
 
+# Por plan (requieren credenciales de plan específico en .env.e2e)
+npx playwright test admin-basic.spec.js --project=regression-basic
+npx playwright test admin-investor.spec.js --project=regression-investor
+npx playwright test admin-business.spec.js --project=regression-business
+npx playwright test admin-agency.spec.js --project=regression-agency
+
 # Con browser visible (debug)
 npm run test:e2e:headed
+
+# Solo los tests de borrado y desactivación (Basic)
+npx playwright test admin-basic.spec.js --project=regression-basic --grep "Borrado"
 ```

@@ -33,18 +33,26 @@ export async function createEntity(payload) {
   return result.data;
 }
 
-export async function updateEntity(id, patch) {
-  const result = await invokeWithAuth("manage_entity", {
-    body: { action: "update", payload: { id, ...patch } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function updateEntity(id, patch, clientAccountId) {
+  const { data, error } = await supabase
+    .from("entities")
+    .update(patch)
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function setEntityStatus(id, status) {
-  const result = await invokeWithAuth("manage_entity", {
-    body: { action: "set_status", payload: { id, status } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function setEntityStatus(id, status, clientAccountId) {
+  const { data, error } = await supabase
+    .from("entities")
+    .update({ status })
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }

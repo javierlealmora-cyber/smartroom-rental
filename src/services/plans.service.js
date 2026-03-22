@@ -445,6 +445,15 @@ export const toggleVisibility = async (id) => {
  */
 export const setEndDate = async (id, endDate) => {
   try {
+    // Obtener start_date del plan actual para validar
+    const plan = await getPlanById(id);
+    if (!plan) throw new Error('Plan no encontrado');
+
+    // Validar que end_date sea posterior a start_date
+    if (plan.start_date && endDate <= plan.start_date) {
+      throw new Error('end_date debe ser posterior a start_date');
+    }
+
     return await updatePlan(id, { end_date: endDate });
   } catch (error) {
     console.error('Error al establecer fecha fin:', error);

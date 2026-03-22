@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert, Avatar, Button, Card, Col, Divider, Form, Input,
-  InputNumber, Modal, Popconfirm, Row,
+  InputNumber, message, Modal, Popconfirm, Row,
   Select, Skeleton, Space, Switch, Table, Tag, Tooltip, Typography,
 } from "antd";
 import {
@@ -17,8 +17,9 @@ import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
 import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D";
 import { listEntities } from "../../../../services/entities.service";
-import { updateAccommodation } from "../../../../services/accommodations.service";
-import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
+import { updateAccommodation, setAccommodationStatus } from "../../../../services/accommodations.service";
+import { assignRoomToLodger } from "../../../../services/lodgers.service";
+import { PROVINCIAS_ES } from "../../../../constants/formOptions";
 import ConsumoTab from "./tabs/ConsumoTab";
 import FacturasTab from "./tabs/FacturasTab";
 
@@ -51,16 +52,6 @@ function formatCurrency(v) {
   return Number(v).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
 
-const PROVINCIAS_ES = [
-  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
-  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
-  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
-  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
-  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
-  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
-  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
-  "Ceuta","Melilla",
-].map((p) => ({ value: p, label: p }));
 
 const BATHROOM_OPTIONS = [
   { value: "shared", label: "Compartido" },
@@ -76,7 +67,7 @@ const KITCHEN_OPTIONS = [
 export default function AccommodationDetail() {
   const { entityId, accId } = useParams();
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [accommodation, setAccommodation] = useState(null);
   const [rooms, setRooms] = useState([]);
@@ -85,6 +76,8 @@ export default function AccommodationDetail() {
   const [assignRoom, setAssignRoom] = useState(null);
   const [allLodgers, setAllLodgers] = useState([]);
   const [loadingLodgers, setLoadingLodgers] = useState(false);
+  const [assigningLodger, setAssigningLodger] = useState(false);
+  const [assignError, setAssignError] = useState(null);
 
   // Datos tab state
   const [accForm] = Form.useForm();
@@ -99,6 +92,13 @@ export default function AccommodationDetail() {
   const [newRoomForm] = Form.useForm();
   // Extra costs state
   const [extraCosts, setExtraCosts] = useState([]);
+  // Gantt state
+  const [allAssignments, setAllAssignments] = useState([]);
+  const [loadingGantt, setLoadingGantt] = useState(false);
+  const [ganttYear, setGanttYear] = useState(new Date().getFullYear());
+  // Tab state
+  const [activeTab, setActiveTab] = useState("habitaciones");
+  const [activeSubTab, setActiveSubTab] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -108,7 +108,7 @@ export default function AccommodationDetail() {
           .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
           .eq("id", accId).single(),
         supabase.from("rooms")
-          .select(`*, active_assignment:lodger_room_assignments(id, move_in_date, monthly_rent, status, lodger:lodgers(id, full_name, email, phone, status))`)
+          .select(`*, active_assignment:lodger_room_assignments(id, move_in_date, monthly_rent, status, lodger:profiles(id, full_name, email, phone, onboarding_status))`)
           .eq("accommodation_id", accId)
           .eq("lodger_room_assignments.status", "active")
           .order("number"),
@@ -120,48 +120,97 @@ export default function AccommodationDetail() {
       setRooms(roomsData || []);
       setOwnerEntities((entities || []).filter((e) => e.status === "active"));
       setExtraCosts(acc.extra_costs || []);
-      accForm.setFieldsValue({
-        name: acc.name,
-        owner_entity_id: acc.owner_entity_id,
-        address_line1: acc.address_line1 || "",
-        address_line2: acc.address_line2 || "",
-        postal_code: acc.postal_code || "",
-        city: acc.city || "",
-        province: acc.province || null,
-        notes: acc.notes || "",
-        status: acc.status,
-        utilities_included: acc.utilities_included !== false,
-        split_electricity: acc.split_electricity || false,
-        split_water: acc.split_water || false,
-        split_gas: acc.split_gas || false,
-        split_mode_electricity: acc.split_mode_electricity || "equal",
-        split_mode_water: acc.split_mode_water || "equal",
-        split_mode_gas: acc.split_mode_gas || "equal",
-        has_individual_meters: acc.has_individual_meters || false,
-      });
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [accId, accForm]);
+  }, [accId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Poblar accForm solo cuando el tab "datos" está activo (Form renderizado → sin warning)
+  useEffect(() => {
+    if (!accommodation || activeTab !== "datos") return;
+    accForm.setFieldsValue({
+      name: accommodation.name,
+      owner_entity_id: accommodation.owner_entity_id,
+      address_line1: accommodation.address_line1 || "",
+      address_line2: accommodation.address_line2 || "",
+      postal_code: accommodation.postal_code || "",
+      city: accommodation.city || "",
+      province: accommodation.province || null,
+      notes: accommodation.notes || "",
+      status: accommodation.status,
+      utilities_included: accommodation.utilities_included !== false,
+      split_electricity: accommodation.split_electricity || false,
+      split_water: accommodation.split_water || false,
+      split_gas: accommodation.split_gas || false,
+      split_mode_electricity: accommodation.split_mode_electricity || "equal",
+      split_mode_water: accommodation.split_mode_water || "equal",
+      split_mode_gas: accommodation.split_mode_gas || "equal",
+      has_individual_meters: accommodation.has_individual_meters || false,
+    });
+  }, [accommodation, activeTab, accForm]);
+
+  useEffect(() => {
+    if (activeTab !== "datos" || activeSubTab !== "ocupacion") return;
+    if (!clientAccountId) return;
+    setLoadingGantt(true);
+    
+    // Cargar asignaciones y perfiles por separado para evitar error de relación obsoleta
+    Promise.all([
+      supabase
+        .from("lodger_room_assignments")
+        .select("id, room_id, lodger_id, move_in_date, move_out_date, status")
+        .eq("accommodation_id", accId)
+        .eq("client_account_id", clientAccountId)
+        .order("move_in_date"),
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "lodger")
+        .eq("client_account_id", clientAccountId)
+    ]).then(([{ data: assignments }, { data: profiles }]) => {
+      if (assignments && profiles) {
+        // Mapear nombres de inquilinos a las asignaciones
+        const profileMap = {};
+        profiles.forEach(p => { profileMap[p.id] = p; });
+        const enrichedAssignments = assignments.map(a => ({
+          ...a,
+          lodger: profileMap[a.lodger_id] || null
+        }));
+        setAllAssignments(enrichedAssignments);
+      }
+      setLoadingGantt(false);
+    }).catch(() => {
+      setLoadingGantt(false);
+    });
+  }, [activeTab, activeSubTab, accId, clientAccountId]);
 
   const openAssignModal = useCallback(async (room) => {
     setAssignRoom(room);
     setLoadingLodgers(true);
     try {
       const { data } = await supabase
-        .from("lodgers").select("id, full_name, email, status")
-        .in("status", ["active", "invited"]).order("full_name");
+        .from("profiles")
+        .select(`
+          id, full_name, email, onboarding_status,
+          active_assignment:lodger_room_assignments(
+            id, room_id, accommodation_id, status,
+            room:rooms(id, number),
+            accommodation:accommodations(id, name)
+          )
+        `)
+        .eq("role", "lodger")
+        .eq("client_account_id", clientAccountId)
+        .eq("lodger_room_assignments.status", "active")
+        .in("onboarding_status", ["active", "invited"])
+        .order("full_name");
       setAllLodgers(data || []);
     } catch { setAllLodgers([]); }
     finally { setLoadingLodgers(false); }
-  }, []);
+  }, [clientAccountId]);
 
   const backPath = entityId ? `/v2/admin/entidades/${entityId}` : "/v2/admin/alojamientos";
   const backLabel = entityId ? "Entidad" : "Alojamientos";
-
-  const [activeTab, setActiveTab] = useState("habitaciones");
-  const [activeSubTab, setActiveSubTab] = useState(null);
 
   // ── Save accommodation (Datos tab) ──────────────────────────────────────────
   const onSaveAccommodation = async (values) => {
@@ -197,58 +246,66 @@ export default function AccommodationDetail() {
   // ── Room handlers (Datos tab) ────────────────────────────────────────────────
   const onSaveRoom = async (roomId, values) => {
     try {
-      const result = await invokeWithAuth("manage_accommodation", {
-        body: { action: "update_room", payload: { id: roomId, ...values } },
-      });
-      if (!result?.ok) throw new Error(result?.error?.message || "Error");
+      const { error } = await supabase
+        .from("rooms")
+        .update(values)
+        .eq("id", roomId)
+        .eq("client_account_id", clientAccountId);
+      if (error) throw new Error(error.message);
       setRooms((prev) => prev.map((r) => r.id === roomId ? { ...r, ...values } : r));
       setEditingRoom(null);
     } catch (e) { setSaveError(e.message); }
   };
 
   const onToggleRoomStatus = async (room) => {
-    const next = room.status === "inactive" ? "free" : "inactive";
+    const next = room.status === "maintenance" ? "free" : "maintenance";
     try {
-      const result = await invokeWithAuth("manage_accommodation", {
-        body: { action: "set_room_status", payload: { id: room.id, status: next } },
-      });
-      if (!result?.ok) throw new Error(result?.error?.message || "Error");
+      const { error } = await supabase
+        .from("rooms")
+        .update({ status: next })
+        .eq("id", room.id)
+        .eq("client_account_id", clientAccountId);
+      if (error) throw new Error(error.message);
       setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, status: next } : r));
     } catch (e) { setSaveError(e.message); }
   };
 
   const onAddRoom = async (values) => {
+    console.log("onAddRoom called with values:", values);
     try {
-      const result = await invokeWithAuth("manage_accommodation", {
-        body: {
-          action: "add_room",
-          payload: {
-            accommodation_id: accId,
-            number: values.number,
-            monthly_rent: values.monthly_rent || 0,
-            square_meters: values.square_meters || null,
-            bathroom_type: values.bathroom_type || "shared",
-            kitchen_type: values.kitchen_type || "shared",
-            notes: values.notes || null,
-            status: "free",
-          },
-        },
-      });
-      if (!result?.ok) throw new Error(result?.error?.message || "Error");
-      const newRoom = result.data?.room ?? result.data;
+      const { data: newRoom, error } = await supabase
+        .from("rooms")
+        .insert({
+          accommodation_id: accId,
+          client_account_id: clientAccountId,
+          number: values.number,
+          monthly_rent: values.monthly_rent || 0,
+          square_meters: values.square_meters || null,
+          bathroom_type: values.bathroom_type || "shared",
+          kitchen_type: values.kitchen_type || "shared",
+          notes: values.notes || null,
+          status: "free",
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error("Error inserting room:", error);
+        throw new Error(error.message);
+      }
+      console.log("Room added successfully:", newRoom);
       setRooms((prev) => [...prev, newRoom]);
       setAddingRoom(false);
       newRoomForm.resetFields();
-    } catch (e) { setSaveError(e.message); }
+    } catch (e) {
+      console.error("Exception in onAddRoom:", e);
+      setSaveError(e.message);
+    }
   };
-
-  const ROOM_STATUS_COLOR_TAG = { free: "success", occupied: "error", pending_checkout: "warning", inactive: "default" };
-  const ROOM_STATUS_LABEL_EDIT = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", inactive: "Inactiva" };
 
   const roomColumns = [
     { title: "Nº", dataIndex: "number", key: "number", width: 60, render: (v) => <Text strong>{v}</Text> },
     { title: "Estado", dataIndex: "status", key: "status", width: 110,
-      render: (v) => <Tag color={ROOM_STATUS_COLOR_TAG[v] || "default"}>{ROOM_STATUS_LABEL_EDIT[v] || v}</Tag> },
+      render: (v) => <Tag color={ROOM_STATUS_TAG[v] || "default"}>{ROOM_STATUS_LABEL[v] || v}</Tag> },
     { title: "Precio/mes", dataIndex: "monthly_rent", key: "monthly_rent", width: 110,
       render: (v) => v != null ? formatCurrency(v) : "-" },
     { title: "m²", dataIndex: "square_meters", key: "square_meters", width: 70,
@@ -269,11 +326,11 @@ export default function AccommodationDetail() {
         }}>Editar</Button>
         {room.status !== "occupied" && (
           <Popconfirm
-            title={room.status === "inactive" ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
+            title={room.status === "maintenance" || room.status === "inactive" ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
             onConfirm={() => onToggleRoomStatus(room)} okText="Sí" cancelText="No"
           >
-            <Button size="small" danger={room.status !== "inactive"}>
-              {room.status === "inactive" ? "Reactivar" : "Desactivar"}
+            <Button size="small" danger={room.status !== "maintenance" && room.status !== "inactive"}>
+              {room.status === "maintenance" || room.status === "inactive" ? "Reactivar" : "Desactivar"}
             </Button>
           </Popconfirm>
         )}
@@ -282,7 +339,13 @@ export default function AccommodationDetail() {
   ];
 
   const TABS = [
-    { key: "datos", label: "Datos del Alojamiento", subTabs: null },
+    {
+      key: "datos", label: "Datos del Alojamiento",
+      subTabs: [
+        { key: "info", label: "Información" },
+        { key: "ocupacion", label: "Ocupación" },
+      ],
+    },
     { key: "habitaciones", label: "Habitaciones", subTabs: null },
     {
       key: "consumos", label: "Consumos",
@@ -391,7 +454,7 @@ export default function AccommodationDetail() {
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, marginTop: 16 }} />}
 
       {/* ── Tab: Datos del Alojamiento ───────────────────────────────────── */}
-      {activeTab === "datos" && (
+      {activeTab === "datos" && activeSubTab !== "ocupacion" && (
         <div style={{ marginTop: 24 }}>
           {saveError && <Alert type="error" message={saveError} showIcon closable onClose={() => setSaveError(null)} style={{ marginBottom: 16 }} />}
           {saveOk && <Alert type="success" message="Alojamiento guardado correctamente" showIcon style={{ marginBottom: 16 }} />}
@@ -413,12 +476,16 @@ export default function AccommodationDetail() {
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12} md={4}>
-                    <Form.Item label="Estado" name="status">
+                    <Form.Item label="Estado" name="status" rules={[{ required: true, message: "El estado es obligatorio" }]}>
                       <Select options={[{ value: "active", label: "Activo" }, { value: "inactive", label: "Inactivo" }]} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={14}>
-                    <Form.Item label="Calle" name="address_line1">
+                    <Form.Item label="Calle" name="address_line1" rules={[
+                      { required: true, message: "La calle es obligatoria" },
+                      { min: 3, message: "La calle debe tener al menos 3 caracteres" },
+                      { max: 200, message: "La calle no puede exceder 200 caracteres" }
+                    ]}>
                       <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
                     </Form.Item>
                   </Col>
@@ -428,17 +495,24 @@ export default function AccommodationDetail() {
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={4}>
-                    <Form.Item label="Código Postal" name="postal_code">
+                    <Form.Item label="Código Postal" name="postal_code" rules={[
+                      { required: true, message: "El código postal es obligatorio" },
+                      { pattern: /^\d{5}$/, message: "Debe ser un código postal válido de 5 dígitos" }
+                    ]}>
                       <Input placeholder="28001" maxLength={5} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Form.Item label="Ciudad" name="city">
+                    <Form.Item label="Ciudad" name="city" rules={[
+                      { required: true, message: "La ciudad es obligatoria" },
+                      { min: 2, message: "La ciudad debe tener al menos 2 caracteres" },
+                      { max: 100, message: "La ciudad no puede exceder 100 caracteres" }
+                    ]}>
                       <Input placeholder="Madrid" />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="Provincia" name="province">
+                    <Form.Item label="Provincia" name="province" rules={[{ required: true, message: "La provincia es obligatoria" }]}>
                       <Select showSearch placeholder="Seleccionar provincia..." optionFilterProp="label"
                         options={PROVINCIAS_ES} allowClear
                         filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())} />
@@ -569,76 +643,293 @@ export default function AccommodationDetail() {
                 </Form.Item>
               </Card>
 
-              {/* Habitaciones */}
-              <Card
-                title={<Space><span>Habitaciones</span><Tag>{rooms.length}</Tag></Space>}
-                size="small"
-                style={{ marginBottom: 16 }}
-                extra={
-                  <Button size="small" icon={<PlusOutlined />} onClick={() => setAddingRoom(true)}>Añadir</Button>
-                }
-              >
-                {addingRoom && (
-                  <Card size="small" style={{ marginBottom: 12, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
-                    <Text strong style={{ display: "block", marginBottom: 10 }}>Nueva Habitación</Text>
-                    <Form form={newRoomForm} layout="inline" onFinish={onAddRoom}>
-                      <Form.Item name="number" rules={[{ required: true, message: "Nº requerido" }]}>
-                        <Input placeholder="Nº" style={{ width: 70 }} />
-                      </Form.Item>
-                      <Form.Item name="monthly_rent">
-                        <InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} />
-                      </Form.Item>
-                      <Form.Item name="square_meters">
-                        <InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} />
-                      </Form.Item>
-                      <Form.Item name="bathroom_type" initialValue="shared">
-                        <Select style={{ width: 130 }} options={BATHROOM_OPTIONS} />
-                      </Form.Item>
-                      <Form.Item name="kitchen_type" initialValue="shared">
-                        <Select style={{ width: 130 }} options={KITCHEN_OPTIONS} />
-                      </Form.Item>
-                      <Form.Item>
-                        <Space>
-                          <Button type="primary" htmlType="submit" size="small">Añadir</Button>
-                          <Button size="small" onClick={() => { setAddingRoom(false); newRoomForm.resetFields(); }}>Cancelar</Button>
-                        </Space>
-                      </Form.Item>
-                    </Form>
-                  </Card>
-                )}
-                {editingRoom && (
-                  <Card size="small" style={{ marginBottom: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
-                    <Text strong style={{ display: "block", marginBottom: 10 }}>Editando Hab. {rooms.find((r) => r.id === editingRoom)?.number}</Text>
-                    <Form form={roomForm} layout="inline" onFinish={(values) => onSaveRoom(editingRoom, values)}>
-                      <Form.Item name="number" rules={[{ required: true }]}><Input placeholder="Nº" style={{ width: 70 }} /></Form.Item>
-                      <Form.Item name="monthly_rent"><InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} /></Form.Item>
-                      <Form.Item name="square_meters"><InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} /></Form.Item>
-                      <Form.Item name="bathroom_type"><Select style={{ width: 130 }} options={BATHROOM_OPTIONS} /></Form.Item>
-                      <Form.Item name="kitchen_type"><Select style={{ width: 130 }} options={KITCHEN_OPTIONS} /></Form.Item>
-                      <Form.Item name="notes"><Input placeholder="Notas" style={{ width: 140 }} /></Form.Item>
-                      <Form.Item>
-                        <Space>
-                          <Button type="primary" htmlType="submit" size="small">Guardar</Button>
-                          <Button size="small" onClick={() => setEditingRoom(null)}>Cancelar</Button>
-                        </Space>
-                      </Form.Item>
-                    </Form>
-                  </Card>
-                )}
-                <Table rowKey="id" columns={roomColumns} dataSource={rooms}
-                  pagination={false} scroll={{ x: true }} size="small"
-                  locale={{ emptyText: "Sin habitaciones" }} />
-              </Card>
-
               <Row justify="end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} size="large">
                   Guardar Alojamiento
                 </Button>
               </Row>
             </Form>
+
           )}
         </div>
       )}
+
+      {/* ── Habitaciones (dentro del tab Datos, pero fuera del Form principal) ─── */}
+      {activeTab === "datos" && activeSubTab !== "ocupacion" && !loading && (
+        <div style={{ marginTop: 16 }}>
+          <Card
+            title={<Space><span>Habitaciones</span><Tag>{rooms.length}</Tag></Space>}
+            size="small"
+            style={{ marginBottom: 16 }}
+            extra={
+              <Button size="small" icon={<PlusOutlined />} onClick={() => {
+                console.log("Añadir button clicked");
+                setAddingRoom(true);
+              }}>Añadir</Button>
+            }
+          >
+            {addingRoom && (
+              <Card size="small" style={{ marginBottom: 12, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
+                <Text strong style={{ display: "block", marginBottom: 10 }}>Nueva Habitación</Text>
+                <Form 
+                  form={newRoomForm} 
+                  layout="vertical" 
+                  onFinish={onAddRoom}
+                  onFinishFailed={(errorInfo) => {
+                    console.log("Form validation failed:", errorInfo);
+                  }}
+                >
+                  <Row gutter={16}>
+                    <Col span={6}>
+                      <Form.Item 
+                        name="number" 
+                        label="Nº" 
+                        rules={[
+                          { required: true, message: "El número es obligatorio" },
+                          { max: 10, message: "Máximo 10 caracteres" },
+                          { whitespace: true, message: "No puede estar vacío" }
+                        ]}
+                      >
+                        <Input placeholder="101" maxLength={10} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={6}>
+                      <Form.Item 
+                        name="monthly_rent" 
+                        label="Precio/mes"
+                        rules={[
+                          { required: true, message: "El precio es obligatorio" },
+                          { type: 'number', min: 0, message: "Debe ser mayor o igual a 0" }
+                        ]}
+                        initialValue={0}
+                      >
+                        <InputNumber placeholder="450" min={0} max={9999} step={10} addonAfter="€" style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={6}>
+                      <Form.Item 
+                        name="square_meters" 
+                        label="m²"
+                        rules={[
+                          { type: 'number', min: 1, message: "Debe ser mayor a 0" },
+                          { type: 'number', max: 999, message: "Máximo 999 m²" }
+                        ]}
+                      >
+                        <InputNumber placeholder="20" min={1} max={999} step={1} addonAfter="m²" style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={6}>
+                      <Form.Item 
+                        name="bathroom_type" 
+                        label="Baño" 
+                        rules={[{ required: true, message: "Selecciona tipo de baño" }]}
+                        initialValue="shared"
+                      >
+                        <Select options={BATHROOM_OPTIONS} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={6}>
+                      <Form.Item 
+                        name="kitchen_type" 
+                        label="Cocina" 
+                        rules={[{ required: true, message: "Selecciona tipo de cocina" }]}
+                        initialValue="shared"
+                      >
+                        <Select options={KITCHEN_OPTIONS} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={18}>
+                      <Form.Item label=" " colon={false}>
+                        <Space>
+                          <Button 
+                            type="primary" 
+                            htmlType="submit" 
+                            size="small"
+                            onClick={() => console.log("Submit button clicked")}
+                          >
+                            Añadir
+                          </Button>
+                          <Button size="small" onClick={() => { 
+                            console.log("Cancel clicked");
+                            setAddingRoom(false); 
+                            newRoomForm.resetFields(); 
+                          }}>
+                            Cancelar
+                          </Button>
+                        </Space>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Form>
+              </Card>
+            )}
+            {editingRoom && (
+              <Card size="small" style={{ marginBottom: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
+                <Text strong style={{ display: "block", marginBottom: 10 }}>Editando Hab. {rooms.find((r) => r.id === editingRoom)?.number}</Text>
+                <Form form={roomForm} layout="inline" onFinish={(values) => onSaveRoom(editingRoom, values)}>
+                  <Form.Item name="number" rules={[{ required: true }]}><Input placeholder="Nº" style={{ width: 70 }} /></Form.Item>
+                  <Form.Item name="monthly_rent"><InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} /></Form.Item>
+                  <Form.Item name="square_meters"><InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} /></Form.Item>
+                  <Form.Item name="bathroom_type"><Select style={{ width: 130 }} options={BATHROOM_OPTIONS} /></Form.Item>
+                  <Form.Item name="kitchen_type"><Select style={{ width: 130 }} options={KITCHEN_OPTIONS} /></Form.Item>
+                  <Form.Item name="notes"><Input placeholder="Notas" style={{ width: 140 }} /></Form.Item>
+                  <Form.Item>
+                    <Space>
+                      <Button type="primary" htmlType="submit" size="small">Guardar</Button>
+                      <Button size="small" onClick={() => setEditingRoom(null)}>Cancelar</Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              </Card>
+            )}
+            <Table rowKey="id" columns={roomColumns} dataSource={rooms}
+              pagination={false} scroll={{ x: true }} size="small"
+              locale={{ emptyText: "Sin habitaciones" }} />
+          </Card>
+        </div>
+      )}
+
+      {/* ── Gantt Ocupación (sub-tab de Datos) ──────────────────────── */}
+      {activeTab === "datos" && activeSubTab === "ocupacion" && (() => {
+        const CELL = 13;
+        const PALETTE = [
+          "#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED",
+          "#DB2777", "#0891B2", "#EA580C", "#4F46E5", "#65A30D",
+        ];
+
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+
+        const minYear = allAssignments.length > 0
+          ? Math.min(...allAssignments.map(a => new Date(a.move_in_date).getFullYear()))
+          : ganttYear;
+        const maxYear = today.getFullYear();
+        const availableYears = [];
+        for (let y = minYear; y <= maxYear; y++) availableYears.push(y);
+
+        const yearStart = new Date(ganttYear, 0, 1);
+        const daysInYear = new Date(ganttYear, 11, 31).getTime() - yearStart.getTime();
+        const totalDays = Math.floor(daysInYear / 86400000) + 1;
+        const days = Array.from({ length: totalDays }, (_, i) => {
+          const d = new Date(yearStart); d.setDate(d.getDate() + i); return d;
+        });
+
+        const months = [];
+        let curMonth = -1;
+        days.forEach((d, i) => {
+          if (d.getMonth() !== curMonth) {
+            curMonth = d.getMonth();
+            months.push({ idx: curMonth, startCol: i, label: d.toLocaleDateString("es-ES", { month: "short" }) });
+          }
+        });
+        months.forEach((m, i) => {
+          m.span = (i + 1 < months.length ? months[i + 1].startCol : days.length) - m.startCol;
+        });
+
+        const uniqueLodgers = [];
+        const lodgerColorMap = {};
+        allAssignments.forEach(asgn => {
+          const name = asgn.lodger?.full_name || `Inquilino ${asgn.id.slice(0, 6)}`;
+          if (!lodgerColorMap[name]) {
+            const color = PALETTE[uniqueLodgers.length % PALETTE.length];
+            lodgerColorMap[name] = color;
+            uniqueLodgers.push({ name, color });
+          }
+        });
+
+        const roomMaps = {};
+        rooms.forEach(r => { roomMaps[r.id] = new Map(); });
+        allAssignments.forEach(asgn => {
+          if (!roomMaps[asgn.room_id]) return;
+          const name = asgn.lodger?.full_name || `Inquilino ${asgn.id.slice(0, 6)}`;
+          const color = lodgerColorMap[name];
+          const start = new Date(asgn.move_in_date); start.setHours(0, 0, 0, 0);
+          const end = asgn.move_out_date ? new Date(asgn.move_out_date) : new Date(ganttYear, 11, 31);
+          end.setHours(0, 0, 0, 0);
+          days.forEach(d => {
+            if (d >= start && d <= end) roomMaps[asgn.room_id].set(d.toISOString().slice(0, 10), { name, color });
+          });
+        });
+
+        return (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+              <Text strong style={{ fontSize: 14 }}>Año:</Text>
+              <Select
+                value={ganttYear}
+                onChange={setGanttYear}
+                options={availableYears.map(y => ({ value: y, label: String(y) }))}
+                style={{ width: 100 }}
+              />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginLeft: 8 }}>
+                {uniqueLodgers.map(({ name, color }) => (
+                  <div key={name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span title="Presente / futuro" style={{ display: "inline-block", width: 13, height: 13, background: color, borderRadius: 2, opacity: 1 }} />
+                    <span title="Histórico" style={{ display: "inline-block", width: 13, height: 13, background: color, borderRadius: 2, opacity: 0.25 }} />
+                    <Text style={{ fontSize: 12, color: "#374151" }}>{name}</Text>
+                  </div>
+                ))}
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ display: "inline-block", width: 13, height: 13, background: "#EBEDF0", borderRadius: 2 }} />
+                  <Text style={{ fontSize: 12, color: "#374151" }}>Libre</Text>
+                </div>
+              </div>
+            </div>
+
+            {loadingGantt ? <Skeleton active paragraph={{ rows: rooms.length || 3 }} /> : (
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ display: "inline-block", minWidth: 600 }}>
+                  {/* Month headers */}
+                  <div style={{ display: "flex", marginLeft: 90, marginBottom: 2 }}>
+                    {months.map(m => (
+                      <div key={m.idx} style={{ width: m.span * (CELL + 1), fontSize: 11, color: "#6B7280", fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap" }}>
+                        {m.label}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Room rows */}
+                  {rooms.map(room => {
+                    const lodgerName = room.active_assignment?.[0]?.lodger?.full_name;
+                    const headerColor = lodgerName ? (lodgerColorMap[lodgerName] || "#6B7280") : "#6B7280";
+                    return (
+                      <div key={room.id} style={{ display: "flex", alignItems: "center", marginBottom: 2 }}>
+                        <div style={{ width: 85, paddingRight: 8, fontSize: 12, fontWeight: 600, color: headerColor, flexShrink: 0, whiteSpace: "nowrap" }}>
+                          Hab. {room.number}
+                        </div>
+                        <div style={{ display: "flex", gap: 1 }}>
+                          {days.map(d => {
+                            const key = d.toISOString().slice(0, 10);
+                            const info = roomMaps[room.id]?.get(key);
+                            const isPast = d < today;
+                            const isToday = d.getTime() === today.getTime();
+                            return (
+                              <div
+                                key={key}
+                                title={`${key}${info ? ` — ${info.name}` : ""}`}
+                                style={{
+                                  width: CELL, height: CELL, borderRadius: 2, flexShrink: 0,
+                                  background: info ? info.color : "#EBEDF0",
+                                  opacity: info && isPast ? 0.25 : 1,
+                                  outline: isToday ? "2px solid #111827" : "none",
+                                  outlineOffset: "-1px",
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {rooms.length === 0 && (
+                    <Text type="secondary" style={{ fontSize: 13 }}>No hay habitaciones en este alojamiento.</Text>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Tab: Consumos Estimados ─────────────────────────────────── */}
       {activeTab === "consumos" && (
@@ -774,8 +1065,8 @@ export default function AccommodationDetail() {
                         <Text strong style={{ fontSize: 15, display: "block", color: "#374151", marginBottom: 1 }}>
                           {lodger.full_name}
                         </Text>
-                        <Text style={{ fontSize: 14, fontWeight: 700, color: LODGER_STATUS_COLOR[lodger.status] || "#6B7280", display: "block", marginBottom: 1 }}>
-                          {LODGER_STATUS_LABEL[lodger.status] || lodger.status}
+                        <Text style={{ fontSize: 14, fontWeight: 700, color: LODGER_STATUS_COLOR[lodger.onboarding_status] || "#6B7280", display: "block", marginBottom: 1 }}>
+                          {LODGER_STATUS_LABEL[lodger.onboarding_status] || lodger.onboarding_status}
                         </Text>
                         {assignment?.move_in_date && (
                           <Text strong style={{ fontSize: 13, color: "#374151", display: "block" }}>
@@ -843,8 +1134,11 @@ export default function AccommodationDetail() {
           </Button>,
         ]}
         width={480}
-        destroyOnClose
+        destroyOnHidden
       >
+        {assignError && (
+          <Alert type="error" message={assignError} showIcon style={{ marginBottom: 16 }} closable onClose={() => setAssignError(null)} />
+        )}
         <div style={{ background: "#F9FAFB", borderRadius: 8, padding: "10px 14px", marginBottom: 16, border: "1px solid #E5E7EB" }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
             Selecciona un inquilino ya dado de alta para asignarlo directamente a esta habitación, o crea uno nuevo.
@@ -852,21 +1146,62 @@ export default function AccommodationDetail() {
         </div>
         <Select
           showSearch
-          loading={loadingLodgers}
+          loading={loadingLodgers || assigningLodger}
+          disabled={assigningLodger}
           placeholder="Buscar por nombre o email..."
           optionFilterProp="label"
           style={{ width: "100%", marginBottom: 8 }}
-          options={(allLodgers || []).map((l) => ({
-            value: l.id,
-            label: `${l.full_name} — ${l.email}`,
-          }))}
-          onSelect={(lodgerId) => {
-            setAssignRoom(null);
-            navigate(`/v2/admin/inquilinos/${lodgerId}/editar?action=reassign&acc=${accId}&room=${assignRoom?.id}`);
+          options={(allLodgers || []).map((l) => {
+            const hasAssignment = l.active_assignment && l.active_assignment.length > 0;
+            const assignment = hasAssignment ? l.active_assignment[0] : null;
+            const roomInfo = assignment?.room ? `Hab. ${assignment.room.number}` : '';
+            const accInfo = assignment?.accommodation ? ` - ${assignment.accommodation.name}` : '';
+            const assignmentText = hasAssignment ? ` (${roomInfo}${accInfo})` : '';
+            
+            return {
+              value: l.id,
+              label: `${l.full_name} — ${l.email}${assignmentText}`,
+              disabled: hasAssignment,
+            };
+          })}
+          onSelect={async (lodgerId) => {
+            const selectedLodger = allLodgers.find(l => l.id === lodgerId);
+            const hasAssignment = selectedLodger?.active_assignment && selectedLodger.active_assignment.length > 0;
+            
+            if (hasAssignment) {
+              // Si ya tiene habitación, redirigir al modal de cambio
+              setAssignRoom(null);
+              navigate(`/v2/admin/inquilinos/${lodgerId}/editar?action=reassign&acc=${accId}&room=${assignRoom?.id}`);
+            } else {
+              // Si no tiene habitación, asignar directamente
+              setAssigningLodger(true);
+              setAssignError(null);
+              try {
+                const selectedRoom = rooms.find(r => r.id === assignRoom?.id);
+                const monthlyRent = selectedRoom?.monthly_rent || 0;
+                await assignRoomToLodger(lodgerId, {
+                  roomId: assignRoom.id,
+                  accommodationId: accId,
+                  moveInDate: new Date().toISOString().split('T')[0],
+                  billingStartDate: new Date().toISOString().split('T')[0],
+                  monthlyRent: monthlyRent,
+                  depositAmount: monthlyRent * 2, // Por defecto 2 meses de fianza
+                  commissionAmount: null,
+                  firstMonthAmount: null,
+                });
+                message.success('Inquilino asignado correctamente');
+                setAssignRoom(null);
+                await load();
+              } catch (e) {
+                setAssignError(e.message);
+              } finally {
+                setAssigningLodger(false);
+              }
+            }
           }}
         />
         <Text type="secondary" style={{ fontSize: 11 }}>
-          Al seleccionar un inquilino se abrirá el formulario de cambio de habitación con esta habitación preseleccionada.
+          Solo se muestran inquilinos sin habitación asignada. Los inquilinos con habitación aparecen deshabilitados mostrando su ubicación actual.
         </Text>
       </Modal>
     </V2Layout>

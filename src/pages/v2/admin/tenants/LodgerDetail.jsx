@@ -20,6 +20,7 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getLodger } from "../../../../services/lodgers.service";
 import { supabase } from "../../../../services/supabaseClient";
+import PayersList from "./components/PayersList";
 
 const { Title, Text } = Typography;
 
@@ -160,7 +161,7 @@ function buildHuchaData(bulletins, utilityType) {
 export default function LodgerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [lodger, setLodger] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -304,6 +305,7 @@ export default function LodgerDetail() {
                   <Text type="secondary" style={{ fontSize: 13 }}>
                     {STATUS_LABEL[lodger?.status] || lodger?.status}
                     {lodger?.email ? ` · ${lodger.email}` : ""}
+                    {activeAssignment?.move_in_date ? ` · Check-in: ${formatDate(activeAssignment.move_in_date)}` : ""}
                   </Text>
                 </Space>
               </Col>
@@ -398,6 +400,13 @@ export default function LodgerDetail() {
                   </div>
                 ))}
               </Space>
+            </Card>
+          )}
+
+          {/* Pagadores */}
+          {!loading && lodger && (
+            <Card title="Pagadores" size="small" style={{ borderRadius: 12, marginTop: 16 }}>
+              <PayersList lodgerId={lodger.id} clientAccountId={clientAccountId} />
             </Card>
           )}
         </Col>

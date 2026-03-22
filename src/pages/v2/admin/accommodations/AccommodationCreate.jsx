@@ -13,17 +13,7 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listEntities } from "../../../../services/entities.service";
 import { createAccommodation } from "../../../../services/accommodations.service";
-
-const PROVINCIAS_ES = [
-  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
-  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
-  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
-  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
-  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
-  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
-  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
-  "Ceuta","Melilla",
-].map((p) => ({ value: p, label: p }));
+import { PROVINCIAS_ES } from "../../../../constants/formOptions";
 
 const { Title, Text } = Typography;
 

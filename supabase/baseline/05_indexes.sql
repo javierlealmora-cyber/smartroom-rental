@@ -52,15 +52,6 @@ CREATE INDEX IF NOT EXISTS idx_rooms_status ON public.rooms (status);
 CREATE INDEX IF NOT EXISTS idx_rooms_accommodation_number ON public.rooms (accommodation_id, number);
 
 -- ============================================================================
--- TABLA: lodgers
--- ============================================================================
-CREATE INDEX IF NOT EXISTS idx_lodgers_client_account ON public.lodgers (client_account_id);
-CREATE INDEX IF NOT EXISTS idx_lodgers_room ON public.lodgers (room_id);
-CREATE INDEX IF NOT EXISTS idx_lodgers_email ON public.lodgers (email);
-CREATE INDEX IF NOT EXISTS idx_lodgers_status ON public.lodgers (status);
-CREATE INDEX IF NOT EXISTS idx_lodgers_check_in_date ON public.lodgers (check_in_date);
-
--- ============================================================================
 -- TABLA: services_catalog
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_services_catalog_client_account ON public.services_catalog (client_account_id);
@@ -146,11 +137,21 @@ CREATE INDEX IF NOT EXISTS idx_incidents_category ON public.incidents (category)
 -- ============================================================================
 -- TABLA: lodger_room_assignments
 -- ============================================================================
-CREATE INDEX IF NOT EXISTS idx_lodger_room_assignments_client_account ON public.lodger_room_assignments (client_account_id);
-CREATE INDEX IF NOT EXISTS idx_lodger_room_assignments_lodger ON public.lodger_room_assignments (lodger_id);
-CREATE INDEX IF NOT EXISTS idx_lodger_room_assignments_room ON public.lodger_room_assignments (room_id);
-CREATE INDEX IF NOT EXISTS idx_lodger_room_assignments_status ON public.lodger_room_assignments (status);
-CREATE INDEX IF NOT EXISTS idx_lodger_room_assignments_dates ON public.lodger_room_assignments (start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_assignments_client_account ON public.lodger_room_assignments (client_account_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_lodger ON public.lodger_room_assignments (lodger_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_room ON public.lodger_room_assignments (room_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_status ON public.lodger_room_assignments (status);
+
+-- Índices únicos parciales para garantizar integridad de asignaciones activas
+-- Previene que una habitación tenga múltiples inquilinos activos simultáneamente
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_active_assignment 
+ON public.lodger_room_assignments (room_id) 
+WHERE (move_out_date IS NULL);
+
+-- Previene que un inquilino esté en múltiples habitaciones activas simultáneamente
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lodger_active_assignment 
+ON public.lodger_room_assignments (lodger_id) 
+WHERE (status = 'active');
 
 -- Verificación
 SELECT 'Índices creados exitosamente (todas las tablas)' as status;

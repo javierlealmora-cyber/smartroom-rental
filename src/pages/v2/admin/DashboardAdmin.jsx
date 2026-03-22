@@ -155,7 +155,7 @@ const ENTITY_LABEL = {
 export default function DashboardAdmin() {
   const navigate = useNavigate();
   const { role: _role } = useAuth();
-  const { userName, companyBranding, clientAccountId: _clientAccountId } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const vw = useBreakpoint();
   const isMobile = vw < 768;
   const isTablet = vw < 1024;
@@ -175,10 +175,10 @@ export default function DashboardAdmin() {
         { data: rooms },
         { data: lodgers },
       ] = await Promise.all([
-        supabase.from("entities").select("id,type,status"),
-        supabase.from("accommodations").select("id,status"),
-        supabase.from("rooms").select("id,status"),
-        supabase.from("lodgers").select("id,status"),
+        supabase.from("entities").select("id,type,status").eq("client_account_id", clientAccountId),
+        supabase.from("accommodations").select("id,status").eq("client_account_id", clientAccountId),
+        supabase.from("rooms").select("id,status").eq("client_account_id", clientAccountId),
+        supabase.from("profiles").select("id,onboarding_status").eq("role", "lodger").eq("client_account_id", clientAccountId),
       ]);
 
       const allRooms   = rooms   || [];
@@ -191,8 +191,8 @@ export default function DashboardAdmin() {
         freeRooms:          allRooms.filter(r => r.status === "free").length,
         occupiedRooms:      allRooms.filter(r => r.status === "occupied").length,
         pendingCheckout:    allRooms.filter(r => r.status === "pending_checkout").length,
-        activeTenants:      allLodgers.filter(l => l.status === "active").length,
-        pendingTenants:     allLodgers.filter(l => l.status === "pending_checkout").length,
+        activeTenants:      allLodgers.filter(l => l.onboarding_status === "active").length,
+        pendingTenants:     allLodgers.filter(l => l.onboarding_status === "pending_checkout").length,
       });
       setLastUpdated(new Date());
     } catch (e) {
@@ -200,7 +200,7 @@ export default function DashboardAdmin() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clientAccountId]);
 
   const loadActivity = useCallback(async () => {
     setActivityLoading(true);

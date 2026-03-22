@@ -6,7 +6,13 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve('./tests/e2e/.env.e2e'), override: false });
 
 const isRemote = !!process.env.BASE_URL;
-const hasCredentials = !!(process.env.TEST_MANAGER_EMAIL && process.env.TEST_MANAGER_PASSWORD);
+const hasCredentials = !!(
+  (process.env.TEST_MANAGER_EMAIL      && process.env.TEST_MANAGER_PASSWORD) ||
+  (process.env.TEST_MANAGER_BASIC_EMAIL && process.env.TEST_MANAGER_BASIC_PASSWORD) ||
+  (process.env.TEST_MANAGER_INVESTOR_EMAIL && process.env.TEST_MANAGER_INVESTOR_PASSWORD) ||
+  (process.env.TEST_MANAGER_BUSINESS_EMAIL && process.env.TEST_MANAGER_BUSINESS_PASSWORD) ||
+  (process.env.TEST_MANAGER_AGENCY_EMAIL && process.env.TEST_MANAGER_AGENCY_PASSWORD)
+);
 
 export default defineConfig({
   testDir: './tests/e2e/specs',
@@ -44,13 +50,43 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    // ── Regression: autenticado, sólo chromium ───────────────────────────────
+    // ── Regression: gestor principal, todos los specs excepto smoke y plan-específicos ──
     {
       name: 'regression',
-      testIgnore: /smoke\.spec\.js/,
+      testIgnore: [/smoke\.spec\.js/, /admin-basic\.spec\.js/, /admin-investor\.spec\.js/, /admin-business\.spec\.js/, /admin-agency\.spec\.js/],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'tests/e2e/.auth/manager.json',
+      },
+    },
+
+    // ── Regression Basic: gestor con plan Basic ───────────────────────────────
+    {
+      name: 'regression-basic',
+      testMatch: /admin-basic\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/manager-basic.json',
+      },
+    },
+
+    // ── Regression Investor: gestor con plan Investor ─────────────────────────
+    {
+      name: 'regression-investor',
+      testMatch: /admin-investor\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/manager-investor.json',
+      },
+    },
+
+    // ── Regression Business: gestor con plan Business ─────────────────────────
+    {
+      name: 'regression-business',
+      testMatch: /admin-business\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/manager-business.json',
       },
     },
   ],

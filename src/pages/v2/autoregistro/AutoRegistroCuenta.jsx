@@ -9,7 +9,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../providers/AuthProvider";
-import { callWhoami, callWizardInit, callWizardSubmit } from "../../../services/clientAccounts.service";
+import { callWizardInit, callWizardSubmit } from "../../../services/clientAccounts.service";
 import ClientAccountWizard from "../../../components/wizards/ClientAccountWizard";
 
 // Estados internos de la pagina
@@ -126,21 +126,10 @@ export default function AutoRegistroCuenta() {
   }, [navigate]);
 
   // Reintentar pago (payment_pending o stripe cancel)
+  // NOTA: Esta funcionalidad requiere volver a enviar el wizard para obtener nueva checkout_url
   const handleRetryPayment = useCallback(async () => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const whoami = await callWhoami();
-      if (whoami?.checkout_url) {
-        window.location.href = whoami.checkout_url;
-      } else {
-        setError("No se pudo obtener la URL de pago. Contacta con soporte.");
-        setSubmitting(false);
-      }
-    } catch (err) {
-      setError(err?.message || "Error al reintentar el pago.");
-      setSubmitting(false);
-    }
+    setError("Para reintentar el pago, por favor contacta con soporte o vuelve a completar el registro.");
+    setSubmitting(false);
   }, []);
 
   // Redirect a dashboard tras stripe success

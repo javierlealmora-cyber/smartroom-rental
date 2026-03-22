@@ -1,15 +1,15 @@
 // src/pages/v2/admin/accommodations/tabs/FacturasTab.jsx
 // Tab Facturas: Cargar + Lista + Boletines
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Alert, Button, Card, Col, DatePicker, Descriptions, Divider,
   Form, Input, InputNumber, Modal, Popconfirm, Row, Select,
   Space, Spin, Table, Tag, Typography, Upload,
 } from "antd";
 import {
-  CheckCircleOutlined, DeleteOutlined, EditOutlined, EyeOutlined,
-  FileTextOutlined, InboxOutlined, ReloadOutlined,
+  CameraOutlined, CheckCircleOutlined, DeleteOutlined, EditOutlined, EyeOutlined,
+  FileTextOutlined, InboxOutlined, ReloadOutlined, SwapOutlined,
   ThunderboltOutlined, FireOutlined, CloudOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -46,6 +46,14 @@ function CargarFacturas({ accId, clientAccountId }) {
   const [saving, setSaving] = useState(false);
   const [saveOk, setSaveOk] = useState(false);
   const [form] = Form.useForm();
+  
+  // Camera states
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraAvailable, setCameraAvailable] = useState(false);
+  const [stream, setStream] = useState(null);
+  const [facingMode, setFacingMode] = useState('environment'); // 'user' for front, 'environment' for back
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const onScan = async () => {
     if (!file) return;
@@ -62,6 +70,12 @@ function CargarFacturas({ accId, clientAccountId }) {
         headers: { Authorization: `Bearer ${session?.access_token}` },
         body: fd,
       });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error ${res.status}: La función de escaneo con IA no está disponible. Por favor, usa la entrada manual de datos.`);
+      }
+      
       const result = await res.json();
       if (!result.ok) throw new Error(result.error?.message || "Error en el escaneo");
       setExtracted(result.extracted);
@@ -84,7 +98,28 @@ function CargarFacturas({ accId, clientAccountId }) {
         amount_taxes: e.amount_taxes ?? null,
         amount_total: e.amount_total ?? null,
       });
-    } catch (e) { setScanError(e.message); }
+    } catch (e) { 
+      setScanError(e.message);
+      // Mostrar formulario vacío para entrada manual
+      setExtracted({});
+      form.setFieldsValue({
+        utility_type: null,
+        supplier: "",
+        bill_number: "",
+        reference: "",
+        issue_date: null,
+        period_start: null,
+        period_end: null,
+        total_kwh: null,
+        amount_energy: null,
+        amount_power: null,
+        amount_meter: null,
+        amount_discounts: null,
+        amount_other: null,
+        amount_taxes: null,
+        amount_total: null,
+      });
+    }
     finally { setScanning(false); }
   };
 
@@ -104,9 +139,9 @@ function CargarFacturas({ accId, clientAccountId }) {
         total_kwh: values.total_kwh || null,
         amount_energy: values.amount_energy || 0,
         amount_power: values.amount_power || 0,
-        amount_meter: values.amount_meter || null,
-        amount_discounts: values.amount_discounts || null,
-        amount_other: values.amount_other || null,
+        amount_meter: values.amount_meter || 0,
+        amount_discounts: values.amount_discounts || 0,
+        amount_other: values.amount_other || 0,
         amount_taxes: values.amount_taxes || 0,
         amount_total: values.amount_total || 0,
         storage_path: storagePath,
@@ -119,6 +154,119 @@ function CargarFacturas({ accId, clientAccountId }) {
       setTimeout(() => setSaveOk(false), 4000);
     } catch (e) { setScanError(e.message); }
     finally { setSaving(false); }
+  };
+
+  // Check camera availability on mount
+  useEffect(() => {
+    const checkCamera = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          setCameraAvailable(true);
+        }
+      } catch (e) {
+        setCameraAvailable(false);
+      }
+    };
+    checkCamera();
+  }, []);
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const openCamera = async () => {
+    try {
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      setCameraOpen(true);
+      
+      // Wait for modal to render, then attach stream to video
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      }, 100);
+    } catch (e) {
+      setScanError(`Error al acceder a la cámara: ${e.message}`);
+    }
+  };
+
+  const closeCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setCameraOpen(false);
+  };
+
+  const switchCamera = async () => {
+    const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newFacingMode);
+    
+    // Close current stream and open with new facing mode
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    
+    try {
+      const constraints = {
+        video: {
+          facingMode: newFacingMode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (e) {
+      setScanError(`Error al cambiar cámara: ${e.message}`);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current video frame to canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    canvas.toBlob((blob) => {
+      if (blob) {
+        // Create File object from blob
+        const timestamp = new Date().getTime();
+        const capturedFile = new File([blob], `factura_${timestamp}.jpg`, { type: 'image/jpeg' });
+        
+        // Set as current file
+        setFile(capturedFile);
+        
+        // Close camera
+        closeCamera();
+      }
+    }, 'image/jpeg', 0.85);
   };
 
   return (
@@ -136,9 +284,28 @@ function CargarFacturas({ accId, clientAccountId }) {
           <p className="ant-upload-hint">Formatos: PDF, JPG, PNG · Máximo 20 MB</p>
         </Dragger>
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <Button type="primary" size="large" loading={scanning} disabled={!file} onClick={onScan} icon={<FileTextOutlined />}>
-            {scanning ? "Escaneando con IA..." : "Escanear con IA (GPT-4o)"}
-          </Button>
+          <Space wrap>
+            {cameraAvailable && (
+              <Button size="large" icon={<CameraOutlined />} onClick={openCamera}>
+                📷 Tomar Foto
+              </Button>
+            )}
+            <Button type="primary" size="large" loading={scanning} disabled={!file} onClick={onScan} icon={<FileTextOutlined />}>
+              {scanning ? "Escaneando con IA..." : "Escanear con IA (GPT-4o)"}
+            </Button>
+            <Button size="large" disabled={!file} onClick={() => {
+              setExtracted({});
+              setScanError(null);
+              form.setFieldsValue({
+                utility_type: null, supplier: "", bill_number: "", reference: "",
+                issue_date: null, period_start: null, period_end: null, total_kwh: null,
+                amount_energy: null, amount_power: null, amount_meter: null,
+                amount_discounts: null, amount_other: null, amount_taxes: null, amount_total: null,
+              });
+            }}>
+              Entrada Manual
+            </Button>
+          </Space>
         </div>
       </Card>
       {extracted && (
@@ -168,6 +335,44 @@ function CargarFacturas({ accId, clientAccountId }) {
           </Form>
         </Card>
       )}
+
+      {/* Camera Modal */}
+      <Modal
+        title="📷 Capturar Factura"
+        open={cameraOpen}
+        onCancel={closeCamera}
+        width={700}
+        footer={[
+          <Button key="cancel" onClick={closeCamera}>
+            Cancelar
+          </Button>,
+          <Button key="switch" icon={<SwapOutlined />} onClick={switchCamera}>
+            Cambiar Cámara
+          </Button>,
+          <Button key="capture" type="primary" icon={<CameraOutlined />} onClick={capturePhoto}>
+            Capturar
+          </Button>,
+        ]}
+        destroyOnClose
+      >
+        <div style={{ textAlign: 'center' }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{
+              width: '100%',
+              maxHeight: '500px',
+              borderRadius: '8px',
+              backgroundColor: '#000',
+            }}
+          />
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12 }}>
+            Posiciona la factura frente a la cámara y pulsa "Capturar"
+          </Text>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -185,12 +390,14 @@ function ListaFacturas({ accId, clientAccountId }) {
     setLoading(true); setError(null);
     try {
       const { data, error: err } = await supabase.from("energy_bills").select("*")
-        .eq("accommodation_id", accId).order("issue_date", { ascending: false });
+        .eq("accommodation_id", accId)
+        .eq("client_account_id", clientAccountId)
+        .order("issue_date", { ascending: false });
       if (err) throw new Error(err.message);
       setBills(data || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [accId]);
+  }, [accId, clientAccountId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -279,7 +486,7 @@ function ListaFacturas({ accId, clientAccountId }) {
           </Card>
         );
       })}
-      <Modal title={`Editar — ${editingBill?.bill_number ?? ""}`} open={!!editingBill} onCancel={() => setEditingBill(null)} footer={null} width={640} destroyOnClose>
+      <Modal title={`Editar — ${editingBill?.bill_number ?? ""}`} open={!!editingBill} onCancel={() => setEditingBill(null)} footer={null} width={640} destroyOnHidden>
         <Form form={editForm} layout="vertical" onFinish={onSaveEdit}>
           <Row gutter={[12, 0]}>
             <Col xs={24} sm={12}><Form.Item label="Empresa" name="supplier" rules={[{ required: true }]}><Input /></Form.Item></Col>
@@ -309,7 +516,7 @@ function BoletinesFacturas({ accId }) {
     setLoading(true); setError(null);
     try {
       const { data, error: err } = await supabase.from("bulletins")
-        .select("*, lodger:lodgers(id,full_name,email), room:rooms(id,number), energy_bill:energy_bills(id,bill_number,utility_type,issue_date,period_start,period_end,amount_total)")
+        .select("*, lodger:profiles(id,full_name,email), room:rooms(id,number), energy_bill:energy_bills(id,bill_number,utility_type,issue_date,period_start,period_end,amount_total)")
         .eq("accommodation_id", accId).order("period_start", { ascending: false });
       if (err) throw new Error(err.message);
       setBulletins(data || []);

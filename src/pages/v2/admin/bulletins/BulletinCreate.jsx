@@ -33,7 +33,7 @@ export default function BulletinCreate() {
   const loadBase = useCallback(async () => {
     try {
       const [lodgerList, accList] = await Promise.all([
-        listLodgers({ status: "active" }),
+        listLodgers({ status: "active", clientAccountId }),
         listAccommodations({ status: "active" }),
       ]);
       setLodgers(lodgerList);
@@ -42,7 +42,7 @@ export default function BulletinCreate() {
       setLodgers([]);
       setAccommodations([]);
     }
-  }, []);
+  }, [clientAccountId]);
 
   useEffect(() => { loadBase(); }, [loadBase]);
 

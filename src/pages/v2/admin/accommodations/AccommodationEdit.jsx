@@ -15,20 +15,10 @@ import {
   getAccommodation, updateAccommodation,
   listRooms, updateRoom, setRoomStatus,
 } from "../../../../services/accommodations.service";
-import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
+import { supabase } from "../../../../services/supabaseClient";
+import { PROVINCIAS_ES } from "../../../../constants/formOptions";
 
 const { Title, Text } = Typography;
-
-const PROVINCIAS_ES = [
-  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
-  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba",
-  "Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca",
-  "Islas Baleares","Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida",
-  "Lugo","Madrid","Málaga","Murcia","Navarra","Ourense","Palencia","Pontevedra",
-  "Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona",
-  "Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza",
-  "Ceuta","Melilla",
-].map((p) => ({ value: p, label: p }));
 
 const ROOM_STATUS_COLOR = { free: "success", occupied: "error", pending_checkout: "warning", inactive: "default" };
 const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", inactive: "Inactiva" };
@@ -120,7 +110,7 @@ export default function AccommodationEdit() {
         bathroom_type: values.bathroom_type,
         kitchen_type: values.kitchen_type,
         notes: values.notes || null,
-      });
+      }, _clientAccountId);
       setRooms((prev) => prev.map((r) => r.id === roomId ? { ...r, ...updated } : r));
       setEditingRoom(null);
     } catch (e) {
@@ -129,9 +119,9 @@ export default function AccommodationEdit() {
   };
 
   const onToggleRoomStatus = async (room) => {
-    const next = room.status === "inactive" ? "free" : "inactive";
+    const next = room.status === "maintenance" ? "free" : "maintenance";
     try {
-      await setRoomStatus(room.id, next);
+      await setRoomStatus(room.id, next, _clientAccountId);
       setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, status: next } : r));
     } catch (e) {
       setError(e.message);
@@ -139,28 +129,33 @@ export default function AccommodationEdit() {
   };
 
   const onAddRoom = async (values) => {
+    console.log("onAddRoom called with values:", values);
     try {
-      const result = await invokeWithAuth("manage_accommodation", {
-        body: {
-          action: "add_room",
-          payload: {
-            accommodation_id: id,
-            number: values.number,
-            monthly_rent: values.monthly_rent || 0,
-            square_meters: values.square_meters || null,
-            bathroom_type: values.bathroom_type || "shared",
-            kitchen_type: values.kitchen_type || "shared",
-            notes: values.notes || null,
-            status: "free",
-          },
-        },
-      });
-      if (!result?.ok) throw new Error(extractEdgeError(result));
-      const newRoom = result.data?.room ?? result.data;
+      const { data: newRoom, error } = await supabase
+        .from("rooms")
+        .insert({
+          accommodation_id: id,
+          client_account_id: _clientAccountId,
+          number: values.number,
+          monthly_rent: values.monthly_rent || 0,
+          square_meters: values.square_meters || null,
+          bathroom_type: values.bathroom_type || "shared",
+          kitchen_type: values.kitchen_type || "shared",
+          notes: values.notes || null,
+          status: "free",
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error("Error inserting room:", error);
+        throw new Error(error.message);
+      }
+      console.log("Room added successfully:", newRoom);
       setRooms((prev) => [...prev, newRoom]);
       setAddingRoom(false);
       newRoomForm.resetFields();
     } catch (e) {
+      console.error("Exception in onAddRoom:", e);
       setError(e.message);
     }
   };
@@ -382,20 +377,27 @@ export default function AccommodationEdit() {
         {addingRoom && (
           <Card size="small" style={{ marginBottom: 16, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
             <Text strong style={{ display: "block", marginBottom: 12 }}>Nueva Habitación</Text>
-            <Form form={newRoomForm} layout="inline" onFinish={onAddRoom}>
-              <Form.Item name="number" rules={[{ required: true, message: "Nº requerido" }]}>
+            <Form 
+              form={newRoomForm} 
+              layout="inline" 
+              onFinish={onAddRoom}
+              onFinishFailed={(errorInfo) => {
+                console.log("Form validation failed:", errorInfo);
+              }}
+            >
+              <Form.Item name="number" label="Nº" rules={[{ required: true, message: "Nº requerido" }]}>
                 <Input placeholder="Nº" style={{ width: 70 }} />
               </Form.Item>
-              <Form.Item name="monthly_rent">
+              <Form.Item name="monthly_rent" label="Precio/mes">
                 <InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} />
               </Form.Item>
-              <Form.Item name="square_meters">
+              <Form.Item name="square_meters" label="m²">
                 <InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} />
               </Form.Item>
-              <Form.Item name="bathroom_type" initialValue="shared">
+              <Form.Item name="bathroom_type" label="Baño" initialValue="shared">
                 <Select style={{ width: 130 }} options={BATHROOM_OPTIONS} />
               </Form.Item>
-              <Form.Item name="kitchen_type" initialValue="shared">
+              <Form.Item name="kitchen_type" label="Cocina" initialValue="shared">
                 <Select style={{ width: 130 }} options={KITCHEN_OPTIONS} />
               </Form.Item>
               <Form.Item>
@@ -418,22 +420,22 @@ export default function AccommodationEdit() {
             </Text>
             <Form form={roomForm} layout="inline"
               onFinish={(values) => onSaveRoom(editingRoom, values)}>
-              <Form.Item name="number" rules={[{ required: true }]}>
+              <Form.Item name="number" label="Nº" rules={[{ required: true }]}>
                 <Input placeholder="Nº" style={{ width: 70 }} />
               </Form.Item>
-              <Form.Item name="monthly_rent">
+              <Form.Item name="monthly_rent" label="Precio/mes">
                 <InputNumber placeholder="Precio/mes" min={0} addonAfter="€" style={{ width: 130 }} />
               </Form.Item>
-              <Form.Item name="square_meters">
+              <Form.Item name="square_meters" label="m²">
                 <InputNumber placeholder="m²" min={1} addonAfter="m²" style={{ width: 100 }} />
               </Form.Item>
-              <Form.Item name="bathroom_type">
+              <Form.Item name="bathroom_type" label="Baño">
                 <Select style={{ width: 130 }} options={BATHROOM_OPTIONS} />
               </Form.Item>
-              <Form.Item name="kitchen_type">
+              <Form.Item name="kitchen_type" label="Cocina">
                 <Select style={{ width: 130 }} options={KITCHEN_OPTIONS} />
               </Form.Item>
-              <Form.Item name="notes">
+              <Form.Item name="notes" label="Notas">
                 <Input placeholder="Notas" style={{ width: 140 }} />
               </Form.Item>
               <Form.Item>

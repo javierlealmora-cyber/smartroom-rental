@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Alert, Button, Card, Col, DatePicker, Descriptions, Form,
-  Input, InputNumber, message, Modal, Popconfirm, Row, Select, Space, Tag, Tooltip, Typography, Upload,
+  InputNumber, message, Modal, Popconfirm, Row, Select, Space, Tag, Tooltip, Typography, Upload,
 } from "antd";
 import { ArrowLeftOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileOutlined, MailOutlined, PaperClipOutlined, SaveOutlined, SwapOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -14,6 +14,8 @@ import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getLodger, updateLodger, setLodgerStatus, reassignRoom, inviteLodger } from "../../../../services/lodgers.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
 import { supabase } from "../../../../services/supabaseClient";
+import LodgerFormFields from "./components/LodgerFormFields";
+import PayersList from "./components/PayersList";
 
 const { Title, Text } = Typography;
 
@@ -33,11 +35,6 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactivo" },
 ];
 
-const GENDER_OPTIONS = [
-  { value: "male", label: "Masculino" },
-  { value: "female", label: "Femenino" },
-  { value: "other", label: "Otro" },
-];
 
 function fDate(iso) {
   if (!iso) return "-";
@@ -48,7 +45,7 @@ export default function TenantEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const [form] = Form.useForm();
   const [reassignForm] = Form.useForm();
 
@@ -95,7 +92,7 @@ export default function TenantEdit() {
     setError(null);
     try {
       const [data, accs] = await Promise.all([
-        getLodger(id),
+        getLodger(id, clientAccountId),
         listAccommodations({ status: "active" }),
       ]);
       setLodger(data);
@@ -110,10 +107,11 @@ export default function TenantEdit() {
         first_name: nameParts[0] || "",
         last_name1: nameParts[1] || "",
         last_name2: nameParts.slice(2).join(" ") || "",
+        nickname: data.nickname || "",
         email: data.email,
         phone: data.phone || "",
         document_id: data.document_id || "",
-        status: data.status,
+        status: data.onboarding_status,
         gender: data.gender || null,
       });
       // Auto-open reassign modal if ?action=reassign
@@ -125,7 +123,7 @@ export default function TenantEdit() {
     } finally {
       setLoading(false);
     }
-  }, [id, searchParams]);
+  }, [id, searchParams, clientAccountId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -137,7 +135,7 @@ export default function TenantEdit() {
     try {
       const { data, error: roomsErr } = await supabase
         .from("rooms")
-        .select("id, number, type, status")
+        .select("id, number, status")
         .eq("accommodation_id", accId)
         .eq("status", "free")
         .order("number");
@@ -160,11 +158,20 @@ export default function TenantEdit() {
         moveInDate: values.move_in_date.format("YYYY-MM-DD"),
         billingStartDate: values.billing_start_date?.format("YYYY-MM-DD") || values.move_in_date.format("YYYY-MM-DD"),
         monthlyRent: values.monthly_rent || null,
+        depositAmount: values.deposit_amount,
+        commissionAmount: values.commission_amount || null,
+        firstMonthAmount: values.first_month_amount || null,
       });
       setReassignOpen(false);
       reassignForm.resetFields();
       setAvailableRooms([]);
-      await load();
+      // Si venimos de ?action=reassign navegar sin el param para que load() no re-abra el modal.
+      // Si el modal se abrió desde el botón directo, recargar datos en la misma página.
+      if (searchParams.get("action") === "reassign") {
+        navigate(`/v2/admin/inquilinos/${id}/editar`, { replace: true });
+      } else {
+        await load();
+      }
     } catch (e) {
       setReassignError(e.message);
     } finally {
@@ -176,13 +183,14 @@ export default function TenantEdit() {
     setSaving(true);
     setError(null);
     try {
-      if (values.status !== lodger.status) {
+      if (values.status !== lodger.onboarding_status) {
         await setLodgerStatus(id, values.status);
       }
       const full_name = [values.first_name, values.last_name1, values.last_name2]
         .filter(Boolean).join(" ");
       await updateLodger(id, {
         full_name,
+        nickname: values.nickname || null,
         phone: values.phone || null,
         document_id: values.document_id || null,
         gender: values.gender || null,
@@ -321,45 +329,10 @@ export default function TenantEdit() {
           <Card title="Datos del Inquilino" size="small" loading={loading}>
             {!loading && (
               <Form form={form} layout="vertical" onFinish={onFinish}>
+                <LodgerFormFields disableEmail={true} />
+                
                 <Row gutter={[16, 0]}>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Nombre" name="first_name"
-                      rules={[{ required: true, message: "El nombre es obligatorio" }]}>
-                      <Input placeholder="Nombre" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Primer apellido" name="last_name1"
-                      rules={[{ required: true, message: "Obligatorio" }]}>
-                      <Input placeholder="Apellido 1" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Segundo apellido" name="last_name2">
-                      <Input placeholder="Apellido 2" />
-                    </Form.Item>
-                  </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="Email" name="email">
-                      <Input disabled />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label="Teléfono" name="phone">
-                      <Input placeholder="+34 600 000 000" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label="Documento (DNI/NIE/Pasaporte)" name="document_id">
-                      <Input placeholder="12345678A" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Form.Item label="Género" name="gender">
-                      <Select options={GENDER_OPTIONS} placeholder="Seleccionar" allowClear />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={6}>
                     <Form.Item label="Estado" name="status"
                       rules={[{ required: true, message: "Selecciona un estado" }]}>
                       <Select options={STATUS_OPTIONS} />
@@ -460,6 +433,15 @@ export default function TenantEdit() {
         </Col>
       </Row>
 
+      {/* Sección Pagadores - Siempre visible */}
+      {lodger && (
+        <Row gutter={[20, 20]} style={{ marginTop: 20 }}>
+          <Col xs={24}>
+            <PayersList lodgerId={lodger.id} clientAccountId={clientAccountId} />
+          </Col>
+        </Row>
+      )}
+
       {/* ── Sección Documentos adjuntos ── */}
       {lodger && (
         <Card
@@ -555,12 +537,12 @@ export default function TenantEdit() {
       )}
       {/* ── Modal cambio de habitación ── */}
       <Modal
-        title={<><SwapOutlined style={{ marginRight: 8 }} />Cambiar habitación</>}
+        title={<><SwapOutlined style={{ marginRight: 8 }} />Cambiar habitación{lodger?.full_name ? ` — ${lodger.full_name}` : ""}</>}
         open={reassignOpen}
         onCancel={() => { setReassignOpen(false); reassignForm.resetFields(); setAvailableRooms([]); setReassignError(null); }}
         footer={null}
         width={520}
-        destroyOnClose
+        destroyOnHidden
       >
         {reassignError && (
           <Alert type="error" message={reassignError} showIcon style={{ marginBottom: 16 }} />
@@ -619,16 +601,16 @@ export default function TenantEdit() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Fecha de entrada"
+                label="Fecha de Check-In"
                 name="move_in_date"
-                rules={[{ required: true, message: "Indica la fecha de entrada" }]}
+                rules={[{ required: true, message: "Indica la fecha de check-in" }]}
               >
                 <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Inicio facturación" name="billing_start_date">
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Igual que entrada" />
+              <Form.Item label="Fecha de Inicio Cobro" name="billing_start_date">
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Igual que check-in" />
               </Form.Item>
             </Col>
           </Row>
@@ -640,6 +622,45 @@ export default function TenantEdit() {
               precision={2}
               placeholder="Opcional"
               addonAfter="€/mes"
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Importe de la Fianza (€)"
+                name="deposit_amount"
+                rules={[{ required: true, message: "El importe de la fianza es obligatorio" }]}
+              >
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={2}
+                  placeholder="Ej: 900"
+                  addonAfter="€"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Importe Comisión (€)" name="commission_amount">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={2}
+                  placeholder="Opcional"
+                  addonAfter="€"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
+            <InputNumber
+              style={{ width: "100%" }}
+              min={0}
+              precision={2}
+              placeholder="Para entradas a mitad de mes (opcional)"
+              addonAfter="€"
             />
           </Form.Item>
 

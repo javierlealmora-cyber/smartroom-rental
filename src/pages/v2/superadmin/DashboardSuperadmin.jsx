@@ -214,7 +214,7 @@ export default function DashboardSuperadmin() {
         supabase.from("entities").select("id,client_account_id,type,status"),
         supabase.from("accommodations").select("id,status"),
         supabase.from("rooms").select("id,status"),
-        supabase.from("lodgers").select("id,status"),
+        supabase.from("profiles").select("id,onboarding_status").eq("role", "lodger"),
         supabase.from("audit_log").select("id,entity_type,action,actor_role,new_values,created_at").order("created_at", { ascending: false }).limit(20),
       ]);
 
@@ -235,7 +235,7 @@ export default function DashboardSuperadmin() {
         totalAccommodations: (accommodations || []).length,
         totalRooms: allRooms.length, occupiedRooms, freeRooms,
         totalLodgers: allLodgers.length,
-        activeLodgers: allLodgers.filter(l => l.status === "active").length,
+        activeLodgers: allLodgers.filter(l => l.onboarding_status === "active").length,
       });
 
       const planCodes = ["basic", "investor", "business", "agency"];

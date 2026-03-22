@@ -123,6 +123,10 @@ export function ThemeProvider({ children }) {
         borderRadiusLG: 6,
         defaultBorderColor: undefined,
       },
+      Switch: {
+        colorPrimary: "#52c41a",
+        colorPrimaryHover: "#73d13d",
+      },
     },
   }), [theme.primaryColor]);
 

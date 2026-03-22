@@ -36,13 +36,14 @@ BEGIN
     LIMIT v_rooms_to_fill
   LOOP
     -- Obtener un inquilino aleatorio del mismo client_account que esté disponible
-    SELECT l.id INTO v_lodger_id
-    FROM public.lodgers l
-    WHERE l.client_account_id = p_client_account_id
-      AND l.status = 'active'
+    SELECT p.id INTO v_lodger_id
+    FROM public.profiles p
+    WHERE p.client_account_id = p_client_account_id
+      AND p.role = 'lodger'
+      AND p.status = 'active'
       AND NOT EXISTS (
         SELECT 1 FROM public.lodger_room_assignments lra
-        WHERE lra.lodger_id = l.id AND lra.status = 'active'
+        WHERE lra.lodger_id = p.id AND lra.status = 'active'
       )
     ORDER BY random()
     LIMIT 1;
@@ -195,15 +196,16 @@ ORDER BY a.name;
 
 -- Inquilinos con historial de asignaciones
 SELECT 
-  l.full_name,
-  l.email,
+  p.full_name,
+  p.email,
   COUNT(lra.id) as total_assignments,
   COUNT(lra.id) FILTER (WHERE lra.status = 'active') as active_assignments,
   COUNT(lra.id) FILTER (WHERE lra.status = 'ended') as ended_assignments
-FROM public.lodgers l
-LEFT JOIN public.lodger_room_assignments lra ON l.id = lra.lodger_id
-WHERE l.email LIKE '%@housingspacesolutions.com'
-GROUP BY l.id, l.full_name, l.email
+FROM public.profiles p
+LEFT JOIN public.lodger_room_assignments lra ON p.id = lra.lodger_id
+WHERE p.role = 'lodger' 
+  AND p.email LIKE '%@housingspacesolutions.com'
+GROUP BY p.id, p.full_name, p.email
 HAVING COUNT(lra.id) > 0
-ORDER BY total_assignments DESC, l.email
+ORDER BY total_assignments DESC, p.email
 LIMIT 10;

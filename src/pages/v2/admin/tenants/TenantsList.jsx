@@ -37,12 +37,13 @@ function _formatDate(iso) {
 
 export default function TenantsList() {
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [allLodgers, setAllLodgers] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAccommodation, setFilterAccommodation] = useState("");
@@ -54,7 +55,7 @@ export default function TenantsList() {
     setError(null);
     try {
       const [lodgers, accs] = await Promise.all([
-        listLodgers(),
+        listLodgers({ clientAccountId }),
         listAccommodations({ status: "active" }),
       ]);
       setAllLodgers(lodgers);
@@ -64,7 +65,7 @@ export default function TenantsList() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clientAccountId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -221,30 +222,42 @@ export default function TenantsList() {
             const roomNum = asgn?.room?.number;
             return (
               <Col key={t.id} xs={24} sm={12} md={8} lg={6}>
-                <div style={{
-                  background: "#fff", borderRadius: 12, padding: 16,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  border: "1px solid #F3F4F6",
-                  display: "flex", flexDirection: "column", gap: 12,
-                  height: "100%",
+                <div
+                  onMouseEnter={() => setHoveredId(t.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    background: "#fff", borderRadius: 12, padding: 16,
+                    boxShadow: hoveredId === t.id ? "0 8px 20px rgba(11,46,109,0.1)" : "0 2px 8px rgba(0,0,0,0.06)",
+                    border: "1px solid #F3F4F6",
+                    display: "flex", flexDirection: "column", gap: 12,
+                    height: "100%",
+                    transform: hoveredId === t.id ? "translateY(-3px)" : "translateY(0)",
+                    transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                    cursor: "pointer",
                 }}>
-                  {/* Avatar + nombre + estado */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {/* Avatar + nombre + contacto */}
+                  <div 
+                    style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}
+                    onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)}
+                  >
                     <img
                       src={t.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
                       alt="Inquilino"
-                      style={{ width: 48, height: 48, objectFit: "contain", flexShrink: 0 }}
+                      style={{ width: 120, height: 120, objectFit: "contain", flexShrink: 0, borderRadius: 12 }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 6 }}>
                         {t.full_name}
                       </div>
-                      <Tag
-                        style={{ marginTop: 2, fontSize: 11 }}
-                        color={STATUS_ANT_COLOR[t.status] || "default"}
-                      >
-                        {STATUS_LABEL[t.status] || t.status}
-                      </Tag>
+                      <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>
+                        {t.phone && <div>{t.phone}</div>}
+                        {asgn?.move_in_date && (
+                          <div style={{ fontSize: 11, color: "#9CA3AF" }}>
+                            Check-in: {new Date(asgn.move_in_date).toLocaleDateString('es-ES')}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -267,38 +280,32 @@ export default function TenantsList() {
                     )}
                   </div>
 
-                  {/* Contacto */}
-                  <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>
-                    {t.phone && <div>{t.phone}</div>}
-                  </div>
-
                   {/* Acciones */}
                   <div style={{ display: "flex", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
                     <Tooltip title="Editar">
                       <Button size="small" icon={<EditOutlined />}
-                        onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar`)} />
+                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/editar`); }} />
                     </Tooltip>
                     <Tooltip title="Ver detalle">
                       <Button size="small" icon={<UserOutlined />}
-                        onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)} />
+                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
                     </Tooltip>
                     {t.status === "active" && (
                       <Tooltip title="Cambiar habitación">
                         <Button size="small" icon={<SwapOutlined />}
-                          onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`)} />
+                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`); }} />
                       </Tooltip>
                     )}
                     {t.status === "active" && (
                       <Tooltip title="Programar baja">
                         <Button size="small" icon={<LogoutOutlined />}
-                          onClick={() => onScheduleCheckout(t)} />
+                          onClick={(e) => { e.stopPropagation(); onScheduleCheckout(t); }} />
                       </Tooltip>
                     )}
                     <Tooltip title="Enviar email de acceso">
                       <Button size="small" icon={<MailOutlined />}
                         loading={!!sendingInvite[t.id]}
-                        onClick={() => onSendInvite(t)} />
+                        onClick={(e) => { e.stopPropagation(); onSendInvite(t); }} />
                     </Tooltip>
                   </div>
                 </div>

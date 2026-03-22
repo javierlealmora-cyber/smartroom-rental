@@ -74,9 +74,10 @@ export default function LodgerIncidencias() {
     setError(null);
     try {
       const { data: lodgerData, error: lErr } = await supabase
-        .from("lodgers")
+        .from("profiles")
         .select("id, full_name, client_account_id")
         .eq("email", user.email)
+        .eq("role", "lodger")
         .maybeSingle();
       if (lErr) throw new Error(lErr.message);
       setLodger(lodgerData || null);

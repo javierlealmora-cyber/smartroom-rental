@@ -48,7 +48,7 @@ function getStats(acc) {
 export default function EntityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [entity, setEntity] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
@@ -62,11 +62,12 @@ export default function EntityDetail() {
     setError(null);
     try {
       const [{ data: ent, error: entErr }, { data: accs, error: accsErr }] = await Promise.all([
-        supabase.from("entities").select("*").eq("id", id).single(),
+        supabase.from("entities").select("*").eq("id", id).eq("client_account_id", clientAccountId).single(),
         supabase
           .from("accommodations")
           .select("*, rooms(id, status)")
           .eq("owner_entity_id", id)
+          .eq("client_account_id", clientAccountId)
           .order("name"),
       ]);
       if (entErr) throw new Error(entErr.message);
@@ -78,7 +79,7 @@ export default function EntityDetail() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, clientAccountId]);
 
   useEffect(() => { load(); }, [load]);
 

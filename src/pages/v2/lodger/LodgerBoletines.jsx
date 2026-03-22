@@ -47,9 +47,10 @@ export default function LodgerBoletines() {
     setError(null);
     try {
       const { data: lodger } = await supabase
-        .from("lodgers")
+        .from("profiles")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
+        .eq("role", "lodger")
         .maybeSingle();
 
       if (!lodger) { setBulletins([]); return; }

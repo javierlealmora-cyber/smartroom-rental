@@ -34,7 +34,7 @@ export default function LodgerServiceCreate() {
   const loadBase = useCallback(async () => {
     try {
       const [lodgerList, accList] = await Promise.all([
-        listLodgers({ status: "active" }),
+        listLodgers({ status: "active", clientAccountId }),
         listAccommodations({ status: "active" }),
       ]);
       setLodgers(lodgerList);
@@ -43,7 +43,7 @@ export default function LodgerServiceCreate() {
       setLodgers([]);
       setAccommodations([]);
     }
-  }, []);
+  }, [clientAccountId]);
 
   useEffect(() => { loadBase(); }, [loadBase]);
 

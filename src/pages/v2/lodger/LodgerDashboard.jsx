@@ -51,9 +51,10 @@ export default function LodgerDashboard() {
     setError(null);
     try {
       const { data: lodgerData, error: lodgerErr } = await supabase
-        .from("lodgers")
+        .from("profiles")
         .select("*")
         .eq("email", user.email)
+        .eq("role", "lodger")
         .maybeSingle();
       if (lodgerErr) throw new Error(lodgerErr.message);
       setLodger(lodgerData || null);

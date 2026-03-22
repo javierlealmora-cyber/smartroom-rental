@@ -1,5 +1,12 @@
 -- ============================================================================
--- SEEDS: lodgers
+-- ⚠️ ARCHIVO OBSOLETO - NO USAR
+-- ============================================================================
+-- Este archivo está OBSOLETO desde 2026-03-15
+-- La tabla 'lodgers' ya NO existe en el esquema actual
+-- Los inquilinos ahora se crean directamente en la tabla 'profiles' con role='lodger'
+-- Ver: supabase/seeds/staging/00_create_auth_users.sql para crear usuarios lodger
+-- ============================================================================
+-- SEEDS: lodgers (OBSOLETO)
 -- Ambiente: STAGING
 -- Fecha: 2026-03-08
 -- Descripción: Inquilinos (registros de datos) - idempotente
@@ -8,6 +15,13 @@
 -- Los primeros 20 inquilinos tienen usuario en auth.users (inquilino1-20@housingspacesolutions.com)
 -- Password común: Test123456!
 -- ============================================================================
+
+-- ⚠️ ESTE SCRIPT YA NO SE DEBE EJECUTAR
+-- Los lodgers se crean ahora en 00_create_auth_users.sql como profiles con role='lodger'
+SELECT '⚠️ ARCHIVO OBSOLETO - Los lodgers ahora están en profiles, no en tabla lodgers separada' as warning;
+
+/*
+-- CÓDIGO OBSOLETO COMENTADO PARA REFERENCIA:
 
 -- Nombres españoles para inquilinos
 CREATE TEMP TABLE nombres_temp (nombre text, apellido1 text, apellido2 text, genero text);
@@ -114,3 +128,4 @@ FROM public.lodgers l
 JOIN public.client_accounts ca ON l.client_account_id = ca.id
 ORDER BY l.email
 LIMIT 20;
+*/

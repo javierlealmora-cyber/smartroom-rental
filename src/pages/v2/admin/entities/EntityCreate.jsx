@@ -5,28 +5,8 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { createEntity } from "../../../../services/entities.service";
-
-const GENDER_OPTIONS = [
-  { value: "male", label: "Hombre" },
-  { value: "female", label: "Mujer" },
-  { value: "other", label: "Otro" },
-];
-
-const LEGAL_TYPES = [
-  { value: "autonomo", label: "Autónomo" },
-  { value: "persona_fisica", label: "Persona física" },
-  { value: "persona_juridica", label: "Persona jurídica" },
-];
-
-const PROVINCIAS_ES = [
-  "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona",
-  "Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real","Córdoba","Cuenca",
-  "Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca","Islas Baleares",
-  "Jaén","La Coruña","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga",
-  "Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife",
-  "Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid",
-  "Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
-];
+import EntityFormFields from "../../../../components/shared/EntityFormFields";
+import { PROVINCIAS_ES, LEGAL_TYPES } from "../../../../constants/formOptions";
 
 export default function EntityCreate() {
   const navigate = useNavigate();
@@ -62,11 +42,12 @@ export default function EntityCreate() {
         first_name: values.first_name || null,
         last_name1: values.last_name1 || null,
         last_name2: values.last_name2 || null,
+        nickname: values.nickname || null,
         gender: values.gender || null,
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
-        country: values.country || "Espana",
+        country: values.country || "España",
         province: values.province || null,
         city: values.city || null,
         zip: values.zip || null,
@@ -101,7 +82,7 @@ export default function EntityCreate() {
           layout="vertical"
           initialValues={{
             legal_type: "persona_juridica",
-            country: "Espana",
+            country: "España",
           }}
           onFinish={onFinish}
           disabled={!canWrite || busy}
@@ -113,89 +94,25 @@ export default function EntityCreate() {
                 name="legal_type"
                 rules={[{ required: true, message: "Seleccione el tipo legal" }]}
               >
-                <Select
-                  options={LEGAL_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-                />
+                <Select options={LEGAL_TYPES} />
               </Form.Item>
             </Col>
 
-            {isCompany ? (
-              <Col xs={24} md={16}>
-                <Form.Item
-                  label="Razón social"
-                  name="legal_name"
-                  rules={[{ required: true, message: "Indique la razón social" }]}
-                >
-                  <Input />
-                </Form.Item>
-              </Col>
-            ) : (
-              <>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label="Nombre"
-                    name="first_name"
-                    rules={[{ required: true, message: "Indique el nombre" }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label="Apellido 1"
-                    name="last_name1"
-                    rules={[{ required: true, message: "Indique el primer apellido" }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item label="Apellido 2" name="last_name2">
-                    <Input />
-                  </Form.Item>
-                </Col>
-              </>
-            )}
-
-            {isPhysical && (
-              <Col xs={24} md={8}>
-                <Form.Item label="Género" name="gender">
-                  <Select
-                    placeholder="Seleccionar..."
-                    options={GENDER_OPTIONS}
-                    allowClear
-                  />
-                </Form.Item>
-              </Col>
-            )}
-
-            <Col xs={24} md={8}>
-              <Form.Item label="NIF/CIF" name="tax_id">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Email" name="billing_email" rules={[{ type: "email", message: "Email inválido" }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Teléfono" name="phone">
-                <Input />
-              </Form.Item>
-            </Col>
+            <EntityFormFields legalType={legalType} showLegalTypeSelector={false} />
 
             <Col xs={24}>
               <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Tipo de vía" name="street"
+                rules={[{ required: true, message: "Indique la calle" }]}
                 extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
                 <Input placeholder="Calle, Avenida, Plaza, Paseo..." />
               </Form.Item>
             </Col>
             <Col xs={24} md={4}>
-              <Form.Item label="Número" name="street_number">
+              <Form.Item label="Número" name="street_number"
+                rules={[{ required: true, message: "Indique el número" }]}>
                 <Input placeholder="12" />
               </Form.Item>
             </Col>
@@ -210,27 +127,31 @@ export default function EntityCreate() {
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Código Postal" name="zip">
+              <Form.Item label="Código Postal" name="zip"
+                rules={[{ required: true, message: "Indique el código postal" }]}>
                 <Input placeholder="28001" maxLength={5} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Ciudad / Municipio" name="city">
+              <Form.Item label="Ciudad / Municipio" name="city"
+                rules={[{ required: true, message: "Indique la ciudad" }]}>
                 <Input placeholder="Madrid" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="Provincia" name="province">
+              <Form.Item label="Provincia" name="province"
+                rules={[{ required: true, message: "Seleccione la provincia" }]}>
                 <Select
                   showSearch
                   placeholder="Seleccionar provincia..."
                   optionFilterProp="label"
-                  options={PROVINCIAS_ES.map((p) => ({ value: p, label: p }))}
+                  options={PROVINCIAS_ES}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
-              <Form.Item label="País" name="country">
+              <Form.Item label="País" name="country"
+                rules={[{ required: true, message: "Indique el país" }]}>
                 <Input placeholder="España" />
               </Form.Item>
             </Col>

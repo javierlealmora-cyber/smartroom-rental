@@ -5,14 +5,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import {
-  Alert, Button, Card, Checkbox, Col, DatePicker, Form,
-  Input, Row, Select, Space, Tag, Typography,
+  Alert, Button, Card, Checkbox, Col, DatePicker, Form, InputNumber,
+  Row, Select, Space, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, InfoCircleOutlined, SaveOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { createLodger } from "../../../../services/lodgers.service";
 import { listAccommodations, listRooms } from "../../../../services/accommodations.service";
+import LodgerFormFields from "./components/LodgerFormFields";
 
 const { Title, Text } = Typography;
 
@@ -82,34 +83,46 @@ export default function TenantCreate() {
     : "/v2/admin/inquilinos";
 
   const onFinish = async (values) => {
-    const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
-
-    const moveInDate = values.move_in_date.format("YYYY-MM-DD");
-    const billingDate = billingSameAsMoveIn
-      ? moveInDate
-      : (values.billing_start_date?.format("YYYY-MM-DD") || moveInDate);
-
     setSaving(true);
     setSaveError(null);
     try {
       const fullName = [values.first_name, values.last_name1, values.last_name2]
         .filter(Boolean).join(" ").trim();
-      await createLodger({
+      
+      const payload = {
         full_name: fullName,
         first_name: values.first_name || null,
         last_name1: values.last_name1 || null,
         last_name2: values.last_name2 || null,
+        nickname: values.nickname || null,
         gender: values.gender || null,
         email: values.email,
         phone: values.phone || null,
         document_id: values.document_id || null,
-        room_id: selectedRoomId,
-        accommodation_id: values.accommodation_id,
-        move_in_date: moveInDate,
-        billing_start_date: billingDate,
-        monthly_rent: selectedRoom?.monthly_rent ?? null,
-      });
-      navigate(backPath);
+        onboarding_status: selectedRoomId ? "active" : "invited",
+      };
+
+      // Solo agregar datos de habitación si se seleccionó una
+      if (selectedRoomId && values.accommodation_id) {
+        const selectedRoom = availableRooms.find((r) => r.id === selectedRoomId);
+        const moveInDate = values.move_in_date.format("YYYY-MM-DD");
+        const billingDate = billingSameAsMoveIn
+          ? moveInDate
+          : (values.billing_start_date?.format("YYYY-MM-DD") || moveInDate);
+        
+        payload.room_id = selectedRoomId;
+        payload.accommodation_id = values.accommodation_id;
+        payload.move_in_date = moveInDate;
+        payload.billing_start_date = billingDate;
+        payload.monthly_rent = selectedRoom?.monthly_rent ?? null;
+        payload.deposit_amount = values.deposit_amount || 0;
+        payload.commission_amount = values.commission_amount || null;
+        payload.first_month_amount = values.first_month_amount || null;
+      }
+
+      const newLodger = await createLodger(payload);
+      // Redirigir a edición para permitir añadir pagadores
+      navigate(`/v2/admin/inquilinos/${newLodger.id}/editar`);
     } catch (e) {
       setSaveError(e.message);
     } finally {
@@ -130,7 +143,7 @@ export default function TenantCreate() {
           {preselectedAccId ? "Volver al alojamiento" : "Inquilinos"}
         </Button>
         <Title level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px" }}>Registrar Inquilino</Title>
-        <Text type="secondary" style={{ fontSize: 15 }}>Complete los datos del nuevo inquilino y asigne una habitación</Text>
+        <Text type="secondary" style={{ fontSize: 15 }}>Complete los datos del nuevo inquilino (la asignación de habitación es opcional)</Text>
       </div>
 
       {saveError && (
@@ -150,85 +163,29 @@ export default function TenantCreate() {
           {/* Datos personales */}
           <Col xs={24} lg={12}>
             <Card title="Datos Personales" style={{ marginBottom: 24 }}>
-              <Row gutter={16}>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Nombre"
-                    name="first_name"
-                    rules={[{ required: true, message: "El nombre es obligatorio" }]}
-                  >
-                    <Input placeholder="Juan" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Primer apellido"
-                    name="last_name1"
-                    rules={[{ required: true, message: "El primer apellido es obligatorio" }]}
-                  >
-                    <Input placeholder="García" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Form.Item label="Segundo apellido" name="last_name2">
-                    <Input placeholder="López" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item label="Género" name="gender">
-                    <Select
-                      placeholder="Seleccionar..."
-                      allowClear
-                      options={[
-                        { value: "male", label: "Masculino" },
-                        { value: "female", label: "Femenino" },
-                        { value: "other", label: "Otro" },
-                      ]}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: "El email es obligatorio" },
-                  { type: "email", message: "Email inválido" },
-                ]}
-              >
-                <Input placeholder="email@ejemplo.com" />
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item label="Teléfono" name="phone">
-                    <Input placeholder="+34 666 123 456" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item label="Documento (DNI/NIE)" name="document_id">
-                    <Input placeholder="12345678A" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
+              <LodgerFormFields />
+              
               <Form.Item name="send_onboarding" valuePropName="checked">
                 <Checkbox>Enviar email de onboarding al crear el inquilino</Checkbox>
               </Form.Item>
+
+              <Alert
+                message="Gestión de Pagadores"
+                description="Podrás añadir los pagadores (padre, madre, empresa, etc.) después de registrar el inquilino."
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                style={{ marginTop: 16 }}
+              />
             </Card>
           </Col>
 
           {/* Asignación */}
           <Col xs={24} lg={12}>
-            <Card title="Asignación de Habitación" style={{ marginBottom: 24 }}>
+            <Card title="Asignación de Habitación (Opcional)" style={{ marginBottom: 24 }}>
               <Form.Item
                 label="Alojamiento"
                 name="accommodation_id"
-                rules={[{ required: true, message: "Seleccione un alojamiento" }]}
               >
                 <Select
                   placeholder="Seleccionar alojamiento..."
@@ -241,7 +198,6 @@ export default function TenantCreate() {
               <Form.Item
                 label="Habitación"
                 name="room_id"
-                rules={[{ required: true, message: "Seleccione una habitación" }]}
               >
                 {loadingRooms ? (
                   <Text type="secondary">Cargando habitaciones...</Text>
@@ -285,9 +241,9 @@ export default function TenantCreate() {
               </Form.Item>
 
               <Form.Item
-                label="Fecha de entrada"
+                label="Fecha de Check-In"
                 name="move_in_date"
-                rules={[{ required: true, message: "La fecha de entrada es obligatoria" }]}
+                rules={[{ required: !!selectedRoomId, message: "La fecha de check-in es obligatoria" }]}
               >
                 <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
@@ -297,15 +253,54 @@ export default function TenantCreate() {
                   checked={billingSameAsMoveIn}
                   onChange={(e) => setBillingSameAsMoveIn(e.target.checked)}
                 >
-                  Facturar desde la fecha de entrada
+                  Facturar desde la fecha de check-in
                 </Checkbox>
               </Form.Item>
 
               {!billingSameAsMoveIn && (
-                <Form.Item label="Fecha inicio facturación" name="billing_start_date">
+                <Form.Item label="Fecha de Inicio Cobro" name="billing_start_date">
                   <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
                 </Form.Item>
               )}
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="Importe de la Fianza (€)"
+                    name="deposit_amount"
+                    rules={[{ required: !!selectedRoomId, message: "El importe de la fianza es obligatorio" }]}
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      precision={2}
+                      placeholder="Ej: 900"
+                      addonAfter="€"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Importe Comisión (€)" name="commission_amount">
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      precision={2}
+                      placeholder="Opcional"
+                      addonAfter="€"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={2}
+                  placeholder="Para entradas a mitad de mes (opcional)"
+                  addonAfter="€"
+                />
+              </Form.Item>
             </Card>
           </Col>
         </Row>

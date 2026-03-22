@@ -12,7 +12,7 @@ import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listServicesCatalog } from "../../../../services/services.service";
-import { invokeWithAuth } from "../../../../services/supabaseInvoke.services";
+import { setEntityStatus } from "../../../../services/entities.service";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -27,7 +27,7 @@ function fEur(n) {
 
 export default function ServicesList() {
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const [allServices, setAllServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,9 +65,7 @@ export default function ServicesList() {
     const newStatus = record.status === "active" ? "inactive" : "active";
     setTogglingId(record.id);
     try {
-      await invokeWithAuth("manage_entity", {
-        body: { action: "set_status", payload: { id: record.id, status: newStatus } },
-      });
+      await setEntityStatus(record.id, newStatus, clientAccountId);
       setAllServices((prev) => prev.map((s) => s.id === record.id ? { ...s, status: newStatus } : s));
     } catch (e) {
       setError(e.message);

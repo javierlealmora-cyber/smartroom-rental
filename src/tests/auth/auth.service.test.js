@@ -330,19 +330,19 @@ describe('auth.service.js', () => {
 
   // ─── belongsToCompany ─────────────────────────────────────────────────────
   describe('belongsToCompany()', () => {
-    it('retorna true cuando el company_id del perfil coincide', async () => {
-      const profile = { id: 'u-1', company_id: 'comp-abc-123' }
+    it('retorna true cuando el client_account_id del perfil coincide', async () => {
+      const profile = { id: 'u-1', client_account_id: 'comp-abc-123' }
       const result = await belongsToCompany('comp-abc-123', profile)
       expect(result).toBe(true)
     })
 
-    it('retorna false cuando el company_id no coincide', async () => {
-      const profile = { id: 'u-1', company_id: 'comp-abc-123' }
+    it('retorna false cuando el client_account_id no coincide', async () => {
+      const profile = { id: 'u-1', client_account_id: 'comp-abc-123' }
       const result = await belongsToCompany('comp-xyz-999', profile)
       expect(result).toBe(false)
     })
 
-    it('retorna false cuando el perfil no tiene company_id', async () => {
+    it('retorna false cuando el perfil no tiene client_account_id', async () => {
       const profile = { id: 'u-1', role: 'lodger' }
       const result = await belongsToCompany('comp-abc-123', profile)
       expect(result).toBe(false)

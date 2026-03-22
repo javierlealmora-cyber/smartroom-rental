@@ -8,12 +8,12 @@
  * @param {string} optionText - texto visible de la opción a seleccionar
  */
 export async function antdSelect(page, fieldId, optionText) {
-  // Esperar a que el input del Select esté en el DOM
-  await page.waitForSelector(`#${fieldId}`, { timeout: 10_000 });
+  // Esperar a que el input del Select esté en el DOM (attached, no visible — AntD lo oculta visualmente)
+  await page.waitForSelector(`#${fieldId}`, { state: 'attached', timeout: 10_000 });
 
   // Usar XPath para subir desde el input hasta .ant-select-selector y hacer click
-  // Esto evita problemas con :has() y es más robusto con todas las versiones de AntD
-  const selectorDiv = page.locator(`xpath=//div[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
+  // Usar * en lugar de div porque en AntD v6+ el selector puede ser un <span>
+  const selectorDiv = page.locator(`xpath=//*[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
   await selectorDiv.click();
 
   const dropdown = page.locator('.ant-select-dropdown:visible');
@@ -41,7 +41,7 @@ export async function antdSelect(page, fieldId, optionText) {
  */
 export async function antdSelectInScope(scope, fieldId, optionText) {
   const page = scope.page ? scope.page() : scope;
-  const selectorDiv = scope.locator(`xpath=.//div[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
+  const selectorDiv = scope.locator(`xpath=.//*[contains(@class,"ant-select-selector")][.//input[@id="${fieldId}"]]`);
   await selectorDiv.click();
 
   const dropdown = page.locator('.ant-select-dropdown:visible');

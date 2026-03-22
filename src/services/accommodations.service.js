@@ -59,20 +59,28 @@ export async function createAccommodation(payload, rooms = []) {
   return result.data?.accommodation ?? result.data;
 }
 
-export async function updateAccommodation(id, patch) {
-  const result = await invokeWithAuth("manage_accommodation", {
-    body: { action: "update", payload: { id, ...patch } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function updateAccommodation(id, patch, clientAccountId) {
+  const { data, error } = await supabase
+    .from("accommodations")
+    .update(patch)
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function setAccommodationStatus(id, status) {
-  const result = await invokeWithAuth("manage_accommodation", {
-    body: { action: "set_status", payload: { id, status } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function setAccommodationStatus(id, status, clientAccountId) {
+  const { data, error } = await supabase
+    .from("accommodations")
+    .update({ status })
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 // ─── Rooms ────────────────────────────────────────────────────────────────────
@@ -88,18 +96,26 @@ export async function listRooms(accommodationId) {
   return data || [];
 }
 
-export async function updateRoom(id, patch) {
-  const result = await invokeWithAuth("manage_accommodation", {
-    body: { action: "update_room", payload: { id, ...patch } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function updateRoom(id, patch, clientAccountId) {
+  const { data, error } = await supabase
+    .from("rooms")
+    .update(patch)
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function setRoomStatus(id, status) {
-  const result = await invokeWithAuth("manage_accommodation", {
-    body: { action: "set_room_status", payload: { id, status } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+export async function setRoomStatus(id, status, clientAccountId) {
+  const { data, error } = await supabase
+    .from("rooms")
+    .update({ status })
+    .eq("id", id)
+    .eq("client_account_id", clientAccountId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }

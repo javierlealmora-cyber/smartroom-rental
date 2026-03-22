@@ -45,7 +45,7 @@ function formatEntityName(e) {
 
 export default function AccommodationsList() {
   const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [filterEntityId, setFilterEntityId] = useState(null);
@@ -53,6 +53,7 @@ export default function AccommodationsList() {
   const [_ownerEntities, setOwnerEntities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,7 +117,7 @@ export default function AccommodationsList() {
     e?.stopPropagation();
     const next = acc.status === "active" ? "inactive" : "active";
     try {
-      await setAccommodationStatus(acc.id, next);
+      await setAccommodationStatus(acc.id, next, clientAccountId);
       setAllAccommodations((prev) =>
         prev.map((a) => (a.id === acc.id ? { ...a, status: next } : a))
       );
@@ -219,13 +220,18 @@ export default function AccommodationsList() {
               return (
                 <Col key={acc.id} xs={24} sm={12} lg={8} xl={6}>
                   <Card
+                    onMouseEnter={() => setHoveredId(acc.id)}
+                    onMouseLeave={() => setHoveredId(null)}
                     style={{
                       borderRadius: 16,
                       border: "1px solid #E5E7EB",
                       background: "#FFFFFF",
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                      boxShadow: hoveredId === acc.id ? "0 8px 20px rgba(11,46,109,0.1)" : "0 2px 12px rgba(0,0,0,0.06)",
                       overflow: "hidden",
                       opacity: isActive ? 1 : 0.78,
+                      transform: hoveredId === acc.id ? "translateY(-3px)" : "translateY(0)",
+                      transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                      cursor: "pointer",
                     }}
                     styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}
                   >

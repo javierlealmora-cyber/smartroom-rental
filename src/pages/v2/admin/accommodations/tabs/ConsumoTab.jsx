@@ -195,7 +195,7 @@ function DetalleRegistros({ accId, rooms }) {
         open={!!editingRow}
         onCancel={() => setEditingRow(null)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" onFinish={onSaveEdit}>
           <Form.Item label="Consumo (kWh)" name="kwh" rules={[{ required: true, message: "Valor requerido" }]}>

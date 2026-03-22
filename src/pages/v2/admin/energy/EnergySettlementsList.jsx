@@ -44,7 +44,7 @@ export default function EnergySettlementsList() {
           .from("energy_settlements")
           .select(`
             *,
-            lodger:lodgers(id, full_name, email),
+            lodger:profiles(id, full_name, email),
             room:rooms(id, number),
             accommodation:accommodations(id, name),
             energy_bill:energy_bills(id, supplier, issue_date, period_start, period_end)

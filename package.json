@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode development",
+    "dev": "vite --mode development --host",
     "build": "vite build --mode production",
     "build:maintenance": "vite build --mode production && node scripts/enable-maintenance.js",
     "build:pre": "vite build --mode staging",

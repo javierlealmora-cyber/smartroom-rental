@@ -47,7 +47,7 @@ export default function BulletinsList() {
         .from("bulletins")
         .select(`
           *,
-          lodger:lodgers(id, full_name, email),
+          lodger:profiles(id, full_name, email),
           accommodation:accommodations(id, name),
           room:rooms(id, number)
         `)

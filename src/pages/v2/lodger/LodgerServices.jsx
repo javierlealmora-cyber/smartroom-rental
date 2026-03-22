@@ -46,9 +46,10 @@ export default function LodgerServices() {
     setError(null);
     try {
       const { data: lodger, error: lErr } = await supabase
-        .from("lodgers")
+        .from("profiles")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
+        .eq("role", "lodger")
         .maybeSingle();
 
       if (lErr || !lodger) { setServices([]); return; }

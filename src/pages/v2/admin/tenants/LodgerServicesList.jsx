@@ -50,7 +50,7 @@ export default function LodgerServicesList() {
           .from("lodger_services")
           .select(`
             *,
-            lodger:lodgers(id, full_name, email),
+            lodger:profiles(id, full_name, email),
             room:rooms(id, number, accommodation_id),
             accommodation_service:accommodation_services(
               id,

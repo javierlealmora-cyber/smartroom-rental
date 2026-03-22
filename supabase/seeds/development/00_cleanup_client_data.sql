@@ -11,12 +11,7 @@ SET session_replication_role = 'replica';
 -- 1. Eliminar asignaciones de inquilinos a habitaciones
 DELETE FROM lodger_room_assignments;
 
--- 2. Eliminar datos extendidos de inquilinos (si existe la tabla)
-DELETE FROM lodgers WHERE id IN (
-  SELECT id FROM profiles WHERE role = 'lodger'
-);
-
--- 3. Eliminar habitaciones
+-- 2. Eliminar habitaciones
 DELETE FROM rooms;
 
 -- 4. Eliminar alojamientos

@@ -46,7 +46,7 @@ function KpiPill({ value, label, bg, color }) {
 export default function EntitiesList() {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const { planCode } = useTenant();
 
   const canWrite = role !== "viewer";
@@ -59,6 +59,7 @@ export default function EntitiesList() {
   const [entityKpis, setEntityKpis] = useState({});
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [hoveredId, setHoveredId] = useState(null);
 
   const ownersCountForLimit = owners.length;
   const limitReached = useMemo(() =>
@@ -110,12 +111,14 @@ export default function EntitiesList() {
         if (entitiesToLoadKpis.length > 0) {
           const { data: accs } = await supabase
             .from("accommodations").select("id, owner_entity_id")
+            .eq("client_account_id", clientAccountId)
             .in("owner_entity_id", entitiesToLoadKpis.map((e) => e.id));
           const accIds = (accs || []).map((a) => a.id);
           let roomsByAcc = {};
           if (accIds.length > 0) {
             const { data: rooms } = await supabase
               .from("rooms").select("id, accommodation_id, status")
+              .eq("client_account_id", clientAccountId)
               .in("accommodation_id", accIds);
             (rooms || []).forEach((r) => {
               if (!roomsByAcc[r.accommodation_id]) roomsByAcc[r.accommodation_id] = [];
@@ -169,11 +172,15 @@ export default function EntitiesList() {
           </Typography.Title>
 
         </div>
-        <Button type="primary" icon={<PlusOutlined />} disabled={!canWrite || limitReached}
-          onClick={() => navigate("/v2/admin/entidades/nueva")}
-          style={{ borderRadius: 20, fontWeight: 600, height: 38 }}>
-          Nueva entidad
-        </Button>
+        <Tooltip 
+          title={limitReached ? `Has alcanzado el límite de tu plan (máx. ${maxOwners} entidad${maxOwners !== 1 ? 'es' : ''}). Actualiza tu plan para añadir más.` : undefined}
+        >
+          <Button type="primary" icon={<PlusOutlined />} disabled={!canWrite || limitReached}
+            onClick={() => navigate("/v2/admin/entidades/nueva")}
+            style={{ borderRadius: 20, fontWeight: 600, height: 38 }}>
+            Nueva entidad
+          </Button>
+        </Tooltip>
       </Row>
 
       {/* ── Filtros ── */}
@@ -224,12 +231,17 @@ export default function EntitiesList() {
             return (
               <Col key={entity.id} xs={24} sm={12} lg={6}>
                 <Card
+                  onMouseEnter={() => setHoveredId(entity.id)}
+                  onMouseLeave={() => setHoveredId(null)}
                   style={{
                     borderRadius: 16, overflow: "hidden",
                     border: "1px solid #E5E7EB",
                     opacity: isActive ? 1 : 0.78,
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                    boxShadow: hoveredId === entity.id ? "0 8px 20px rgba(11,46,109,0.1)" : "0 2px 12px rgba(0,0,0,0.06)",
                     background: "#fff",
+                    transform: hoveredId === entity.id ? "translateY(-3px)" : "translateY(0)",
+                    transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                    cursor: "pointer",
                   }}
                   styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}>
 

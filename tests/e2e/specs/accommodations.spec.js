@@ -7,8 +7,6 @@
 import { test, expect } from '@playwright/test';
 import { antdSelect, extractIdFromUrl, waitForLoadingDone } from '../helpers/antd.js';
 
-test.describe.configure({ mode: 'serial' });
-
 const TS     = Date.now();
 const ENT_LN = `E2E Acc ${TS}`;            // apellido entidad propietaria
 const ENT_EMAIL = `e2e.acc.${TS}@test.smartrent.com`;
@@ -25,33 +23,53 @@ const state = {
 
 test.describe('Alojamientos + Habitaciones CRUD @regression', () => {
 
+  test.describe.configure({ mode: 'serial' });
+
   test.skip(!process.env.TEST_MANAGER_EMAIL,
     'Credenciales de staging no configuradas. Rellenar tests/e2e/.env.e2e');
 
-  // ── Setup: crear entidad propietaria de test ─────────────────────────────
-  test('00 - setup: crear entidad propietaria', async ({ page }) => {
+  // ── Setup: obtener o crear entidad propietaria ───────────────────────────
+  test('00 - setup: obtener entidad propietaria', async ({ page }) => {
+    // Intentar crear una entidad nueva
     await page.goto('/v2/admin/entidades/nueva');
-
-    await antdSelect(page, 'legal_type', 'Persona física');
-    await page.locator('#first_name').fill('E2E');
-    await page.locator('#last_name1').fill(ENT_LN);
-    await page.locator('#billing_email').fill(ENT_EMAIL);
-    await page.locator('#city').fill('Barcelona');
-    await antdSelect(page, 'province', 'Barcelona');
-
-    await page.getByRole('button', { name: 'Crear' }).click();
-    await page.waitForURL('**/v2/admin/entidades', { timeout: 15_000 });
     await waitForLoadingDone(page);
 
-    // Obtener ID buscando la entidad y clicando Editar
-    await page.locator('input[placeholder*="Buscar"]').fill(ENT_LN);
-    await waitForLoadingDone(page);
+    const crearBtn = page.getByRole('button', { name: 'Crear' });
+    const isDisabled = await crearBtn.getAttribute('disabled') !== null ||
+      await crearBtn.evaluate(el => el.disabled).catch(() => true);
 
-    const card = page.locator('.ant-card').filter({ hasText: ENT_LN });
-    await expect(card).toBeVisible({ timeout: 10_000 });
-    await card.getByRole('button', { name: 'Editar' }).click();
+    if (!isDisabled) {
+      // Cuenta con client_account_id — podemos crear
+      await antdSelect(page, 'legal_type', 'Persona física');
+      await page.locator('#first_name').fill('E2E');
+      await page.locator('#last_name1').fill(ENT_LN);
+      await page.locator('#tax_id').fill('12345678A');
+      await page.locator('#billing_email').fill(ENT_EMAIL);
+      await page.locator('#street').fill('Calle Mayor');
+      await page.locator('#street_number').fill('1');
+      await page.locator('#zip').fill('08001');
+      await page.locator('#city').fill('Barcelona');
+      await antdSelect(page, 'province', 'Barcelona');
+      await crearBtn.click();
+      await page.waitForURL('**/v2/admin/entidades', { timeout: 15_000 });
+      await waitForLoadingDone(page);
+      await page.locator('input[placeholder*="Buscar"]').fill(ENT_LN);
+      await waitForLoadingDone(page);
+      const card = page.locator('.ant-card').filter({ hasText: ENT_LN });
+      await expect(card).toBeVisible({ timeout: 10_000 });
+      await card.getByRole('button', { name: 'Editar' }).click();
+    } else {
+      // Sin client_account_id (superadmin) — usar primera entidad existente
+      await page.goto('/v2/admin/entidades');
+      await waitForLoadingDone(page);
+      const firstCard = page.locator('.ant-card').filter({
+        has: page.getByRole('button', { name: 'Editar' })
+      }).first();
+      await expect(firstCard).toBeVisible({ timeout: 10_000 });
+      await firstCard.getByRole('button', { name: 'Editar' }).click();
+    }
+
     await page.waitForURL('**/entidades/**/editar', { timeout: 10_000 });
-
     state.entityId = extractIdFromUrl(page, 'entidades');
     expect(state.entityId).toBeTruthy();
   });
@@ -247,6 +265,151 @@ test.describe('Alojamientos + Habitaciones CRUD @regression', () => {
 
     // KPIs: Total, Ocupado, Libres
     await expect(accCard.locator('div', { hasText: 'Libres' }).first()).toBeVisible();
+  });
+
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests 08-10: CRUD de Habitaciones desde AccommodationDetail
+// Bloque independiente — encuentra un alojamiento existente sin depender de 00-07
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('Habitaciones CRUD desde AccommodationDetail @regression', () => {
+
+  test.describe.configure({ mode: 'serial' });
+
+  test.skip(!process.env.TEST_MANAGER_EMAIL,
+    'Credenciales de staging no configuradas. Rellenar tests/e2e/.env.e2e');
+
+  const roomState = { accId: null, newRoomNumber: null };
+
+  // ── R0 · Obtener un alojamiento existente para el CRUD ───────────────────
+  test('08-setup - obtener alojamiento para CRUD de habitaciones', async ({ page }) => {
+    await page.goto('/v2/admin/alojamientos');
+    await waitForLoadingDone(page);
+
+    // Tomar el primer alojamiento con botón Editar
+    const firstCard = page.locator('.ant-card').filter({
+      has: page.getByRole('button', { name: 'Editar' }),
+    }).first();
+    await expect(firstCard).toBeVisible({ timeout: 10_000 });
+    await firstCard.getByRole('button', { name: 'Editar' }).click();
+    await page.waitForURL('**/alojamientos/**/editar', { timeout: 10_000 });
+
+    roomState.accId = extractIdFromUrl(page, 'alojamientos');
+    expect(roomState.accId).toBeTruthy();
+  });
+
+  // ── 08 · Añadir habitación desde AccommodationDetail (tab Datos) ─────────
+  test('08 - añadir habitación desde AccommodationDetail (tab Datos)', async ({ page }) => {
+    expect(roomState.accId).toBeTruthy();
+
+    await page.goto(`/v2/admin/alojamientos/${roomState.accId}/habitaciones`);
+    await waitForLoadingDone(page);
+
+    // Clicar el tab "Datos del Alojamiento" (en AntD v6 los tabs son <button>)
+    await page.getByRole('button', { name: 'Datos del Alojamiento' }).click();
+    await waitForLoadingDone(page);
+
+    // Contar habitaciones antes de añadir
+    const countBefore = await page.locator('table tbody tr').count();
+
+    // Abrir el formulario de nueva habitación (botón "plus Añadir" en el header de la card)
+    // Antes de abrir el form: .last() = el botón del header de Habitaciones (no el de gasto adicional)
+    await page.getByRole('button', { name: 'Añadir' }).last().click();
+
+    // Rellenar número de habitación (campo único obligatorio)
+    await page.getByPlaceholder('Nº').fill('T99');
+
+    // Confirmar — cuando el form está abierto hay dos botones "Añadir": header + submit
+    // el .last() apunta al submit del form
+    await page.getByRole('button', { name: 'Añadir' }).last().click();
+    await waitForLoadingDone(page);
+
+    // La nueva habitación T99 aparece en la tabla
+    await expect(
+      page.locator('table tbody').locator('td', { hasText: 'T99' })
+    ).toBeVisible({ timeout: 10_000 });
+
+    // El contador aumentó
+    const countAfter = await page.locator('table tbody tr').count();
+    expect(countAfter).toBeGreaterThan(countBefore);
+
+    roomState.newRoomNumber = 'T99';
+  });
+
+  // ── 09 · Editar habitación desde AccommodationDetail ────────────────────
+  test('09 - editar habitación desde AccommodationDetail (tab Datos)', async ({ page }) => {
+    expect(roomState.accId).toBeTruthy();
+    expect(roomState.newRoomNumber).toBeTruthy();
+
+    await page.goto(`/v2/admin/alojamientos/${roomState.accId}/habitaciones`);
+    await waitForLoadingDone(page);
+
+    await page.getByRole('button', { name: 'Datos del Alojamiento' }).click();
+    await waitForLoadingDone(page);
+
+    // Encontrar la fila de T99 y clicar su botón Editar
+    const row = page.locator('table tbody tr').filter({ hasText: roomState.newRoomNumber });
+    await expect(row).toBeVisible({ timeout: 10_000 });
+    await row.getByRole('button', { name: 'Editar' }).click();
+
+    // Aparece el formulario de edición (texto "Editando Hab.")
+    await expect(page.getByText(/Editando Hab\./)).toBeVisible({ timeout: 5_000 });
+
+    // Cambiar el número — único input[placeholder="Nº"] en el form de edición inline
+    await page.getByPlaceholder('Nº').fill('T99-UPD');
+
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await waitForLoadingDone(page);
+
+    // La habitación actualizada aparece en la tabla
+    await expect(
+      page.locator('table tbody').locator('td', { hasText: 'T99-UPD' })
+    ).toBeVisible({ timeout: 10_000 });
+
+    roomState.newRoomNumber = 'T99-UPD';
+  });
+
+  // ── 10 · Cambiar estado habitación: free → maintenance → free ────────────
+  test('10 - toggle estado habitación (free → mantenimiento → libre)', async ({ page }) => {
+    expect(roomState.accId).toBeTruthy();
+    expect(roomState.newRoomNumber).toBeTruthy();
+
+    await page.goto(`/v2/admin/alojamientos/${roomState.accId}/habitaciones`);
+    await waitForLoadingDone(page);
+
+    await page.getByRole('button', { name: 'Datos del Alojamiento' }).click();
+    await waitForLoadingDone(page);
+
+    const row = page.locator('table tbody tr').filter({ hasText: roomState.newRoomNumber });
+    await expect(row).toBeVisible({ timeout: 10_000 });
+
+    // ── Poner en Mantenimiento ───────────────────────────────────────────────
+    await row.getByRole('button', { name: 'Desactivar' }).click();
+
+    // Confirmar el Popconfirm de AntD
+    const popconfirm = page.locator('.ant-popconfirm');
+    await expect(popconfirm).toBeVisible({ timeout: 5_000 });
+    await popconfirm.getByRole('button', { name: 'Sí' }).click();
+    await waitForLoadingDone(page);
+
+    // El estado de la fila cambió a Mantenimiento
+    await expect(
+      row.locator('text=Mantenimiento')
+    ).toBeVisible({ timeout: 10_000 });
+
+    // ── Volver a Libre (toggle: maintenance → free) ──────────────────────────
+    // El botón sigue diciendo "Desactivar" (Reactivar sólo aparece con status=inactive)
+    await row.getByRole('button', { name: 'Desactivar' }).click();
+    const popconfirm2 = page.locator('.ant-popconfirm');
+    await expect(popconfirm2).toBeVisible({ timeout: 5_000 });
+    await popconfirm2.getByRole('button', { name: 'Sí' }).click();
+    await waitForLoadingDone(page);
+
+    // El estado vuelve a Libre
+    await expect(
+      row.locator('text=Libre')
+    ).toBeVisible({ timeout: 10_000 });
   });
 
 });
