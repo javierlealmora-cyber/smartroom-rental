@@ -1,5 +1,22 @@
 # Instrucciones para Actualizar Baseline sin Docker
 
+**Última actualización:** 2026-03-22  
+**Versión del baseline:** 2.0  
+**Estado:** ✅ Actualizado con esquema real de DEV
+
+---
+
+## 📋 Cambios en Esta Versión
+
+- ✅ Tabla `payer_rental` con campos directos (sin `entity_id`)
+- ✅ Campos de inquilino en tabla `profiles`
+- ✅ Constraint `onboarding_status` actualizado
+- ✅ Seeds actualizados para nueva estructura
+
+Ver detalles completos en `CHANGELOG.md`
+
+---
+
 ## Método 1: Desde Supabase Dashboard (Más Simple)
 
 ### Paso 1: Acceder al SQL Editor

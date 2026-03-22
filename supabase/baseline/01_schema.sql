@@ -1,7 +1,11 @@
 -- ============================================================================
 -- BASELINE CERO: Schema Completo - SmartRoom Rental
 -- Descripción: Estructura completa de base de datos (19 tablas)
--- Última actualización: 2026-03-22 - Añadidos campos de inquilino y tabla payer_rental
+-- Última actualización: 2026-03-22
+-- Cambios en esta versión:
+--   - Añadidos campos de inquilino a tabla profiles (first_name, last_name1, etc.)
+--   - Añadida tabla payer_rental con campos directos (sin entity_id)
+--   - Actualizado constraint onboarding_status en profiles
 -- ============================================================================
 
 -- ============================================================================
@@ -114,13 +118,14 @@ CREATE TABLE public.profiles (
   
   -- Onboarding
   onboarding_status text NOT NULL DEFAULT 'none'
-    CHECK (onboarding_status IN ('none','in_progress','payment_pending','active')),
+    CHECK (onboarding_status IN ('none','in_progress','payment_pending','active','invited','pending_checkout','inactive')),
   is_primary_admin boolean NOT NULL DEFAULT false,
   
   -- Campos de inquilino (añadidos 2026-03-17)
   first_name text,
-  last_name text,
+  last_name1 text,
   last_name2 text,
+  nickname text,
   document_type text CHECK (document_type IN ('dni','nie','passport','other')),
   document_id text,
   gender text CHECK (gender IN ('male','female','other')),
@@ -310,17 +315,27 @@ CREATE TABLE public.payer_rental (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
   lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  entity_id uuid REFERENCES public.entities(id) ON DELETE SET NULL,
+  
+  -- Tipo de pagador
+  payer_type text NOT NULL CHECK (payer_type IN ('individual', 'company')),
+  
+  -- Datos de persona física
+  first_name text,
+  last_name1 text,
+  last_name2 text,
+  
+  -- Datos de empresa
+  legal_name text,
+  
+  -- Observaciones
+  notes text,
   
   -- Estado
   is_active boolean NOT NULL DEFAULT true,
   
   -- Auditoria
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  
-  -- Constraint: un pagador único por inquilino y entidad
-  UNIQUE (lodger_id, entity_id)
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- ============================================================================
