@@ -5,17 +5,18 @@ import { listPayers, createPayer, updatePayer, togglePayerStatus } from "../../.
 
 const { Text } = Typography;
 
-export default function PayersList({ lodgerId, clientAccountId }) {
+export default function PayersList({ lodgerId, clientAccountId, hasRoomAssignment = true }) {
   const [payers, setPayers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayer, setEditingPayer] = useState(null);
   const [form] = Form.useForm();
   const [payerType, setPayerType] = useState('individual');
 
   useEffect(() => {
-    if (lodgerId) loadPayers();
-  }, [lodgerId]);
+    if (lodgerId && hasRoomAssignment) loadPayers();
+  }, [lodgerId, hasRoomAssignment]);
 
   const loadPayers = async () => {
     setLoading(true);
@@ -30,6 +31,9 @@ export default function PayersList({ lodgerId, clientAccountId }) {
   };
 
   const onFinish = async (values) => {
+    if (saving) return; // Prevenir doble submit
+    
+    setSaving(true);
     try {
       const payload = {
         client_account_id: clientAccountId,
@@ -50,12 +54,14 @@ export default function PayersList({ lodgerId, clientAccountId }) {
         message.success('Pagador añadido correctamente');
       }
 
-      loadPayers();
+      await loadPayers();
       setModalOpen(false);
       form.resetFields();
       setEditingPayer(null);
     } catch (e) {
       message.error(`Error al guardar pagador: ${e.message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -82,6 +88,19 @@ export default function PayersList({ lodgerId, clientAccountId }) {
     setPayerType('individual');
     setModalOpen(true);
   };
+
+  if (!hasRoomAssignment) {
+    return (
+      <Card title="Pagadores" size="small">
+        <Alert
+          message="Habitación requerida"
+          description="El inquilino debe tener una habitación asignada antes de poder añadir pagadores. Por favor, asigna una habitación primero."
+          type="warning"
+          showIcon
+        />
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -148,6 +167,7 @@ export default function PayersList({ lodgerId, clientAccountId }) {
         }}
         onOk={() => form.submit()}
         okText={editingPayer ? "Guardar" : "Añadir"}
+        confirmLoading={saving}
       >
         <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ payer_type: 'individual' }}>
           <Form.Item
