@@ -8,12 +8,13 @@ import {
   Alert, Button, Card, Checkbox, Col, DatePicker, Form, InputNumber,
   Row, Select, Space, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, InfoCircleOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, CheckOutlined, InfoCircleOutlined, SaveOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { createLodger } from "../../../../services/lodgers.service";
 import { listAccommodations, listRooms } from "../../../../services/accommodations.service";
 import LodgerFormFields from "./components/LodgerFormFields";
+import PayersList from "./components/PayersList";
 
 const { Title, Text } = Typography;
 
@@ -36,6 +37,8 @@ export default function TenantCreate() {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
   const [billingSameAsMoveIn, setBillingSameAsMoveIn] = useState(true);
+  const [createdLodgerId, setCreatedLodgerId] = useState(null);
+  const [createdLodgerName, setCreatedLodgerName] = useState("");
 
   const loadAccommodations = useCallback(async () => {
     try {
@@ -121,14 +124,71 @@ export default function TenantCreate() {
       }
 
       const newLodger = await createLodger(payload);
-      // Redirigir a edición para permitir añadir pagadores
-      navigate(`/v2/admin/inquilinos/${newLodger.id}/editar`);
+      // Guardar ID del inquilino creado para mostrar sección de pagadores
+      setCreatedLodgerId(newLodger.id);
+      setCreatedLodgerName(fullName);
+      // Scroll to top para ver la sección de pagadores
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       setSaveError(e.message);
     } finally {
       setSaving(false);
     }
   };
+
+  // Si ya se creó el inquilino, mostrar sección de pagadores
+  if (createdLodgerId) {
+    return (
+      <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+        <div style={{ marginBottom: 28 }}>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(backPath)}
+            style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}
+          >
+            {preselectedAccId ? "Volver al alojamiento" : "Inquilinos"}
+          </Button>
+          <Title level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px" }}>
+            <CheckOutlined style={{ color: "#52c41a", marginRight: 12 }} />
+            Inquilino Registrado Exitosamente
+          </Title>
+          <Text type="secondary" style={{ fontSize: 15 }}>
+            {createdLodgerName} ha sido creado. Ahora puedes añadir los pagadores.
+          </Text>
+        </div>
+
+        <Alert
+          message="Gestión de Pagadores"
+          description="Añade las personas o entidades que pagarán el alquiler de este inquilino (padre, madre, empresa, etc.). Puedes hacerlo ahora o más tarde desde la edición del inquilino."
+          type="info"
+          showIcon
+          icon={<InfoCircleOutlined />}
+          style={{ marginBottom: 24 }}
+        />
+
+        <Card title="Pagadores" style={{ marginBottom: 24 }}>
+          <PayersList lodgerId={createdLodgerId} clientAccountId={_clientAccountId} />
+        </Card>
+
+        <Row justify="end">
+          <Col>
+            <Space>
+              <Button onClick={() => navigate(backPath)}>
+                Finalizar
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => navigate(`/v2/admin/inquilinos/${createdLodgerId}/editar`)}
+              >
+                Ir a Editar Inquilino
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </V2Layout>
+    );
+  }
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
@@ -171,7 +231,7 @@ export default function TenantCreate() {
 
               <Alert
                 message="Gestión de Pagadores"
-                description="Podrás añadir los pagadores (padre, madre, empresa, etc.) después de registrar el inquilino."
+                description="Después de registrar el inquilino, podrás añadir los pagadores (padre, madre, empresa, etc.) en la misma pantalla."
                 type="info"
                 showIcon
                 icon={<InfoCircleOutlined />}
