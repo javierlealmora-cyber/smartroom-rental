@@ -437,7 +437,11 @@ export default function TenantEdit() {
       {lodger && (
         <Row gutter={[20, 20]} style={{ marginTop: 20 }}>
           <Col xs={24}>
-            <PayersList lodgerId={lodger.id} clientAccountId={clientAccountId} />
+            <PayersList 
+              lodgerId={lodger.id} 
+              clientAccountId={clientAccountId}
+              hasRoomAssignment={!!lodger.assignments?.find((a) => !a.move_out_date)}
+            />
           </Col>
         </Row>
       )}

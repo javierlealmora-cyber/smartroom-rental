@@ -39,6 +39,7 @@ export default function TenantCreate() {
   const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
   const [createdLodgerId, setCreatedLodgerId] = useState(null);
   const [createdLodgerName, setCreatedLodgerName] = useState("");
+  const [createdWithRoom, setCreatedWithRoom] = useState(false);
 
   const loadAccommodations = useCallback(async () => {
     try {
@@ -151,6 +152,7 @@ export default function TenantCreate() {
       // Guardar ID del inquilino creado para mostrar sección de pagadores
       setCreatedLodgerId(newLodger.id);
       setCreatedLodgerName(fullName);
+      setCreatedWithRoom(!!selectedRoomId);
       // Scroll to top para ver la sección de pagadores
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
@@ -182,18 +184,34 @@ export default function TenantCreate() {
           </Text>
         </div>
 
-        <Alert
-          message="Gestión de Pagadores"
-          description="Añade las personas o entidades que pagarán el alquiler de este inquilino (padre, madre, empresa, etc.). Puedes hacerlo ahora o más tarde desde la edición del inquilino."
-          type="info"
-          showIcon
-          icon={<InfoCircleOutlined />}
-          style={{ marginBottom: 24 }}
-        />
+        {createdWithRoom ? (
+          <>
+            <Alert
+              message="Gestión de Pagadores"
+              description="Añade las personas o entidades que pagarán el alquiler de este inquilino (padre, madre, empresa, etc.). Puedes hacerlo ahora o más tarde desde la edición del inquilino."
+              type="info"
+              showIcon
+              icon={<InfoCircleOutlined />}
+              style={{ marginBottom: 24 }}
+            />
 
-        <Card title="Pagadores" style={{ marginBottom: 24 }}>
-          <PayersList lodgerId={createdLodgerId} clientAccountId={_clientAccountId} />
-        </Card>
+            <Card title="Pagadores" style={{ marginBottom: 24 }}>
+              <PayersList 
+                lodgerId={createdLodgerId} 
+                clientAccountId={_clientAccountId}
+                hasRoomAssignment={true}
+              />
+            </Card>
+          </>
+        ) : (
+          <Alert
+            message="Sin habitación asignada"
+            description="El inquilino fue creado sin habitación asignada. Debes asignarle una habitación antes de poder añadir pagadores. Ve a la edición del inquilino para asignar una habitación."
+            type="warning"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+        )}
 
         <Row justify="end">
           <Col>
