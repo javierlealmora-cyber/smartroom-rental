@@ -169,28 +169,46 @@ export default function DashboardAdmin() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const today = new Date().toISOString().split("T")[0];
       const [
         { data: entities },
         { data: accommodations },
         { data: rooms },
+        { data: activeAssignments },
         { data: lodgers },
       ] = await Promise.all([
         supabase.from("entities").select("id,type,status").eq("client_account_id", clientAccountId),
         supabase.from("accommodations").select("id,status").eq("client_account_id", clientAccountId),
-        supabase.from("rooms").select("id,status").eq("client_account_id", clientAccountId),
+        supabase.from("rooms").select("id,is_maintenance").eq("client_account_id", clientAccountId),
+        supabase.from("lodger_room_assignments").select("room_id,move_out_date")
+          .eq("client_account_id", clientAccountId)
+          .or(`move_out_date.is.null,move_out_date.gt.${today}`),
         supabase.from("profiles").select("id,onboarding_status").eq("role", "lodger").eq("client_account_id", clientAccountId),
       ]);
 
       const allRooms   = rooms   || [];
       const allLodgers = lodgers || [];
 
+      // Compute room stats from assignments
+      const assignByRoom = {};
+      (activeAssignments || []).forEach((a) => { assignByRoom[a.room_id] = a; });
+
+      let freeRooms = 0, occupiedRooms = 0, pendingCheckout = 0;
+      allRooms.forEach((r) => {
+        if (r.is_maintenance) return;
+        const asgn = assignByRoom[r.id];
+        if (!asgn) freeRooms++;
+        else if (!asgn.move_out_date) occupiedRooms++;
+        else pendingCheckout++;
+      });
+
       setStats({
         totalEntities:      (entities || []).filter(e => e.type === "owner").length,
         totalAccommodations:(accommodations || []).filter(a => a.status === "active").length,
         totalRooms:         allRooms.length,
-        freeRooms:          allRooms.filter(r => r.status === "free").length,
-        occupiedRooms:      allRooms.filter(r => r.status === "occupied").length,
-        pendingCheckout:    allRooms.filter(r => r.status === "pending_checkout").length,
+        freeRooms,
+        occupiedRooms,
+        pendingCheckout,
         activeTenants:      allLodgers.filter(l => l.onboarding_status === "active").length,
         pendingTenants:     allLodgers.filter(l => l.onboarding_status === "pending_checkout").length,
       });

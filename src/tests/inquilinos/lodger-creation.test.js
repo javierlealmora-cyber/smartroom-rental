@@ -1,16 +1,18 @@
 /**
  * TEST SET: Creación de inquilinos — estado inicial y asignación de habitación
  * Módulo: src/pages/v2/admin/tenants/TenantCreate.jsx
+ *         src/pages/v2/admin/tenants/TenantEdit.jsx
  *         src/services/lodgers.service.js
  *
  * Valida:
  *   1. El payload de createLodger incluye onboarding_status: 'active' cuando se
- *      asigna habitación en el momento de creación.
- *   2. El servicio updateLodger filtra campos inmutables antes de enviar al DB.
- *   3. El servicio setLodgerStatus actualiza onboarding_status (no status).
- *   4. TenantEdit lee onboarding_status (no status) para poblar el formulario.
- *   5. Regresión: NO se puede crear un inquilino sin habitación con estado activo
- *      (la EF requiere room_id para asignación).
+ *      asigna habitación; 'invited' cuando no hay habitación.
+ *   2. El payload incluye todos los campos de nombre y dirección.
+ *   3. El servicio updateLodger filtra campos inmutables antes de enviar al DB.
+ *   4. TenantEdit lee onboarding_status y lee campos de nombre individuales
+ *      (first_name / last_name1 / last_name2) directamente del perfil —
+ *      ya NO los extrae dividiendo full_name.
+ *   5. TenantEdit incluye los campos de dirección en el formulario.
  *
  * Estrategia: funciones puras que replican la lógica de construcción del payload
  * en TenantCreate.jsx y lodgers.service.js — sin renderizar UI ni llamar a Supabase.
@@ -22,35 +24,51 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 /**
  * Construye el payload que TenantCreate.jsx pasa a createLodger().
  * Refleja fielmente el bloque onFinish() del componente.
+ *
+ * Incluye: nombre (3 partes), nickname, género, contacto, documento,
+ * dirección completa (6 campos), y datos de habitación si selectedRoomId
+ * está presente.
  */
 function buildCreateLodgerPayload(values, { selectedRoomId, selectedRoom }) {
   const fullName = [values.first_name, values.last_name1, values.last_name2]
     .filter(Boolean).join(' ').trim()
 
-  const moveInDate = values.move_in_date?.format
-    ? values.move_in_date.format('YYYY-MM-DD')
-    : values.move_in_date
-
-  const billingDate = values.billing_start_date?.format
-    ? values.billing_start_date.format('YYYY-MM-DD')
-    : (moveInDate)
-
-  return {
+  const payload = {
     full_name: fullName,
     first_name: values.first_name || null,
     last_name1: values.last_name1 || null,
     last_name2: values.last_name2 || null,
+    nickname: values.nickname || null,
     gender: values.gender || null,
     email: values.email,
     phone: values.phone || null,
     document_id: values.document_id || null,
-    onboarding_status: 'active',          // ← siempre activo al asignar habitación
-    room_id: selectedRoomId,
-    accommodation_id: values.accommodation_id,
-    move_in_date: moveInDate,
-    billing_start_date: billingDate,
-    monthly_rent: selectedRoom?.monthly_rent ?? null,
+    address_street: values.address_street || null,
+    address_floor: values.address_floor || null,
+    address_postal_code: values.address_postal_code || null,
+    address_city: values.address_city || null,
+    address_province: values.address_province || null,
+    address_country: values.address_country || null,
+    // Con habitación → active; sin habitación → invited
+    onboarding_status: selectedRoomId ? 'active' : 'invited',
   }
+
+  if (selectedRoomId) {
+    const moveInDate = values.move_in_date?.format
+      ? values.move_in_date.format('YYYY-MM-DD')
+      : values.move_in_date
+    const billingDate = values.billing_start_date?.format
+      ? values.billing_start_date.format('YYYY-MM-DD')
+      : moveInDate
+
+    payload.room_id = selectedRoomId
+    payload.accommodation_id = values.accommodation_id
+    payload.move_in_date = moveInDate
+    payload.billing_start_date = billingDate
+    payload.monthly_rent = selectedRoom?.monthly_rent ?? null
+  }
+
+  return payload
 }
 
 // ─── Réplica de la lógica de updateLodger (lodgers.service.js) ───────────────
@@ -69,19 +87,27 @@ function buildUpdatePatch(patch) {
 /**
  * Construye los valores iniciales del formulario de edición.
  * Refleja fielmente form.setFieldsValue() en TenantEdit.jsx.
+ *
+ * IMPORTANTE: Lee first_name / last_name1 / last_name2 directamente del perfil
+ * — NO los extrae dividiendo full_name. Incluye los 6 campos de dirección.
  */
 function buildFormInitialValues(profileData) {
-  const nameParts = (profileData.full_name || '').trim().split(' ')
   return {
-    first_name: nameParts[0] || '',
-    last_name1: nameParts[1] || '',
-    last_name2: nameParts.slice(2).join(' ') || '',
+    first_name: profileData.first_name || '',
+    last_name1: profileData.last_name1 || '',
+    last_name2: profileData.last_name2 || '',
     nickname: profileData.nickname || '',
     email: profileData.email,
     phone: profileData.phone || '',
     document_id: profileData.document_id || '',
     status: profileData.onboarding_status,   // ← lee onboarding_status, NO status
     gender: profileData.gender || null,
+    address_street: profileData.address_street || '',
+    address_floor: profileData.address_floor || '',
+    address_postal_code: profileData.address_postal_code || '',
+    address_city: profileData.address_city || '',
+    address_province: profileData.address_province || '',
+    address_country: profileData.address_country || '',
   }
 }
 
@@ -94,10 +120,17 @@ const VALID_FORM_VALUES = {
   first_name: 'Ana',
   last_name1: 'García',
   last_name2: 'López',
+  nickname: 'Anita',
   gender: 'female',
   email: 'ana.garcia@example.com',
   phone: '666111222',
   document_id: '12345678A',
+  address_street: 'Calle Mayor, 5',
+  address_floor: '2º A',
+  address_postal_code: '28001',
+  address_city: 'Madrid',
+  address_province: 'Madrid',
+  address_country: 'España',
   accommodation_id: ACC_ID,
   move_in_date: '2026-03-17',
   billing_start_date: null,
@@ -176,6 +209,134 @@ describe('Creación de inquilino — estado inicial', () => {
       expect(payload.document_id).toBeNull()
       expect(payload.gender).toBeNull()
     })
+
+    it('nickname se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.nickname).toBe('Anita')
+    })
+
+    it('nickname vacío es null en el payload', () => {
+      const values = { ...VALID_FORM_VALUES, nickname: '' }
+      const payload = buildCreateLodgerPayload(values, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.nickname).toBeNull()
+    })
+  })
+
+  describe('onboarding_status al crear SIN habitación', () => {
+    it('el payload incluye onboarding_status: "invited" cuando no hay habitación', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: null,
+        selectedRoom: null,
+      })
+      expect(payload.onboarding_status).toBe('invited')
+    })
+
+    it('el payload NO incluye room_id cuando no hay habitación', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: null,
+        selectedRoom: null,
+      })
+      expect(payload.room_id).toBeUndefined()
+    })
+
+    it('el payload NO incluye move_in_date cuando no hay habitación', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: null,
+        selectedRoom: null,
+      })
+      expect(payload.move_in_date).toBeUndefined()
+    })
+  })
+
+  describe('Dirección en el payload de creación', () => {
+    it('address_street se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_street).toBe('Calle Mayor, 5')
+    })
+
+    it('address_city se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_city).toBe('Madrid')
+    })
+
+    it('address_postal_code se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_postal_code).toBe('28001')
+    })
+
+    it('address_province se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_province).toBe('Madrid')
+    })
+
+    it('address_country se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_country).toBe('España')
+    })
+
+    it('address_floor (piso/puerta) se incluye en el payload', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_floor).toBe('2º A')
+    })
+
+    it('campos de dirección vacíos son null en el payload', () => {
+      const values = {
+        ...VALID_FORM_VALUES,
+        address_street: '',
+        address_city: '',
+        address_postal_code: '',
+        address_province: '',
+        address_country: '',
+        address_floor: '',
+      }
+      const payload = buildCreateLodgerPayload(values, {
+        selectedRoomId: ROOM.id,
+        selectedRoom: ROOM,
+      })
+      expect(payload.address_street).toBeNull()
+      expect(payload.address_city).toBeNull()
+      expect(payload.address_postal_code).toBeNull()
+      expect(payload.address_province).toBeNull()
+      expect(payload.address_country).toBeNull()
+      expect(payload.address_floor).toBeNull()
+    })
+
+    it('los 6 campos de dirección están presentes en el payload incluso sin habitación', () => {
+      const payload = buildCreateLodgerPayload(VALID_FORM_VALUES, {
+        selectedRoomId: null,
+        selectedRoom: null,
+      })
+      expect(payload).toHaveProperty('address_street')
+      expect(payload).toHaveProperty('address_floor')
+      expect(payload).toHaveProperty('address_postal_code')
+      expect(payload).toHaveProperty('address_city')
+      expect(payload).toHaveProperty('address_province')
+      expect(payload).toHaveProperty('address_country')
+    })
   })
 
 })
@@ -216,17 +377,30 @@ describe('Actualización de inquilino — updateLodger', () => {
   it('conserva campos editables en el patch', () => {
     const patch = {
       full_name: 'Ana García López',
+      first_name: 'Ana',
+      last_name1: 'García',
+      last_name2: 'López',
       phone: '666111222',
       nickname: 'Anita',
       document_id: '12345678A',
       gender: 'female',
+      address_street: 'Calle Mayor, 1',
+      address_city: 'Sevilla',
+      address_postal_code: '41001',
+      address_province: 'Sevilla',
+      address_country: 'España',
     }
     const safe = buildUpdatePatch(patch)
     expect(safe.full_name).toBe('Ana García López')
+    expect(safe.first_name).toBe('Ana')
+    expect(safe.last_name1).toBe('García')
+    expect(safe.last_name2).toBe('López')
     expect(safe.phone).toBe('666111222')
     expect(safe.nickname).toBe('Anita')
     expect(safe.document_id).toBe('12345678A')
     expect(safe.gender).toBe('female')
+    expect(safe.address_street).toBe('Calle Mayor, 1')
+    expect(safe.address_city).toBe('Sevilla')
   })
 
   it('conserva values null (campos vaciados explícitamente)', () => {
@@ -240,16 +414,26 @@ describe('Actualización de inquilino — updateLodger', () => {
 
 describe('Formulario de edición — TenantEdit carga onboarding_status', () => {
 
+  // Perfil con campos individuales de nombre (comportamiento actual):
+  // TenantEdit ya NO divide full_name — lee first_name/last_name1/last_name2 directamente.
   const PROFILE_ACTIVE = {
     id: '20000000-0000-0000-0000-000000000001',
     email: 'lodger11@example.com',
-    full_name: 'Inquilino 11 Díaz',
+    full_name: 'Inquilino 11 Díaz',  // campo legacy, aún presente en BD
+    first_name: 'Inquilino',
+    last_name1: '11',
+    last_name2: 'Díaz',
     phone: '659120790',
     nickname: 'Inky',
     document_id: '25854584K',
     gender: 'male',
-    onboarding_status: 'active',   // ← columna real en profiles
-    // NO tiene columna "status"
+    onboarding_status: 'active',   // ← columna real en profiles (NO "status")
+    address_street: 'Calle Falsa, 123',
+    address_floor: '1º B',
+    address_postal_code: '46001',
+    address_city: 'Valencia',
+    address_province: 'Valencia',
+    address_country: 'España',
   }
 
   it('el campo "status" del form se inicializa con onboarding_status del perfil', () => {
@@ -271,15 +455,35 @@ describe('Formulario de edición — TenantEdit carga onboarding_status', () => 
     expect(values.status).toBeUndefined()  // confirma que el bug existía
   })
 
-  it('otros campos del formulario se cargan correctamente', () => {
+  it('campos de nombre y contacto se cargan correctamente', () => {
     const values = buildFormInitialValues(PROFILE_ACTIVE)
     expect(values.first_name).toBe('Inquilino')
     expect(values.last_name1).toBe('11')
+    expect(values.last_name2).toBe('Díaz')
     expect(values.phone).toBe('659120790')
     expect(values.nickname).toBe('Inky')
     expect(values.document_id).toBe('25854584K')
     expect(values.gender).toBe('male')
     expect(values.email).toBe('lodger11@example.com')
+  })
+
+  it('los campos de dirección se cargan correctamente en el formulario', () => {
+    const values = buildFormInitialValues(PROFILE_ACTIVE)
+    expect(values.address_street).toBe('Calle Falsa, 123')
+    expect(values.address_floor).toBe('1º B')
+    expect(values.address_postal_code).toBe('46001')
+    expect(values.address_city).toBe('Valencia')
+    expect(values.address_province).toBe('Valencia')
+    expect(values.address_country).toBe('España')
+  })
+
+  it('dirección vacía en BD se pre-rellena con string vacío (no undefined)', () => {
+    const profileSinDireccion = { ...PROFILE_ACTIVE, address_street: null, address_city: null }
+    const values = buildFormInitialValues(profileSinDireccion)
+    expect(values.address_street).toBe('')
+    expect(values.address_city).toBe('')
+    // Los campos vacíos deben ser string vacío, NO undefined
+    expect(values.address_street).not.toBeUndefined()
   })
 
   it('un inquilino con estado "invited" muestra ese estado en el formulario', () => {

@@ -63,7 +63,7 @@ export default function LodgerDashboard() {
       const [{ data: asgn }, { data: bulls }, { data: svcs }] = await Promise.all([
         supabase
           .from("lodger_room_assignments")
-          .select("id, move_in_date, billing_start_date, monthly_rent, status, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_line1,city)")
+          .select("id, move_in_date, billing_start_date, monthly_rent, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_line1,city)")
           .eq("lodger_id", lodgerData.id)
           .is("move_out_date", null)
           .maybeSingle(),

@@ -199,58 +199,67 @@ describe('entities.service.js', () => {
   })
 
   // ─── updateEntity ──────────────────────────────────────────────────────
+  // NOTA: updateEntity es una llamada directa a BD, NO Edge Function.
+  // Requiere clientAccountId como tercer parámetro.
   describe('updateEntity()', () => {
-    it('llama a invokeWithAuth con acción "update" y el id correcto', async () => {
+    it('actualiza directamente en BD sobre la tabla entities', async () => {
       const patch = { legal_name: 'Empresa Actualizada SL' }
-      invokeWithAuth.mockResolvedValueOnce({ ok: true, data: { id: 'e-1', ...patch } })
+      const updated = { id: 'e-1', ...patch }
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: updated, error: null }))
 
-      const result = await updateEntity('e-1', patch)
+      const result = await updateEntity('e-1', patch, 'cai-001')
 
-      expect(invokeWithAuth).toHaveBeenCalledWith('manage_entity', {
-        body: { action: 'update', payload: { id: 'e-1', ...patch } },
-      })
+      expect(mockSupabase.from).toHaveBeenCalledWith('entities')
       expect(result).toMatchObject({ id: 'e-1', ...patch })
     })
 
-    it('lanza error cuando la actualización falla', async () => {
-      invokeWithAuth.mockResolvedValueOnce({
-        ok: false,
-        error: { message: 'Entity not found' },
-      })
+    it('NO usa invokeWithAuth — escribe directamente en BD', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-1' }, error: null }))
 
-      await expect(updateEntity('e-inexistente', {})).rejects.toThrow('Entity not found')
+      await updateEntity('e-1', { legal_name: 'Nuevo Nombre SL' }, 'cai-001')
+
+      expect(invokeWithAuth).not.toHaveBeenCalled()
+    })
+
+    it('lanza error cuando la actualización falla', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: { message: 'Entity not found' } }))
+
+      await expect(updateEntity('e-inexistente', {}, 'cai-001')).rejects.toThrow('Entity not found')
     })
   })
 
   // ─── setEntityStatus ───────────────────────────────────────────────────
+  // NOTA: setEntityStatus es una llamada directa a BD, NO Edge Function.
+  // Requiere clientAccountId como tercer parámetro.
   describe('setEntityStatus()', () => {
-    it('llama a invokeWithAuth con acción "set_status" para desactivar', async () => {
-      invokeWithAuth.mockResolvedValueOnce({ ok: true, data: {} })
+    it('actualiza status directamente en BD sobre la tabla entities', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-1', status: 'inactive' }, error: null }))
 
-      await setEntityStatus('e-1', 'inactive')
+      await setEntityStatus('e-1', 'inactive', 'cai-001')
 
-      expect(invokeWithAuth).toHaveBeenCalledWith('manage_entity', {
-        body: { action: 'set_status', payload: { id: 'e-1', status: 'inactive' } },
-      })
+      expect(mockSupabase.from).toHaveBeenCalledWith('entities')
     })
 
-    it('llama a invokeWithAuth con acción "set_status" para activar', async () => {
-      invokeWithAuth.mockResolvedValueOnce({ ok: true, data: {} })
+    it('NO usa invokeWithAuth para desactivar', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-1', status: 'inactive' }, error: null }))
 
-      await setEntityStatus('e-1', 'active')
+      await setEntityStatus('e-1', 'inactive', 'cai-001')
 
-      expect(invokeWithAuth).toHaveBeenCalledWith('manage_entity', {
-        body: { action: 'set_status', payload: { id: 'e-1', status: 'active' } },
-      })
+      expect(invokeWithAuth).not.toHaveBeenCalled()
+    })
+
+    it('NO usa invokeWithAuth para activar', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-1', status: 'active' }, error: null }))
+
+      await setEntityStatus('e-1', 'active', 'cai-001')
+
+      expect(invokeWithAuth).not.toHaveBeenCalled()
     })
 
     it('lanza error cuando el cambio de estado falla', async () => {
-      invokeWithAuth.mockResolvedValueOnce({
-        ok: false,
-        error: { message: 'Cannot deactivate entity with active accommodations' },
-      })
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: { message: 'Cannot deactivate entity with active accommodations' } }))
 
-      await expect(setEntityStatus('e-1', 'inactive')).rejects.toThrow(
+      await expect(setEntityStatus('e-1', 'inactive', 'cai-001')).rejects.toThrow(
         'Cannot deactivate entity with active accommodations'
       )
     })

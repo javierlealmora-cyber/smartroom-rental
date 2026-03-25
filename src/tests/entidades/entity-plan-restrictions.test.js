@@ -97,11 +97,18 @@ function formatOwnerLimit(maxOwners, currentCount) {
 }
 
 // ─── Mock del servicio ─────────────────────────────────────────────────────────
+const mockSupabase = vi.hoisted(() => ({ from: vi.fn() }))
+
+vi.mock('../../services/supabaseClient', () => ({
+  supabase: mockSupabase,
+}))
+
 vi.mock('../../services/supabaseInvoke.services', () => ({
   invokeWithAuth: vi.fn(),
 }))
 import { invokeWithAuth } from '../../services/supabaseInvoke.services'
 import { createEntity, setEntityStatus } from '../../services/entities.service'
+import { buildChain } from '../helpers/chainMock'
 
 // ─── Fixtures de entidades por plan ──────────────────────────────────────────
 const makeOwner = (n) => ({
@@ -404,12 +411,11 @@ describe('Restricciones de plan — Entidad CRUD', () => {
           .rejects.toThrow('Plan limit reached: max_owners exceeded')
       })
 
-      it('puede cambiar estado de entidad (set_status)', async () => {
-        invokeWithAuth.mockResolvedValueOnce({ ok: true, data: {} })
-        await setEntityStatus('e-biz-1', 'inactive')
-        expect(invokeWithAuth).toHaveBeenCalledWith('manage_entity', {
-          body: { action: 'set_status', payload: { id: 'e-biz-1', status: 'inactive' } },
-        })
+      it('puede cambiar estado de entidad directamente en BD (NO usa invokeWithAuth)', async () => {
+        mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-biz-1', status: 'inactive' }, error: null }))
+        await setEntityStatus('e-biz-1', 'inactive', 'cai-001')
+        expect(mockSupabase.from).toHaveBeenCalledWith('entities')
+        expect(invokeWithAuth).not.toHaveBeenCalled()
       })
     })
   })

@@ -37,42 +37,42 @@ ON CONFLICT (slug) DO UPDATE SET
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.basic1@housingspacesolutions.com' AND ca.slug = 'basic-1';
+WHERE p.email = 'admin.basic1@housingspacesolutions.com' AND ca.slug = 'basic-rentals-1';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.basic2@housingspacesolutions.com' AND ca.slug = 'basic-2';
+WHERE p.email = 'admin.basic2@housingspacesolutions.com' AND ca.slug = 'basic-rentals-2';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.investor1@housingspacesolutions.com' AND ca.slug = 'investor-1';
+WHERE p.email = 'admin.investor1@housingspacesolutions.com' AND ca.slug = 'investor-properties-1';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.investor2@housingspacesolutions.com' AND ca.slug = 'investor-2';
+WHERE p.email = 'admin.investor2@housingspacesolutions.com' AND ca.slug = 'investor-properties-2';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.business1@housingspacesolutions.com' AND ca.slug = 'business-1';
+WHERE p.email = 'admin.business1@housingspacesolutions.com' AND ca.slug = 'business-housing-1';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.business2@housingspacesolutions.com' AND ca.slug = 'business-2';
+WHERE p.email = 'admin.business2@housingspacesolutions.com' AND ca.slug = 'business-housing-2';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.agency1@housingspacesolutions.com' AND ca.slug = 'agency-1';
+WHERE p.email = 'admin.agency1@housingspacesolutions.com' AND ca.slug = 'agency-rentals-1';
 
 UPDATE public.profiles p
 SET client_account_id = ca.id, is_primary_admin = true
 FROM client_accounts ca
-WHERE p.email = 'admin.agency2@housingspacesolutions.com' AND ca.slug = 'agency-2';
+WHERE p.email = 'admin.agency2@housingspacesolutions.com' AND ca.slug = 'agency-rentals-2';
 
 -- Verificación
 SELECT 'Client accounts insertados/actualizados:' as status;

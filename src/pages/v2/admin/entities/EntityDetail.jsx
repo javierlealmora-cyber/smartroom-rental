@@ -65,7 +65,7 @@ export default function EntityDetail() {
         supabase.from("entities").select("*").eq("id", id).eq("client_account_id", clientAccountId).single(),
         supabase
           .from("accommodations")
-          .select("*, rooms(id, status)")
+          .select("*, rooms(id, is_maintenance)")
           .eq("owner_entity_id", id)
           .eq("client_account_id", clientAccountId)
           .order("name"),

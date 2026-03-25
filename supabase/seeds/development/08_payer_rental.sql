@@ -35,8 +35,8 @@ SELECT
   true as is_active
 FROM public.client_accounts ca
 CROSS JOIN public.profiles p
-WHERE ca.company_name = 'Basic Rentals 1'
-  AND p.email = 'lodger1@basicrentals.com'
+WHERE ca.name = 'Basic Rentals 1'
+  AND p.email = 'lodger1@example.com'
   AND p.role = 'lodger'
 LIMIT 1;
 
@@ -64,8 +64,8 @@ SELECT
   true as is_active
 FROM public.client_accounts ca
 CROSS JOIN public.profiles p
-WHERE ca.company_name = 'Basic Rentals 1'
-  AND p.email = 'lodger2@basicrentals.com'
+WHERE ca.name = 'Basic Rentals 1'
+  AND p.email = 'lodger2@example.com'
   AND p.role = 'lodger'
 LIMIT 1;
 
@@ -93,8 +93,8 @@ SELECT
   true as is_active
 FROM public.client_accounts ca
 CROSS JOIN public.profiles p
-WHERE ca.company_name = 'Basic Rentals 1'
-  AND p.email = 'lodger3@basicrentals.com'
+WHERE ca.name = 'Basic Rentals 1'
+  AND p.email = 'lodger3@example.com'
   AND p.role = 'lodger'
 LIMIT 1;
 
@@ -102,7 +102,7 @@ LIMIT 1;
 SELECT 'Pagadores insertados:' as status;
 SELECT 
   pr.id,
-  ca.company_name,
+  ca.name,
   p.email as lodger_email,
   pr.payer_type,
   CASE 
@@ -114,4 +114,4 @@ SELECT
 FROM public.payer_rental pr
 JOIN public.client_accounts ca ON pr.client_account_id = ca.id
 JOIN public.profiles p ON pr.lodger_id = p.id
-ORDER BY ca.company_name, p.email;
+ORDER BY ca.name, p.email;

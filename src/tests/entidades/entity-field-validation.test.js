@@ -138,11 +138,18 @@ const PAYLOAD_AUTONOMO_COMPLETO = {
 }
 
 // ─── Mock del servicio para tests de integración ─────────────────────────────
+const mockSupabase = vi.hoisted(() => ({ from: vi.fn() }))
+
+vi.mock('../../services/supabaseClient', () => ({
+  supabase: mockSupabase,
+}))
+
 vi.mock('../../services/supabaseInvoke.services', () => ({
   invokeWithAuth: vi.fn(),
 }))
 import { invokeWithAuth } from '../../services/supabaseInvoke.services'
 import { createEntity, updateEntity } from '../../services/entities.service'
+import { buildChain } from '../helpers/chainMock'
 
 // =============================================================================
 describe('Validación de campos — Entidad CRUD', () => {
@@ -253,13 +260,12 @@ describe('Validación de campos — Entidad CRUD', () => {
         })
       })
 
-      it('llama a manage_entity con acción update para persona jurídica', async () => {
-        const patch = { id: 'e-j1', legal_name: 'Nuevo Nombre SL' }
-        invokeWithAuth.mockResolvedValueOnce({ ok: true, data: { ...patch } })
-        await updateEntity('e-j1', { legal_name: 'Nuevo Nombre SL' })
-        expect(invokeWithAuth).toHaveBeenCalledWith('manage_entity', {
-          body: { action: 'update', payload: patch },
-        })
+      it('actualiza directamente en BD para persona jurídica (NO usa invokeWithAuth)', async () => {
+        const patch = { legal_name: 'Nuevo Nombre SL' }
+        mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'e-j1', ...patch }, error: null }))
+        await updateEntity('e-j1', patch, 'cai-001')
+        expect(mockSupabase.from).toHaveBeenCalledWith('entities')
+        expect(invokeWithAuth).not.toHaveBeenCalled()
       })
     })
   })

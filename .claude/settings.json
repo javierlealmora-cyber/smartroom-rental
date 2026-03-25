@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx vitest:*)",
+      "Bash(curl -s -X POST \"https://lqwyyyttjamirccdtlvl.supabase.co/rest/v1/profiles\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxxd3l5eXR0amFtaXJjY2R0bHZsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzgxNTAyNiwiZXhwIjoyMDgzMzkxMDI2fQ.Qt-qjz7rvkZoVz3hsjqPJfqZUBnOa64GB0hcruQ5pmo\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxxd3l5eXR0amFtaXJjY2R0bHZsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzgxNTAyNiwiZXhwIjoyMDgzMzkxMDI2fQ.Qt-qjz7rvkZoVz3hsjqPJfqZUBnOa64GB0hcruQ5pmo\" -H \"Content-Type: application/json\" -H \"Prefer: return=representation\" -d '{\"\"id\"\":\"\"54fd8984-9645-4fd2-90c7-66c062963955\"\",\"\"email\"\":\"\"super-admin-test@housingspacesolutions.com\"\",\"\"full_name\"\":\"\"Super Admin Test\"\",\"\"role\"\":\"\"superadmin\"\",\"\"onboarding_status\"\":\"\"active\"\",\"\"is_primary_admin\"\":true}')",
+      "Bash(npx playwright:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"Edge Function\\\\|llamada directa\\\\|direct call\\\\|RLS\\\\|query directa\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/*.md)",
+      "Bash(grep -rn \"createLodger\\\\|updateLodger\\\\|setLodgerStatus\\\\|inviteLodger\\\\|scheduleCheckout\\\\|assignRoomToLodger\\\\|reassignRoom\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/pages/v2/admin/tenants --include=*.jsx)",
+      "Bash(grep -rn \"lodger_room_assignments\" src/ --include=\"*.{js,jsx,ts,tsx}\" -A 2)"
     ]
   }
 }

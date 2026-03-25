@@ -131,6 +131,16 @@ const BREADCRUMB_ROUTES = {
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },
     { label: "Nuevo Inquilino", path: null },
   ],
+  "/v2/admin/inquilinos/:id/detalle-inquilino": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Detalle", path: null },
+  ],
+  "/v2/admin/inquilinos/:id/detalle": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
+    { label: "Detalle", path: null },
+  ],
   "/v2/admin/inquilinos/:id/editar": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },

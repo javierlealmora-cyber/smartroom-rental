@@ -202,18 +202,22 @@ export default function DashboardSuperadmin() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const today = new Date().toISOString().split("T")[0];
       const [
         { data: accounts },
         { data: entities },
         { data: accommodations },
         { data: rooms },
+        { data: activeAssignments },
         { data: lodgers },
         { data: auditLog },
       ] = await Promise.all([
         supabase.from("client_accounts").select("id,name,slug,plan_code,billing_cycle,status,start_date,created_at,contact_email").order("created_at", { ascending: false }),
         supabase.from("entities").select("id,client_account_id,type,status"),
         supabase.from("accommodations").select("id,status"),
-        supabase.from("rooms").select("id,status"),
+        supabase.from("rooms").select("id,is_maintenance"),
+        supabase.from("lodger_room_assignments").select("room_id,move_out_date")
+          .or(`move_out_date.is.null,move_out_date.gt.${today}`),
         supabase.from("profiles").select("id,onboarding_status").eq("role", "lodger"),
         supabase.from("audit_log").select("id,entity_type,action,actor_role,new_values,created_at").order("created_at", { ascending: false }).limit(20),
       ]);
@@ -223,11 +227,19 @@ export default function DashboardSuperadmin() {
       const allRooms         = rooms    || [];
       const allLodgers       = lodgers  || [];
 
+      const assignByRoom = {};
+      (activeAssignments || []).forEach((a) => { assignByRoom[a.room_id] = a; });
+      let freeRooms = 0, occupiedRooms = 0;
+      allRooms.forEach((r) => {
+        if (r.is_maintenance) return;
+        const asgn = assignByRoom[r.id];
+        if (!asgn) freeRooms++;
+        else if (!asgn.move_out_date) occupiedRooms++;
+      });
+
       const activeAccounts    = allAccounts.filter(a => a.status === "active").length;
       const suspendedAccounts = allAccounts.filter(a => a.status === "suspended").length;
       const cancelledAccounts = allAccounts.filter(a => a.status === "cancelled").length;
-      const occupiedRooms     = allRooms.filter(r => r.status === "occupied").length;
-      const freeRooms         = allRooms.filter(r => r.status === "free").length;
 
       setStats({
         totalAccounts: allAccounts.length, activeAccounts, suspendedAccounts, cancelledAccounts,

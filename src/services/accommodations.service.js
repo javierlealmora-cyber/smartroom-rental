@@ -15,7 +15,7 @@ export async function listAccommodations({ status, clientAccountId } = {}) {
     .select(`
       *,
       owner_entity:entities(id, legal_name, first_name, last_name1, legal_type),
-      rooms(id, status)
+      rooms(id, is_maintenance)
     `)
     .order("created_at", { ascending: false });
 
@@ -86,14 +86,37 @@ export async function setAccommodationStatus(id, status, clientAccountId) {
 // ─── Rooms ────────────────────────────────────────────────────────────────────
 
 export async function listRooms(accommodationId) {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("*")
-    .eq("accommodation_id", accommodationId)
-    .order("number");
+  const today = new Date().toISOString().split("T")[0];
+
+  const [{ data: rooms, error }, { data: assignments }] = await Promise.all([
+    supabase.from("rooms").select("*").eq("accommodation_id", accommodationId).order("number"),
+    supabase.from("lodger_room_assignments")
+      .select("room_id, move_out_date")
+      .eq("accommodation_id", accommodationId)
+      .or(`move_out_date.is.null,move_out_date.gt.${today}`),
+  ]);
 
   if (error) throw new Error(error.message);
-  return data || [];
+
+  // Indexar asignaciones activas/futuras por habitación
+  const currentByRoom = {};
+  (assignments || []).forEach((a) => { currentByRoom[a.room_id] = a; });
+
+  // Calcular estado derivado desde asignaciones (rooms.status solo importa para 'maintenance')
+  return (rooms || []).map((room) => {
+    const asgn = currentByRoom[room.id];
+    let derivedStatus;
+    if (room.is_maintenance) {
+      derivedStatus = "maintenance";
+    } else if (!asgn) {
+      derivedStatus = "free";
+    } else if (!asgn.move_out_date) {
+      derivedStatus = "occupied";
+    } else {
+      derivedStatus = "pending_checkout";
+    }
+    return { ...room, derivedStatus };
+  });
 }
 
 export async function updateRoom(id, patch, clientAccountId) {
@@ -108,10 +131,10 @@ export async function updateRoom(id, patch, clientAccountId) {
   return data;
 }
 
-export async function setRoomStatus(id, status, clientAccountId) {
+export async function setRoomMaintenance(id, isMaintenance, clientAccountId) {
   const { data, error } = await supabase
     .from("rooms")
-    .update({ status })
+    .update({ is_maintenance: isMaintenance })
     .eq("id", id)
     .eq("client_account_id", clientAccountId)
     .select()

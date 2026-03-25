@@ -253,7 +253,28 @@
 | PAY-10 | Editar pagador existente → cambiar notas y verificar persistencia | — | 🚧 No implementado |
 | PAY-11 | Formulario "Añadir Pagador": cambiar tipo `individual` → `company` → campos cambian | — | 🚧 No implementado |
 | PAY-12 | Reasignar habitación → pagadores del inquilino se mantienen tras la reasignación | — | 🚧 No implementado |
-| PAY-13 | Crear inquilino → redirige a `/editar` para poder añadir pagadores inmediatamente | — | 🚧 No implementado |
+| PAY-13 | Crear inquilino → muestra `PayersList` inline en la misma pantalla (commit `6b517d6`) | — | 🚧 No implementado |
+
+#### 3.4.2 Regla de negocio: Habitación requerida para añadir pagadores
+
+> Fuente: `tests/test-cases/PAYERS-ROOM-REQUIREMENT-VALIDATION.md` (2026-03-22)
+> **Regla:** Un inquilino DEBE tener habitación asignada antes de poder añadir pagadores. Sin habitación: Alert warning visible, botón "Añadir Pagador" oculto.
+> Componentes afectados: `TenantCreate.jsx` (pantalla post-creación) · `TenantEdit.jsx` / `PayersList.jsx`
+
+| # | Test | Dónde | Estado |
+|---|------|-------|--------|
+| PAY-H01 | Crear inquilino SIN habitación → pantalla éxito muestra Alert warning "Sin habitación asignada", botón "Añadir Pagador" oculto | `TenantCreate` post-creación | 🚧 No implementado |
+| PAY-H02 | Crear inquilino CON habitación → pantalla éxito muestra Alert info "Gestión de Pagadores" y botón "Añadir Pagador" visible | `TenantCreate` post-creación | 🚧 No implementado |
+| PAY-H03 | Añadir pagador persona física en pantalla post-creación → pagador aparece en lista con badge "Activo" y tipo "Persona Física" | `TenantCreate` → `PayersList` | 🚧 No implementado |
+| PAY-H04 | Editar inquilino sin habitación → sección "Pagadores" muestra Alert warning "Habitación requerida", botón "Añadir Pagador" oculto | `TenantEdit` | 🚧 No implementado |
+| PAY-H05 | Editar inquilino con habitación → sección "Pagadores" muestra botón "Añadir Pagador" habilitado, sin Alert warning | `TenantEdit` | 🚧 No implementado |
+| PAY-H06 | Inquilino sin habitación: asignar habitación → sección "Pagadores" habilita botón "Añadir Pagador", Alert warning desaparece | `TenantEdit` | 🚧 No implementado |
+| PAY-H07 | Inquilino con habitación y pagadores: hacer checkout → botón "Añadir Pagador" desaparece, pagadores existentes siguen visibles (solo lectura) | `TenantEdit` | 🚧 No implementado |
+| PAY-H08 | Doble click en botón "Añadir" del modal de pagador → botón se deshabilita, se crea UN solo pagador sin duplicados | `PayersList` modal | 🚧 No implementado |
+| PAY-H09 | Modal "Añadir Pagador" tipo `individual` sin campos → errores "El nombre es obligatorio" y "El primer apellido es obligatorio" *(ver también FV-PAY01/02)* | `PayersList` modal | 🚧 No implementado |
+| PAY-H10 | Modal "Añadir Pagador": cambiar tipo `individual` → `company` → campos nombre/apellidos desaparecen, "Nombre de la Empresa" aparece *(ver también FV-PAY04)* | `PayersList` modal | 🚧 No implementado |
+| PAY-H11 | Editar pagador existente → modal se abre con datos pre-cargados, guardar cambio de observaciones → lista actualizada *(ver también PAY-10)* | `PayersList` | 🚧 No implementado |
+| PAY-H12 | Toggle estado pagador: Desactivar → badge "Inactivo"; Activar → badge "Activo" *(ver también PAY-08/09)* | `PayersList` | 🚧 No implementado |
 
 ### 3.5 Energía y Facturas
 
@@ -507,9 +528,55 @@
 
 ---
 
+### 8.2b Editar Alojamiento — `/v2/admin/alojamientos/:id/editar`
+
+> Fuente verificada: `AccommodationEdit.jsx` (2026-03-22)
+> ⚠️ **BUG-029 (pendiente Cascade):** Los campos `street_number`, `floor` y `door` del formulario **no se persisten en la BD** (no existen como columnas en la tabla `accommodations`). Sus valores se descartan silenciosamente al guardar.
+
+#### Campos del formulario "Datos del Alojamiento"
+
+| Campo | Nombre DB | Tipo | Oblig. | Máx | Validación extra |
+|-------|-----------|------|:------:|:---:|-----------------|
+| `name` | `name` NOT NULL | `text` | ✅ | 100 | — |
+| `owner_entity_id` | `owner_entity_id` NOT NULL | `select` | ✅ | — | Entidades propietarias activas |
+| `status` | `status` NOT NULL | `select` | ✅ (default) | — | `active` / `inactive` |
+| `address_line1` | `address_line1` nullable | `text` | ❌ | 200 | — |
+| `street_number` | **SIN COLUMNA DB** | `text` | ❌ | — | ⚠️ No se guarda (BUG-029) |
+| `floor` | **SIN COLUMNA DB** | `text` | ❌ | — | ⚠️ No se guarda (BUG-029) |
+| `door` | **SIN COLUMNA DB** | `text` | ❌ | — | ⚠️ No se guarda (BUG-029) |
+| `address_line2` | `address_line2` nullable | `text` | ❌ | 200 | — |
+| `postal_code` | `postal_code` nullable | `text` | ❌ | 5 | Solo dígitos si se rellena (patrón `/^\d{5}$/`) |
+| `city` | `city` nullable | `text` | ❌ | 100 | — |
+| `province` | `province` nullable | `select` | ❌ | — | Lista de 52 provincias, allow clear |
+| `notes` | `notes` nullable | `textarea` | ❌ | 500 | — |
+
+#### Tests E2E
+
+| # | Test | Estado |
+|---|------|--------|
+| FV-AE01 | Guardar sin `name` → error "El nombre es obligatorio" visible bajo el campo | 🚧 No implementado |
+| FV-AE02 | Guardar sin `owner_entity_id` → error "Selecciona una entidad" visible | 🚧 No implementado |
+| FV-AE03 | `name` con 101 caracteres → error "Máximo 100 caracteres" visible | 🚧 No implementado |
+| FV-AE04 | `name` con 100 caracteres → guarda correctamente sin error | 🚧 No implementado |
+| FV-AE05 | `address_line1` con 201 caracteres → error "Máximo 200 caracteres" visible | 🚧 No implementado |
+| FV-AE06 | `postal_code` = `"2800"` (4 dígitos) → error "Debe tener exactamente 5 dígitos" visible | 🚧 No implementado |
+| FV-AE07 | `postal_code` = `"2800A"` (letras) → error "Debe tener exactamente 5 dígitos" visible | 🚧 No implementado |
+| FV-AE08 | `postal_code` = `"28001"` (5 dígitos) → sin error, guarda correctamente | 🚧 No implementado |
+| FV-AE09 | `postal_code` vacío → sin error (campo opcional) | 🚧 No implementado |
+| FV-AE10 | `city` con 101 caracteres → error "Máximo 100 caracteres" visible | 🚧 No implementado |
+| FV-AE11 | `notes` con 501 caracteres → error "Máximo 500 caracteres" visible | 🚧 No implementado |
+| FV-AE12 | `notes` con 500 caracteres → contador muestra "500 / 500", sin error | 🚧 No implementado |
+| FV-AE13 | `address_line2` con 201 caracteres → error "Máximo 200 caracteres" visible | 🚧 No implementado |
+| FV-AE14 | Happy path: rellenar solo `name` + `owner_entity_id` → guarda correctamente, redirige a `/v2/admin/alojamientos` | 🚧 No implementado |
+| FV-AE15 | Happy path completo: todos los campos opcionales rellenos con valores válidos → guarda sin errores | 🚧 No implementado |
+| FV-AE16 | Seleccionar provincia → valor visible en select; "Limpiar" devuelve a vacío | 🚧 No implementado |
+
+---
+
 ### 8.3 Inquilino — `/v2/admin/inquilinos/nuevo`
 
 > Fuente verificada: `TenantCreate.jsx` + `LodgerFormFields.jsx` (2026-03-22)
+> Actualizado: commit `6b517d6` — eliminado "Fecha de Inicio Cobro" (`billing_start_date`), añadido checkbox "Pago hasta fin de mes" + `end_of_month_amount`
 
 #### Campos del formulario — Datos personales (`LodgerFormFields`)
 
@@ -523,35 +590,56 @@
 | `phone` | `text` | ✅ | Sin patrón — acepta cualquier texto |
 | `document_id` | `text` | ✅ | DNI/NIE/Pasaporte — sin validación de formato |
 | `gender` | `select` | ✅ | `male`, `female`, `other` |
+| `send_onboarding` | `boolean` | ❌ | Default: `true`. Envía email de bienvenida |
 
 #### Campos del formulario — Asignación de habitación (`TenantCreate`)
 
-> ⚠️ **Plan Windsurf pendiente:** Los campos `deposit_amount`, `commission_amount`, `first_month_amount` y `check_out_date` se añadirán cuando Cascade implemente la migración de BD y los componentes. Ver sección 8.8 y 9.
+> **Estado actual (post commit `6b517d6`):** `billing_start_date` eliminado — ahora siempre es igual a `move_in_date`. Se añadió checkbox "Pago hasta fin de mes" con campo condicional `end_of_month_amount`.
 
 | Campo | Tipo | Oblig. | Validación extra |
 |-------|------|:------:|-----------------|
-| `accommodation_id` | `select` | ❌ | Pre-cargado desde query param `?acc=` |
-| `room_id` | `select` | ❌ | Solo habitaciones con `status = "free"`. Pre-cargado desde `?room=` |
-| `move_in_date` / `check_in_date` | `date` | ⚠️ Condicional | **Obligatorio solo si `room_id` está seleccionado**. Label: "Fecha de Check-In". Default: hoy |
-| `billing_start_date` | `date` | ❌ | Visible solo si `billingSameAsMoveIn = false`. Default = `check_in_date` |
-| `deposit_amount` | `number` | ✅ *(pendiente)* | Calculado como X meses de renta (selector 1/2/3 meses o manual). `deposit_amount = monthly_rent * months` |
-| `commission_amount` | `number` | ❌ *(pendiente)* | Comisión de agencia. Acepta 0 o null |
-| `first_month_amount` | `number` | ❌ *(pendiente)* | Importe primer mes (entrada a mitad de mes). ≤ `monthly_rent` |
-| `check_out_date` | `date` | ❌ *(pendiente)* | No visible en alta. Solo en edición/visualización |
-| `send_onboarding` | `boolean` | ❌ | Default: `true`. Envía email de bienvenida |
+| `accommodation_id` | `select` | ❌ | Pre-cargado desde query param `?acc=`. Al deseleccionar con X → limpia todos los campos de asignación |
+| `room_id` | grid de tarjetas | ⚠️ Condicional | **Obligatorio si `accommodation_id` seleccionado.** Solo habitaciones `status = "free"` son clickables |
+| `move_in_date` | `date` | ⚠️ Condicional | **Obligatorio si `accommodation_id` seleccionado.** Default: hoy. `billing_start_date` siempre = este valor |
+| `payUntilEndOfMonth` | `checkbox` | ❌ | "El inquilino va a pagar desde la fecha de Check-in hasta fin de mes". Estado React, no campo de BD |
+| `end_of_month_amount` | `number` | ⚠️ Condicional | **Obligatorio si `payUntilEndOfMonth = true` y `accommodation_id` seleccionado.** Visible solo con checkbox marcado |
+| `next_payment_date` | read-only | — | Campo de solo lectura. Calculado: 1º del mes siguiente a `move_in_date`. Visible solo con checkbox marcado |
+| `deposit_amount` | `number` | ⚠️ Condicional | **Obligatorio si `accommodation_id` seleccionado.** ≥ 0, 2 decimales |
+| `commission_amount` | `number` | ❌ | Comisión de agencia. Acepta 0 o null |
+| `first_month_amount` | `number` | ❌ | Visible solo si `payUntilEndOfMonth = false`. Para entradas a mitad de mes |
 
-#### Tests E2E
+> **Botón "Limpiar Asignación":** Visible solo cuando `accommodation_id` tiene valor. Icono `ClearOutlined`, estilo `danger`. Resetea: `accommodation_id`, `room_id`, `move_in_date` (→ hoy), `deposit_amount`, `commission_amount`, `first_month_amount`, `end_of_month_amount`, `payUntilEndOfMonth` (→ false).
+
+> **Flujo post-creación (commit `6b517d6`):** Tras guardar, el inquilino NO redirige a edición. En su lugar se muestra la sección de pagadores (`PayersList`) en la misma pantalla.
+
+#### Tests E2E — Datos personales
 
 | # | Test | Estado |
 |---|------|--------|
 | FV-T01 | Enviar formulario vacío → errores en `first_name`, `last_name1`, `last_name2`, `email`, `phone`, `document_id`, `gender` | 🚧 No implementado |
 | FV-T02 | `email` con formato inválido (`"usuario@"`) → error visible | 🚧 No implementado |
 | FV-T03 | `email` ya registrado en el tenant → error de duplicado (validado en backend) | 🚧 No implementado |
-| FV-T04 | Seleccionar `accommodation_id` → selector `room_id` muestra solo habitaciones libres | 🚧 No implementado |
-| FV-T05 | Seleccionar `room_id` → campo `move_in_date` pasa a ser obligatorio | 🚧 No implementado |
-| FV-T06 | Sin `room_id` → `move_in_date` es opcional (se puede enviar sin fecha) | 🚧 No implementado |
 | FV-T07 | `phone` con texto libre (`"abc-123"`) → se acepta (sin patrón en frontend) | 🚧 No implementado |
 | FV-T08 | `gender` no seleccionado → error "Campo obligatorio" | 🚧 No implementado |
+
+#### Tests E2E — Flujo de asignación de habitación
+
+> Fuente: `tests/test-cases/TENANT-CREATE-ROOM-ASSIGNMENT-VALIDATION.md` (2026-03-22)
+
+| # | Test | Descripción | Estado |
+|---|------|-------------|--------|
+| FV-TC01 | TEST-001 | Crear inquilino SIN asignación → `onboarding_status = 'invited'`, sin `room_id` | 🚧 No implementado |
+| FV-TC02 | TEST-002 | Seleccionar alojamiento sin rellenar más campos → errores: habitación, fecha, fianza obligatorios | 🚧 No implementado |
+| FV-TC03 | TEST-003 | Crear inquilino CON asignación completa → `onboarding_status = 'active'`, `move_in_date` correcto, `deposit_amount` y `monthly_rent` guardados | 🚧 No implementado |
+| FV-TC04 | TEST-004 | Botón "Limpiar Asignación" oculto sin alojamiento, visible al seleccionar uno | 🚧 No implementado |
+| FV-TC05 | TEST-005 | Click "Limpiar Asignación" → todos los campos de asignación quedan vacíos, datos personales no cambian | 🚧 No implementado |
+| FV-TC06 | TEST-006 | Limpiar asignación con checkbox "Pago hasta fin de mes" marcado → checkbox se desmarca, campo `end_of_month_amount` desaparece | 🚧 No implementado |
+| FV-TC07 | TEST-007 | Deseleccionar alojamiento con X del Select → misma limpieza que "Limpiar Asignación" | 🚧 No implementado |
+| FV-TC08 | TEST-008 | Con alojamiento seleccionado y sin habitación → error "Debes seleccionar una habitación" | 🚧 No implementado |
+| FV-TC09 | TEST-009 | Con alojamiento y habitación, sin fecha → error "La fecha de check-in es obligatoria" | 🚧 No implementado |
+| FV-TC10 | TEST-010 | Con alojamiento y habitación, sin fianza → error "El importe de la fianza es obligatorio" | 🚧 No implementado |
+| FV-TC11 | TEST-011 | Checkbox "Pago hasta fin de mes" marcado, sin importe → error "El importe es obligatorio" | 🚧 No implementado |
+| FV-TC12 | TEST-012 | Cambiar de alojamiento → `room_id` se limpia, se cargan habitaciones del nuevo alojamiento | 🚧 No implementado |
 
 ---
 
@@ -773,8 +861,8 @@
 
 ### 8.7 Pagadores del Inquilino — Formulario `PayersList` / `TenantEdit`
 
-> Fuente: plan `mejoras-inquilino-asignacion-95e41a.md` · Componente: `PayersList.jsx` (pendiente de crear)
-> Tabla BD: `payer_rental` (pendiente de migración)
+> Fuente: plan `mejoras-inquilino-asignacion-95e41a.md` + `tests/test-cases/PAYERS-ROOM-REQUIREMENT-VALIDATION.md` (2026-03-22)
+> Componente: `PayersList.jsx` · Tabla BD: `payer_rental`
 
 #### Campos del formulario "Añadir Pagador"
 
@@ -810,6 +898,15 @@
 | FV-PAY10 | Editar pagador → modal se abre con datos existentes precargados | 🚧 No implementado |
 | FV-PAY11 | Editar pagador → guardar cambios y verificar persistencia en lista | 🚧 No implementado |
 | FV-PAY12 | `notes` vacío → se acepta (campo opcional) | 🚧 No implementado |
+| FV-PAY13 | Doble click en "Añadir" del modal → botón se deshabilita tras el primer click, se crea UN solo pagador (sin duplicado) | 🚧 No implementado |
+
+#### Regla de negocio: `hasRoomAssignment`
+
+| # | Test | Estado |
+|---|------|--------|
+| FV-PAY14 | `PayersList` con `hasRoomAssignment=false` → renderiza Alert warning "Sin habitación asignada" / "Habitación requerida", botón "Añadir Pagador" oculto | 🚧 No implementado |
+| FV-PAY15 | `PayersList` con `hasRoomAssignment=true` → renderiza botón "Añadir Pagador" visible, sin Alert warning | 🚧 No implementado |
+| FV-PAY16 | `PayersList` con `hasRoomAssignment=false` → `loadPayers()` NO se ejecuta (sin llamada a BD innecesaria) | 🚧 No implementado |
 
 ---
 
@@ -971,7 +1068,7 @@ Cuando el usuario selecciona una habitación, el campo se pre-calcula y es edita
 | Admin — Alojamientos (general) | 0 | 8 | 3 | 11 |
 | Admin — Alojamientos restricciones plan | 0 | 0 | 6 | 6 |
 | Admin — Inquilinos | 0 | 8 | 3 | 11 |
-| Admin — Pagadores (`payer_rental`) E2E | 0 | 0 | 13 | 13 |
+| Admin — Pagadores (`payer_rental`) E2E | 0 | 0 | 25 | 25 |
 | Admin — Energía | 4 | 0 | 1 | 5 |
 | Admin — Boletines | 3 | 0 | 0 | 3 |
 | Admin — Servicios | 2 | 0 | 2 | 4 |
@@ -982,8 +1079,9 @@ Cuando el usuario selecciona una habitación, el campo se pre-calcula y es edita
 | Web pública | 0 | 1 | 5 | 6 |
 | Control de acceso | 0 | 0 | 8 | 8 |
 | Reglas de negocio | 0 | 0 | 6 | 6 |
-| Validaciones — Entidades, Alojamientos, Inquilinos | 0 | 0 | 57 | 57 |
-| Validaciones — Pagadores (FV-PAY) | 0 | 0 | 12 | 12 |
+| Validaciones — Entidades, Alojamientos, Inquilinos | 0 | 0 | 69 | 69 |
+| Validaciones — Editar Alojamiento (FV-AE) | 0 | 0 | 16 | 16 |
+| Validaciones — Pagadores (FV-PAY) | 0 | 0 | 16 | 16 |
 | Validaciones — Asignación financiera (FV-FIN) | 0 | 0 | 17 | 17 |
 | Validaciones — Planes, Servicios, Energía, Habitaciones | 0 | 0 | 55 | 55 |
 | Tests Vitest — BD Migración | 0 | 0 | 6 | 6 |
@@ -992,7 +1090,7 @@ Cuando el usuario selecciona una habitación, el campo se pre-calcula y es edita
 | Tests Vitest — Escenarios pagadores múltiples | 0 | 0 | 7 | 7 |
 | Tests Vitest — Cálculo fianza | 0 | 0 | 5 | 5 |
 | Tests Vitest — `PayersList` componente | 0 | 0 | 11 | 11 |
-| **Total** | **28** | **32** | **272** | **332** |
+| **Total** | **28** | **32** | **316** | **376** |
 
 > **Columnas**: "Con spec .js" = fichero escrito (pendiente credenciales staging) · "Pendiente" = spec escrito, sin credenciales · "Sin spec" = solo en este catálogo
 >
@@ -1010,6 +1108,7 @@ Cuando el usuario selecciona una habitación, el campo se pre-calcula y es edita
 | `entities.spec.js` | `regression` | E-01 a E-08 | ✅ Escrito |
 | `accommodations.spec.js` | `regression` | A-01 a A-09 | ✅ Escrito |
 | `tenants.spec.js` | `regression` | T-01 a T-08 | ✅ Escrito |
+| `tenant-address-fields.spec.js` | `regression` | ADDR-001..011 (dirección completa, parcial, edición, detalle) | ✅ Escrito |
 | `admin-basic.spec.js` | `regression-basic` | DB-01..03, E-B01..06, A-B (básico), T (Basic), EN-01..03, BL-01..03, SV-01..02, BD-01..08, Restricciones plan Basic | ✅ Escrito (43 tests) |
 | `admin-investor.spec.js` | `regression-investor` | E-I01..05, A-I01..02, operativa Investor | 🚧 Por escribir |
 | `admin-business.spec.js` | `regression-business` | E-BU01..04, operativa Business | 🚧 Por escribir |

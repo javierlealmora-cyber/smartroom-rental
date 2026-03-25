@@ -43,7 +43,7 @@ BEGIN
       AND p.status = 'active'
       AND NOT EXISTS (
         SELECT 1 FROM public.lodger_room_assignments lra
-        WHERE lra.lodger_id = p.id AND lra.status = 'active'
+        WHERE lra.lodger_id = p.id AND lra.move_out_date IS NULL
       )
     ORDER BY random()
     LIMIT 1;
@@ -56,7 +56,7 @@ BEGIN
       -- Crear asignación activa
       INSERT INTO public.lodger_room_assignments (
         id, client_account_id, lodger_id, room_id, accommodation_id,
-        move_in_date, move_out_date, billing_start_date, monthly_rent, status
+        move_in_date, move_out_date, billing_start_date, monthly_rent
       ) VALUES (
         gen_random_uuid(),
         p_client_account_id,
@@ -64,21 +64,19 @@ BEGIN
         v_room.id,
         p_accommodation_id,
         v_move_in_date,
-        NULL, -- Asignación activa
+        NULL, -- Asignación activa (move_out_date IS NULL = activa)
         v_move_in_date,
-        (SELECT monthly_rent FROM public.rooms WHERE id = v_room.id),
-        'active'
+        (SELECT monthly_rent FROM public.rooms WHERE id = v_room.id)
       )
       ON CONFLICT DO NOTHING;
       
-      -- Actualizar estado de habitación a ocupada
-      UPDATE public.rooms SET status = 'occupied' WHERE id = v_room.id;
+      -- (rooms.status eliminado — estado derivado desde lodger_room_assignments)
       
       -- 20% de probabilidad de crear historial (asignación anterior finalizada)
       IF random() < 0.2 THEN
         INSERT INTO public.lodger_room_assignments (
           id, client_account_id, lodger_id, room_id, accommodation_id,
-          move_in_date, move_out_date, billing_start_date, monthly_rent, status
+          move_in_date, move_out_date, billing_start_date, monthly_rent
         ) VALUES (
           gen_random_uuid(),
           p_client_account_id,
@@ -88,8 +86,7 @@ BEGIN
           v_move_in_date - (random() * 365 + 30)::int, -- Entrada anterior
           v_move_in_date - 1, -- Salida 1 día antes de la entrada actual
           v_move_in_date - (random() * 365 + 30)::int,
-          (SELECT monthly_rent FROM public.rooms WHERE id = v_room.id) - 20,
-          'ended'
+          (SELECT monthly_rent FROM public.rooms WHERE id = v_room.id) - 20
         )
         ON CONFLICT DO NOTHING;
       END IF;
@@ -179,8 +176,8 @@ DROP FUNCTION IF EXISTS assign_lodgers_to_accommodation(uuid, uuid, int);
 -- Verificación
 SELECT 'Asignaciones creadas:' as status;
 SELECT COUNT(*) as total_assignments FROM public.lodger_room_assignments;
-SELECT COUNT(*) as active_assignments FROM public.lodger_room_assignments WHERE status = 'active';
-SELECT COUNT(*) as ended_assignments FROM public.lodger_room_assignments WHERE status = 'ended';
+SELECT COUNT(*) as active_assignments FROM public.lodger_room_assignments WHERE move_out_date IS NULL;
+SELECT COUNT(*) as ended_assignments FROM public.lodger_room_assignments WHERE move_out_date IS NOT NULL;
 
 -- Resumen por alojamiento
 SELECT 
@@ -190,7 +187,7 @@ SELECT
   ROUND(COUNT(DISTINCT lra.id) FILTER (WHERE lra.status = 'active')::numeric / NULLIF(COUNT(DISTINCT r.id), 0) * 100, 0) as occupancy_percent
 FROM public.accommodations a
 LEFT JOIN public.rooms r ON a.id = r.accommodation_id
-LEFT JOIN public.lodger_room_assignments lra ON r.id = lra.room_id AND lra.status = 'active'
+LEFT JOIN public.lodger_room_assignments lra ON r.id = lra.room_id AND lra.move_out_date IS NULL
 GROUP BY a.id, a.name
 ORDER BY a.name;
 
@@ -199,8 +196,8 @@ SELECT
   p.full_name,
   p.email,
   COUNT(lra.id) as total_assignments,
-  COUNT(lra.id) FILTER (WHERE lra.status = 'active') as active_assignments,
-  COUNT(lra.id) FILTER (WHERE lra.status = 'ended') as ended_assignments
+  COUNT(lra.id) FILTER (WHERE lra.move_out_date IS NULL) as active_assignments,
+  COUNT(lra.id) FILTER (WHERE lra.move_out_date IS NOT NULL) as ended_assignments
 FROM public.profiles p
 LEFT JOIN public.lodger_room_assignments lra ON p.id = lra.lodger_id
 WHERE p.role = 'lodger' 

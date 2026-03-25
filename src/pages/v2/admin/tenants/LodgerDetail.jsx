@@ -171,22 +171,53 @@ export default function LodgerDetail() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [lodgerData, { data: bullData }] = await Promise.all([
-        getLodger(id),
-        supabase.from("bulletins")
-          .select("*, energy_bill:energy_bills(utility_type, bill_number, period_start, period_end, amount_total)")
-          .eq("lodger_id", id)
-          .order("period_start", { ascending: false }),
-      ]);
+      // Consulta directa para asegurar que move_out_date se carga
+      const { data: lodgerData, error: lodgerError } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          assignments:lodger_room_assignments(
+            id,
+            move_in_date,
+            move_out_date,
+            billing_start_date,
+            monthly_rent,
+            deposit_amount,
+            status,
+            room:rooms(id, number),
+            accommodation:accommodations(id, name)
+          )
+        `)
+        .eq("id", id)
+        .eq("role", "lodger")
+        .eq("client_account_id", clientAccountId)
+        .maybeSingle();
+
+      if (lodgerError) throw new Error(lodgerError.message);
+      if (!lodgerData) throw new Error("Inquilino no encontrado");
+
+      const { data: bullData } = await supabase
+        .from("bulletins")
+        .select("*, energy_bill:energy_bills(utility_type, bill_number, period_start, period_end, amount_total)")
+        .eq("lodger_id", id)
+        .order("period_start", { ascending: false });
+
       setLodger(lodgerData);
       setBulletins(bullData || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [id]);
+  }, [id, clientAccountId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const activeAssignment = lodger?.assignments?.find((a) => !a.move_out_date);
+  // Obtener la asignación más reciente (con o sin check-out)
+  const activeAssignment = lodger?.assignments?.length > 0
+    ? [...lodger.assignments].sort((a, b) => {
+        const dateA = a.move_in_date ? new Date(a.move_in_date) : new Date(0);
+        const dateB = b.move_in_date ? new Date(b.move_in_date) : new Date(0);
+        return dateB - dateA;
+      })[0]
+    : null;
 
   const elecChart  = bulletins.length > 0 ? buildChartData(bulletins, "electricity") : EMPTY_CHART;
   const waterChart = bulletins.length > 0 ? buildChartData(bulletins, "water")       : EMPTY_CHART;
@@ -289,130 +320,78 @@ export default function LodgerDetail() {
             style={{ marginBottom: 8, paddingLeft: 0, color: "#6B7280" }}>
             Inquilinos
           </Button>
-          {loading ? <Skeleton active title={{ width: 200 }} paragraph={false} /> : (
-            <Row align="middle" gutter={14}>
-              <Col>
-                <img
-                  src={lodger?.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
-                  alt="Inquilino"
-                  style={{ width: 52, height: 52, objectFit: "contain" }}
-                />
-              </Col>
-              <Col>
-                <Title level={2} style={{ margin: 0 }}>{lodger?.full_name}</Title>
-                <Space size={6}>
-                  <Badge status={STATUS_ANT[lodger?.status] || "default"} />
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    {STATUS_LABEL[lodger?.status] || lodger?.status}
-                    {lodger?.email ? ` · ${lodger.email}` : ""}
-                    {activeAssignment?.move_in_date ? ` · Check-in: ${formatDate(activeAssignment.move_in_date)}` : ""}
-                  </Text>
-                </Space>
-              </Col>
-            </Row>
-          )}
+          <Title level={2} style={{ margin: 0 }}>Detalles de Consumo</Title>
         </Col>
         <Col>
-          <Space>
-            {lodger?.status === "active" && (
-              <Button icon={<SwapOutlined />}
-                onClick={() => navigate(`/v2/admin/inquilinos/${id}/editar?action=reassign`)}>
-                Cambiar habitación
-              </Button>
-            )}
-            <Button type="primary" icon={<EditOutlined />}
-              onClick={() => navigate(`/v2/admin/inquilinos/${id}/editar`)}>
-              Editar
-            </Button>
-          </Space>
+          <Button type="primary" icon={<EditOutlined />}
+            onClick={() => navigate(`/v2/admin/inquilinos/${id}/editar`)}>
+            Editar
+          </Button>
         </Col>
       </Row>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
-      <Row gutter={[20, 20]}>
-        {/* Columna izquierda: datos del inquilino */}
-        <Col xs={24} lg={8}>
-          <Card title="Datos del inquilino" size="small" loading={loading} style={{ borderRadius: 12, marginBottom: 16 }}>
-            {lodger && (
-              <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                {[
-                  { label: "Email", value: lodger.email },
-                  { label: "Teléfono", value: lodger.phone || "-" },
-                  { label: "Documento", value: lodger.document_id || "-" },
-                  { label: "Alta", value: formatDate(lodger.created_at) },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <Text type="secondary" style={{ fontSize: 11 }}>{item.label}</Text>
-                    <Text style={{ display: "block", fontSize: 13 }}>{item.value}</Text>
-                  </div>
-                ))}
-              </Space>
-            )}
-          </Card>
-
-          {/* Habitación actual */}
-          <Card title="Habitación actual" size="small" loading={loading} style={{ borderRadius: 12, marginBottom: 16 }}>
-            {activeAssignment ? (
-              <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 11 }}>Alojamiento</Text>
-                  <Text strong style={{ display: "block" }}>{activeAssignment.accommodation?.name}</Text>
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 11 }}>Habitación</Text>
-                  <Tag color="geekblue" style={{ marginTop: 2 }}>Hab. {activeAssignment.room?.number}</Tag>
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 11 }}>Entrada</Text>
-                  <Text style={{ display: "block" }}>{formatDate(activeAssignment.move_in_date)}</Text>
-                </div>
-                {activeAssignment.monthly_rent != null && (
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 11 }}>Renta mensual</Text>
-                    <Text strong style={{ display: "block", color: "#059669", fontSize: 16 }}>
-                      {formatCurrency(activeAssignment.monthly_rent)}/mes
-                    </Text>
-                  </div>
+      {/* Sección de datos del inquilino */}
+      {!loading && lodger && (
+        <Card
+          size="small"
+          style={{ marginBottom: 20, borderRadius: 12 }}
+          bodyStyle={{ padding: 16 }}
+        >
+          <Row gutter={[24, 16]} align="middle">
+            <Col>
+              <img
+                src={lodger?.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+                alt="Inquilino"
+                style={{ width: 64, height: 64, objectFit: "contain" }}
+              />
+            </Col>
+            <Col flex="auto">
+              <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
+                {lodger.first_name} {lodger.last_name1} {lodger.last_name2 || ""}
+              </Title>
+              <Space direction="vertical" size={2}>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {lodger.email}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {lodger.phone || "Sin teléfono"}
+                </Text>
+                {activeAssignment?.move_in_date && (
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Check-in: {formatDate(activeAssignment.move_in_date)}
+                  </Text>
+                )}
+                {activeAssignment?.move_out_date && (
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Check-Out: {formatDate(activeAssignment.move_out_date)}
+                  </Text>
                 )}
               </Space>
-            ) : (
-              <Text type="secondary">Sin habitación asignada</Text>
-            )}
-          </Card>
-
-          {/* Historial */}
-          {!loading && lodger?.assignments?.length > 1 && (
-            <Card title="Historial" size="small" style={{ borderRadius: 12 }}>
-              <Space direction="vertical" style={{ width: "100%" }} size={6}>
-                {lodger.assignments.map((a) => (
-                  <div key={a.id} style={{
-                    padding: "8px 10px", background: "#F9FAFB", borderRadius: 6,
-                    borderLeft: `3px solid ${a.move_out_date ? "#D1D5DB" : "#059669"}`,
-                  }}>
-                    <Text strong style={{ fontSize: 11 }}>
-                      {a.accommodation?.name} · Hab. {a.room?.number}
-                    </Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 10 }}>
-                      {formatDate(a.move_in_date)} → {a.move_out_date ? formatDate(a.move_out_date) : "Actual"}
-                    </Text>
-                  </div>
-                ))}
+            </Col>
+            <Col>
+              <Space direction="vertical" size={8} align="end">
+                {activeAssignment && (
+                  <>
+                    <div style={{ textAlign: "right" }}>
+                      <Text type="secondary" style={{ fontSize: 11, display: "block" }}>Alojamiento</Text>
+                      <Text strong>{activeAssignment.accommodation?.name}</Text>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <Text type="secondary" style={{ fontSize: 11, display: "block" }}>Habitación</Text>
+                      <Tag color="geekblue">Hab. {activeAssignment.room?.number}</Tag>
+                    </div>
+                  </>
+                )}
               </Space>
-            </Card>
-          )}
+            </Col>
+          </Row>
+        </Card>
+      )}
 
-          {/* Pagadores */}
-          {!loading && lodger && (
-            <Card title="Pagadores" size="small" style={{ borderRadius: 12, marginTop: 16 }}>
-              <PayersList lodgerId={lodger.id} clientAccountId={clientAccountId} />
-            </Card>
-          )}
-        </Col>
-
-        {/* Columna derecha: energía */}
-        <Col xs={24} lg={16}>
+      {/* Sección de consumos */}
+      <Col xs={24}>
           <Card
             title={
               <Row align="middle" gutter={8}>
@@ -460,8 +439,7 @@ export default function LodgerDetail() {
             {/* Tabs por servicio */}
             <Tabs items={tabItems} defaultActiveKey="electricity" size="small" />
           </Card>
-        </Col>
-      </Row>
+      </Col>
     </V2Layout>
   );
 }

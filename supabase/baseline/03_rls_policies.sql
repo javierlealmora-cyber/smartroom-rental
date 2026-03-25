@@ -309,13 +309,13 @@ TO authenticated
 USING (get_my_role() = 'superadmin');
 
 -- ============================================================================
--- TABLA: lodgers
+-- TABLA: payer_rental
 -- ============================================================================
-ALTER TABLE public.lodgers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payer_rental ENABLE ROW LEVEL SECURITY;
 
--- SELECT: superadmin ve todo; admin ve inquilinos de su cuenta
-CREATE POLICY "lodgers_select_policy"
-ON public.lodgers
+-- SELECT: superadmin ve todo; admin ve pagadores de su cuenta
+CREATE POLICY "payer_rental_select_policy"
+ON public.payer_rental
 FOR SELECT
 TO authenticated
 USING (
@@ -325,35 +325,35 @@ USING (
 );
 
 -- INSERT: superadmin o admin de la misma cuenta
-CREATE POLICY "lodgers_insert_policy"
-ON public.lodgers
+CREATE POLICY "payer_rental_insert_policy"
+ON public.payer_rental
 FOR INSERT
 TO authenticated
 WITH CHECK (
   get_my_role() = 'superadmin'
   OR
-  client_account_id = get_my_client_account_id()
+  (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id())
 );
 
 -- UPDATE: superadmin o admin de la misma cuenta
-CREATE POLICY "lodgers_update_policy"
-ON public.lodgers
+CREATE POLICY "payer_rental_update_policy"
+ON public.payer_rental
 FOR UPDATE
 TO authenticated
 USING (
   get_my_role() = 'superadmin'
   OR
-  client_account_id = get_my_client_account_id()
+  (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id())
 )
 WITH CHECK (
   get_my_role() = 'superadmin'
   OR
-  client_account_id = get_my_client_account_id()
+  (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id())
 );
 
 -- DELETE: solo superadmin
-CREATE POLICY "lodgers_delete_superadmin"
-ON public.lodgers
+CREATE POLICY "payer_rental_delete_policy"
+ON public.payer_rental
 FOR DELETE
 TO authenticated
 USING (get_my_role() = 'superadmin');

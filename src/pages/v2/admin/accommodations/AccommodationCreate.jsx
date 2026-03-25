@@ -126,7 +126,6 @@ export default function AccommodationCreate() {
           bathroom_type: r.bathroom_type,
           kitchen_type: r.kitchen_type,
           notes: r.notes || null,
-          status: "free",
         }))
       );
       navigate("/v2/admin/alojamientos");

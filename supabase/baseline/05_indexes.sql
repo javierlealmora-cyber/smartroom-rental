@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_accommodations_city ON public.accommodations (cit
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_rooms_accommodation ON public.rooms (accommodation_id);
 CREATE INDEX IF NOT EXISTS idx_rooms_client_account ON public.rooms (client_account_id);
-CREATE INDEX IF NOT EXISTS idx_rooms_status ON public.rooms (status);
+CREATE INDEX IF NOT EXISTS idx_rooms_maintenance ON public.rooms (is_maintenance) WHERE (is_maintenance = true);
 CREATE INDEX IF NOT EXISTS idx_rooms_accommodation_number ON public.rooms (accommodation_id, number);
 
 -- ============================================================================
@@ -140,18 +140,17 @@ CREATE INDEX IF NOT EXISTS idx_incidents_category ON public.incidents (category)
 CREATE INDEX IF NOT EXISTS idx_assignments_client_account ON public.lodger_room_assignments (client_account_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_lodger ON public.lodger_room_assignments (lodger_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_room ON public.lodger_room_assignments (room_id);
-CREATE INDEX IF NOT EXISTS idx_assignments_status ON public.lodger_room_assignments (status);
-
 -- Índices únicos parciales para garantizar integridad de asignaciones activas
 -- Previene que una habitación tenga múltiples inquilinos activos simultáneamente
-CREATE UNIQUE INDEX IF NOT EXISTS idx_room_active_assignment 
-ON public.lodger_room_assignments (room_id) 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_active_assignment
+ON public.lodger_room_assignments (room_id)
 WHERE (move_out_date IS NULL);
 
 -- Previene que un inquilino esté en múltiples habitaciones activas simultáneamente
-CREATE UNIQUE INDEX IF NOT EXISTS idx_lodger_active_assignment 
-ON public.lodger_room_assignments (lodger_id) 
-WHERE (status = 'active');
+-- Estado activo = move_out_date IS NULL (sin fecha de salida)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lodger_active_assignment
+ON public.lodger_room_assignments (lodger_id)
+WHERE (move_out_date IS NULL);
 
 -- Verificación
 SELECT 'Índices creados exitosamente (todas las tablas)' as status;

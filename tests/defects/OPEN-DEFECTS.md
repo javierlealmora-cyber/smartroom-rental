@@ -1,5 +1,5 @@
 # Defectos Abiertos — SmartRent Tests
-Última actualización: 2026-03-22
+Última actualización: 2026-03-23
 
 ---
 
@@ -36,7 +36,268 @@ Cascade debe:
 
 ## Defectos Pendientes
 
-**0 bugs pendientes**
+**5 bugs pendientes**
+
+---
+
+## BUG-036 [ALTA] — `TenantsList.jsx`: checkout modal no actualiza `rooms.status` → habitación queda como "Ocupada" sin inquilino
+
+**Módulo:** `src/pages/v2/admin/tenants/TenantsList.jsx` líneas 468-476
+**Detectado:** 2026-03-25
+
+**Comportamiento observado:**
+Tras procesar un checkout desde el modal de `TenantsList`, la habitación sigue mostrando badge "Ocupada" (rojo) en `AccommodationDetail` aunque no tenga ningún inquilino asignado.
+
+**Causa raíz:**
+El modal de checkout actualiza `lodger_room_assignments` con `move_out_date` pero **nunca actualiza `rooms.status`**:
+```js
+// TenantsList.jsx líneas 468-476 — ACTUAL (incorrecto)
+await supabase.from('lodger_room_assignments')
+  .update({ move_out_date: checkoutDate, checkout_notes: values.observations || null })
+  .eq('id', assignment.id);
+// ← Falta UPDATE rooms SET status = 'free'/'pending_checkout'
+```
+Tampoco existe ningún trigger en `supabase/baseline/04_triggers.sql` que sincronice `rooms.status` cuando cambia `lodger_room_assignments`.
+
+**Fix requerido:**
+Después del UPDATE de `lodger_room_assignments`, añadir:
+```js
+const isToday = values.checkout_date.isSame(dayjs(), 'day');
+const newRoomStatus = isToday ? 'free' : 'pending_checkout';
+await supabase
+  .from('rooms')
+  .update({ status: newRoomStatus })
+  .eq('id', assignment.room?.id);
+```
+Nota: `assignment.room?.id` ya está disponible porque `active_assignment` incluye `room:rooms(id, number, accommodation_id)` en el select de `listLodgers`.
+
+**Pasos para reproducir:**
+1. Ir a `/v2/admin/inquilinos`
+2. Hacer checkout de un inquilino activo via el icono LogoutOutlined → modal → Confirmar Check-Out
+3. Ir a `/v2/admin/alojamientos/{id}` → tab Habitaciones
+4. Observar: la habitación sigue en rojo "Ocupada" aunque muestre "Sin inquilino asignado"
+
+---
+
+## BUG-035 [BAJA] — `TenantsList.jsx`: prop `destroyOnClose` deprecada en AntD v5 → warning en consola
+
+**Módulo:** `src/pages/v2/admin/tenants/TenantsList.jsx` línea 440
+**Detectado:** 2026-03-25
+
+**Error obtenido:**
+```
+Warning: [antd: Modal] 'destroyOnClose' is deprecated. Please use 'destroyOnHidden' instead.
+```
+
+**Fix requerido (1 línea):**
+```jsx
+// ANTES
+<Modal ... destroyOnClose>
+
+// DESPUÉS
+<Modal ... destroyOnHidden>
+```
+
+---
+
+## BUG-034 [CERRADO] — `TenantsList.jsx`: fecha de Check-out no se muestra en la tarjeta de inquilinos con estado "Pendiente baja"
+
+**Estado:** ✅ CORREGIDO (2026-03-25) por Claude
+
+**Módulo:** `src/pages/v2/admin/tenants/TenantsList.jsx` + `src/services/lodgers.service.js`
+**Detectado:** 2026-03-25
+
+**Comportamiento observado:**
+La tarjeta de un inquilino con estado "Pendiente baja" muestra la fecha de Check-in pero NO muestra la fecha de Check-out programada, a pesar de que Cascade diseñó que apareciera.
+
+**Causa raíz:**
+Hay dos problemas combinados:
+1. `lodgers.service.js` línea 11: la query `active_assignment` **no selecciona `move_out_date`**:
+   ```js
+   active_assignment:lodger_room_assignments(
+     id, move_in_date, billing_start_date, monthly_rent, status,
+     room:rooms(id, number, accommodation_id),
+     accommodation:accommodations(id, name)
+     // move_out_date NO está seleccionado → asgn.move_out_date = undefined
+   )
+   ```
+2. `TenantsList.jsx` líneas 352-365: el bloque de la tarjeta solo renderiza `Check-in` y el badge de estado — **no hay código que muestre la fecha de Check-out** ni para estado `pending_checkout`.
+
+La fecha de baja **sí existe** en `t.assignments` (cargado en líneas 147-155 con `move_out_date` seleccionado), pero nunca se usa en la tarjeta.
+
+**Fix requerido:**
+
+Paso 1 — `lodgers.service.js`: añadir `move_out_date` al select de `active_assignment`:
+```js
+active_assignment:lodger_room_assignments(
+  id, move_in_date, move_out_date, billing_start_date, monthly_rent, status,
+  room:rooms(id, number, accommodation_id),
+  accommodation:accommodations(id, name)
+)
+```
+
+Paso 2 — `TenantsList.jsx`: añadir línea de Check-out después del Check-in (línea ~356):
+```jsx
+{asgn?.move_out_date && (
+  <div style={{ fontSize: 11, color: "#F59E0B" }}>
+    Check-out: {new Date(asgn.move_out_date).toLocaleDateString('es-ES')}
+  </div>
+)}
+```
+
+**Pasos para reproducir:**
+1. Login como admin.agency1
+2. Navegar a `/v2/admin/inquilinos`
+3. Localizar un inquilino con badge "Pendiente baja" (ej. Francisco Morillo Soto)
+4. Observar: solo aparece la fecha de Check-in, no la de Check-out programada
+
+---
+
+## BUG-033 [CRÍTICO] — `TenantCreate.jsx` referencia `selectedRoomId`, `availableRooms` y `payUntilEndOfMonth` fuera de scope → ReferenceError en submit → creación de inquilinos completamente rota
+
+**Módulo:** `src/pages/v2/admin/tenants/TenantCreate.jsx`
+**Test que falla:** `tests/e2e/specs/tenants.spec.js` › 02 - crear inquilino con asignación de habitación
+**Detectado:** 2026-03-24
+
+**Error obtenido:**
+```
+Alert rojo en el formulario: "selectedRoomId is not defined"
+→ onFinish línea 95: `onboarding_status: selectedRoomId ? "active" : "invited"`
+→ ReferenceError: selectedRoomId is not defined
+→ catch (e) captura el error → setSaveError(e.message)
+→ El inquilino NUNCA se crea — afecta TODOS los casos (con y sin habitación)
+```
+
+**Comportamiento esperado:**
+Al hacer click en "Registrar Inquilino", el inquilino se crea correctamente y se muestra la pantalla "Inquilino Registrado Exitosamente".
+
+**Causa raíz:**
+`TenantCreate.jsx` fue refactorizado para usar el componente `RoomAssignmentForm`. Durante el refactor, las variables `selectedRoomId`, `availableRooms` y `payUntilEndOfMonth` se movieron al estado interno de `RoomAssignmentForm` pero el método `onFinish` de `TenantCreate` no fue actualizado y sigue referenciándolas como si fueran locales.
+
+```js
+// TenantCreate.jsx onFinish — ACTUAL (incorrecto)
+// selectedRoomId, availableRooms, payUntilEndOfMonth → NO definidos en TenantCreate
+onboarding_status: selectedRoomId ? "active" : "invited",    // línea 95 → ReferenceError
+// ...
+if (selectedRoomId && values.accommodation_id) {              // línea 99
+  const selectedRoom = availableRooms.find(...);              // línea 100
+  // ...
+  payload.first_month_amount = payUntilEndOfMonth ? ...;      // línea 110
+}
+setCreatedWithRoom(!!selectedRoomId);                         // línea 117
+```
+
+**Fix requerido:**
+Opción A (preferida): Añadir callbacks a `RoomAssignmentForm` para exponer el estado al padre:
+```js
+// RoomAssignmentForm.jsx — añadir props
+export default function RoomAssignmentForm({ ..., onRoomSelect, onRoomsChange, onPayUntilEomChange }) {
+  // Al seleccionar habitación → llamar onRoomSelect(room)
+  // Al cargar habitaciones → llamar onRoomsChange(rooms)
+  // Al cambiar checkbox → llamar onPayUntilEomChange(value)
+}
+// TenantCreate.jsx — añadir estado local + callbacks
+const [selectedRoomId, setSelectedRoomId] = useState(null);
+const [availableRooms, setAvailableRooms] = useState([]);
+const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
+```
+
+Opción B (más simple): Usar `values.room_id` en lugar de `selectedRoomId` (ya se guarda en el form via `form.setFieldValue("room_id", room.id)`), y pasar `payUntilEndOfMonth` como callback:
+```js
+// Reemplazar selectedRoomId → values.room_id en onFinish
+onboarding_status: values.room_id ? "active" : "invited",
+if (values.room_id && values.accommodation_id) { ... }
+```
+Para `availableRooms` y `payUntilEndOfMonth` se necesita igualmente elevar el estado o usar callbacks.
+
+**Pasos para reproducir:**
+1. Login como admin.agency1
+2. Navegar a `/v2/admin/inquilinos/nuevo`
+3. Rellenar todos los campos del inquilino (con o sin habitación)
+4. Click en "Registrar Inquilino"
+5. Observar: aparece alerta roja "selectedRoomId is not defined", el inquilino NO se crea
+
+---
+
+## BUG-032 [ALTA] — `EntityEdit.jsx` no pasa `clientAccountId` a `updateEntity` → UPDATE falla silenciosamente con PostgREST error
+
+**Módulo:** `src/pages/v2/admin/entities/EntityEdit.jsx` + `src/services/entities.service.js`
+**Test que falla:** `tests/e2e/specs/entities.spec.js` › 04 - editar entidad: actualizar teléfono
+**Detectado:** 2026-03-24
+
+**Error obtenido:**
+```
+El UPDATE retorna error PostgREST (client_account_id=eq.undefined → invalid UUID syntax).
+La excepción es capturada por onFinish → navigate() nunca se llama → la página no redirige.
+El test detecta que el teléfono sigue con el valor original tras la edición.
+```
+
+**Comportamiento esperado:**
+Al guardar cambios en EntityEdit, el UPDATE se ejecuta correctamente y el usuario es redirigido a la lista de entidades.
+
+**Causa raíz:**
+`EntityEdit.jsx` línea 16 solo extrae `{ userName, companyBranding }` de `useAdminLayout()`, omitiendo `clientAccountId`.
+`entities.service.js` línea 41: `.eq("client_account_id", clientAccountId)` recibe `undefined` → PostgREST serializa como `eq.undefined` → fallo de tipo UUID → error 400.
+
+```js
+// EntityEdit.jsx línea 16 — ACTUAL (incorrecto)
+const { userName, companyBranding } = useAdminLayout();
+
+// FIX requerido
+const { userName, companyBranding, clientAccountId } = useAdminLayout();
+
+// EntityEdit.jsx línea 112 — ACTUAL (incorrecto)
+await updateEntity(entity.id, { ... });
+
+// FIX requerido
+await updateEntity(entity.id, { ... }, clientAccountId);
+```
+
+**Pasos para reproducir:**
+1. Login como admin.agency1
+2. Abrir cualquier entidad en `/v2/admin/entidades/{id}/editar`
+3. Modificar cualquier campo (ej. teléfono)
+4. Click en "Guardar"
+5. Observar: no hay redirección, aparece mensaje de error rojo en el formulario
+
+---
+
+## BUG-031 [ALTA] — `entities` tabla tiene `last_name2` y `gender` como NOT NULL pero el form los muestra como opcionales → insert falla con 500
+
+**Módulo:** `supabase/baseline/01_schema.sql` + `src/components/shared/EntityFormFields.jsx`
+**Test que falla:** `tests/e2e/specs/entities.spec.js` › 02 - crear nueva entidad (persona física)
+**Detectado:** 2026-03-24
+
+**Error obtenido:**
+```
+alert "Error creating entity"
+→ Edge Function manage_entity → insertError (no 23505) → HTTP 500
+→ Causa: null value in column "last_name2"/"gender" violates not-null constraint
+```
+
+**Comportamiento esperado:**
+- Opción A: La tabla `entities` debería permitir NULL en `last_name2` y `gender` para personas físicas
+- Opción B: El form debe marcar `last_name2` y `gender` como **obligatorios** con reglas de validación
+
+**Causa raíz:**
+En `01_schema.sql` las columnas `last_name2 text NOT NULL` y `gender text NOT NULL` no permiten NULL.
+En `EntityFormFields.jsx` ambos campos se muestran sin asterisco (opcionales) y se envían como `null` si no se rellenan.
+El Edge Function `manage_entity` hace un INSERT con `last_name2: null` y `gender: null` → Postgres rechaza con constraint violation.
+
+**Fix sugerido:**
+Opción A (preferida): Cambiar el schema para admitir NULL:
+```sql
+last_name2 text,
+gender text,
+```
+Opción B: Añadir `rules={[{ required: true }]}` en EntityFormFields para estos campos.
+
+**Pasos para reproducir:**
+1. Login como admin.agency1
+2. Navegar a `/v2/admin/entidades/nueva`
+3. Seleccionar "Persona física"
+4. Rellenar todos los campos EXCEPTO "Apellido 2" y "Género"
+5. Click en "Crear" → aparece alerta roja "Error creating entity"
 
 ---
 

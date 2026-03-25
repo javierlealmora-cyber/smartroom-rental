@@ -2,7 +2,11 @@
 // Tests BDD adicionales para edge cases identificados por Claude
 // =============================================================================
 
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+
+// Desactivar mock de supabaseClient para este archivo de tests de integración
+// Estos tests necesitan el cliente real de Supabase para funcionar correctamente
+vi.unmock('../supabaseClient');
 import {
   createPlan,
   updatePlan,

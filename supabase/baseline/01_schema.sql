@@ -1,11 +1,15 @@
 -- ============================================================================
 -- BASELINE CERO: Schema Completo - SmartRoom Rental
 -- Descripción: Estructura completa de base de datos (19 tablas)
--- Última actualización: 2026-03-22
+-- Última actualización: 2026-03-25
 -- Cambios en esta versión:
 --   - Añadidos campos de inquilino a tabla profiles (first_name, last_name1, etc.)
 --   - Añadida tabla payer_rental con campos directos (sin entity_id)
 --   - Actualizado constraint onboarding_status en profiles
+--   - Actualizada tabla lodger_room_assignments con campos completos:
+--     * move_in_date, move_out_date, billing_start_date, check_out_date
+--     * deposit_amount, commission_amount, first_month_amount
+--     * checkout_notes para observaciones de check-out
 -- ============================================================================
 
 -- ============================================================================
@@ -134,7 +138,16 @@ CREATE TABLE public.profiles (
   phone text,
   emergency_contact_name text,
   emergency_contact_phone text,
-  
+
+  -- Dirección
+  address_street text,
+  address_number text,
+  address_floor text,
+  address_postal_code text,
+  address_city text,
+  address_province text,
+  address_country text DEFAULT 'España',
+
   -- Auditoria
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -228,7 +241,7 @@ CREATE TABLE public.rooms (
   square_meters numeric,
   bathroom_type text NOT NULL DEFAULT 'shared' CHECK (bathroom_type IN ('shared', 'private', 'suite')),
   kitchen_type text NOT NULL DEFAULT 'shared' CHECK (kitchen_type IN ('shared', 'private', 'suite')),
-  status text NOT NULL DEFAULT 'free' CHECK (status IN ('free', 'occupied', 'maintenance', 'reserved')),
+  is_maintenance boolean NOT NULL DEFAULT false,
   notes text,
   
   -- Auditoria
@@ -520,11 +533,22 @@ CREATE TABLE public.lodger_room_assignments (
   client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
   lodger_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   room_id uuid NOT NULL REFERENCES public.rooms(id) ON DELETE CASCADE,
+  accommodation_id uuid NOT NULL REFERENCES public.accommodations(id) ON DELETE CASCADE,
   
-  -- Periodo de asignación
-  start_date date NOT NULL,
-  end_date date,
-  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'ended')),
+  -- Fechas de asignación
+  move_in_date date NOT NULL,
+  move_out_date date,
+  billing_start_date date NOT NULL,
+  check_out_date date,
+  
+  -- Importes
+  monthly_rent numeric,
+  deposit_amount numeric NOT NULL DEFAULT 0,
+  commission_amount numeric,
+  first_month_amount numeric,
+  
+  -- Notas
+  checkout_notes text,
   
   -- Auditoria
   created_at timestamptz NOT NULL DEFAULT now(),

@@ -12,9 +12,10 @@ import { ArrowLeftOutlined, CheckOutlined, ClearOutlined, InfoCircleOutlined, Sa
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { createLodger } from "../../../../services/lodgers.service";
-import { listAccommodations, listRooms } from "../../../../services/accommodations.service";
+import { listAccommodations } from "../../../../services/accommodations.service";
 import LodgerFormFields from "./components/LodgerFormFields";
 import PayersList from "./components/PayersList";
+import RoomAssignmentForm from "./components/RoomAssignmentForm";
 
 const { Title, Text } = Typography;
 
@@ -33,10 +34,6 @@ export default function TenantCreate() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [accommodations, setAccommodations] = useState([]);
-  const [availableRooms, setAvailableRooms] = useState([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
-  const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
   const [createdLodgerId, setCreatedLodgerId] = useState(null);
   const [createdLodgerName, setCreatedLodgerName] = useState("");
   const [createdWithRoom, setCreatedWithRoom] = useState(false);
@@ -48,65 +45,23 @@ export default function TenantCreate() {
       // Auto-select accommodation from query param
       if (preselectedAccId) {
         form.setFieldValue("accommodation_id", preselectedAccId);
-        setLoadingRooms(true);
-        listRooms(preselectedAccId)
-          .then((rooms) => {
-            setAvailableRooms(rooms);
-            // Auto-select room from query param
-            if (preselectedRoomId) {
-              const room = rooms.find((r) => r.id === preselectedRoomId);
-              if (room && room.status === "free") {
-                setSelectedRoomId(preselectedRoomId);
-                form.setFieldValue("room_id", preselectedRoomId);
-              }
-            }
-          })
-          .catch(() => setAvailableRooms([]))
-          .finally(() => setLoadingRooms(false));
       }
     } catch {
       setAccommodations([]);
     }
-  }, [preselectedAccId, preselectedRoomId]);
+  }, [preselectedAccId]);
 
   useEffect(() => { loadAccommodations(); }, [loadAccommodations]);
-
-  const onAccommodationChange = (accId) => {
-    setSelectedRoomId(null);
-    form.setFieldValue("room_id", undefined);
-    if (!accId) { 
-      setAvailableRooms([]);
-      // Limpiar campos de asignación cuando se deselecciona alojamiento
-      form.setFieldsValue({
-        move_in_date: dayjs(),
-        deposit_amount: undefined,
-        commission_amount: undefined,
-        first_month_amount: undefined,
-        end_of_month_amount: undefined
-      });
-      setPayUntilEndOfMonth(false);
-      return;
-    }
-    setLoadingRooms(true);
-    listRooms(accId)
-      .then(setAvailableRooms)
-      .catch(() => setAvailableRooms([]))
-      .finally(() => setLoadingRooms(false));
-  };
 
   const clearRoomAssignment = () => {
     form.setFieldsValue({
       accommodation_id: undefined,
       room_id: undefined,
-      move_in_date: dayjs(),
+      move_in_date: undefined,
       deposit_amount: undefined,
       commission_amount: undefined,
       first_month_amount: undefined,
-      end_of_month_amount: undefined
     });
-    setSelectedRoomId(null);
-    setAvailableRooms([]);
-    setPayUntilEndOfMonth(false);
   };
 
   const backPath = preselectedAccId
@@ -130,6 +85,13 @@ export default function TenantCreate() {
         email: values.email,
         phone: values.phone || null,
         document_id: values.document_id || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_floor: values.address_floor || null,
+        address_postal_code: values.address_postal_code || null,
+        address_city: values.address_city || null,
+        address_province: values.address_province || null,
+        address_country: values.address_country || null,
         onboarding_status: selectedRoomId ? "active" : "invited",
       };
 
@@ -301,181 +263,14 @@ export default function TenantCreate() {
               }
               style={{ marginBottom: 24 }}
             >
-              <Form.Item
-                label="Alojamiento"
-                name="accommodation_id"
-              >
-                <Select
-                  placeholder="Seleccionar alojamiento..."
-                  onChange={onAccommodationChange}
-                  options={accommodations.map((a) => ({ value: a.id, label: a.name }))}
-                  allowClear
-                />
-              </Form.Item>
-
-              <Form.Item
-                label="Habitación"
-                name="room_id"
-                rules={[
-                  { 
-                    required: !!form.getFieldValue("accommodation_id"), 
-                    message: "Debes seleccionar una habitación" 
-                  }
-                ]}
-              >
-                {loadingRooms ? (
-                  <Text type="secondary">Cargando habitaciones...</Text>
-                ) : availableRooms.length === 0 ? (
-                  <Text type="secondary">
-                    {form.getFieldValue("accommodation_id")
-                      ? "No hay habitaciones en este alojamiento"
-                      : "Selecciona primero un alojamiento"}
-                  </Text>
-                ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
-                    {availableRooms.map((room) => {
-                      const isFree = room.status === "free";
-                      const isSelected = selectedRoomId === room.id;
-                      return (
-                        <div
-                          key={room.id}
-                          onClick={() => { if (isFree) { setSelectedRoomId(room.id); form.setFieldValue("room_id", room.id); } }}
-                          style={{
-                            padding: "12px 8px",
-                            border: `2px solid ${isSelected ? "#111827" : isFree ? "#d9f7be" : "#ffd8bf"}`,
-                            borderRadius: 8,
-                            backgroundColor: isSelected ? "#f0f0f0" : "#fff",
-                            cursor: isFree ? "pointer" : "not-allowed",
-                            opacity: isFree ? 1 : 0.5,
-                            textAlign: "center",
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, marginBottom: 4 }}>Hab. {room.number}</div>
-                          <Tag color={ROOM_STATUS_TAG[room.status] || "default"} style={{ fontSize: 10 }}>
-                            {ROOM_STATUS_LABEL[room.status] || room.status}
-                          </Tag>
-                          {room.monthly_rent > 0 && (
-                            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>{room.monthly_rent}€/mes</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Form.Item>
-
-              <Form.Item
-                label="Fecha de Check-In"
-                name="move_in_date"
-                rules={[
-                  { 
-                    required: !!form.getFieldValue("accommodation_id"), 
-                    message: "La fecha de check-in es obligatoria" 
-                  }
-                ]}
-              >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-              </Form.Item>
-
-              <Form.Item>
-                <Checkbox
-                  checked={payUntilEndOfMonth}
-                  onChange={(e) => setPayUntilEndOfMonth(e.target.checked)}
-                >
-                  El inquilino va a pagar desde la fecha de Check-in hasta fin de mes
-                </Checkbox>
-              </Form.Item>
-
-              {payUntilEndOfMonth && (
-                <>
-                  <Form.Item
-                    label="Importe a pagar hasta fin de mes"
-                    name="end_of_month_amount"
-                    rules={[
-                      { 
-                        required: payUntilEndOfMonth && !!form.getFieldValue("accommodation_id"), 
-                        message: "El importe es obligatorio" 
-                      }
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Ej: 450"
-                      addonAfter="€"
-                    />
-                  </Form.Item>
-
-                  <Form.Item label="Fecha del próximo pago">
-                    <input
-                      type="text"
-                      readOnly
-                      value={(() => {
-                        const moveInDate = form.getFieldValue('move_in_date');
-                        if (!moveInDate) return '';
-                        const nextMonth = moveInDate.add(1, 'month').startOf('month');
-                        return nextMonth.format('DD/MM/YYYY');
-                      })()}
-                      style={{
-                        width: '100%',
-                        padding: '4px 11px',
-                        border: '1px solid #d9d9d9',
-                        borderRadius: '6px',
-                        backgroundColor: '#f5f5f5',
-                        cursor: 'not-allowed',
-                        color: '#000'
-                      }}
-                    />
-                  </Form.Item>
-                </>
-              )}
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Importe de la Fianza (€)"
-                    name="deposit_amount"
-                    rules={[
-                      { 
-                        required: !!form.getFieldValue("accommodation_id"), 
-                        message: "El importe de la fianza es obligatorio" 
-                      }
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Ej: 900"
-                      addonAfter="€"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Importe Comisión (€)" name="commission_amount">
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Opcional"
-                      addonAfter="€"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {!payUntilEndOfMonth && (
-                <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    min={0}
-                    precision={2}
-                    placeholder="Para entradas a mitad de mes (opcional)"
-                    addonAfter="€"
-                  />
-                </Form.Item>
-              )}
+              <RoomAssignmentForm
+                form={form}
+                accommodations={accommodations}
+                preselectedAccId={preselectedAccId}
+                preselectedRoomId={preselectedRoomId}
+                required={false}
+                allowAccommodationChange={true}
+              />
             </Card>
           </Col>
         </Row>

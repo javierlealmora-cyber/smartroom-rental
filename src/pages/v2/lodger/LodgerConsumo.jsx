@@ -169,11 +169,11 @@ export default function LodgerConsumo() {
       const [{ data: assignData }, { data: sData, error: sErr }, { data: logData }] = await Promise.all([
         supabase
           .from("lodger_room_assignments")
-          .select(`id, move_in_date, billing_start_date, monthly_rent, status,
+          .select(`id, move_in_date, billing_start_date, monthly_rent,
             room:rooms(id, number, square_meters, bathroom_type, kitchen_type),
             accommodation:accommodations(id, name, address_line1, city)`)
           .eq("lodger_id", lodgerData.id)
-          .eq("status", "active")
+          .is("move_out_date", null)
           .maybeSingle(),
         supabase
           .from("energy_settlements")

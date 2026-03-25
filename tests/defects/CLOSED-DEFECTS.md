@@ -1,5 +1,6 @@
 # Defectos Cerrados — SmartRent Tests
 Historial de bugs resueltos
+Última actualización: 2026-03-23
 
 ---
 
@@ -20,6 +21,38 @@ Historial de bugs resueltos
 ---
 
 ## Historial
+
+## BUG-030 [ALTA] — Tests de integración `plans.service.edge-cases.test.js` fallan en suite completa
+**Módulo:** `src/services/__tests__/plans.service.edge-cases.test.js`
+**Fecha de detección:** 2026-03-23
+**Fecha de resolución:** 2026-03-23
+**Resuelto por:** Cascade
+
+**Problema:** Los 19 tests de `plans.service.edge-cases.test.js` pasaban al ejecutarse solos pero 16 de ellos fallaban cuando se ejecutaba la suite completa (`npx vitest run`). El error era siempre el mismo patrón en `createTestPlan`: "Error al crear plan: <mensaje de BD>". Los tests son de integración real (llaman a Supabase remoto) y cuando Vitest los ejecutaba en paralelo con otros test files que usan `vi.mock('../../services/supabaseClient')`, el mock de otros archivos interfería con el cliente real que este archivo necesita.
+
+**Solución:** Añadido `vi.unmock('../supabaseClient')` al inicio del archivo (después de los imports de vitest) para desactivar explícitamente cualquier mock de supabaseClient que otros tests hayan configurado. Esto asegura que este archivo de tests de integración siempre use el cliente real de Supabase.
+
+**Resultado:** Los 19 tests ahora pasan tanto en ejecución aislada como en la suite completa.
+
+---
+
+## BUG-029 [MEDIA] — Campos `street_number`, `floor` y `door` no se persisten en AccommodationEdit
+**Módulo:** `src/pages/v2/admin/accommodations/AccommodationEdit.jsx`
+**Fecha de detección:** 2026-03-22
+**Fecha de resolución:** 2026-03-23
+**Resuelto por:** Cascade
+
+**Problema:** El formulario "Datos del Alojamiento" en `AccommodationEdit.jsx` define tres campos de dirección —`street_number` (Número), `floor` (Piso) y `door` (Puerta)— que **no existían como columnas en la tabla `accommodations`**. La función `onSaveAccommodation` solo guardaba `address_line1`, `address_line2`, `postal_code`, `city`, `province`, `notes`, `status`, `name` y `owner_entity_id`. Los valores introducidos en `street_number`, `floor` y `door` se descartaban silenciosamente al pulsar "Guardar Alojamiento". Adicionalmente, la función `load()` no restauraba estos campos al editar.
+
+**Solución:**
+1. Creada migración `20260323_add_address_detail_fields_to_accommodations.sql` para añadir las 3 columnas a la tabla `accommodations`
+2. Ejecutada migración en DEV con `mcp0_apply_migration`
+3. Actualizada función `onSaveAccommodation` para incluir `street_number`, `floor` y `door` en el objeto de actualización (líneas 90-92)
+4. Actualizada función `load()` para restaurar estos campos al editar (líneas 66-68)
+
+**Resultado:** Los campos de dirección desglosada ahora se guardan y restauran correctamente en la base de datos.
+
+---
 
 ## BUG-024 [MEDIA] — Test `belongsToCompany()` usa `company_id` obsoleto en lugar de `client_account_id`
 **Módulo:** `src/tests/auth/auth.service.test.js`

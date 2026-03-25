@@ -102,17 +102,23 @@ export default function TenantEdit() {
       if (activeAsgn?.room?.id) {
         loadDocuments(id, activeAsgn.room.id);
       }
-      const nameParts = (data.full_name || "").trim().split(" ");
       form.setFieldsValue({
-        first_name: nameParts[0] || "",
-        last_name1: nameParts[1] || "",
-        last_name2: nameParts.slice(2).join(" ") || "",
+        first_name: data.first_name || "",
+        last_name1: data.last_name1 || "",
+        last_name2: data.last_name2 || "",
         nickname: data.nickname || "",
         email: data.email,
         phone: data.phone || "",
         document_id: data.document_id || "",
         status: data.onboarding_status,
         gender: data.gender || null,
+        address_street: data.address_street || "",
+        address_number: data.address_number || "",
+        address_floor: data.address_floor || "",
+        address_postal_code: data.address_postal_code || "",
+        address_city: data.address_city || "",
+        address_province: data.address_province || "",
+        address_country: data.address_country || "",
       });
       // Auto-open reassign modal if ?action=reassign
       if (searchParams.get("action") === "reassign") {
@@ -133,14 +139,14 @@ export default function TenantEdit() {
     if (!accId) return;
     setLoadingRooms(true);
     try {
-      const { data, error: roomsErr } = await supabase
-        .from("rooms")
-        .select("id, number, status")
-        .eq("accommodation_id", accId)
-        .eq("status", "free")
-        .order("number");
+      const today = new Date().toISOString().split("T")[0];
+      const [{ data, error: roomsErr }, { data: occupied }] = await Promise.all([
+        supabase.from("rooms").select("id, number, is_maintenance").eq("accommodation_id", accId).eq("is_maintenance", false).order("number"),
+        supabase.from("lodger_room_assignments").select("room_id").eq("accommodation_id", accId).or(`move_out_date.is.null,move_out_date.gt.${today}`),
+      ]);
       if (roomsErr) throw new Error(roomsErr.message);
-      setAvailableRooms(data || []);
+      const occupiedIds = new Set((occupied || []).map(a => a.room_id));
+      setAvailableRooms((data || []).filter(r => !occupiedIds.has(r.id)));
     } catch (e) {
       setReassignError(e.message);
     } finally {
@@ -190,10 +196,20 @@ export default function TenantEdit() {
         .filter(Boolean).join(" ");
       await updateLodger(id, {
         full_name,
+        first_name: values.first_name || null,
+        last_name1: values.last_name1 || null,
+        last_name2: values.last_name2 || null,
         nickname: values.nickname || null,
         phone: values.phone || null,
         document_id: values.document_id || null,
         gender: values.gender || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_floor: values.address_floor || null,
+        address_postal_code: values.address_postal_code || null,
+        address_city: values.address_city || null,
+        address_province: values.address_province || null,
+        address_country: values.address_country || null,
       });
       navigate("/v2/admin/inquilinos");
     } catch (e) {
@@ -372,7 +388,7 @@ export default function TenantEdit() {
             }
           >
             {activeAssignment ? (
-              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 110 }}>
+              <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280", width: 150 }}>
                 <Descriptions.Item label="Alojamiento">
                   <Text strong>{activeAssignment.accommodation?.name}</Text>
                 </Descriptions.Item>
@@ -386,10 +402,10 @@ export default function TenantEdit() {
                     )}
                   </Space>
                 </Descriptions.Item>
-                <Descriptions.Item label="Entrada">
+                <Descriptions.Item label="Fecha de Check-In">
                   {fDate(activeAssignment.move_in_date)}
                 </Descriptions.Item>
-                <Descriptions.Item label="Facturación">
+                <Descriptions.Item label="Fecha primer pago">
                   {fDate(activeAssignment.billing_start_date)}
                 </Descriptions.Item>
                 <Descriptions.Item label="Renta">
@@ -399,6 +415,33 @@ export default function TenantEdit() {
                       : "-"}
                     <Text type="secondary" style={{ fontSize: 11 }}>/mes</Text>
                   </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Importe hasta fin de mes">
+                  {activeAssignment.pay_until_end_of_month && activeAssignment.amount_until_end_of_month != null ? (
+                    <Text strong style={{ color: "#059669" }}>
+                      {new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(activeAssignment.amount_until_end_of_month)}
+                    </Text>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Importe de la Fianza">
+                  {activeAssignment.deposit_amount != null ? (
+                    <Text strong style={{ color: "#d97706" }}>
+                      {new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(activeAssignment.deposit_amount)}
+                    </Text>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Importe de Comisión">
+                  {activeAssignment.commission_amount != null ? (
+                    <Text strong style={{ color: "#7c3aed" }}>
+                      {new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(activeAssignment.commission_amount)}
+                    </Text>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
                 </Descriptions.Item>
               </Descriptions>
             ) : (

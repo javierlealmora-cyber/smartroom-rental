@@ -49,10 +49,10 @@ CREATE TRIGGER update_rooms_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- lodgers
-DROP TRIGGER IF EXISTS update_lodgers_updated_at ON public.lodgers;
-CREATE TRIGGER update_lodgers_updated_at
-  BEFORE UPDATE ON public.lodgers
+-- payer_rental
+DROP TRIGGER IF EXISTS update_payer_rental_updated_at ON public.payer_rental;
+CREATE TRIGGER update_payer_rental_updated_at
+  BEFORE UPDATE ON public.payer_rental
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -106,7 +106,7 @@ CREATE TRIGGER update_lodger_room_assignments_updated_at
   EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Verificación
-SELECT 'Triggers creados exitosamente (15 triggers)' as status;
+SELECT 'Triggers creados exitosamente (14 triggers)' as status;
 SELECT tgname, tgrelid::regclass 
 FROM pg_trigger 
 WHERE tgname LIKE 'update_%_updated_at'

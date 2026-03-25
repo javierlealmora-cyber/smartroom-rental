@@ -1,0 +1,158 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: A
+      - generic [ref=e7]:
+        - generic [ref=e8]: Agency Rentals 1
+        - generic [ref=e9]: agency
+    - navigation [ref=e10]:
+      - button "Dashboard Dashboard" [ref=e11] [cursor=pointer]:
+        - img "Dashboard" [ref=e13]
+        - generic [ref=e14]: Dashboard
+      - button "Entidades Entidades" [ref=e15] [cursor=pointer]:
+        - img "Entidades" [ref=e17]
+        - generic [ref=e18]: Entidades
+      - button "Alojamientos Alojamientos" [ref=e19] [cursor=pointer]:
+        - img "Alojamientos" [ref=e21]
+        - generic [ref=e22]: Alojamientos
+      - button "Inquilinos Inquilinos" [ref=e23] [cursor=pointer]:
+        - img "Inquilinos" [ref=e25]
+        - generic [ref=e26]: Inquilinos
+      - button "Servicios" [ref=e27] [cursor=pointer]:
+        - img [ref=e29]
+        - generic [ref=e38]: Servicios
+      - button "Catálogo" [ref=e39] [cursor=pointer]:
+        - img [ref=e41]
+        - generic [ref=e51]: Catálogo
+    - generic [ref=e52]:
+      - generic [ref=e53]: Admin Agency 1
+      - button "⚙️" [ref=e54] [cursor=pointer]
+      - button "Salir" [ref=e55] [cursor=pointer]
+  - generic [ref=e56]:
+    - generic [ref=e57]: Dashboard/
+    - generic [ref=e58]: Entidades/
+    - generic [ref=e59]: Nueva
+  - main [ref=e60]:
+    - heading "Nueva entidad" [level=2] [ref=e61]
+    - text: Se crea dentro de tu Cuenta Cliente
+    - generic [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e69]:
+          - generic "Tipo legal" [ref=e71]: "* Tipo legal"
+          - generic [ref=e75] [cursor=pointer]:
+            - generic "Persona física" [ref=e76]:
+              - text: Persona física
+              - combobox "* Tipo legal" [ref=e77]
+            - img "down" [ref=e79]:
+              - img [ref=e80]
+        - generic [ref=e82]:
+          - generic [ref=e85]:
+            - generic "Nombre" [ref=e87]: "* Nombre"
+            - generic [ref=e88]:
+              - textbox "* Nombre" [ref=e91]:
+                - /placeholder: Nombre
+                - text: E2E
+              - generic [ref=e94]: Solo se permiten letras
+          - generic [ref=e97]:
+            - generic "Apellido 1" [ref=e99]: "* Apellido 1"
+            - generic [ref=e100]:
+              - textbox "* Apellido 1" [ref=e103]:
+                - /placeholder: Garrido
+                - text: E2E Addr 1774474656529
+              - generic [ref=e106]: Solo se permiten letras
+          - generic [ref=e109]:
+            - generic "Apellido 2" [ref=e111]
+            - textbox "Apellido 2" [ref=e115]:
+              - /placeholder: Montes
+        - generic [ref=e116]:
+          - generic [ref=e119]:
+            - generic "Nombre preferido" [ref=e121]
+            - textbox "Nombre preferido" [ref=e125]:
+              - /placeholder: Palo
+          - generic [ref=e128]:
+            - generic "Género" [ref=e130]
+            - generic [ref=e134] [cursor=pointer]:
+              - generic [ref=e135]:
+                - generic: Seleccionar
+                - combobox "Género" [ref=e136]
+              - img "down" [ref=e138]:
+                - img [ref=e139]
+        - generic [ref=e141]:
+          - generic [ref=e144]:
+            - generic "DNI/NIE" [ref=e146]: "* DNI/NIE"
+            - generic [ref=e147]:
+              - textbox "* DNI/NIE" [ref=e150]:
+                - /placeholder: 12345678A
+              - generic [ref=e153]: El documento es obligatorio
+          - generic [ref=e156]:
+            - generic "Email de facturación" [ref=e158]: "* Email de facturación"
+            - textbox "* Email de facturación" [ref=e162]:
+              - /placeholder: billing@basicrentals1.com
+              - text: e2e.addr.1774474656529@test.smartrent.com
+        - generic [ref=e166]:
+          - generic "Teléfono" [ref=e168]
+          - textbox "Teléfono" [ref=e172]:
+            - /placeholder: "+3460000"
+        - separator [ref=e174]:
+          - generic [ref=e176]: Dirección
+        - generic [ref=e180]:
+          - generic "Tipo de vía" [ref=e182]: "* Tipo de vía"
+          - generic [ref=e183]:
+            - textbox "* Tipo de vía" [ref=e186]:
+              - /placeholder: Calle, Avenida, Plaza, Paseo...
+            - generic [ref=e187]:
+              - generic [ref=e189]: Indique la calle
+              - generic [ref=e190]: "Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol..."
+        - generic [ref=e193]:
+          - generic "Número" [ref=e195]: "* Número"
+          - generic [ref=e196]:
+            - textbox "* Número" [ref=e199]:
+              - /placeholder: "12"
+            - generic [ref=e202]: Indique el número
+        - generic [ref=e205]:
+          - generic "Piso" [ref=e207]
+          - textbox "Piso" [ref=e211]:
+            - /placeholder: "2"
+        - generic [ref=e214]:
+          - generic "Puerta" [ref=e216]
+          - textbox "Puerta" [ref=e220]:
+            - /placeholder: A
+        - generic [ref=e223]:
+          - generic "Código Postal" [ref=e225]: "* Código Postal"
+          - generic [ref=e226]:
+            - textbox "* Código Postal" [ref=e229]:
+              - /placeholder: "28001"
+            - generic [ref=e232]: Indique el código postal
+        - generic [ref=e235]:
+          - generic "Ciudad / Municipio" [ref=e237]: "* Ciudad / Municipio"
+          - textbox "* Ciudad / Municipio" [ref=e241]:
+            - /placeholder: Madrid
+            - text: Madrid
+        - generic [ref=e244]:
+          - generic "Provincia" [ref=e246]: "* Provincia"
+          - generic [ref=e250]:
+            - generic "Madrid" [ref=e251]:
+              - text: Madrid
+              - combobox "* Provincia" [ref=e252]
+            - img "down" [ref=e254]:
+              - img [ref=e255]
+        - generic [ref=e259]:
+          - generic "País" [ref=e261]: "* País"
+          - textbox "* País" [ref=e265]:
+            - /placeholder: España
+            - text: España
+        - generic [ref=e268]:
+          - generic "Información adicional" [ref=e270]
+          - generic [ref=e271]:
+            - textbox "Información adicional" [ref=e274]:
+              - /placeholder: Escalera B, Bloque 3...
+            - generic [ref=e276]: Escalera, bloque, referencia catastral, etc.
+      - generic [ref=e279]:
+        - button "Volver" [ref=e281] [cursor=pointer]:
+          - generic [ref=e282]: Volver
+        - button "Crear" [active] [ref=e284] [cursor=pointer]:
+          - generic [ref=e285]: Crear
+```

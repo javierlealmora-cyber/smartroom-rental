@@ -162,18 +162,11 @@ serve(async (req) => {
             move_in_date,
             billing_start_date: billing_start_date || move_in_date,
             monthly_rent: monthly_rent || 0,
-            status: "active",
           });
 
         if (assignError) {
           // No hacer rollback del lodger, solo registrar el error
           console.error("Error creating room assignment:", assignError);
-        } else {
-          // Actualizar estado de la habitación a ocupada
-          await supabase
-            .from("rooms")
-            .update({ status: "occupied" })
-            .eq("id", room_id);
         }
       }
 
@@ -351,13 +344,24 @@ serve(async (req) => {
       // Verificar que la nueva habitación existe, está libre y pertenece al tenant
       const { data: newRoom } = await supabase
         .from("rooms")
-        .select("id, status, accommodation_id")
+        .select("id, is_maintenance, accommodation_id")
         .eq("id", new_room_id)
         .eq("client_account_id", clientAccountId)
         .single();
 
       if (!newRoom) return err(ERROR_CODES.NOT_FOUND, "Room not found", 404);
-      if (newRoom.status !== "free") {
+      if (newRoom.is_maintenance) {
+        return err(ERROR_CODES.VALIDATION, "Room is under maintenance", 400);
+      }
+      // Verificar que no hay asignación activa o futura en la habitación
+      const today = new Date().toISOString().split("T")[0];
+      const { data: activeAsgn } = await supabase
+        .from("lodger_room_assignments")
+        .select("id")
+        .eq("room_id", new_room_id)
+        .or(`move_out_date.is.null,move_out_date.gt.${today}`)
+        .maybeSingle();
+      if (activeAsgn) {
         return err(ERROR_CODES.VALIDATION, "Room is not available", 400);
       }
 
@@ -366,20 +370,15 @@ serve(async (req) => {
         .from("lodger_room_assignments")
         .select("id, room_id")
         .eq("lodger_id", id)
-        .eq("status", "active")
+        .is("move_out_date", null)
         .maybeSingle();
 
       if (currentAssignment) {
         await supabase
           .from("lodger_room_assignments")
-          .update({ status: "ended", move_out_date: move_in_date })
+          .update({ move_out_date: move_in_date })
           .eq("id", currentAssignment.id);
 
-        // Liberar habitación anterior
-        await supabase
-          .from("rooms")
-          .update({ status: "free" })
-          .eq("id", currentAssignment.room_id);
       }
 
       // Crear nueva asignación
@@ -392,7 +391,6 @@ serve(async (req) => {
           move_in_date,
           billing_start_date: billing_start_date || move_in_date,
           monthly_rent: monthly_rent || null,
-          status: "active",
         })
         .select("*")
         .single();
@@ -400,12 +398,6 @@ serve(async (req) => {
       if (assignError) {
         return err(ERROR_CODES.INTERNAL, "Error creating room assignment", 500, assignError.message);
       }
-
-      // Marcar nueva habitación como ocupada
-      await supabase
-        .from("rooms")
-        .update({ status: "occupied" })
-        .eq("id", new_room_id);
 
       await supabase.from("audit_log").insert({
         client_account_id: clientAccountId,
@@ -441,18 +433,17 @@ serve(async (req) => {
         .from("lodger_room_assignments")
         .select("id, room_id")
         .eq("lodger_id", id)
-        .eq("status", "active")
+        .is("move_out_date", null)
         .maybeSingle();
 
       if (!assignment) {
         return err(ERROR_CODES.NOT_FOUND, "No active room assignment found", 404);
       }
 
-      // Actualizar asignación a pending_checkout
+      // Programar checkout: guardar la fecha de salida
       const { data: updated, error: updateError } = await supabase
         .from("lodger_room_assignments")
         .update({
-          status: "pending_checkout",
           move_out_date: checkout_date || null,
         })
         .eq("id", assignment.id)

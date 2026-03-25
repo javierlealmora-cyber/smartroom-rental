@@ -115,11 +115,19 @@ export default function EntitiesList() {
             .in("owner_entity_id", entitiesToLoadKpis.map((e) => e.id));
           const accIds = (accs || []).map((a) => a.id);
           let roomsByAcc = {};
+          let assignByRoom = {};
           if (accIds.length > 0) {
-            const { data: rooms } = await supabase
-              .from("rooms").select("id, accommodation_id, status")
-              .eq("client_account_id", clientAccountId)
-              .in("accommodation_id", accIds);
+            const today = new Date().toISOString().split("T")[0];
+            const [{ data: rooms }, { data: assignments }] = await Promise.all([
+              supabase.from("rooms").select("id, accommodation_id, is_maintenance")
+                .eq("client_account_id", clientAccountId)
+                .in("accommodation_id", accIds),
+              supabase.from("lodger_room_assignments").select("room_id, move_out_date")
+                .eq("client_account_id", clientAccountId)
+                .in("accommodation_id", accIds)
+                .or(`move_out_date.is.null,move_out_date.gt.${today}`),
+            ]);
+            (assignments || []).forEach((a) => { assignByRoom[a.room_id] = a; });
             (rooms || []).forEach((r) => {
               if (!roomsByAcc[r.accommodation_id]) roomsByAcc[r.accommodation_id] = [];
               roomsByAcc[r.accommodation_id].push(r);
@@ -129,12 +137,15 @@ export default function EntitiesList() {
           entitiesToLoadKpis.forEach((e) => {
             const myAccs = (accs || []).filter((a) => a.owner_entity_id === e.id);
             const myRooms = myAccs.flatMap((a) => roomsByAcc[a.id] || []);
-            kpis[e.id] = {
-              accs: myAccs.length,
-              free: myRooms.filter((r) => r.status === "free").length,
-              occupied: myRooms.filter((r) => r.status === "occupied").length,
-              pending: myRooms.filter((r) => r.status === "pending_checkout").length,
-            };
+            let free = 0, occupied = 0, pending = 0;
+            myRooms.forEach((r) => {
+              if (r.is_maintenance) return;
+              const asgn = assignByRoom[r.id];
+              if (!asgn) free++;
+              else if (!asgn.move_out_date) occupied++;
+              else pending++;
+            });
+            kpis[e.id] = { accs: myAccs.length, free, occupied, pending };
           });
           setEntityKpis(kpis);
         }

@@ -1,0 +1,243 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: A
+      - generic [ref=e7]:
+        - generic [ref=e8]: Agency Rentals 1
+        - generic [ref=e9]: agency
+    - navigation [ref=e10]:
+      - button "Dashboard Dashboard" [ref=e11] [cursor=pointer]:
+        - img "Dashboard" [ref=e13]
+        - generic [ref=e14]: Dashboard
+      - button "Entidades Entidades" [ref=e15] [cursor=pointer]:
+        - img "Entidades" [ref=e17]
+        - generic [ref=e18]: Entidades
+      - button "Alojamientos Alojamientos" [ref=e19] [cursor=pointer]:
+        - img "Alojamientos" [ref=e21]
+        - generic [ref=e22]: Alojamientos
+      - button "Inquilinos Inquilinos" [ref=e23] [cursor=pointer]:
+        - img "Inquilinos" [ref=e25]
+        - generic [ref=e26]: Inquilinos
+      - button "Servicios" [ref=e27] [cursor=pointer]:
+        - img [ref=e29]
+        - generic [ref=e38]: Servicios
+      - button "Catálogo" [ref=e39] [cursor=pointer]:
+        - img [ref=e41]
+        - generic [ref=e51]: Catálogo
+    - generic [ref=e52]:
+      - generic [ref=e53]: Admin Agency 1
+      - button "⚙️" [ref=e54] [cursor=pointer]
+      - button "Salir" [ref=e55] [cursor=pointer]
+  - generic [ref=e56]:
+    - generic [ref=e57]: Dashboard/
+    - generic [ref=e58]: Alojamientos/
+    - generic [ref=e59]: Habitaciones
+  - main [ref=e60]:
+    - generic [ref=e61]:
+      - button "arrow-left Alojamientos" [ref=e62] [cursor=pointer]:
+        - img "arrow-left" [ref=e64]:
+          - img [ref=e65]
+        - generic [ref=e67]: Alojamientos
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - heading "Agency Rentals 1 - Owner Entity - Apartamento Principal" [level=2] [ref=e70]
+          - text: Calle Principal 123, 28001, Madrid
+        - button "user-add Nuevo inquilino" [ref=e74] [cursor=pointer]:
+          - img "user-add" [ref=e76]:
+            - img [ref=e77]
+          - generic [ref=e79]: Nuevo inquilino
+    - generic [ref=e80]:
+      - generic [ref=e81]:
+        - button "Datos del Alojamiento" [ref=e82] [cursor=pointer]
+        - button "Habitaciones" [ref=e83] [cursor=pointer]
+        - button "Consumos" [ref=e84] [cursor=pointer]
+        - button "Facturas" [ref=e85] [cursor=pointer]
+        - button "Hucha Energética" [ref=e86] [cursor=pointer]
+      - generic [ref=e87]:
+        - button "Información" [ref=e88] [cursor=pointer]
+        - button "Ocupación" [ref=e89] [cursor=pointer]
+    - generic [ref=e91]:
+      - generic [ref=e92]:
+        - generic [ref=e95]: Datos del Alojamiento
+        - generic [ref=e97]:
+          - generic [ref=e100]:
+            - generic "Nombre" [ref=e102]: "* Nombre"
+            - textbox "* Nombre" [ref=e106]: Agency Rentals 1 - Owner Entity - Apartamento Principal
+          - generic [ref=e109]:
+            - generic "Entidad Propietaria" [ref=e111]: "* Entidad Propietaria"
+            - generic [ref=e115] [cursor=pointer]:
+              - generic "Agency Rentals 1 - Owner Entity" [ref=e116]:
+                - text: Agency Rentals 1 - Owner Entity
+                - combobox "* Entidad Propietaria" [ref=e117]
+              - img "down" [ref=e119]:
+                - img [ref=e120]
+          - generic [ref=e124]:
+            - generic "Estado" [ref=e126]: "* Estado"
+            - generic [ref=e130] [cursor=pointer]:
+              - generic "Activo" [ref=e131]:
+                - text: Activo
+                - combobox "* Estado" [ref=e132]
+              - img "down" [ref=e134]:
+                - img [ref=e135]
+          - generic [ref=e139]:
+            - generic "Calle" [ref=e141]: "* Calle"
+            - textbox "* Calle" [ref=e145]:
+              - /placeholder: Calle Gran Vía, Av. de la Constitución...
+              - text: Calle Principal 123
+          - generic [ref=e148]:
+            - generic "Bloque / Escalera / Piso (opcional)" [ref=e150]
+            - textbox "Bloque / Escalera / Piso (opcional)" [ref=e154]:
+              - /placeholder: Bloque B, Escalera 2, 3ºA...
+          - generic [ref=e157]:
+            - generic "Código Postal" [ref=e159]: "* Código Postal"
+            - textbox "* Código Postal" [ref=e163]:
+              - /placeholder: "28001"
+              - text: "28001"
+          - generic [ref=e166]:
+            - generic "Ciudad" [ref=e168]: "* Ciudad"
+            - textbox "* Ciudad" [ref=e172]:
+              - /placeholder: Madrid
+              - text: Madrid
+          - generic [ref=e175]:
+            - generic "Provincia" [ref=e177]: "* Provincia"
+            - generic [ref=e181]:
+              - generic "Madrid" [ref=e182]:
+                - text: Madrid
+                - combobox "* Provincia" [ref=e183]
+              - img "down" [ref=e185]:
+                - img [ref=e186]
+              - img "close-circle" [ref=e189] [cursor=pointer]:
+                - img [ref=e190]
+          - generic [ref=e194]:
+            - generic "Notas" [ref=e196]
+            - textbox "Notas" [ref=e200]
+      - generic [ref=e201]:
+        - generic [ref=e204]: Configuración de Consumo
+        - generic [ref=e211]:
+          - switch [checked] [ref=e213] [cursor=pointer]
+          - generic [ref=e217]:
+            - text: Los servicios (agua, luz, gas) están
+            - strong [ref=e218]: incluidos en el alquiler
+      - button "save Guardar Alojamiento" [ref=e220] [cursor=pointer]:
+        - img "save" [ref=e222]:
+          - img [ref=e223]
+        - generic [ref=e225]: Guardar Alojamiento
+    - generic [ref=e227]:
+      - generic [ref=e229]:
+        - generic [ref=e231]:
+          - generic [ref=e232]: Habitaciones
+          - generic [ref=e234]: "3"
+        - button "plus Añadir" [active] [ref=e236] [cursor=pointer]:
+          - img "plus" [ref=e238]:
+            - img [ref=e239]
+          - generic [ref=e242]: Añadir
+      - generic [ref=e243]:
+        - generic [ref=e245]:
+          - strong [ref=e247]: Nueva Habitación
+          - generic [ref=e248]:
+            - generic [ref=e249]:
+              - generic [ref=e252]:
+                - generic "Nº" [ref=e254]: "* Nº"
+                - textbox "* Nº" [ref=e258]:
+                  - /placeholder: "101"
+              - generic [ref=e261]:
+                - generic "Precio/mes" [ref=e263]: "* Precio/mes"
+                - generic [ref=e267]:
+                  - generic [ref=e268]:
+                    - spinbutton "* Precio/mes" [ref=e269]: "0"
+                    - generic:
+                      - button "Increase Value" [ref=e270] [cursor=pointer]:
+                        - img "up" [ref=e271]:
+                          - img [ref=e272]
+                      - button "Decrease Value" [disabled] [ref=e274] [cursor=pointer]:
+                        - img "down" [ref=e275]:
+                          - img [ref=e276]
+                  - generic [ref=e278]: €
+              - generic [ref=e281]:
+                - generic "m²" [ref=e283]
+                - generic [ref=e287]:
+                  - generic [ref=e288]:
+                    - spinbutton "m²" [ref=e289]
+                    - generic:
+                      - button "Increase Value" [ref=e290] [cursor=pointer]:
+                        - img "up" [ref=e291]:
+                          - img [ref=e292]
+                      - button "Decrease Value" [ref=e294] [cursor=pointer]:
+                        - img "down" [ref=e295]:
+                          - img [ref=e296]
+                  - generic [ref=e298]: m²
+              - generic [ref=e301]:
+                - generic "Baño" [ref=e303]: "* Baño"
+                - generic [ref=e307] [cursor=pointer]:
+                  - generic "Compartido" [ref=e308]:
+                    - text: Compartido
+                    - combobox "* Baño" [ref=e309]
+                  - img "down" [ref=e311]:
+                    - img [ref=e312]
+            - generic [ref=e314]:
+              - generic [ref=e317]:
+                - generic "Cocina" [ref=e319]: "* Cocina"
+                - generic [ref=e323] [cursor=pointer]:
+                  - generic "Compartida" [ref=e324]:
+                    - text: Compartida
+                    - combobox "* Cocina" [ref=e325]
+                  - img "down" [ref=e327]:
+                    - img [ref=e328]
+              - generic [ref=e338]:
+                - button "Añadir" [ref=e340] [cursor=pointer]:
+                  - generic [ref=e341]: Añadir
+                - button "Cancelar" [ref=e343] [cursor=pointer]:
+                  - generic [ref=e344]: Cancelar
+        - table [ref=e351]:
+          - rowgroup [ref=e357]:
+            - row "Nº Estado Precio/mes m² Baño Acciones" [ref=e358]:
+              - columnheader "Nº" [ref=e359]
+              - columnheader "Estado" [ref=e360]
+              - columnheader "Precio/mes" [ref=e361]
+              - columnheader "m²" [ref=e362]
+              - columnheader "Baño" [ref=e363]
+              - columnheader "Acciones" [ref=e364]
+          - rowgroup [ref=e365]:
+            - row "HAB-101 Libre 450,00 € 15 m² Privado Editar Desactivar" [ref=e366]:
+              - cell "HAB-101" [ref=e367]:
+                - strong [ref=e369]: HAB-101
+              - cell "Libre" [ref=e370]:
+                - generic [ref=e371]: Libre
+              - cell "450,00 €" [ref=e372]
+              - cell "15 m²" [ref=e373]
+              - cell "Privado" [ref=e374]
+              - cell "Editar Desactivar" [ref=e375]:
+                - generic [ref=e376]:
+                  - button "Editar" [ref=e378] [cursor=pointer]:
+                    - generic [ref=e379]: Editar
+                  - button "Desactivar" [ref=e381] [cursor=pointer]:
+                    - generic [ref=e382]: Desactivar
+            - row "HAB-102 Libre 350,00 € 12 m² Compartido Editar Desactivar" [ref=e383]:
+              - cell "HAB-102" [ref=e384]:
+                - strong [ref=e386]: HAB-102
+              - cell "Libre" [ref=e387]:
+                - generic [ref=e388]: Libre
+              - cell "350,00 €" [ref=e389]
+              - cell "12 m²" [ref=e390]
+              - cell "Compartido" [ref=e391]
+              - cell "Editar Desactivar" [ref=e392]:
+                - generic [ref=e393]:
+                  - button "Editar" [ref=e395] [cursor=pointer]:
+                    - generic [ref=e396]: Editar
+                  - button "Desactivar" [ref=e398] [cursor=pointer]:
+                    - generic [ref=e399]: Desactivar
+            - row "HAB-103 Ocupada 400,00 € 14 m² Privado Editar" [ref=e400]:
+              - cell "HAB-103" [ref=e401]:
+                - strong [ref=e403]: HAB-103
+              - cell "Ocupada" [ref=e404]:
+                - generic [ref=e405]: Ocupada
+              - cell "400,00 €" [ref=e406]
+              - cell "14 m²" [ref=e407]
+              - cell "Privado" [ref=e408]
+              - cell "Editar" [ref=e409]:
+                - button "Editar" [ref=e412] [cursor=pointer]:
+                  - generic [ref=e413]: Editar
+```

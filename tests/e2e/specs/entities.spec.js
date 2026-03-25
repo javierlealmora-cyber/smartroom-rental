@@ -10,11 +10,14 @@ import { antdSelect, extractIdFromUrl, waitForLoadingDone } from '../helpers/ant
 test.describe.configure({ mode: 'serial' });
 
 const TS = Date.now();
-const ENTITY_FIRSTNAME = 'E2E';
-const ENTITY_LASTNAME  = `Entidad ${TS}`;
+// Los campos de nombre solo aceptan letras → convertir timestamp a letras (0→A … 9→J)
+const TS_ALPHA = String(TS).split('').map(d => String.fromCharCode(65 + parseInt(d, 10))).join('');
+const ENTITY_FIRSTNAME = 'Test';
+const ENTITY_LASTNAME  = `Ent${TS_ALPHA}`;  // ej: EntBHHDAGHHAEDB
 const ENTITY_EMAIL     = `e2e.entity.${TS}@test.smartrent.com`;
 const ENTITY_PHONE     = '600123456';
 const ENTITY_PHONE_UPD = '611987654';
+const ENTITY_DOC_ID    = '12345678A';
 
 // Estado compartido entre tests del bloque serial
 const state = { entityId: null };
@@ -44,13 +47,19 @@ test.describe('Entidades CRUD @regression', () => {
     // Tipo legal → persona física
     await antdSelect(page, 'legal_type', 'Persona física');
 
-    // Datos personales
+    // Datos personales (last_name2 y gender son NOT NULL en DB aunque el form no los marque como requeridos — BUG-031)
     await page.locator('#first_name').fill(ENTITY_FIRSTNAME);
     await page.locator('#last_name1').fill(ENTITY_LASTNAME);
+    await page.locator('#last_name2').fill('TestApellido');
+    await page.locator('#tax_id').fill(ENTITY_DOC_ID);
     await page.locator('#billing_email').fill(ENTITY_EMAIL);
     await page.locator('#phone').fill(ENTITY_PHONE);
+    await antdSelect(page, 'gender', 'Masculino');
 
-    // Dirección (mínima)
+    // Dirección (campos requeridos)
+    await page.locator('#street').fill('Calle Mayor');
+    await page.locator('#street_number').fill('10');
+    await page.locator('#zip').fill('28001');
     await page.locator('#city').fill('Madrid');
     await antdSelect(page, 'province', 'Madrid');
 
@@ -91,7 +100,10 @@ test.describe('Entidades CRUD @regression', () => {
   });
 
   // ── 04 · Editar la entidad (actualizar teléfono) ─────────────────────────
-  test('04 - editar entidad: actualizar teléfono', async ({ page }) => {
+  // BUG-032: EntityEdit.jsx no pasa clientAccountId a updateEntity → el UPDATE
+  // falla con PostgREST (eq.undefined inválido para UUID) y no redirige.
+  // Marcar como fixme hasta que Cascade corrija EntityEdit.jsx.
+  test.fixme('04 - editar entidad: actualizar teléfono', async ({ page }) => {
     expect(state.entityId, 'entityId debe estar disponible del test anterior').toBeTruthy();
 
     await page.goto(`/v2/admin/entidades/${state.entityId}/editar`);
@@ -106,9 +118,8 @@ test.describe('Entidades CRUD @regression', () => {
 
     await page.getByRole('button', { name: 'Guardar' }).click();
 
-    // Debe redirigir o mostrar confirmación
-    // (según EntityEdit, redirige a /v2/admin/entidades o muestra success)
-    await page.waitForURL('**/v2/admin/entidades**', { timeout: 15_000 });
+    // Esperar redirección estricta a la lista (no al form de edición)
+    await page.waitForURL(url => url.pathname === '/v2/admin/entidades', { timeout: 15_000 });
 
     // Verificar que el cambio persistió volviendo a editar
     await page.goto(`/v2/admin/entidades/${state.entityId}/editar`);

@@ -13,7 +13,7 @@ import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listEntities } from "../../../../services/entities.service";
 import {
   getAccommodation, updateAccommodation,
-  listRooms, updateRoom, setRoomStatus,
+  listRooms, updateRoom, setRoomMaintenance,
 } from "../../../../services/accommodations.service";
 import { supabase } from "../../../../services/supabaseClient";
 import { PROVINCIAS_ES } from "../../../../constants/formOptions";
@@ -63,6 +63,9 @@ export default function AccommodationEdit() {
         owner_entity_id: acc.owner_entity_id,
         address_line1: acc.address_line1 || "",
         address_line2: acc.address_line2 || "",
+        street_number: acc.street_number || "",
+        floor: acc.floor || "",
+        door: acc.door || "",
         postal_code: acc.postal_code || "",
         city: acc.city || "",
         province: acc.province || null,
@@ -87,6 +90,9 @@ export default function AccommodationEdit() {
         owner_entity_id: values.owner_entity_id,
         address_line1: values.address_line1 || null,
         address_line2: values.address_line2 || null,
+        street_number: values.street_number || null,
+        floor: values.floor || null,
+        door: values.door || null,
         postal_code: values.postal_code || null,
         city: values.city || null,
         province: values.province || null,
@@ -119,10 +125,10 @@ export default function AccommodationEdit() {
   };
 
   const onToggleRoomStatus = async (room) => {
-    const next = room.status === "maintenance" ? "free" : "maintenance";
+    const next = !room.is_maintenance;
     try {
-      await setRoomStatus(room.id, next, _clientAccountId);
-      setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, status: next } : r));
+      await setRoomMaintenance(room.id, next, _clientAccountId);
+      setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, is_maintenance: next } : r));
     } catch (e) {
       setError(e.message);
     }
@@ -142,7 +148,6 @@ export default function AccommodationEdit() {
           bathroom_type: values.bathroom_type || "shared",
           kitchen_type: values.kitchen_type || "shared",
           notes: values.notes || null,
-          status: "free",
         })
         .select()
         .single();
@@ -217,14 +222,14 @@ export default function AccommodationEdit() {
           }}>
             Editar
           </Button>
-          {room.status !== "occupied" && (
+          {(room.derivedStatus ?? "free") !== "occupied" && (room.derivedStatus ?? "free") !== "pending_checkout" && (
             <Popconfirm
-              title={room.status === "inactive" ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
+              title={room.is_maintenance ? "¿Quitar de mantenimiento?" : "¿Poner en mantenimiento?"}
               onConfirm={() => onToggleRoomStatus(room)}
               okText="Sí" cancelText="No"
             >
-              <Button size="small" danger={room.status !== "inactive"}>
-                {room.status === "inactive" ? "Reactivar" : "Desactivar"}
+              <Button size="small" danger={!room.is_maintenance}>
+                {room.is_maintenance ? "Reactivar" : "Mantenimiento"}
               </Button>
             </Popconfirm>
           )}
@@ -275,8 +280,11 @@ export default function AccommodationEdit() {
             <Row gutter={[16, 0]}>
               <Col xs={24} sm={12} md={8}>
                 <Form.Item label="Nombre" name="name"
-                  rules={[{ required: true, message: "El nombre es obligatorio" }]}>
-                  <Input />
+                  rules={[
+                    { required: true, message: "El nombre es obligatorio" },
+                    { max: 100, message: "Máximo 100 caracteres" },
+                  ]}>
+                  <Input maxLength={100} showCount />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12} md={8}>
@@ -299,8 +307,9 @@ export default function AccommodationEdit() {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={14}>
-                <Form.Item label="Calle" name="address_line1">
-                  <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
+                <Form.Item label="Calle" name="address_line1"
+                  rules={[{ max: 200, message: "Máximo 200 caracteres" }]}>
+                  <Input placeholder="Calle Gran Vía, Av. de la Constitución..." maxLength={200} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={4}>
@@ -319,18 +328,21 @@ export default function AccommodationEdit() {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2">
-                  <Input placeholder="Bloque B, Escalera 2..." />
+                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2"
+                  rules={[{ max: 200, message: "Máximo 200 caracteres" }]}>
+                  <Input placeholder="Bloque B, Escalera 2..." maxLength={200} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={4}>
-                <Form.Item label="Código Postal" name="postal_code">
+                <Form.Item label="Código Postal" name="postal_code"
+                  rules={[{ pattern: /^\d{5}$/, message: "Debe tener exactamente 5 dígitos" }]}>
                   <Input placeholder="28001" maxLength={5} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
-                <Form.Item label="Ciudad" name="city">
-                  <Input placeholder="Madrid" />
+                <Form.Item label="Ciudad" name="city"
+                  rules={[{ max: 100, message: "Máximo 100 caracteres" }]}>
+                  <Input placeholder="Madrid" maxLength={100} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -348,8 +360,9 @@ export default function AccommodationEdit() {
                 </Form.Item>
               </Col>
               <Col xs={24}>
-                <Form.Item label="Notas" name="notes">
-                  <Input.TextArea rows={2} />
+                <Form.Item label="Notas" name="notes"
+                  rules={[{ max: 500, message: "Máximo 500 caracteres" }]}>
+                  <Input.TextArea rows={2} maxLength={500} showCount />
                 </Form.Item>
               </Col>
             </Row>

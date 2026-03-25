@@ -5,14 +5,16 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert, Button, Input, message, Row, Col, Select, Space,
-  Tag, Typography, Tooltip, Skeleton,
+  Tag, Typography, Tooltip, Skeleton, Modal, Form, DatePicker, Divider,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined, FileTextOutlined, LineChartOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers, scheduleCheckout, inviteLodger } from "../../../../services/lodgers.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
+import { supabase } from "../../../../services/supabaseClient";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -35,6 +37,78 @@ function _formatDate(iso) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function formatCurrency(amount) {
+  if (amount == null) return "-";
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
+}
+
+// Función para calcular el estado del inquilino basado en su histórico de asignaciones
+function getLodgerStatus(lodger) {
+  const assignments = lodger?.assignments || [];
+  
+  if (!assignments || assignments.length === 0) {
+    return 'invited';
+  }
+  
+  // Ordenar por move_in_date DESC y tomar la más reciente
+  const sortedAssignments = [...assignments].sort((a, b) => {
+    const dateA = a.move_in_date ? new Date(a.move_in_date) : new Date(0);
+    const dateB = b.move_in_date ? new Date(b.move_in_date) : new Date(0);
+    return dateB - dateA;
+  });
+  
+  const latestAssignment = sortedAssignments[0];
+  
+  if (!latestAssignment.move_in_date) return 'invited';
+  if (!latestAssignment.move_out_date) return 'active';
+  
+  const checkOutDate = dayjs(latestAssignment.move_out_date);
+  const today = dayjs().startOf('day');
+  
+  return checkOutDate.isAfter(today) ? 'pending_checkout' : 'inactive';
+}
+
+// Función para obtener el color del badge según el estado
+function getLodgerStatusColor(status) {
+  const colors = {
+    active: 'success',
+    pending_checkout: 'warning',
+    inactive: 'default',
+    invited: 'processing',
+  };
+  return colors[status] || 'default';
+}
+
+// Función para obtener la etiqueta del badge según el estado
+function getLodgerStatusLabel(status) {
+  const labels = {
+    active: 'Activo',
+    pending_checkout: 'Pendiente baja',
+    inactive: 'Inactivo',
+    invited: 'Invitado',
+  };
+  return labels[status] || status;
+}
+
+// Función para generar consumos moqueados basados en días de estancia
+function generateMockedConsumptions(moveInDate, checkOutDate) {
+  if (!moveInDate || !checkOutDate) return { water: 0, electricity: 0, gas: 0 };
+  
+  const days = dayjs(checkOutDate).diff(dayjs(moveInDate), 'day');
+  const months = Math.max(1, Math.ceil(days / 30));
+  
+  // Consumos base por mes con variación aleatoria
+  const waterPerMonth = 15 + Math.random() * 10; // 15-25€/mes
+  const electricityPerMonth = 25 + Math.random() * 20; // 25-45€/mes
+  const gasPerMonth = 10 + Math.random() * 15; // 10-25€/mes
+  
+  return {
+    water: parseFloat((waterPerMonth * months).toFixed(2)),
+    electricity: parseFloat((electricityPerMonth * months).toFixed(2)),
+    gas: parseFloat((gasPerMonth * months).toFixed(2)),
+  };
+}
+
 export default function TenantsList() {
   const navigate = useNavigate();
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
@@ -49,6 +123,13 @@ export default function TenantsList() {
   const [filterAccommodation, setFilterAccommodation] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [sendingInvite, setSendingInvite] = useState({});
+  
+  // Estados para modal de check-out
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [lodgerToCheckout, setLodgerToCheckout] = useState(null);
+  const [checkoutForm] = Form.useForm();
+  const [mockedConsumptions, setMockedConsumptions] = useState(null);
+  const [processingCheckout, setProcessingCheckout] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,6 +139,22 @@ export default function TenantsList() {
         listLodgers({ clientAccountId }),
         listAccommodations({ status: "active" }),
       ]);
+      
+      // Cargar todas las asignaciones de los inquilinos para calcular estado dinámico
+      const lodgerIds = lodgers.map(l => l.id).filter(Boolean);
+      
+      if (lodgerIds.length > 0) {
+        const { data: allAssignments } = await supabase
+          .from("lodger_room_assignments")
+          .select("id, lodger_id, move_in_date, move_out_date, room_id, accommodation_id, deposit_amount")
+          .in("lodger_id", lodgerIds);
+        
+        // Mapear asignaciones a cada lodger
+        lodgers.forEach(lodger => {
+          lodger.assignments = (allAssignments || []).filter(a => a.lodger_id === lodger.id);
+        });
+      }
+      
       setAllLodgers(lodgers);
       setAccommodations(accs);
     } catch (e) {
@@ -71,8 +168,8 @@ export default function TenantsList() {
 
   const tenants = useMemo(() => {
     let result = allLodgers;
-    if (!showInactive) result = result.filter((t) => t.status !== "inactive");
-    if (filterStatus) result = result.filter((t) => t.status === filterStatus);
+    if (!showInactive) result = result.filter((t) => getLodgerStatus(t) !== "inactive");
+    if (filterStatus) result = result.filter((t) => getLodgerStatus(t) === filterStatus);
     if (filterAccommodation) {
       result = result.filter((t) =>
         t.active_assignment?.[0]?.accommodation?.id === filterAccommodation
@@ -257,6 +354,20 @@ export default function TenantsList() {
                             Check-in: {new Date(asgn.move_in_date).toLocaleDateString('es-ES')}
                           </div>
                         )}
+                        {asgn?.move_out_date && (
+                          <div style={{ fontSize: 11, color: "#F59E0B", fontWeight: 600 }}>
+                            Check-out: {new Date(asgn.move_out_date).toLocaleDateString('es-ES')}
+                          </div>
+                        )}
+                        {/* Badge de estado debajo del check-in */}
+                        <div style={{ marginTop: 4 }}>
+                          <Tag 
+                            color={getLodgerStatusColor(getLodgerStatus(t))} 
+                            style={{ margin: 0, fontWeight: 600, fontSize: 13 }}
+                          >
+                            {getLodgerStatusLabel(getLodgerStatus(t))}
+                          </Tag>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -282,12 +393,12 @@ export default function TenantsList() {
 
                   {/* Acciones */}
                   <div style={{ display: "flex", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
-                    <Tooltip title="Editar">
-                      <Button size="small" icon={<EditOutlined />}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/editar`); }} />
+                    <Tooltip title="Detalle del Inquilino">
+                      <Button size="small" icon={<FileTextOutlined />}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino`); }} />
                     </Tooltip>
-                    <Tooltip title="Ver detalle">
-                      <Button size="small" icon={<UserOutlined />}
+                    <Tooltip title="Ver Consumos">
+                      <Button size="small" icon={<LineChartOutlined />}
                         onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
                     </Tooltip>
                     {t.status === "active" && (
@@ -296,10 +407,14 @@ export default function TenantsList() {
                           onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`); }} />
                       </Tooltip>
                     )}
-                    {t.status === "active" && (
-                      <Tooltip title="Programar baja">
-                        <Button size="small" icon={<LogoutOutlined />}
-                          onClick={(e) => { e.stopPropagation(); onScheduleCheckout(t); }} />
+                    {getLodgerStatus(t) === "active" && (
+                      <Tooltip title="Hacer Check-Out">
+                        <Button size="small" danger icon={<LogoutOutlined />}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setLodgerToCheckout(t);
+                            setShowCheckoutModal(true);
+                          }} />
                       </Tooltip>
                     )}
                     <Tooltip title="Enviar email de acceso">
@@ -314,6 +429,225 @@ export default function TenantsList() {
           })}
         </Row>
       )}
+
+      {/* Modal: Check-Out */}
+      <Modal
+        title={`Check-Out — ${lodgerToCheckout?.full_name || ''}`}
+        open={showCheckoutModal}
+        onCancel={() => {
+          setShowCheckoutModal(false);
+          setLodgerToCheckout(null);
+          setMockedConsumptions(null);
+          checkoutForm.resetFields();
+        }}
+        footer={null}
+        width={700}
+        destroyOnHidden
+      >
+        {lodgerToCheckout && (() => {
+          const assignment = lodgerToCheckout.active_assignment?.[0];
+          const totalConsumptions = mockedConsumptions 
+            ? mockedConsumptions.water + mockedConsumptions.electricity + mockedConsumptions.gas 
+            : 0;
+          const depositAmount = assignment?.deposit_amount || 0;
+          const totalToReturn = depositAmount - totalConsumptions;
+          
+          return (
+            <>
+              {/* Info de la habitación */}
+              <div style={{ marginBottom: 16, padding: '12px', backgroundColor: '#f5f5f5', borderRadius: 8 }}>
+                <Text>📅 Habitación {assignment?.room?.number || 'N/A'}</Text>
+                <Text type="secondary" style={{ marginLeft: 16 }}>
+                  Entrada: {assignment?.move_in_date ? _formatDate(assignment.move_in_date) : 'N/A'}
+                </Text>
+              </div>
+
+              <Form
+                form={checkoutForm}
+                layout="vertical"
+                onFinish={async (values) => {
+                  setProcessingCheckout(true);
+                  try {
+                    const checkoutDate = values.checkout_date.format('YYYY-MM-DD');
+                    
+                    // Actualizar la asignación con la fecha de check-out
+                    const { error } = await supabase
+                      .from('lodger_room_assignments')
+                      .update({
+                        move_out_date: checkoutDate,
+                        checkout_notes: values.observations || null,
+                      })
+                      .eq('id', assignment.id);
+                    
+                    if (error) throw error;
+
+                    const isToday = values.checkout_date.isSame(dayjs(), 'day');
+                    message.success(
+                      isToday 
+                        ? 'Check-out realizado. El inquilino ha sido dado de baja.'
+                        : `Check-out programado para ${values.checkout_date.format('DD/MM/YYYY')}`
+                    );
+                    
+                    setShowCheckoutModal(false);
+                    setLodgerToCheckout(null);
+                    setMockedConsumptions(null);
+                    checkoutForm.resetFields();
+                    await load();
+                  } catch (error) {
+                    message.error(`Error al procesar check-out: ${error.message}`);
+                  } finally {
+                    setProcessingCheckout(false);
+                  }
+                }}
+                initialValues={{
+                  checkout_date: dayjs(),
+                }}
+              >
+                {/* Fecha de Check-Out */}
+                <Form.Item
+                  label="Fecha de Check-Out"
+                  name="checkout_date"
+                  rules={[
+                    { required: true, message: "La fecha es obligatoria" },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        const moveInDate = assignment?.move_in_date;
+                        if (!value || !moveInDate) return Promise.resolve();
+                        if (value.isBefore(dayjs(moveInDate), 'day')) {
+                          return Promise.reject('La fecha no puede ser anterior a la entrada');
+                        }
+                        return Promise.resolve();
+                      },
+                    }),
+                  ]}
+                >
+                  <DatePicker 
+                    style={{ width: "100%" }} 
+                    format="DD/MM/YYYY"
+                    onChange={(date) => {
+                      if (date && assignment?.move_in_date) {
+                        const consumptions = generateMockedConsumptions(
+                          assignment.move_in_date,
+                          date.format('YYYY-MM-DD')
+                        );
+                        setMockedConsumptions(consumptions);
+                      }
+                    }}
+                  />
+                </Form.Item>
+
+                {/* Resumen Económico */}
+                {mockedConsumptions && (
+                  <>
+                    <Divider orientation="left">💰 Resumen Económico</Divider>
+                    
+                    <Row justify="space-between" style={{ marginBottom: 8 }}>
+                      <Text>Fianza pagada:</Text>
+                      <Text strong>{formatCurrency(depositAmount)}</Text>
+                    </Row>
+
+                    <Divider orientation="left">⚡ Consumos Pendientes</Divider>
+                    
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text>💧 Agua:</Text>
+                      <Text>{formatCurrency(mockedConsumptions.water)}</Text>
+                    </Row>
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text>⚡ Electricidad:</Text>
+                      <Text>{formatCurrency(mockedConsumptions.electricity)}</Text>
+                    </Row>
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text>🔥 Gas:</Text>
+                      <Text>{formatCurrency(mockedConsumptions.gas)}</Text>
+                    </Row>
+                    
+                    <Row justify="space-between" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                      <Text strong>Subtotal consumos:</Text>
+                      <Text strong>{formatCurrency(totalConsumptions)}</Text>
+                    </Row>
+
+                    <Divider orientation="left">💵 Total a Liquidar</Divider>
+                    
+                    <div style={{ 
+                      padding: '16px', 
+                      backgroundColor: totalToReturn >= 0 ? '#f0fdf4' : '#fef2f2', 
+                      borderRadius: 8, 
+                      border: `2px solid ${totalToReturn >= 0 ? '#16a34a' : '#dc2626'}`
+                    }}>
+                      <Row justify="space-between" style={{ marginBottom: 4 }}>
+                        <Text>Fianza a devolver:</Text>
+                        <Text>{formatCurrency(depositAmount)}</Text>
+                      </Row>
+                      <Row justify="space-between" style={{ marginBottom: 12 }}>
+                        <Text>Menos consumos:</Text>
+                        <Text type="danger">-{formatCurrency(totalConsumptions)}</Text>
+                      </Row>
+                      <Row justify="space-between">
+                        <Text strong style={{ fontSize: 16 }}>TOTAL A DEVOLVER:</Text>
+                        <Text strong style={{ 
+                          fontSize: 18, 
+                          color: totalToReturn >= 0 ? '#16a34a' : '#dc2626'
+                        }}>
+                          {formatCurrency(totalToReturn)}
+                        </Text>
+                      </Row>
+                    </div>
+                  </>
+                )}
+
+                {/* Observaciones */}
+                <Form.Item
+                  label="Observaciones"
+                  name="observations"
+                  style={{ marginTop: 24 }}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Notas sobre el estado de la habitación, incidencias, etc."
+                    maxLength={500}
+                    showCount
+                  />
+                </Form.Item>
+
+                {/* Aviso */}
+                <Alert
+                  message={
+                    checkoutForm.getFieldValue('checkout_date')?.isSame(dayjs(), 'day')
+                      ? "La fecha es hoy, se dará de baja inmediatamente"
+                      : "La fecha es futura, quedará pendiente de baja"
+                  }
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+
+                {/* Botones */}
+                <Row justify="end">
+                  <Space>
+                    <Button onClick={() => {
+                      setShowCheckoutModal(false);
+                      setLodgerToCheckout(null);
+                      setMockedConsumptions(null);
+                      checkoutForm.resetFields();
+                    }}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="primary" 
+                      danger
+                      htmlType="submit" 
+                      icon={<LogoutOutlined />}
+                      loading={processingCheckout}
+                    >
+                      Confirmar Check-Out
+                    </Button>
+                  </Space>
+                </Row>
+              </Form>
+            </>
+          );
+        })()}
+      </Modal>
     </V2Layout>
   );
 }
