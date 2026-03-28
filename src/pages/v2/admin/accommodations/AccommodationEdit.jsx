@@ -20,8 +20,14 @@ import { PROVINCIAS_ES } from "../../../../constants/formOptions";
 
 const { Title, Text } = Typography;
 
-const ROOM_STATUS_COLOR = { free: "success", occupied: "error", pending_checkout: "warning", inactive: "default" };
-const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", inactive: "Inactiva" };
+const ROOM_STATUS_BADGE = {
+  free:             { bg: "#DCFCE7", color: "#15803D" },
+  occupied:         { bg: "#FFE4E6", color: "#BE123C" },
+  pending_checkout: { bg: "#FEF3C7", color: "#B45309" },
+  maintenance:      { bg: "#F3F4F6", color: "#4B5563" },
+  inactive:         { bg: "#F3F4F6", color: "#4B5563" },
+};
+const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", maintenance: "Mantenimiento", inactive: "Inactiva" };
 
 function extractEdgeError(result) {
   if (result?.error?.message) return result.error.message;
@@ -170,15 +176,25 @@ export default function AccommodationEdit() {
       title: "Nº",
       dataIndex: "number",
       key: "number",
-      width: 70,
+      width: 120,
       render: (v) => <Text strong>{v}</Text>,
     },
     {
       title: "Estado",
-      dataIndex: "status",
       key: "status",
-      width: 110,
-      render: (v) => <Tag color={ROOM_STATUS_COLOR[v] || "default"}>{ROOM_STATUS_LABEL[v] || v}</Tag>,
+      width: 120,
+      render: (_, room) => {
+        const s = room.derivedStatus || (room.is_maintenance ? "maintenance" : "free");
+        const badge = ROOM_STATUS_BADGE[s] || ROOM_STATUS_BADGE.free;
+        return (
+          <span style={{
+            display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 12, fontWeight: 500,
+            background: badge.bg, color: badge.color,
+          }}>
+            {ROOM_STATUS_LABEL[s] || s}
+          </span>
+        );
+      },
     },
     {
       title: "Precio/mes",
@@ -463,11 +479,11 @@ export default function AccommodationEdit() {
 
         <Table
           rowKey="id"
+          size="small"
           columns={roomColumns}
           dataSource={rooms}
           pagination={false}
           scroll={{ x: true }}
-          size="small"
           locale={{ emptyText: "Sin habitaciones" }}
         />
       </Card>

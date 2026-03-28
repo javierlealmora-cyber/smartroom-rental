@@ -67,6 +67,7 @@ export default function TenantEdit() {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignBusy, setReassignBusy] = useState(false);
   const [reassignError, setReassignError] = useState(null);
+  const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
   const [allAccommodations, setAllAccommodations] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
@@ -158,18 +159,21 @@ export default function TenantEdit() {
     setReassignBusy(true);
     setReassignError(null);
     try {
+      const moveInDate = values.move_in_date.format("YYYY-MM-DD");
+      const billingStart = values.move_in_date.add(1, "month").startOf("month").format("YYYY-MM-DD");
       await reassignRoom(id, {
         newRoomId: values.new_room_id,
         newAccommodationId: values.new_accommodation_id,
-        moveInDate: values.move_in_date.format("YYYY-MM-DD"),
-        billingStartDate: values.billing_start_date?.format("YYYY-MM-DD") || values.move_in_date.format("YYYY-MM-DD"),
-        monthlyRent: values.monthly_rent || null,
+        moveInDate: moveInDate,
+        billingStartDate: billingStart,
+        monthlyRent: null,
         depositAmount: values.deposit_amount,
         commissionAmount: values.commission_amount || null,
-        firstMonthAmount: values.first_month_amount || null,
+        firstMonthAmount: payUntilEndOfMonth ? (values.end_of_month_amount || null) : null,
       });
       setReassignOpen(false);
       reassignForm.resetFields();
+      setPayUntilEndOfMonth(false);
       setAvailableRooms([]);
       // Si venimos de ?action=reassign navegar sin el param para que load() no re-abra el modal.
       // Si el modal se abrió desde el botón directo, recargar datos en la misma página.
@@ -377,13 +381,22 @@ export default function TenantEdit() {
             loading={loading}
             extra={
               activeAssignment && !loading ? (
-                <Button
-                  size="small"
-                  icon={<SwapOutlined />}
-                  onClick={() => { setReassignError(null); setReassignOpen(true); }}
-                >
-                  Cambiar
-                </Button>
+                <Space size={4}>
+                  <Button
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => navigate(`/v2/admin/alojamientos/${activeAssignment.accommodation_id}/editar`)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<SwapOutlined />}
+                    onClick={() => { setReassignError(null); setReassignOpen(true); }}
+                  >
+                    Cambiar
+                  </Button>
+                </Space>
               ) : null
             }
           >
@@ -586,7 +599,7 @@ export default function TenantEdit() {
       <Modal
         title={<><SwapOutlined style={{ marginRight: 8 }} />Cambiar habitación{lodger?.full_name ? ` — ${lodger.full_name}` : ""}</>}
         open={reassignOpen}
-        onCancel={() => { setReassignOpen(false); reassignForm.resetFields(); setAvailableRooms([]); setReassignError(null); }}
+        onCancel={() => { setReassignOpen(false); reassignForm.resetFields(); setAvailableRooms([]); setReassignError(null); setPayUntilEndOfMonth(false); }}
         footer={null}
         width={520}
         destroyOnHidden
@@ -645,32 +658,51 @@ export default function TenantEdit() {
             />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Fecha de Check-In"
-                name="move_in_date"
-                rules={[{ required: true, message: "Indica la fecha de check-in" }]}
-              >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Fecha de Inicio Cobro" name="billing_start_date">
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Igual que check-in" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Renta mensual (€)" name="monthly_rent">
-            <InputNumber
+          <Form.Item
+            label="Fecha de Check-In"
+            name="move_in_date"
+            rules={[{ required: true, message: "Indica la fecha de check-in" }]}
+          >
+            <DatePicker
               style={{ width: "100%" }}
-              min={0}
-              precision={2}
-              placeholder="Opcional"
-              addonAfter="€/mes"
+              format="DD/MM/YYYY"
+              onChange={() => reassignForm.setFieldValue("end_of_month_amount", undefined)}
             />
           </Form.Item>
+
+          <Form.Item style={{ marginBottom: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={payUntilEndOfMonth}
+                onChange={e => {
+                  setPayUntilEndOfMonth(e.target.checked);
+                  if (!e.target.checked) reassignForm.setFieldValue("end_of_month_amount", undefined);
+                }}
+              />
+              <span style={{ fontSize: 13 }}>El inquilino va a pagar desde la fecha de Check-in hasta fin de mes</span>
+            </label>
+          </Form.Item>
+
+          {payUntilEndOfMonth && (
+            <>
+              <Form.Item
+                label="Importe a pagar hasta fin de mes"
+                name="end_of_month_amount"
+                rules={[{ required: true, message: "El importe es obligatorio" }]}
+              >
+                <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Ej: 450" addonAfter="€" />
+              </Form.Item>
+              <Form.Item label="Fecha del primer pago de la mensualidad">
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  value={reassignForm.getFieldValue("move_in_date")?.add(1, "month").startOf("month")}
+                  disabled
+                />
+              </Form.Item>
+            </>
+          )}
 
           <Row gutter={16}>
             <Col span={12}>
@@ -679,37 +711,15 @@ export default function TenantEdit() {
                 name="deposit_amount"
                 rules={[{ required: true, message: "El importe de la fianza es obligatorio" }]}
               >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={0}
-                  precision={2}
-                  placeholder="Ej: 900"
-                  addonAfter="€"
-                />
+                <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Ej: 900" addonAfter="€" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Importe Comisión (€)" name="commission_amount">
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={0}
-                  precision={2}
-                  placeholder="Opcional"
-                  addonAfter="€"
-                />
+                <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Opcional" addonAfter="€" />
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item label="Importe Mes Entrada (€)" name="first_month_amount">
-            <InputNumber
-              style={{ width: "100%" }}
-              min={0}
-              precision={2}
-              placeholder="Para entradas a mitad de mes (opcional)"
-              addonAfter="€"
-            />
-          </Form.Item>
 
           <Row justify="end">
             <Space>

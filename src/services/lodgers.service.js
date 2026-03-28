@@ -5,6 +5,8 @@ import { invokeWithAuth } from "./supabaseInvoke.services";
 
 export async function listLodgers({ status, clientAccountId } = {}) {
   const today = new Date().toISOString().split("T")[0];
+  
+  // ✅ SEGURIDAD: Query sin OR en foreignTable para evitar bypass de RLS
   let q = supabase
     .from("profiles")
     .select(`
@@ -16,7 +18,6 @@ export async function listLodgers({ status, clientAccountId } = {}) {
       )
     `)
     .eq("role", "lodger")
-    .or(`move_out_date.is.null,move_out_date.gt.${today}`, { foreignTable: "lodger_room_assignments" })
     .order("created_at", { ascending: false });
 
   // Filtro tenant (defensa en profundidad)
@@ -28,7 +29,19 @@ export async function listLodgers({ status, clientAccountId } = {}) {
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return data || [];
+  
+  // Filtrar asignaciones activas en cliente (más seguro que OR en foreignTable)
+  const lodgers = (data || []).map(lodger => {
+    if (lodger.active_assignment && Array.isArray(lodger.active_assignment)) {
+      lodger.active_assignment = lodger.active_assignment.filter(assignment => {
+        if (!assignment.move_out_date) return true; // Sin fecha de salida = activo
+        return assignment.move_out_date > today; // Fecha futura = activo
+      });
+    }
+    return lodger;
+  });
+  
+  return lodgers;
 }
 
 export async function getLodger(id, clientAccountId = null) {
@@ -65,76 +78,13 @@ function extractEdgeError(result) {
 }
 
 export async function createLodger(payload) {
-  // 1. Obtener client_account_id del admin en sesión
-  const { data: { user: adminUser }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !adminUser) throw new Error("Sesión no válida");
-
-  const { data: adminProfile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("client_account_id")
-    .eq("id", adminUser.id)
-    .single();
-  if (profileErr) throw new Error(profileErr.message);
-  const clientAccountId = adminProfile.client_account_id;
-  if (!clientAccountId) throw new Error("El admin no tiene cuenta cliente asignada");
-
-  // 2. Crear usuario en auth (client-side signUp)
-  // NOTA: Supabase enviará un email de confirmación al inquilino. Si el proyecto
-  // tiene email confirmation desactivado, la sesión del admin NO se ve afectada
-  // porque signUp() para un usuario ya autenticado no reemplaza la sesión.
-  const randomPassword = `${crypto.randomUUID().replace(/-/g, "")}Aa1!`;
-  const { data: authData, error: signUpErr } = await supabase.auth.signUp({
-    email: payload.email,
-    password: randomPassword,
+  // ✅ SEGURIDAD: Usar Edge Function para creación segura de inquilinos
+  // La contraseña se genera en el servidor con mayor entropía
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { action: "create", payload },
   });
-  if (signUpErr) throw new Error(signUpErr.message);
-  const userId = authData?.user?.id;
-  if (!userId) throw new Error("No se pudo crear el usuario de autenticación");
-
-  // 3. Insertar perfil completo (incluyendo todos los campos de nombre y dirección)
-  const { data: lodger, error: insertErr } = await supabase
-    .from("profiles")
-    .insert({
-      id: userId,
-      email: payload.email,
-      role: "lodger",
-      client_account_id: clientAccountId,
-      full_name: payload.full_name || null,
-      first_name: payload.first_name || null,
-      last_name1: payload.last_name1 || null,
-      last_name2: payload.last_name2 || null,
-      nickname: payload.nickname || null,
-      gender: payload.gender || null,
-      phone: payload.phone || null,
-      document_id: payload.document_id || null,
-      address_street: payload.address_street || null,
-      address_number: payload.address_number || null,
-      address_floor: payload.address_floor || null,
-      address_postal_code: payload.address_postal_code || null,
-      address_city: payload.address_city || null,
-      address_province: payload.address_province || null,
-      address_country: payload.address_country || null,
-      onboarding_status: payload.onboarding_status || "invited",
-    })
-    .select("*")
-    .single();
-  if (insertErr) throw new Error(insertErr.message);
-
-  // 4. Asignar habitación si se proporcionó
-  if (payload.room_id && payload.accommodation_id) {
-    await assignRoomToLodger(userId, {
-      roomId: payload.room_id,
-      accommodationId: payload.accommodation_id,
-      moveInDate: payload.move_in_date,
-      billingStartDate: payload.billing_start_date || payload.move_in_date,
-      monthlyRent: payload.monthly_rent || null,
-      depositAmount: payload.deposit_amount || 0,
-      commissionAmount: payload.commission_amount || null,
-      firstMonthAmount: payload.first_month_amount || null,
-    });
-  }
-
-  return lodger;
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.lodger;
 }
 
 export async function updateLodger(id, patch) {

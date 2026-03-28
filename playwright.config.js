@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { resolve } from 'path';
 
 // Load staging credentials from .env.e2e if present
-dotenv.config({ path: resolve('./tests/e2e/.env.e2e'), override: false });
+dotenv.config({ path: resolve('./qa/e2e/.env.e2e'), override: false });
 
 const isRemote = !!process.env.BASE_URL;
 const hasCredentials = !!(
@@ -15,15 +15,16 @@ const hasCredentials = !!(
 );
 
 export default defineConfig({
-  testDir: './tests/e2e/specs',
+  testDir: './qa/e2e/specs',
   fullyParallel: false,            // serial: CRUD tests modify shared DB state
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,                      // one worker to avoid race conditions on shared data
-  reporter: [['html'], ['list']],
+  outputDir: 'qa/reports/test-results',
+  reporter: [['html', { outputFolder: 'qa/reports/playwright-report' }], ['list']],
   timeout: 60_000,
 
-  globalSetup: hasCredentials ? './tests/e2e/global-setup.js' : undefined,
+  globalSetup: hasCredentials ? './qa/e2e/global-setup.js' : undefined,
 
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
@@ -56,7 +57,7 @@ export default defineConfig({
       testIgnore: [/smoke\.spec\.js/, /admin-basic\.spec\.js/, /admin-investor\.spec\.js/, /admin-business\.spec\.js/, /admin-agency\.spec\.js/],
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'tests/e2e/.auth/manager.json',
+        storageState: 'qa/e2e/.auth/manager.json',
       },
     },
 
@@ -66,7 +67,7 @@ export default defineConfig({
       testMatch: /admin-basic\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'tests/e2e/.auth/manager-basic.json',
+        storageState: 'qa/e2e/.auth/manager-basic.json',
       },
     },
 
@@ -76,7 +77,7 @@ export default defineConfig({
       testMatch: /admin-investor\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'tests/e2e/.auth/manager-investor.json',
+        storageState: 'qa/e2e/.auth/manager-investor.json',
       },
     },
 
@@ -86,7 +87,7 @@ export default defineConfig({
       testMatch: /admin-business\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'tests/e2e/.auth/manager-business.json',
+        storageState: 'qa/e2e/.auth/manager-business.json',
       },
     },
   ],

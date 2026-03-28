@@ -14,7 +14,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { supabase } from "../../../../../services/supabaseClient";
-import { invokeWithAuth } from "../../../../../services/supabaseInvoke.services";
+import { settleEnergyBill } from "../../../../../services/energy.service";
 
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
@@ -440,10 +440,7 @@ function ListaFacturas({ accId, clientAccountId }) {
 
   const onSettle = async (bill) => {
     try {
-      const result = await invokeWithAuth("settle_energy_bill", {
-        body: { energy_bill_id: bill.id, accommodation_id: accId, client_account_id: clientAccountId },
-      });
-      if (!result?.ok) throw new Error(result?.error?.message || "Error al repartir");
+      await settleEnergyBill(bill.id);
       load();
     } catch (e) { setError(e.message); }
   };

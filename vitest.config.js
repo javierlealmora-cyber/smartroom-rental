@@ -8,7 +8,10 @@ export default defineConfig(({ mode }) => ({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/tests/helpers/setup.js',
+    setupFiles: [
+      './src/tests/helpers/setup.js',
+      './qa/unit/helpers/setup.js',
+    ],
     env: loadEnv(mode || 'development', process.cwd(), ''),
     pool: 'forks',
     poolOptions: {
@@ -22,12 +25,16 @@ export default defineConfig(({ mode }) => ({
       exclude: [
         'node_modules/',
         'src/tests/',
+        'qa/',
         '**/*.config.js',
         'dist/',
         'scripts/',
       ],
     },
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    include: [
+      'src/**/*.{test,spec}.{js,jsx}',
+      'qa/unit/**/*.{test,spec}.{js,jsx}',
+    ],
     exclude: ['node_modules/', 'dist/', '.git/'],
   },
   resolve: {

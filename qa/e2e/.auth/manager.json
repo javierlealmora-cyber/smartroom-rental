@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "sb-lqwyyyttjamirccdtlvl-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjFiYjUwNmUwLTFjMGEtNGIyYS05NGQwLTBkMDY3ZWFjYjNiZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2xxd3l5eXR0amFtaXJjY2R0bHZsLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc0NDc4MTQ4LCJpYXQiOjE3NzQ0NzQ1NDgsImVtYWlsIjoiYWRtaW4uYWdlbmN5MUBob3VzaW5nc3BhY2Vzb2x1dGlvbnMuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJmdWxsX25hbWUiOiJBZG1pbiBBZ2VuY3kgMSIsInJvbGUiOiJhZG1pbiJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzc0NDc0NTQ4fV0sInNlc3Npb25faWQiOiIwZjRjNTY1NC1jMDUwLTQ3M2YtOTI1YS1jZTA3ZDAzN2U1ZjgiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.q-VLpC4qgJyFTaB3WVBxExwNouSn2YZP8sGlJlJhf8w7E3p-cLu6hPpmoHfvhgzwTcETLDB9fT5KEMOvQIPtxw\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1774478148,\"refresh_token\":\"kf27n4ynth5q\",\"user\":{\"id\":\"10000000-0000-0000-0000-000000000007\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"admin.agency1@housingspacesolutions.com\",\"email_confirmed_at\":\"2026-03-15T21:08:21.846571Z\",\"phone\":\"\",\"confirmed_at\":\"2026-03-15T21:08:21.846571Z\",\"last_sign_in_at\":\"2026-03-25T21:35:48.283605292Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"full_name\":\"Admin Agency 1\",\"role\":\"admin\"},\"identities\":[{\"identity_id\":\"397b85d9-7863-4367-bc82-8a08ffd0df46\",\"id\":\"10000000-0000-0000-0000-000000000007\",\"user_id\":\"10000000-0000-0000-0000-000000000007\",\"identity_data\":{\"email\":\"admin.agency1@housingspacesolutions.com\",\"email_verified\":true,\"phone_verified\":false,\"sub\":\"10000000-0000-0000-0000-000000000007\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-03-15T21:17:46.778634Z\",\"created_at\":\"2026-03-15T21:17:46.778634Z\",\"updated_at\":\"2026-03-15T21:17:46.778634Z\",\"email\":\"admin.agency1@housingspacesolutions.com\"}],\"created_at\":\"2026-03-15T21:08:21.846571Z\",\"updated_at\":\"2026-03-25T21:35:48.287171Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

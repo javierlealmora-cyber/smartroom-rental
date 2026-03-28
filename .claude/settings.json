@@ -8,7 +8,22 @@
       "Bash(xargs grep:*)",
       "Bash(grep -r \"Edge Function\\\\|llamada directa\\\\|direct call\\\\|RLS\\\\|query directa\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/*.md)",
       "Bash(grep -rn \"createLodger\\\\|updateLodger\\\\|setLodgerStatus\\\\|inviteLodger\\\\|scheduleCheckout\\\\|assignRoomToLodger\\\\|reassignRoom\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/pages/v2/admin/tenants --include=*.jsx)",
-      "Bash(grep -rn \"lodger_room_assignments\" src/ --include=\"*.{js,jsx,ts,tsx}\" -A 2)"
+      "Bash(grep -rn \"lodger_room_assignments\" src/ --include=\"*.{js,jsx,ts,tsx}\" -A 2)",
+      "Bash(find /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests -name *.md -type f)",
+      "Bash(find /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental -maxdepth 2 -name *.md -type f)",
+      "Bash(grep -E \"\\\\.\\(js|jsx|ts|tsx\\)$\")",
+      "Bash(find /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/supabase -name *.md -o -name *.sql)",
+      "Bash(find /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/supabase/migrations -name *.sql -type f)",
+      "Bash(grep -r \"settlement\\\\|bulletin\\\\|hucha\\\\|energy\\\\|kwh\\\\|reparto\\\\|distribuir\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/*.md)",
+      "Bash(ls -lah \"c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\qa\\\\defects\"\" 2>/dev/null || echo \"No defects folder \")",
+      "Bash(find qa:*)",
+      "Bash(mkdir -p \"docs/qa/test-cases\")",
+      "Bash(cp tests/test-cases/*.md \"docs/qa/test-cases/\")",
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/qa/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/qa/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/qa/*/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/qa/*/*.md)",
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/qa/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/qa/test-cases/*.md)",
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/specs/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/helpers/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/fixtures/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/.env* /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/test-cases/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/defects/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/reports/*.md)",
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*.md)",
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*/*.md)"
     ]
   }
 }

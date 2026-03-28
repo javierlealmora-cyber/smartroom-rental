@@ -183,7 +183,6 @@ export default function LodgerDetail() {
             billing_start_date,
             monthly_rent,
             deposit_amount,
-            status,
             room:rooms(id, number),
             accommodation:accommodations(id, name)
           )

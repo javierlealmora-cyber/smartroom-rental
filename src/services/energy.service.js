@@ -2,6 +2,7 @@
 // Lecturas directas con RLS para energy_bills y energy_readings
 
 import { supabase } from "./supabaseClient";
+import { invokeWithAuth } from "./supabaseInvoke.services";
 
 export async function listEnergyBills({ accommodationId, status } = {}) {
   let q = supabase
@@ -57,4 +58,10 @@ export async function listEnergyReadings({ accommodationId, roomId } = {}) {
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return data || [];
+}
+
+export async function settleEnergyBill(billId) {
+  const result = await invokeWithAuth("settle_energy_bill", { body: { bill_id: billId } });
+  if (!result.ok) throw new Error(result.error?.message || "Error al liquidar la factura");
+  return result.data;
 }

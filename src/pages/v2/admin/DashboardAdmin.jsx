@@ -139,11 +139,15 @@ function timeAgo(dateStr) {
 }
 
 const ACTION_META = {
-  create:          { label: "Creado",       color: "#059669" },
-  update:          { label: "Actualizado",  color: "#2563EB" },
-  delete:          { label: "Eliminado",    color: "#DC2626" },
-  set_status:      { label: "Estado",       color: "#D97706" },
-  set_room_status: { label: "Habitación",   color: "#D97706" },
+  create:            { label: "Creado",          color: "#059669" },
+  update:            { label: "Actualizado",     color: "#2563EB" },
+  delete:            { label: "Eliminado",       color: "#DC2626" },
+  set_status:        { label: "Estado",          color: "#D97706" },
+  set_room_status:   { label: "Hab. estado",     color: "#D97706" },
+  status_change:     { label: "Estado",          color: "#D97706" },
+  invite_sent:       { label: "Invitación",      color: "#7C3AED" },
+  schedule_checkout: { label: "Baja programada", color: "#EA580C" },
+  reassign_room:     { label: "Reasignación",    color: "#0891B2" },
 };
 const ENTITY_LABEL = {
   accommodation: "Alojamiento", room: "Habitación", lodger: "Inquilino",
@@ -221,20 +225,32 @@ export default function DashboardAdmin() {
   }, [clientAccountId]);
 
   const loadActivity = useCallback(async () => {
+    if (!clientAccountId) return;
     setActivityLoading(true);
     try {
       const { data } = await supabase
         .from("audit_log")
-        .select("id,entity_type,action,actor_role,metadata,new_values,created_at")
+        .select("id,entity_type,entity_id,action,actor_role,actor_user_id,new_values,old_values,created_at")
+        .eq("client_account_id", clientAccountId)
         .order("created_at", { ascending: false })
         .limit(20);
-      setActivity(data || []);
+
+      if (!data?.length) { setActivity([]); return; }
+
+      // Batch-fetch nombres de actores únicos
+      const actorIds = [...new Set(data.map(d => d.actor_user_id).filter(Boolean))];
+      const { data: actors } = actorIds.length
+        ? await supabase.from("profiles").select("id,full_name").in("id", actorIds)
+        : { data: [] };
+      const actorMap = Object.fromEntries((actors || []).map(a => [a.id, a.full_name]));
+
+      setActivity(data.map(item => ({ ...item, actorName: actorMap[item.actor_user_id] || null })));
     } catch {
       setActivity([]);
     } finally {
       setActivityLoading(false);
     }
-  }, []);
+  }, [clientAccountId]);
 
   useEffect(() => { load(); loadActivity(); }, [load, loadActivity]);
 
@@ -366,19 +382,29 @@ export default function DashboardAdmin() {
               <p style={S.empty}>Cargando...</p>
             ) : activity.length === 0 ? (
               <p style={S.empty}>Sin actividad registrada</p>
-            ) : activity.slice(0, 20).map((item) => {
+            ) : activity.map((item) => {
               const act = ACTION_META[item.action] || { label: item.action, color: "#94A3B8" };
               const entity = ENTITY_LABEL[item.entity_type] || item.entity_type;
-              const name = item.new_values?.name || item.new_values?.legal_name || item.new_values?.number || "";
+              const v = item.new_values || item.old_values || {};
+              const name = v.full_name || v.name || v.legal_name || v.number || "";
+              const actorDisplay = item.actorName || item.actor_role || "—";
+              const ENTITY_ROUTE = {
+                accommodation: `/v2/admin/alojamientos/${item.entity_id}/habitaciones`,
+                lodger:        `/v2/admin/inquilinos/${item.entity_id}/editar`,
+                entity:        `/v2/admin/entidades/${item.entity_id}`,
+              };
+              const route = item.entity_id ? ENTITY_ROUTE[item.entity_type] : null;
               return (
-                <div key={item.id} style={S.feedItem}>
+                <div key={item.id}
+                  style={{ ...S.feedItem, cursor: route ? "pointer" : "default" }}
+                  onClick={route ? () => navigate(route) : undefined}>
                   <div style={{ ...S.feedBar, background: act.color }} />
                   <div style={S.feedBody}>
                     <span style={S.feedAction}>
                       <span style={{ color: act.color }}>{act.label}</span>
                       {" · "}{entity}{name ? `: ${name}` : ""}
                     </span>
-                    <span style={S.feedMeta}>{item.actor_role} · {timeAgo(item.created_at)}</span>
+                    <span style={S.feedMeta}>{actorDisplay} · {timeAgo(item.created_at)}</span>
                   </div>
                 </div>
               );

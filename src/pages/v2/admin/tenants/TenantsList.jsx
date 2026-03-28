@@ -10,6 +10,8 @@ import {
 import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined, FileTextOutlined, LineChartOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import EmptyState from "../../../../components/EmptyState";
+import { getLodgerStatus, getLodgerStatusColor, getLodgerStatusLabel } from "../../../../utils/lodgerStatus";
+import { formatDate as _formatDate, formatCurrency } from "../../../../utils/formatters";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers, scheduleCheckout, inviteLodger } from "../../../../services/lodgers.service";
@@ -32,63 +34,7 @@ const STATUS_COLOR = {
   inactive: "#6B7280",
 };
 
-function _formatDate(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function formatCurrency(amount) {
-  if (amount == null) return "-";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
-}
-
-// Función para calcular el estado del inquilino basado en su histórico de asignaciones
-function getLodgerStatus(lodger) {
-  const assignments = lodger?.assignments || [];
-  
-  if (!assignments || assignments.length === 0) {
-    return 'invited';
-  }
-  
-  // Ordenar por move_in_date DESC y tomar la más reciente
-  const sortedAssignments = [...assignments].sort((a, b) => {
-    const dateA = a.move_in_date ? new Date(a.move_in_date) : new Date(0);
-    const dateB = b.move_in_date ? new Date(b.move_in_date) : new Date(0);
-    return dateB - dateA;
-  });
-  
-  const latestAssignment = sortedAssignments[0];
-  
-  if (!latestAssignment.move_in_date) return 'invited';
-  if (!latestAssignment.move_out_date) return 'active';
-  
-  const checkOutDate = dayjs(latestAssignment.move_out_date);
-  const today = dayjs().startOf('day');
-  
-  return checkOutDate.isAfter(today) ? 'pending_checkout' : 'inactive';
-}
-
-// Función para obtener el color del badge según el estado
-function getLodgerStatusColor(status) {
-  const colors = {
-    active: 'success',
-    pending_checkout: 'warning',
-    inactive: 'default',
-    invited: 'processing',
-  };
-  return colors[status] || 'default';
-}
-
-// Función para obtener la etiqueta del badge según el estado
-function getLodgerStatusLabel(status) {
-  const labels = {
-    active: 'Activo',
-    pending_checkout: 'Pendiente baja',
-    inactive: 'Inactivo',
-    invited: 'Invitado',
-  };
-  return labels[status] || status;
-}
+// ✅ REFACTOR: Funciones de formateo y estado centralizadas en utils/
 
 // Función para generar consumos moqueados basados en días de estancia
 function generateMockedConsumptions(moveInDate, checkOutDate) {
@@ -147,7 +93,8 @@ export default function TenantsList() {
         const { data: allAssignments } = await supabase
           .from("lodger_room_assignments")
           .select("id, lodger_id, move_in_date, move_out_date, room_id, accommodation_id, deposit_amount")
-          .in("lodger_id", lodgerIds);
+          .in("lodger_id", lodgerIds)
+          .eq("client_account_id", clientAccountId); // ✅ SEGURIDAD: Filtro multi-tenant
         
         // Mapear asignaciones a cada lodger
         lodgers.forEach(lodger => {

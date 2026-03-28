@@ -14,6 +14,8 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
+import { getLodgerStatus, getLodgerStatusLabel } from "../../../../utils/lodgerStatus";
+import { formatDate, formatCurrency } from "../../../../utils/formatters";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
 import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D";
@@ -36,7 +38,10 @@ const ROOM_STATUS_BG = {
   maintenance: { card: "#F9FAFB", border: "#E5E7EB", icon: "#E5E7EB", text: "#6B7280" },
 };
 const ROOM_STATUS_BADGE_BG = {
-  free: "#16A34A", occupied: "#DC2626", pending_checkout: "#D97706", maintenance: "#6B7280",
+  free:             { bg: "#DCFCE7", color: "#15803D" },
+  occupied:         { bg: "#FFE4E6", color: "#BE123C" },
+  pending_checkout: { bg: "#FEF3C7", color: "#B45309" },
+  maintenance:      { bg: "#F3F4F6", color: "#4B5563" },
 };
 const LODGER_STATUS_COLOR = { active: "#059669", invited: "#3B82F6", pending_checkout: "#F59E0B", inactive: "#9CA3AF" };
 const LODGER_STATUS_LABEL = { active: "Activo", invited: "Invitado", pending_checkout: "Pendiente baja", inactive: "Inactivo" };
@@ -45,15 +50,7 @@ const BATHROOM_LABEL = { shared: "Baño compartido", private: "Baño privado", e
 
 const ROOM_CARD_IMAGE = "/icons/room-card-model.png";
 
-function formatDate(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function formatCurrency(amount) {
-  if (amount == null) return "-";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
-}
+// ✅ REFACTOR: Funciones de formateo centralizadas en utils/formatters.js
 
 // Estado de habitación calculado desde asignaciones (rooms.status solo importa para 'maintenance')
 function getRoomStatus(room) {
@@ -64,52 +61,17 @@ function getRoomStatus(room) {
   return "pending_checkout";
 }
 
-// Función para calcular el estado del inquilino basado en su histórico de asignaciones
-function getLodgerStatus(lodger) {
-  const assignments = lodger?.assignments || [];
-  
-  if (!assignments || assignments.length === 0) {
-    return 'invited';
-  }
-  
-  // Ordenar por move_in_date DESC y tomar la más reciente
-  const sortedAssignments = [...assignments].sort((a, b) => {
-    const dateA = a.move_in_date ? new Date(a.move_in_date) : new Date(0);
-    const dateB = b.move_in_date ? new Date(b.move_in_date) : new Date(0);
-    return dateB - dateA;
-  });
-  
-  const latestAssignment = sortedAssignments[0];
-  
-  if (!latestAssignment.move_in_date) return 'invited';
-  if (!latestAssignment.move_out_date) return 'active';
-  
-  const checkOutDate = dayjs(latestAssignment.move_out_date);
-  const today = dayjs().startOf('day');
-  
-  return checkOutDate.isAfter(today) ? 'pending_checkout' : 'inactive';
-}
+// ✅ REFACTOR: Funciones de estado de inquilino centralizadas en utils/lodgerStatus.js
 
-// Función para obtener el color del badge según el estado
+// Colores personalizados para badges de estado de inquilino (específicos de este componente)
+const LODGER_STATUS_BADGE = {
+  active:           { bg: "#DCFCE7", color: "#15803D" },
+  pending_checkout: { bg: "#FEF3C7", color: "#B45309" },
+  inactive:         { bg: "#F3F4F6", color: "#4B5563" },
+  invited:          { bg: "#DBEAFE", color: "#1D4ED8" },
+};
 function getLodgerStatusColor(status) {
-  const colors = {
-    active: 'success',
-    pending_checkout: 'warning',
-    inactive: 'default',
-    invited: 'processing',
-  };
-  return colors[status] || 'default';
-}
-
-// Función para obtener la etiqueta del badge según el estado
-function getLodgerStatusLabel(status) {
-  const labels = {
-    active: 'Activo',
-    pending_checkout: 'Pendiente baja',
-    inactive: 'Inactivo',
-    invited: 'Invitado',
-  };
-  return labels[status] || status;
+  return LODGER_STATUS_BADGE[status] || LODGER_STATUS_BADGE.inactive;
 }
 
 // Función para generar consumos moqueados basados en días de estancia
@@ -429,39 +391,50 @@ export default function AccommodationDetail() {
   };
 
   const roomColumns = [
-    { title: "Nº", dataIndex: "number", key: "number", width: 60, render: (v) => <Text strong>{v}</Text> },
-    { title: "Estado", dataIndex: "status", key: "status", width: 110,
-      render: (v) => <Tag color={ROOM_STATUS_TAG[v] || "default"}>{ROOM_STATUS_LABEL[v] || v}</Tag> },
+    { title: "Nº", dataIndex: "number", key: "number", width: 240, render: (v) => <Text strong>{v}</Text> },
+    { title: "Estado", key: "status", width: 120,
+      render: (_, room) => {
+        const s = getRoomStatus(room);
+        const badge = ROOM_STATUS_BADGE_BG[s] || { bg: "#F3F4F6", color: "#4B5563" };
+        return (
+          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 12, fontWeight: 500, background: badge.bg, color: badge.color }}>
+            {ROOM_STATUS_LABEL[s] || s}
+          </span>
+        );
+      }},
     { title: "Precio/mes", dataIndex: "monthly_rent", key: "monthly_rent", width: 110,
       render: (v) => v != null ? formatCurrency(v) : "-" },
     { title: "m²", dataIndex: "square_meters", key: "square_meters", width: 70,
       render: (v) => v ? `${v} m²` : "-" },
     { title: "Baño", dataIndex: "bathroom_type", key: "bathroom_type", responsive: ["lg"],
       render: (v) => BATHROOM_OPTIONS.find((o) => o.value === v)?.label || v },
-    { title: "Acciones", key: "actions", render: (_, room) => (
-      <Space>
-        <Button size="small" onClick={() => {
-          setEditingRoom(room.id);
-          roomForm.setFieldsValue({
-            number: room.number, monthly_rent: room.monthly_rent,
-            square_meters: room.square_meters,
-            bathroom_type: room.bathroom_type || "shared",
-            kitchen_type: room.kitchen_type || "shared",
-            notes: room.notes || "",
-          });
-        }}>Editar</Button>
-        {room.status !== "occupied" && (
-          <Popconfirm
-            title={room.status === "maintenance" || room.status === "inactive" ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
-            onConfirm={() => onToggleRoomStatus(room)} okText="Sí" cancelText="No"
-          >
-            <Button size="small" danger={room.status !== "maintenance" && room.status !== "inactive"}>
-              {room.status === "maintenance" || room.status === "inactive" ? "Reactivar" : "Desactivar"}
-            </Button>
-          </Popconfirm>
-        )}
-      </Space>
-    )},
+    { title: "Acciones", key: "actions", render: (_, room) => {
+      const roomStatus = getRoomStatus(room);
+      return (
+        <Space>
+          <Button size="small" onClick={() => {
+            setEditingRoom(room.id);
+            roomForm.setFieldsValue({
+              number: room.number, monthly_rent: room.monthly_rent,
+              square_meters: room.square_meters,
+              bathroom_type: room.bathroom_type || "shared",
+              kitchen_type: room.kitchen_type || "shared",
+              notes: room.notes || "",
+            });
+          }}>Editar</Button>
+          {roomStatus !== "occupied" && roomStatus !== "pending_checkout" && (
+            <Popconfirm
+              title={room.is_maintenance ? "¿Reactivar habitación?" : "¿Desactivar habitación?"}
+              onConfirm={() => onToggleRoomStatus(room)} okText="Sí" cancelText="No"
+            >
+              <Button size="small" danger={!room.is_maintenance}>
+                {room.is_maintenance ? "Reactivar" : "Desactivar"}
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      );
+    }},
   ];
 
   const TABS = [
@@ -1116,7 +1089,7 @@ export default function AccommodationDetail() {
             const roomStatus = getRoomStatus(room);
             const isOccupied = roomStatus === "occupied" || roomStatus === "pending_checkout";
             const rent = room.monthly_rent != null ? formatCurrency(room.monthly_rent) : null;
-            const badgeBg = ROOM_STATUS_BADGE_BG[roomStatus] || "#6B7280";
+            const badge = ROOM_STATUS_BADGE_BG[roomStatus] || { bg: "#F3F4F6", color: "#4B5563" };
             return (
               <Col key={room.id} xs={24} sm={12} md={8} xl={6}>
                 <Card
@@ -1136,7 +1109,7 @@ export default function AccommodationDetail() {
                       Habitación &nbsp;{String(room.number).padStart(2, "0")}
                     </Text>
                     <span style={{
-                      background: badgeBg, color: "#fff",
+                      background: badge.bg, color: badge.color,
                       borderRadius: 20, padding: "4px 16px",
                       fontSize: 13, fontWeight: 700,
                       whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8,
@@ -1202,22 +1175,38 @@ export default function AccommodationDetail() {
                   <div style={{ minHeight: 68, marginBottom: 4 }}>
                     {isOccupied && lodger ? (
                       <>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <Text strong style={{ fontSize: 15, color: "#374151" }}>
-                            {lodger.full_name}
-                          </Text>
-                          <Tag 
-                            color={getLodgerStatusColor(getLodgerStatus(lodger))} 
-                            style={{ margin: 0, fontWeight: 600, fontSize: 13 }}
-                          >
-                            {getLodgerStatusLabel(getLodgerStatus(lodger))}
-                          </Tag>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                          <div>
+                            <Text strong style={{ fontSize: 15, color: "#374151", display: "block" }}>
+                              {lodger.full_name}
+                            </Text>
+                            {assignment?.move_in_date && (
+                              <Text strong style={{ fontSize: 13, color: "#374151" }}>
+                                Entrada {formatDate(assignment.move_in_date)}
+                              </Text>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                            {(() => {
+                              const b = getLodgerStatusColor(getLodgerStatus(lodger));
+                              return (
+                                <span style={{
+                                  background: b.bg, color: b.color,
+                                  borderRadius: 20, padding: "2px 10px",
+                                  fontSize: 13, fontWeight: 700,
+                                  whiteSpace: "nowrap",
+                                }}>
+                                  {getLodgerStatusLabel(getLodgerStatus(lodger))}
+                                </span>
+                              );
+                            })()}
+                            {assignment?.move_out_date && (
+                              <Text strong style={{ fontSize: 12, color: "#111827" }}>
+                                Baja {formatDate(assignment.move_out_date)}
+                              </Text>
+                            )}
+                          </div>
                         </div>
-                        {assignment?.move_in_date && (
-                          <Text strong style={{ fontSize: 13, color: "#374151", display: "block" }}>
-                            Entrada {formatDate(assignment.move_in_date)}
-                          </Text>
-                        )}
                       </>
                     ) : (
                       <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
@@ -1246,6 +1235,18 @@ export default function AccommodationDetail() {
                               setShowReassignModal(true);
                             }} />
                         </Tooltip>
+                        {roomStatus === "occupied" && (
+                          <Tooltip title="Check-out">
+                            <Button
+                              size="small" type="text" danger
+                              icon={<LogoutOutlined />}
+                              onClick={() => {
+                                setLodgerToCheckout({ ...lodger, active_assignment: room.active_assignment });
+                                setShowCheckoutModal(true);
+                              }}
+                            />
+                          </Tooltip>
+                        )}
                       </>
                     ) : roomStatus === "free" ? (
                       <>
