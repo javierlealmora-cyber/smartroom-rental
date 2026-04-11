@@ -6,14 +6,18 @@
 
 ## 📊 Resumen
 
-- **Total migraciones:** 19 archivos
+- **Total migraciones:** 27 archivos
 - **Baseline:** 7 archivos (inmutables)
-- **Schema:** 6 migraciones
+- **Schema:** 15 migraciones
 - **Data:** 2 migraciones
-- **Security:** 1 migración
-- **Performance:** 3 migraciones
+- **Security:** 2 migraciones
+- **Performance:** 3 migraciones (en carpeta /performance)
 
-**Última migración:** `20260327000001_add_no_overlap_constraint.sql`
+**Última migración:** `20260411000002_rename_owner_fields_client_accounts.sql` ⚠️ PENDIENTE EJECUTAR EN STAGING/PROD
+
+> **REQ-012 (Búsqueda global de habitaciones) — Sin migración requerida.** Usa esquema existente: `rooms`, `lodger_room_assignments`, `accommodations`, `entities`, `profiles.gender`. BUG-051: columna `size_sqm` no existe (la real es `square_meters`) — corregido en código, sin cambio de BD.
+
+> **Cambios UI 2026-04-11 (topbar branding, TenantCreate stepper, TenantDetail modal edición, ChangeRoomModal) — Sin migración requerida.** Solo afectan a componentes React.
 
 ---
 
@@ -191,17 +195,18 @@
 **Fecha:** 2026-03-23  
 **Descripción:** Añadir campos de dirección detallada a accommodations  
 **Contenido:**
-- `address_number`, `address_floor`
-- `address_door`, `address_postal_code`
+- `street_number` TEXT — número de calle (ej. "12", "12B")
+- `floor` TEXT — planta
+- `door` TEXT — puerta
 
-**REQ:** REQ-002 (Tenants Lifecycle)  
+**REQ:** REQ-001 (Accommodations)  
 **CHG:** N/A  
 **Issue:** N/A  
 **Tests:** Pendiente
 
 **Impacto:**
-- Frontend: Formulario de alojamiento
-- Backend: Validaciones
+- Frontend: Campo "Número" visible en formulario de alojamiento (AccommodationDetail.jsx)
+- Subtítulo del alojamiento muestra calle + número correctamente
 
 ---
 
@@ -224,10 +229,36 @@
 
 ---
 
+### 20260329000000_energy_settlements_daily.sql
+**Tipo:** Schema
+**Fecha:** 2026-03-29
+**Descripción:** Rediseño de `energy_settlements` a granularidad diaria
+**Contenido:**
+- TRUNCATE `bulletins` + DROP TABLE `energy_settlements` (elimina esquema anterior)
+- CREATE TABLE `energy_settlements` con nuevas columnas:
+  - `accommodation_id` (denormalizado para consultas rápidas)
+  - `settlement_date date NOT NULL` (granularidad diaria)
+  - `kwh_day`, `amount_fixed_day`, `amount_variable_day`, `amount_total_day`
+  - UNIQUE (energy_bill_id, room_id, lodger_id, settlement_date)
+- RLS: SELECT/INSERT/DELETE para admin+agent en su propio tenant
+- 3 índices: por `energy_bill_id`, por `(accommodation_id, settlement_date)`, por `(lodger_id, settlement_date)`
+
+**REQ:** REQ-007 (Energy Bill Settlement)
+**CHG:** CHG-2026-03-29 (nuevo algoritmo fracción diaria)
+**Issue:** BUG-040 (pendiente ejecutar en live)
+**Tests:** ENE-01..10 en `qa/unit/logic/energy-settlement.test.js`
+
+**Impacto:**
+- Backend: `settleEnergyBill` genera N×totalDays filas en lugar de N filas (una por inquilino×día)
+- Frontend: sin cambios (boletines siguen siendo uno por inquilino)
+- ✅ Ejecutada en dev (2026-03-29) — datos anteriores eliminados
+
+---
+
 ### 20260327000000_add_consumptions_table.sql
-**Tipo:** Schema  
-**Fecha:** 2026-03-27  
-**Descripción:** Crear tabla consumptions para consumos reales  
+**Tipo:** Schema
+**Fecha:** 2026-03-27
+**Descripción:** Crear tabla consumptions para consumos reales
 **Contenido:**
 - Tabla `consumptions` con columnas:
   - `consumption_type` (water, electricity, gas, other)
@@ -238,15 +269,172 @@
 - 3 índices optimizados
 - Trigger updated_at
 
-**REQ:** REQ-004 (Energy Billing)  
-**CHG:** CHG-2026-03-28-energy-settlement-rules  
-**Issue:** Pendiente  
+**REQ:** REQ-004 (Energy Billing)
+**CHG:** CHG-2026-03-28-energy-settlement-rules
+**Issue:** Pendiente
 **Tests:** Pendiente
 
 **Impacto:**
 - Frontend: Módulo de consumos (nuevo)
 - Backend: Funciones de cálculo de consumos
 - Reemplaza datos mockeados del frontend
+
+---
+
+### 20260329130000_add_services_provision_to_assignments.sql
+**Tipo:** Schema
+**Fecha:** 2026-03-29
+**Estado:** ✅ Aplicada en DEV
+**Descripción:** Añadir campo `services_provision_amount` a `lodger_room_assignments`
+**Contenido:**
+- `services_provision_amount NUMERIC(10,2) DEFAULT NULL`
+- "Hucha Energética": previsión mensual que el inquilino aporta a suministros del alojamiento
+- Complementa a `prevision_fund_*` de `accommodations` (nivel alojamiento)
+- Primer pago coincide con `billing_start_date` (primer día del mes siguiente al check-in)
+
+**REQ:** REQ-003 (Room Assignment)
+**CHG:** N/A
+**Issue:** N/A
+**Tests:** CHG-11 🚧 Pendiente
+
+**Impacto:**
+- Frontend: campo "Previsión de Gastos de Servicios" en `RoomAssignmentForm.jsx`
+- `TenantCreate.jsx` y `TenantDetail.jsx` pasan el campo al servicio `assignRoomToLodger`
+
+---
+
+### 20260329100000_add_estimated_source_to_energy_readings.sql
+**Tipo:** Schema
+**Fecha:** 2026-03-29
+**Estado:** ✅ Aplicada en DEV
+**Descripción:** Añadir campo `estimated_source` a `energy_readings`
+**Contenido:**
+- Campo para indicar origen de la estimación de lectura
+
+**REQ:** REQ-004 (Energy Billing)
+**Issue:** N/A
+**Tests:** Pendiente
+
+---
+
+### 20260330000000_fix_entities_optional_fields.sql
+**Tipo:** Schema
+**Fecha:** 2026-03-30
+**Estado:** ✅ Aplicada en DEV
+**Descripción:** Hacer opcionales campos NOT NULL de `entities`
+**Contenido:**
+- Campos de personas físicas ahora son nullable
+- Permite crear entidades de tipo empresa sin datos de persona física
+
+**REQ:** REQ-011 (Entity Management)
+**Issue:** N/A
+**Tests:** Pendiente
+
+---
+
+### 20260408000001_add_reserved_room_state.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-08
+**Estado:** ✅ Aplicada en DEV
+**Descripción:** Añadir estado "Reservada" a habitaciones
+**Contenido:**
+- Elimina unique indexes bloqueantes en `lodger_room_assignments`
+- Corrige constraint de no solapamiento a rango `'[)'` (exclusivo en fecha salida)
+- Actualiza `get_room_derived_status()` para devolver `'reserved'` cuando solo hay asignación futura sin activa
+
+**REQ:** REQ-005 (Room States v2)
+**CHG:** Rev-18
+**Tests:** ACC-13..17 ✅ en `qa/unit/logic/roomStatus.test.js`
+
+**Impacto:**
+- Frontend: `AccommodationDetail.jsx` y `RoomsSearch.jsx` — split de queries activas/futuras, badge "Reservada" naranja
+- Modal "Cambiar habitación": `loadFreeRoomsForDate()` calcula disponibilidad en fecha del cambio
+
+---
+
+### 20260409000001_rename_notes_add_correction.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-09
+**Estado:** ✅ Aplicada en DEV
+**Descripción:** Renombrar `checkout_notes → notes` y añadir `correction_amount`
+**Contenido:**
+- RENAME COLUMN `checkout_notes` → `notes` (campo genérico, no solo para checkout)
+- ADD COLUMN `correction_amount NUMERIC(10,2)` — corrección proporcional por cambio de hab. a mitad de mes
+
+**REQ:** REQ-003 (Room Assignment)
+**CHG:** Rev-19
+**Tests:** CHG-01..05 ✅ en `qa/unit/logic/correctionAmount.test.js`
+
+**Impacto:**
+- Frontend: `ChangeRoomModal.jsx` — campo `correction_amount` auto-calculado por fórmula proporcional días restantes/días mes
+- `TenantDetail.jsx` historial muestra campo `notes`
+
+---
+
+### 20260411000001_add_owner_fields_to_client_accounts.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-11
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN STAGING/PROD
+**Descripción:** Añadir campos de propietario a `client_accounts`
+**Contenido:**
+- `owner_first_name TEXT` — nombre del propietario
+- `owner_last_name1 TEXT` — primer apellido
+- `owner_last_name2 TEXT` — segundo apellido
+
+**Contexto:** Datos de propietario se movieron de `entities` (con muchos NOT NULL) a `client_accounts` donde ya existen `contact_email` y `contact_phone`.
+
+**REQ:** REQ-002 (Tenants Lifecycle — Configuración de cuenta)
+**Tests:** N/A (dato de perfil)
+
+---
+
+### 20260411000002_rename_owner_fields_client_accounts.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-11
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN STAGING/PROD (debe ejecutarse DESPUÉS de 20260411000001)
+**Descripción:** Ajustar campos de propietario en `client_accounts`
+**Contenido:**
+- DROP COLUMN `owner_first_name` (el nombre ya está en `name`)
+- RENAME `owner_last_name1 → last_name1`
+- RENAME `owner_last_name2 → last_name2`
+
+**Esquema final resultante en `client_accounts`:**
+- `name` — Nombre del propietario (era `owner_first_name`)
+- `last_name1` — Primer apellido
+- `last_name2` — Segundo apellido
+
+**REQ:** REQ-002 (Tenants Lifecycle — Configuración de cuenta)
+**Tests:** N/A
+
+**Impacto:**
+- Frontend: `AdminSettings.jsx` — `handleSaveOwner` guarda `name`, `last_name1`, `last_name2` en `client_accounts`; "Nombre de cuenta" muestra `name + last_name1 + last_name2`
+- `TenantProvider.jsx` — expone `accountName` desde `account.name` en contexto
+
+---
+
+### 20260402120000_add_prevision_fund_to_accommodations.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-02  
+**Estado:** ❌ **PENDIENTE EJECUTAR** — bloqueante para BUG-050  
+**Descripción:** Añadir columnas `prevision_fund_electricity/water/gas` a `accommodations`  
+**Contenido:**
+- `prevision_fund_electricity NUMERIC(10,2) NOT NULL DEFAULT 0`
+- `prevision_fund_water NUMERIC(10,2) NOT NULL DEFAULT 0`
+- `prevision_fund_gas NUMERIC(10,2) NOT NULL DEFAULT 0`
+- Validación pre-migración (NOTICE si ya existe)
+- Verificación post-migración (EXCEPTION si falla)
+
+**Nota:** Sustituye al borrador `20260329120000_add_prevision_fund_to_accommodations.sql` que tenía conflicto de timestamp con `20260329120000_fix_entities_nullable_fields.sql` y no se ejecutó.
+
+**REQ:** REQ-009 (Configuración de Reparto de Suministros)  
+**CHG:** CHG-2026-04-02  
+**Issue:** BUG-050  
+**Tests:** Pendiente
+
+**Impacto:**
+- Frontend: `AccommodationDetail.jsx` — guard "Guardar" deja de dar error 400
+- Backend: Sin cambios (RLS existente aplica automáticamente)
+- Sin datos a migrar (DEFAULT 0 para todos los registros existentes)
 
 ---
 
@@ -291,6 +479,26 @@
 ---
 
 ## 🔴 SECURITY (Seguridad y Constraints)
+
+### 20260328120000_fix_energy_bulletins_rls.sql
+**Tipo:** Security
+**Fecha:** 2026-03-28
+**Descripción:** Corrección de políticas RLS para `bulletins` y `energy_settlements`
+**Contenido:**
+- `bulletins_insert_policy`: permite admin+agent insertar en su propio tenant
+- `bulletins_delete_policy`: permite admin+agent borrar en su propio tenant
+- `energy_settlements_delete_policy`: permite admin+agent borrar en su propio tenant
+- `energy_settlements_insert_policy`: recreado por seguridad
+
+**REQ:** REQ-007 (Energy Bill Settlement)
+**CHG:** BUG-040
+**Issue:** BUG-040 (403 Forbidden al pulsar "Repartir")
+**Tests:** N/A (RLS verificado por comportamiento en FacturasTab)
+
+**Impacto:**
+- ✅ Ejecutada en dev (2026-03-29)
+
+---
 
 ### 20260327000001_add_no_overlap_constraint.sql
 **Tipo:** Security  
@@ -394,7 +602,22 @@
 - **REQ-002 (Tenants):** 2 migraciones
 - **REQ-003 (Rooms):** 7 migraciones
 - **REQ-004 (Energy):** 2 migraciones
+- **REQ-011 (Entity Management):** 0 migraciones — sin cambio de schema (tabla `entities` ya tiene columna `type` en baseline); BUG-046 resuelto con cambio de frontend únicamente
 - **Infraestructura:** 7 migraciones (baseline)
+
+### Notas de arquitectura (2026-04-02)
+**Migración de Edge Functions a llamadas directas Supabase (sin cambio de schema):**
+Los siguientes cambios de frontend eliminan dependencias de edge functions usando RLS como capa de seguridad — no requieren migraciones SQL porque el schema ya tenía RLS habilitado:
+- `manage_accommodation` → INSERT directo en `accommodations` + `rooms` (`BUG-047`)
+- `manage_entity` → INSERT directo en `entities` (`BUG-049`)
+- `wizard_init` → UPDATE directo en `profiles.onboarding_status` (`BUG-048`)
+
+Edge functions que **permanecen** (requieren service role o APIs externas):
+- `manage_lodger` — crea usuarios en Supabase Auth (service role obligatorio)
+- `wizard_submit` — crea usuarios en Auth + Stripe Checkout Session
+- `provision_client_account_superadmin` — crea cuentas con service role
+- `scan_energy_bill` — llama a OpenAI GPT-4o (API key secreta server-side)
+- `stripe_webhook` — webhook externo de Stripe
 
 ### Pendientes de Documentar
 - Tests para migraciones de schema
@@ -468,5 +691,48 @@ Las siguientes migraciones son **críticas** para la integridad del sistema:
 
 ---
 
-**Última actualización:** 2026-03-28  
+### 20260408000001_add_reserved_room_state.sql
+**Tipo:** Schema + Funciones  
+**Fecha:** 2026-04-08  
+**Descripción:** Estado "Reservada" para habitaciones con asignación futura  
+**Contenido:**
+- Drop índices `idx_room_active_assignment` e `idx_lodger_active_assignment`
+- Constraint EXCLUDE cambiado de `'[]'` a `'[)'` — permite check-out y check-in el mismo día
+- Reescritura de `get_room_derived_status()` → devuelve JSONB `{status, upcoming}` con 5 estados: `free`, `occupied`, `pending_checkout`, `maintenance`, `reserved`
+
+**REQ:** REQ-005 (Room States)  
+**CHG:** N/A  
+**Issue:** N/A  
+**Tests:** ACC-13..18 en `qa/unit/logic/roomStatus.test.js`
+
+**Impacto:**
+- Frontend: Badge "Reservada" (naranja) en cards y lista de habitaciones — AccommodationDetail.jsx y RoomsSearch.jsx
+- DB: Permite que dos asignaciones compartan la misma fecha de fin/inicio
+
+**⚠️ Aplicar manualmente en Supabase Studio**
+
+---
+
+### 20260409000001_rename_notes_add_correction.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-09  
+**Descripción:** Renombrar checkout_notes → notes y añadir correction_amount en lodger_room_assignments  
+**Contenido:**
+- `RENAME COLUMN checkout_notes TO notes` — campo genérico para notas de check-in, check-out y cambio de habitación
+- `ADD COLUMN correction_amount numeric` — importe proporcional de corrección por cambio de habitación a mitad de mes
+
+**REQ:** REQ-003 (Room Assignment)  
+**CHG:** CHG-01..06  
+**Issue:** N/A  
+**Tests:** `qa/unit/logic/correctionAmount.test.js` (CHG-01..04)
+
+**Impacto:**
+- Frontend: Modal "Cambiar habitación" auto-calcula correction_amount; TenantEdit muestra notes en historial
+- DB: checkout modal graba en campo `notes` (antes `checkout_notes`)
+
+**⚠️ Aplicar manualmente en Supabase Studio**
+
+---
+
+**Última actualización:** 2026-04-10  
 **Próxima revisión:** Tras cada nueva migración

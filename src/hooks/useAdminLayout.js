@@ -17,11 +17,11 @@ const PLAN_LABELS = {
 
 export function useAdminLayout() {
   const { user, profile, clientAccountId } = useAuth();
-  const { branding: tenantBranding, planCode } = useTenant();
+  const { branding: tenantBranding, planCode, accountName } = useTenant();
 
   const userName =
-    profile?.full_name ||
     user?.user_metadata?.full_name ||
+    profile?.full_name ||
     user?.email ||
     "Usuario";
 

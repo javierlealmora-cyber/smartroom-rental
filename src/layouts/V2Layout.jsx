@@ -6,11 +6,13 @@
 
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../providers/AuthProvider";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import {
   Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
   Icon3DServicios, Icon3DCatalogo, Icon3DFacturas, Icon3DLiquidaciones,
   Icon3DBoletines, Icon3DCuentas, Icon3DPlanes, Icon3DMiPanel, Icon3DConsumo, Icon3DIncidencias,
+  Icon3DHabitaciones,
 } from "../components/icons3d/NavIcons3D";
 
 // ─── Menus de navegacion por rol ─────────────────────────────────────────────
@@ -19,6 +21,7 @@ const ADMIN_NAV = [
   { label: "Dashboard",     path: "/v2/admin",                       Icon: Icon3DDashboard },
   { label: "Entidades",     path: "/v2/admin/entidades",             Icon: Icon3DEntidades },
   { label: "Alojamientos",  path: "/v2/admin/alojamientos",          Icon: Icon3DAlojamientos },
+  { label: "Habitaciones",  path: "/v2/admin/habitaciones",          Icon: Icon3DHabitaciones },
   { label: "Inquilinos",    path: "/v2/admin/inquilinos",            Icon: Icon3DInquilinos },
   { label: "Servicios",     path: "/v2/admin/inquilinos/servicios",  Icon: Icon3DServicios },
   { label: "Catálogo",      path: "/v2/admin/servicios",             Icon: Icon3DCatalogo },
@@ -260,11 +263,14 @@ export default function V2Layout({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const userEmail = user?.email || null;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = getNavItems(role);
 
-  const primaryColor = companyBranding?.primaryColor || "#0071E3";
+  const primaryColor   = companyBranding?.primaryColor   || "#0071E3";
+  const secondaryColor = companyBranding?.secondaryColor || "#3B82F6";
   const branding = {
     name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
     logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),
@@ -303,13 +309,12 @@ export default function V2Layout({
     <>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
+        html { scrollbar-gutter: stable; }
         .v2-topbar {
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 16px; height: 48px;
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: saturate(180%) blur(20px);
-          -webkit-backdrop-filter: saturate(180%) blur(20px);
-          border-bottom: 1px solid rgba(0,0,0,0.08);
+          background: ${secondaryColor};
+          border-bottom: 1px solid rgba(0,0,0,0.12);
           position: sticky; top: 0; z-index: 300;
           gap: 8px;
         }
@@ -323,8 +328,8 @@ export default function V2Layout({
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .v2-brand-text { display: flex; flex-direction: column; }
-        .v2-brand-name { font-size: 11px; font-weight: 700; color: #1D1D1F; line-height: 1.2; white-space: nowrap; }
-        .v2-brand-tagline { font-size: 8px; color: #6B7280; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-name { font-size: 11px; font-weight: 700; color: ${primaryColor}; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-tagline { font-size: 8px; color: ${primaryColor}; opacity: 0.7; line-height: 1.2; white-space: nowrap; }
         .v2-topnav {
           display: flex; align-items: center; gap: 0;
           flex: 1; justify-content: center;
@@ -332,45 +337,58 @@ export default function V2Layout({
         }
         .v2-topnav::-webkit-scrollbar { display: none; }
         .v2-nav-btn {
-          background: none; border: none;
+          background: none; border: none; outline: none;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           gap: 1px;
-          padding: 2px 8px; border-radius: 10px;
+          padding: 4px 0; border-radius: 10px;
           cursor: pointer; white-space: nowrap;
-          transition: background 0.18s, transform 0.15s;
+          transition: background 0.18s;
           font-family: inherit;
-          min-width: 60px;
-          max-width: 78px;
+          width: 76px;
+          flex-shrink: 0;
+          flex-grow: 0;
         }
+        .v2-nav-btn:focus { outline: none; }
+        .v2-nav-btn:focus-visible { outline: 2px solid rgba(255,255,255,0.35); outline-offset: -2px; }
         .v2-nav-icon-wrap {
-          height: 34px;
+          width: 34px; height: 34px;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
         .v2-nav-icon-wrap img, .v2-nav-icon-wrap svg {
-          max-width: 34px; max-height: 34px;
-          width: auto; height: auto;
+          width: 34px; height: 34px;
           object-fit: contain;
+          display: block;
+          transition: filter 0.18s ease, transform 0.18s ease;
         }
-        .v2-nav-btn:hover { background: rgba(0,0,0,0.04); transform: translateY(-1px); }
-        .v2-nav-btn.active { background: rgba(0,0,0,0.06); }
-        .v2-nav-btn.active .v2-nav-label { color: ${primaryColor}; font-weight: 600; }
+        .v2-nav-btn:hover { background: none; }
+        .v2-nav-btn:hover .v2-nav-icon-wrap img,
+        .v2-nav-btn:hover .v2-nav-icon-wrap svg {
+          filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)) drop-shadow(0 0 8px rgba(200,230,255,0.7));
+          transform: scale(1.12);
+        }
+        .v2-nav-btn.active { background: rgba(0,0,0,0.12); }
+        .v2-nav-btn.active .v2-nav-label { opacity: 1; }
         .v2-nav-label {
-          font-size: 8px; font-weight: 500; color: #374151;
+          font-size: 8px; font-weight: 700; color: ${primaryColor};
           letter-spacing: -0.01em; line-height: 1;
+          opacity: 0.6;
+          display: block; text-align: center;
+          width: 100%; overflow: hidden; text-overflow: ellipsis;
         }
         .v2-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .v2-username { font-size: 10px; font-weight: 500; color: #374151; white-space: nowrap; }
+        .v2-username { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+        .v2-username-name { font-size: 11px; font-weight: 600; color: ${primaryColor}; line-height: 1.3; }
+        .v2-username-email { font-size: 9px; font-weight: 400; color: ${primaryColor}; opacity: 0.65; line-height: 1.2; }
         .v2-logout-btn {
           padding: 4px 12px;
-          background: rgba(0,0,0,0.05);
-          border: 1px solid rgba(0,0,0,0.1);
-          border-radius: 16px; color: #374151;
-          font-size: 10px; font-weight: 500;
+          border: 1px solid transparent;
+          border-radius: 16px;
+          font-size: 10px; font-weight: 600;
           cursor: pointer; font-family: inherit;
-          transition: background 0.18s; white-space: nowrap;
+          transition: opacity 0.18s; white-space: nowrap;
         }
-        .v2-logout-btn:hover { background: rgba(0,0,0,0.09); }
+        .v2-logout-btn:hover { opacity: 0.82; }
         .v2-hamburger {
           display: none; background: none; border: none;
           color: #374151; font-size: 20px; cursor: pointer;
@@ -422,7 +440,7 @@ export default function V2Layout({
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F7", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif", WebkitFontSmoothing: "antialiased" }}>
+      <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif", WebkitFontSmoothing: "antialiased" }}>
 
         {/* ── Top Bar ── */}
         <header className="v2-topbar">
@@ -455,18 +473,27 @@ export default function V2Layout({
 
           {/* Derecha */}
           <div className="v2-topbar-right">
-            <span className="v2-username">{userName}</span>
+            <div className="v2-username">
+              <span className="v2-username-name">{userName}</span>
+              {userEmail && <span className="v2-username-email">{userEmail}</span>}
+            </div>
             {role === "admin" && (
               <button
                 className="v2-logout-btn"
                 onClick={() => navigate("/v2/admin/settings")}
                 title="Configuración"
-                style={{ padding: "5px 12px" }}
+                style={{ padding: "5px 12px", background: "rgba(0,0,0,0.10)", borderColor: "transparent", color: "#4B5563" }}
               >
                 ⚙️
               </button>
             )}
-            <button className="v2-logout-btn" onClick={handleLogout}>Salir</button>
+            <button
+              className="v2-logout-btn"
+              onClick={handleLogout}
+              style={{ background: "rgba(0,0,0,0.10)", borderColor: "transparent", color: "#4B5563" }}
+            >
+              Salir
+            </button>
             <button className="v2-hamburger" onClick={() => setMobileOpen((v) => !v)} aria-label="Menú">
               {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}
             </button>

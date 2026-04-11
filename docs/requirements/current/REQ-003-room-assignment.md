@@ -1,8 +1,8 @@
 # REQ-003: Asignación de Habitaciones e Inquilinos
 
-**Estado:** ✅ Implementado y Consolidado  
-**Última actualización:** 2026-03-28  
-**Versión:** 1.1
+**Estado:** ✅ Implementado y Consolidado
+**Última actualización:** 2026-04-09
+**Versión:** 1.4
 
 ---
 
@@ -57,25 +57,54 @@ Datos de inquilino (en lodgers):
 - created_at, updated_at
 ```
 
-#### Flujo de Alta
-1. **Admin crea inquilino:**
-   - Completa datos personales
-   - Selecciona fecha de entrada
-   - Elige alojamiento
-   - Ve habitaciones disponibles
-   - Selecciona habitación
-   - Confirma asignación
+#### Flujo de Alta — Stepper 2 pasos (desde 2026-04-11)
 
-2. **Sistema procesa:**
-   - Crea perfil en `profiles` con role='lodger'
-   - Crea registro en `lodgers`
-   - Crea asignación en `lodger_room_assignments`
-   - Envía email de invitación con link de activación
+Componente: `src/pages/v2/admin/tenants/TenantCreate.jsx`
 
-3. **Inquilino activa cuenta:**
-   - Accede a link de invitación
-   - Establece contraseña
-   - Accede a su portal personal
+**Paso 1 — Datos del Inquilino:**
+- Admin completa datos personales (`LodgerFormFields`)
+- Checkbox "Enviar email de onboarding"
+- Botón "Registrar Inquilino →" llama `createLodger()`, guarda `createdLodgerId`, avanza al paso 2
+- El inquilino ya existe en BD desde este momento
+
+**Paso 2 — Asignar Habitación (opcional):**
+- Muestra `RoomAssignmentForm` con selección de alojamiento → habitación disponible
+- Botón "Asignar Habitación →" llama `assignRoomToLodger()`, navega a detalle
+- Botón "Saltar — sin habitación" navega al detalle sin asignar habitación
+- Si el usuario cierra la pestaña: el inquilino existe sin habitación (comportamiento esperado)
+
+**Sistema procesa (paso 1):**
+- Crea perfil en `profiles` con role='lodger'
+- Crea registro en `lodgers`
+- Envía email de invitación con link de activación (si checkbox activo)
+
+**Sistema procesa (paso 2, si se completa):**
+- Crea asignación en `lodger_room_assignments` con todos los campos financieros
+
+**Inquilino activa cuenta:**
+- Accede a link de invitación
+- Establece contraseña
+- Accede a su portal personal
+
+#### Edición de inquilino desde detalle (desde 2026-04-11)
+
+Componente: `src/pages/v2/admin/tenants/TenantDetail.jsx`
+
+- Botón "Editar" (icono lápiz) en sección "Datos personales" abre **modal** con `LodgerFormFields` pre-rellenados
+- Al guardar: llama `updateLodger(id, values)` y recarga el detalle
+- No navega a la página `/editar` (que sigue existiendo pero no se usa desde el detalle)
+- Línea gris bajo nombre del inquilino muestra alojamiento actual + número de habitación
+
+#### Cambio de habitación — ChangeRoomModal (desde 2026-04-11)
+
+Componente: `src/pages/v2/admin/tenants/components/ChangeRoomModal.jsx`
+
+- Modal reutilizable independiente con toda la lógica de cambio de habitación
+- Usado desde `TenantDetail` (botón "Cambiar") y disponible para `AccommodationDetail`
+- Secciones: Check-Out (info actual fija) + Check-In (selector entidad→aloj.→hab. libres)
+- Calcula `loadFreeRoomsForDate()` en la fecha del cambio
+- Auto-calcula `correction_amount` proporcional a días restantes del mes
+- Props: `{ open, onClose, onSuccess, lodger, activeAssignment, clientAccountId }`
 
 ### Asignaciones (Lodger Room Assignments)
 
@@ -92,10 +121,41 @@ Datos de inquilino (en lodgers):
 - monthly_rent (DECIMAL)
 - deposit_amount (DECIMAL)
 - commission_amount (DECIMAL)
-- first_month_amount (DECIMAL)
+- first_month_amount (DECIMAL) - Importe pago parcial mes en curso (opcional)
 - checkout_notes (TEXT) - Notas del check-out
 - created_at, updated_at
 ```
+
+#### Formulario de Asignación — RoomAssignmentForm
+
+Componente: `src/pages/v2/admin/tenants/components/RoomAssignmentForm.jsx`
+
+**Campos del formulario:**
+
+| Campo UI | Campo BD | Observaciones |
+|----------|----------|---------------|
+| Alojamiento | `accommodation_id` | Select; filtra habitaciones disponibles |
+| Habitación | `room_id` | Select condicional (requiere alojamiento seleccionado) |
+| Fecha de Check-In | `move_in_date` | DatePicker |
+| ☑ "El inquilino va a pagar desde Check-In hasta fin de mes" | — | Checkbox opcional |
+| Importe a pagar hasta fin de mes | `first_month_amount` | Visible solo si checkbox activo |
+| **Fecha del primer pago de la mensualidad** | `billing_start_date` | **Siempre visible.** Solo lectura. Calculado: primer día del mes siguiente a `move_in_date`. Nota en UI: "También de la previsión de Gastos de Servicios" |
+| Importe de la Fianza | `deposit_amount` | — |
+| Importe Comisión | `commission_amount` | Opcional |
+| **Previsión de Gastos de Servicios (€)** | `services_provision_amount` | Nuevo. Hucha Energética (Luz, agua, gas). Importe mensual estimado que el inquilino aporta a la hucha de suministros del alojamiento. Opcional. |
+
+**Regla de cálculo de `billing_start_date`:**
+```
+billing_start_date = move_in_date.add(1, 'month').startOf('month')
+Ejemplo: move_in_date = 29/03/2026 → billing_start_date = 01/04/2026
+```
+
+El campo `billing_start_date` determina también cuándo empieza a aplicarse la `services_provision_amount`. Ambos importes (mensualidad + hucha energética) comienzan el primer día del mes siguiente al check-in.
+
+**Flujo de persistencia:**
+1. `TenantCreate.jsx` calcula `billing_start_date` y añade `services_provision_amount` al payload
+2. Edge Function `manage_lodger` desestructura y persiste todos los campos en `lodger_room_assignments`
+3. `assignRoomToLodger` y `reassignRoom` en `lodgers.service.js` también aceptan `servicesProvisionAmount`
 
 #### Reglas de Negocio
 
@@ -288,12 +348,16 @@ Una habitación está disponible si:
 ## Impacto Frontend
 
 ### Componentes Principales
-- `src/pages/Lodgers.jsx` - Listado de inquilinos
-- `src/pages/LodgerDetail.jsx` - Detalle de inquilino
-- `src/components/Lodger/LodgerForm.jsx` - Formulario de alta
-- `src/components/Lodger/AssignmentForm.jsx` - Asignación de habitación
-- `src/components/Lodger/CheckoutForm.jsx` - Proceso de check-out
-- `src/components/Room/RoomAvailability.jsx` - Consulta disponibilidad
+- `src/pages/v2/admin/tenants/TenantsList.jsx` - Listado de inquilinos
+- `src/pages/v2/admin/tenants/TenantEdit.jsx` - Edición de inquilino
+- `src/pages/v2/admin/tenants/components/RoomAssignmentForm.jsx` - Formulario de asignación (formulario canónico)
+- `src/pages/v2/admin/accommodations/AccommodationDetail.jsx` - Detalle / edición de alojamiento con pestañas (página unificada)
+- `src/pages/v2/admin/accommodations/AccommodationsList.jsx` - Listado de alojamientos; botón "Editar" navega a `/habitaciones`
+
+### Rutas de Alojamiento (unificadas 2026-03-29)
+- `/v2/admin/alojamientos/:accId/habitaciones` — ruta canónica → `AccommodationDetail`
+- `/v2/admin/alojamientos/:accId/editar` — alias legacy → también `AccommodationDetail` (misma página)
+- `AccommodationEdit.jsx` — **archivo huérfano, pendiente eliminar**
 
 ### Flujos de Usuario
 1. **Alta de Inquilino:**
@@ -394,6 +458,7 @@ CONSTRAINT no_overlapping_assignments EXCLUDE ...
 - `20260325150100_remove_status_from_rooms.sql` - Estado derivado
 - `20260327000001_add_no_overlap_constraint.sql` - Constraint crítico
 - `20260326000003_add_helper_functions.sql` - Funciones helper
+- `20260329130000_add_services_provision_to_assignments.sql` - Campo hucha energética
 
 ---
 
@@ -461,13 +526,49 @@ CONSTRAINT no_overlapping_assignments EXCLUDE ...
 
 ---
 
+## Cambio de Habitación (v1.4 — 2026-04-09)
+
+El proceso de cambio de habitación usa un único campo de fecha ("Fecha del cambio") que actúa simultáneamente como `move_out_date` de la asignación anterior y `move_in_date` de la nueva.
+
+### Campos específicos del cambio de habitación
+
+| Campo | Tabla | Descripción |
+|---|---|---|
+| `notes` | `lodger_room_assignments` | Auto-generado: `"Cambio de habitación: HAB-001 → HAB-002 el DD/MM/YYYY"`. Se graba en **ambas** asignaciones (la que se cierra y la nueva). Visible en el historial de TenantEdit. |
+| `correction_amount` | `lodger_room_assignments` | Importe de corrección proporcional por cambio a mitad de mes. Solo en la nueva asignación. |
+
+### Fórmula de `correction_amount`
+
+```
+correction_amount = (nueva_renta - renta_anterior) × días_restantes / días_del_mes
+días_restantes = días_del_mes - día_del_cambio + 1  (incluye el día del cambio)
+```
+
+- Si el cambio es el **día 1 del mes** → `correction_amount = 0`
+- Si la nueva hab. es más cara → valor **positivo** (el inquilino debe pagar más ese mes)
+- Si la nueva hab. es más barata → valor **negativo** (el inquilino tiene un descuento ese mes)
+- Sin fecha o sin renta → campo no auto-calculado (`null`)
+- Campo **editable** por el administrador tras el cálculo automático
+
+### Comportamiento del checkbox "pagar hasta fin de mes"
+
+El checkbox de prorrateo y el campo "Importe hasta fin de mes" (`prorated_amount`) **solo aplican al alta normal de inquilinos** (TenantCreate / RoomAssignmentForm). En el modal de **cambio de habitación** se sustituyen por `correction_amount`, ya que el inquilino continúa pagando — solo cambia de habitación.
+
+### Notas en asignaciones
+
+El campo `notes` (renombrado desde `checkout_notes` en migración `20260409000001`) es un campo genérico:
+- **Cambio de habitación:** auto-generado en ambas asignaciones
+- **Check-out:** notas manuales del proceso de salida (textarea "Observaciones" en el modal de check-out)
+- Campo visible en el historial de asignaciones de `TenantEdit.jsx`
+
+---
+
 ## Referencias
 
-- **Código:** `src/pages/Lodgers.jsx`, `src/components/Lodger/`
+- **Código:** `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`, `src/pages/v2/admin/tenants/TenantEdit.jsx`, `src/pages/v2/admin/tenants/components/RoomAssignmentForm.jsx`
 - **Edge Function:** `supabase/functions/manage_lodger/`
-- **Migraciones:** `20260327000001_add_no_overlap_constraint.sql`
-- **Tests:** `tests/e2e/lodger-crud.spec.js`
-- **CHG relacionado:** `CHG-2026-03-28-add-no-overlap-assignment.md`
+- **Migraciones:** `20260327000001_add_no_overlap_constraint.sql`, `20260408000001_add_reserved_room_state.sql`, `20260409000001_rename_notes_add_correction.sql`
+- **Tests:** `qa/unit/logic/correctionAmount.test.js` (CHG-01..05), `qa/unit/logic/roomStatus.test.js` (ACC-01..04, ACC-13..18)
 
 ---
 
@@ -475,5 +576,6 @@ CONSTRAINT no_overlapping_assignments EXCLUDE ...
 - Baseline inicial del sistema
 - Requisitos funcionales originales
 - CHG-2026-03-28-add-no-overlap-assignment
+- REQ-005 v2 (estado "Reservada")
 - Implementación actual en producción
 - Análisis de integridad de datos

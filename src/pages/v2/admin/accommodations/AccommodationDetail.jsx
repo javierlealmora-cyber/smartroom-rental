@@ -2,15 +2,15 @@
 // Detalle de alojamiento: habitaciones con estado, características e inquilino asignado
 
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Alert, Avatar, Button, Card, Checkbox, Col, DatePicker, Divider, Form, Input,
   InputNumber, message, Modal, Popconfirm, Row,
   Select, Skeleton, Space, Switch, Table, Tag, Tooltip, Typography, Upload,
 } from "antd";
 import {
-  ArrowLeftOutlined, DeleteOutlined, EditOutlined, HomeOutlined, LogoutOutlined,
-  PlusOutlined, SaveOutlined, SearchOutlined, SwapOutlined, UploadOutlined, UserAddOutlined, UserOutlined,
+  AppstoreOutlined, ArrowLeftOutlined, DeleteOutlined, EditOutlined, HomeOutlined, LogoutOutlined,
+  PlusOutlined, SaveOutlined, SearchOutlined, SwapOutlined, UnorderedListOutlined, UploadOutlined, UserAddOutlined, UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
@@ -18,6 +18,7 @@ import { getLodgerStatus, getLodgerStatusLabel } from "../../../../utils/lodgerS
 import { formatDate, formatCurrency } from "../../../../utils/formatters";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
+import { listAccommodations } from "../../../../services/accommodations.service";
 import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D";
 import { listEntities } from "../../../../services/entities.service";
 import { updateAccommodation, setAccommodationStatus } from "../../../../services/accommodations.service";
@@ -29,36 +30,55 @@ import RoomAssignmentForm from "../tenants/components/RoomAssignmentForm";
 
 const { Title, Text } = Typography;
 
-const ROOM_STATUS_TAG = { free: "success", occupied: "error", pending_checkout: "warning", maintenance: "default" };
-const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pendiente baja", maintenance: "Mantenimiento" };
+const ROOM_STATUS_TAG = { free: "success", occupied: "error", pending_checkout: "warning", maintenance: "default", reserved: "warning" };
+const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pendiente baja", maintenance: "Mantenimiento", reserved: "Reservada" };
 const ROOM_STATUS_BG = {
   free: { card: "#F0FDF4", border: "#D1FAE5", icon: "#DCFCE7", text: "#16A34A" },
   occupied: { card: "#FFF5F5", border: "#FEE2E2", icon: "#FEE2E2", text: "#DC2626" },
   pending_checkout: { card: "#FFFBEB", border: "#FEF3C7", icon: "#FEF3C7", text: "#D97706" },
   maintenance: { card: "#F9FAFB", border: "#E5E7EB", icon: "#E5E7EB", text: "#6B7280" },
+  reserved: { card: "#FFF7ED", border: "#FED7AA", icon: "#FED7AA", text: "#C2410C" },
 };
 const ROOM_STATUS_BADGE_BG = {
   free:             { bg: "#DCFCE7", color: "#15803D" },
   occupied:         { bg: "#FFE4E6", color: "#BE123C" },
   pending_checkout: { bg: "#FEF3C7", color: "#B45309" },
   maintenance:      { bg: "#F3F4F6", color: "#4B5563" },
+  reserved:         { bg: "#FED7AA", color: "#C2410C" },
 };
 const LODGER_STATUS_COLOR = { active: "#059669", invited: "#3B82F6", pending_checkout: "#F59E0B", inactive: "#9CA3AF" };
 const LODGER_STATUS_LABEL = { active: "Activo", invited: "Invitado", pending_checkout: "Pendiente baja", inactive: "Inactivo" };
 const KITCHEN_LABEL = { shared: "Compartida", private: "Privada", none: "Sin cocina" };
 const BATHROOM_LABEL = { shared: "Baño compartido", private: "Baño privado", ensuite: "Baño en suite" };
 
-const ROOM_CARD_IMAGE = "/icons/room-card-model.png";
+const ROOM_IMG_FREE     = "/images/Habitación sin Inquilino en la cama.png";
+const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.png";
+const ROOM_IMG_FEMALE   = "/images/Habitación con Inqulina en la cama.png";
 
 // ✅ REFACTOR: Funciones de formateo centralizadas en utils/formatters.js
 
 // Estado de habitación calculado desde asignaciones (rooms.status solo importa para 'maintenance')
+// active_assignment: asignaciones con move_in_date <= hoy (ya empezadas)
+// future_assignment: asignaciones con move_in_date > hoy (reservas futuras)
 function getRoomStatus(room) {
   if (room.is_maintenance) return "maintenance";
-  const asgn = room.active_assignment?.[0];
-  if (!asgn) return "free";
-  if (!asgn.move_out_date) return "occupied";
+  const today = new Date().toISOString().split("T")[0];
+  const current = (room.active_assignment || []).find(
+    a => a.move_in_date <= today && (!a.move_out_date || a.move_out_date > today)
+  );
+  const upcoming = (room.future_assignment || []).find(
+    a => a.move_in_date > today
+  );
+  if (!current && !upcoming) return "free";
+  if (!current && upcoming) return "reserved";
+  if (current && !current.move_out_date) return "occupied";
   return "pending_checkout";
+}
+
+// Devuelve la asignación futura (reserva) si existe
+function getRoomUpcoming(room) {
+  const today = new Date().toISOString().split("T")[0];
+  return (room.future_assignment || []).find(a => a.move_in_date > today) ?? null;
 }
 
 // ✅ REFACTOR: Funciones de estado de inquilino centralizadas en utils/lodgerStatus.js
@@ -128,6 +148,11 @@ export default function AccommodationDetail() {
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [lodgerToReassign, setLodgerToReassign] = useState(null);
   const [reassignForm] = Form.useForm();
+  const [reassignAccommodations, setReassignAccommodations] = useState([]);
+  const [reassignFreeRooms, setReassignFreeRooms] = useState([]);
+  const [loadingReassignRooms, setLoadingReassignRooms] = useState(false);
+  const [reassignEntityId, setReassignEntityId] = useState(null);
+  const [reassignCheckoutDate, setReassignCheckoutDate] = useState(null);
   
   // Estados para modal de check-out
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -153,15 +178,28 @@ export default function AccommodationDetail() {
   const [allAssignments, setAllAssignments] = useState([]);
   const [loadingGantt, setLoadingGantt] = useState(false);
   const [ganttYear, setGanttYear] = useState(new Date().getFullYear());
-  // Tab state
-  const [activeTab, setActiveTab] = useState("habitaciones");
-  const [activeSubTab, setActiveSubTab] = useState(null);
+  // Tab state — si viene ?tab=datos arranca en Datos del Alojamiento → Información
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "habitaciones";
+  const initialSubTab = searchParams.get("subtab");
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeSubTab, setActiveSubTab] = useState(
+    initialSubTab || (initialTab === "datos" ? "informacion" : null)
+  );
+
+  // ── Filtros en pestaña Habitaciones (se limpian en cada entrada) ─────────
+  const [roomStatusFilter,   setRoomStatusFilter]   = useState(null);
+  const [roomBathroomFilter, setRoomBathroomFilter] = useState(null);
+  const [roomKitchenFilter,  setRoomKitchenFilter]  = useState(null);
+  const [roomViewMode,       setRoomViewMode]       = useState(
+    () => localStorage.getItem("smartrent_accdetail_viewMode") || "cards"
+  );
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const [{ data: acc, error: accErr }, { data: roomsData, error: roomsErr }, entities, { data: currentAssignments }] = await Promise.all([
+      const [{ data: acc, error: accErr }, { data: roomsData, error: roomsErr }, entities, { data: currentAssignments }, { data: futureAssignments }] = await Promise.all([
         supabase.from("accommodations")
           .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
           .eq("id", accId).single(),
@@ -170,27 +208,34 @@ export default function AccommodationDetail() {
           .eq("accommodation_id", accId)
           .order("number"),
         listEntities({ type: "owner" }),
-        // Asignaciones activas (move_out_date IS NULL) O futuras (move_out_date > hoy)
+        // Asignaciones ya empezadas (move_in_date <= hoy) y no terminadas
         supabase.from("lodger_room_assignments")
-          .select("id, room_id, move_in_date, move_out_date, monthly_rent, deposit_amount, lodger:profiles(id, full_name, email, phone, onboarding_status)")
+          .select("id, room_id, move_in_date, move_out_date, monthly_rent, deposit_amount, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
           .eq("accommodation_id", accId)
+          .lte("move_in_date", today)
           .or(`move_out_date.is.null,move_out_date.gt.${today}`),
+        // Asignaciones futuras (reservas: move_in_date > hoy)
+        supabase.from("lodger_room_assignments")
+          .select("id, room_id, move_in_date, move_out_date, monthly_rent, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
+          .eq("accommodation_id", accId)
+          .gt("move_in_date", today),
       ]);
       if (accErr) throw new Error(accErr.message);
       if (roomsErr) throw new Error(roomsErr.message);
       setAccommodation(acc);
 
-      // Adjuntar asignaciones a cada habitación
+      // Adjuntar asignaciones a cada habitación (actuales y futuras separadas)
       const roomsWithAssignments = (roomsData || []).map(room => ({
         ...room,
         active_assignment: (currentAssignments || []).filter(a => a.room_id === room.id),
+        future_assignment: (futureAssignments || []).filter(a => a.room_id === room.id),
       }));
 
       // Cargar TODAS las asignaciones de cada inquilino para getLodgerStatus
-      const lodgerIds = roomsWithAssignments
-        .flatMap(r => r.active_assignment)
-        .map(a => a.lodger?.id)
-        .filter(Boolean);
+      const lodgerIds = [
+        ...(currentAssignments || []),
+        ...(futureAssignments || []),
+      ].map(a => a.lodger?.id).filter(Boolean);
 
       if (lodgerIds.length > 0) {
         const { data: allAssignments } = await supabase
@@ -199,9 +244,15 @@ export default function AccommodationDetail() {
           .in("lodger_id", lodgerIds);
 
         roomsWithAssignments.forEach(room => {
+          // Enriquecer inquilino actual con todas sus asignaciones
           const lodger = room.active_assignment?.[0]?.lodger;
           if (lodger) {
             lodger.assignments = (allAssignments || []).filter(a => a.lodger_id === lodger.id);
+          }
+          // Enriquecer inquilino de reserva futura también
+          const futureLodger = room.future_assignment?.[0]?.lodger;
+          if (futureLodger && futureLodger.id !== lodger?.id) {
+            futureLodger.assignments = (allAssignments || []).filter(a => a.lodger_id === futureLodger.id);
           }
         });
       }
@@ -215,6 +266,53 @@ export default function AccommodationDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Cargar alojamientos cuando se abre el modal de reasignación
+  useEffect(() => {
+    if (!showReassignModal) return;
+    setReassignFreeRooms([]);
+    listAccommodations()
+      .then(data => setReassignAccommodations(data || []))
+      .catch(() => setReassignAccommodations([]));
+  }, [showReassignModal]);
+
+  // Cargar habitaciones libres en una fecha concreta (no hoy)
+  const loadFreeRoomsForDate = useCallback(async (selectedAccId, changeDate) => {
+    if (!selectedAccId || !changeDate) {
+      setReassignFreeRooms([]);
+      return;
+    }
+    setLoadingReassignRooms(true);
+    try {
+      const dateStr = typeof changeDate === "string"
+        ? changeDate
+        : changeDate.format("YYYY-MM-DD");
+      const { data: roomsData } = await supabase
+        .from("rooms").select("id, number, monthly_rent, is_maintenance")
+        .eq("accommodation_id", selectedAccId).order("number");
+      const { data: occupiedOnDate } = await supabase
+        .from("lodger_room_assignments").select("room_id")
+        .eq("accommodation_id", selectedAccId)
+        .lte("move_in_date", dateStr)
+        .or(`move_out_date.is.null,move_out_date.gt.${dateStr}`);
+      const occupiedIds = new Set((occupiedOnDate || []).map(a => a.room_id));
+      setReassignFreeRooms((roomsData || []).filter(r => !r.is_maintenance && !occupiedIds.has(r.id)));
+    } finally {
+      setLoadingReassignRooms(false);
+    }
+  }, []);
+
+  // BUG-036 fix: Escuchar evento de checkout para recargar habitaciones
+  useEffect(() => {
+    const handleCheckout = (event) => {
+      if (event.detail?.accommodationId === accId) {
+        load();
+      }
+    };
+    
+    window.addEventListener('lodger-checkout', handleCheckout);
+    return () => window.removeEventListener('lodger-checkout', handleCheckout);
+  }, [accId, load]);
+
   // Poblar accForm solo cuando el tab "datos" está activo (Form renderizado → sin warning)
   useEffect(() => {
     if (!accommodation || activeTab !== "datos") return;
@@ -222,20 +320,28 @@ export default function AccommodationDetail() {
       name: accommodation.name,
       owner_entity_id: accommodation.owner_entity_id,
       address_line1: accommodation.address_line1 || "",
+      street_number: accommodation.street_number || "",
       address_line2: accommodation.address_line2 || "",
       postal_code: accommodation.postal_code || "",
       city: accommodation.city || "",
       province: accommodation.province || null,
       notes: accommodation.notes || "",
       status: accommodation.status,
-      utilities_included: accommodation.utilities_included !== false,
-      split_electricity: accommodation.split_electricity || false,
-      split_water: accommodation.split_water || false,
-      split_gas: accommodation.split_gas || false,
-      split_mode_electricity: accommodation.split_mode_electricity || "equal",
-      split_mode_water: accommodation.split_mode_water || "equal",
-      split_mode_gas: accommodation.split_mode_gas || "equal",
-      has_individual_meters: accommodation.has_individual_meters || false,
+      // Configuración por suministro
+      // included_X = true → "Incluido en el Alquiler" (toggle verde, sin reparto)
+      // included_X = false → "No Incluido" → muestra opciones de reparto
+      included_electricity:  !(accommodation.split_electricity || false),
+      equal_electricity:     (accommodation.split_mode_electricity || "equal") !== "meter",
+      meter_electricity:     accommodation.split_mode_electricity === "meter",
+      prevision_electricity: accommodation.prevision_fund_electricity || 0,
+      included_water:        !(accommodation.split_water || false),
+      equal_water:           (accommodation.split_mode_water || "equal") !== "meter",
+      meter_water:           accommodation.split_mode_water === "meter",
+      prevision_water:       accommodation.prevision_fund_water || 0,
+      included_gas:          !(accommodation.split_gas || false),
+      equal_gas:             (accommodation.split_mode_gas || "equal") !== "meter",
+      meter_gas:             accommodation.split_mode_gas === "meter",
+      prevision_gas:         accommodation.prevision_fund_gas || 0,
     });
   }, [accommodation, activeTab, accForm]);
 
@@ -305,26 +411,35 @@ export default function AccommodationDetail() {
   const onSaveAccommodation = async (values) => {
     setSaving(true); setSaveError(null); setSaveOk(false);
     try {
+      // Patch base — campos garantizados en el schema desde el baseline
       await updateAccommodation(accId, {
         name: values.name,
         owner_entity_id: values.owner_entity_id,
         address_line1: values.address_line1 || null,
+        street_number: values.street_number || null,
         address_line2: values.address_line2 || null,
         postal_code: values.postal_code || null,
         city: values.city || null,
         province: values.province || null,
         notes: values.notes || null,
         status: values.status,
-        utilities_included: values.utilities_included,
-        split_electricity: values.split_electricity || false,
-        split_water: values.split_water || false,
-        split_gas: values.split_gas || false,
-        split_mode_electricity: values.split_mode_electricity || "equal",
-        split_mode_water: values.split_mode_water || "equal",
-        split_mode_gas: values.split_mode_gas || "equal",
-        has_individual_meters: values.has_individual_meters || false,
-        extra_costs: extraCosts,
+        // Configuración por suministro (included_X es la inversa de split_X en BD)
+        split_electricity:      !values.included_electricity,
+        split_mode_electricity: values.meter_electricity ? "meter" : "equal",
+        split_water:            !values.included_water,
+        split_mode_water:       values.meter_water ? "meter" : "equal",
+        split_gas:              !values.included_gas,
+        split_mode_gas:         values.meter_gas ? "meter" : "equal",
+        extra_costs: extraCosts.map((ec) => ({ ...ec, period: ec.period || "monthly" })),
       }, clientAccountId);
+
+      // Prevision fund — migración BUG-050 aplicada
+      await supabase.from("accommodations").update({
+        prevision_fund_electricity: values.prevision_electricity || 0,
+        prevision_fund_water:       values.prevision_water || 0,
+        prevision_fund_gas:         values.prevision_gas || 0,
+      }).eq("id", accId).eq("client_account_id", clientAccountId);
+
       setSaveOk(true);
       load();
       setTimeout(() => setSaveOk(false), 3000);
@@ -472,16 +587,31 @@ export default function AccommodationDetail() {
       setActiveTab(tab.key);
       setActiveSubTab(null);
     }
+    // Limpiar filtros de habitaciones al cambiar de tab
+    if (tab.key === "habitaciones") {
+      setRoomStatusFilter(null);
+      setRoomBathroomFilter(null);
+      setRoomKitchenFilter(null);
+    }
   };
 
   const handleSubTabClick = (subTab) => {
     setActiveSubTab(subTab.key);
   };
 
+  // ── Habitaciones filtradas ────────────────────────────────────────────────
+  const filteredRooms = rooms.filter((r) => {
+    if (roomStatusFilter   && getRoomStatus(r) !== roomStatusFilter)   return false;
+    if (roomBathroomFilter && r.bathroom_type  !== roomBathroomFilter) return false;
+    if (roomKitchenFilter  && r.kitchen_type   !== roomKitchenFilter)  return false;
+    return true;
+  });
+  const hasRoomFilters = roomStatusFilter || roomBathroomFilter || roomKitchenFilter;
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 10 }}>
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
           style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
           {backLabel}
@@ -493,7 +623,12 @@ export default function AccommodationDetail() {
                 {accommodation?.name}
               </Title>
               <Text style={{ fontSize: 14, color: "#6B7280" }}>
-                {[accommodation?.address_line1 || accommodation?.street, accommodation?.postal_code, accommodation?.city].filter(Boolean).join(", ") || "Sin dirección"}
+                {[
+                  [accommodation?.address_line1 || accommodation?.street, accommodation?.street_number].filter(Boolean).join(" "),
+                  accommodation?.address_line2,
+                  accommodation?.postal_code,
+                  accommodation?.city,
+                ].filter(Boolean).join(", ") || "Sin dirección"}
               </Text>
             </Col>
             <Col style={{ paddingTop: 4 }}>
@@ -579,13 +714,18 @@ export default function AccommodationDetail() {
                       <Select options={[{ value: "active", label: "Activo" }, { value: "inactive", label: "Inactivo" }]} />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} sm={14}>
+                  <Col xs={24} sm={11}>
                     <Form.Item label="Calle" name="address_line1" rules={[
                       { required: true, message: "La calle es obligatoria" },
                       { min: 3, message: "La calle debe tener al menos 3 caracteres" },
                       { max: 200, message: "La calle no puede exceder 200 caracteres" }
                     ]}>
                       <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={3}>
+                    <Form.Item label="Número" name="street_number">
+                      <Input placeholder="12" maxLength={10} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={10}>
@@ -627,131 +767,155 @@ export default function AccommodationDetail() {
 
               {/* Configuración de consumo */}
               <Card title="Configuración de Consumo" size="small" style={{ marginBottom: 16 }}>
-                <Form.Item name="utilities_included" valuePropName="checked">
-                  <Space align="center">
-                    <Form.Item name="utilities_included" valuePropName="checked" noStyle>
-                      <Switch />
-                    </Form.Item>
-                    <Text>Los servicios (agua, luz, gas) están <strong>incluidos en el alquiler</strong></Text>
-                  </Space>
-                </Form.Item>
+                {/* Helper local: bloque por suministro */}
+                <Form.Item noStyle shouldUpdate>
+                  {({ getFieldValue, setFieldValue }) => {
+                    const UTILITIES = [
+                      { key: "electricity", label: "Electricidad", icon: "⚡" },
+                      { key: "water",       label: "Agua",         icon: "💧" },
+                      { key: "gas",         label: "Gas",          icon: "🔥" },
+                    ];
+                    return (
+                      <Row gutter={[16, 0]}>
+                        {UTILITIES.map(({ key, label, icon }) => {
+                          const includedKey = `included_${key}`;
+                          const equalKey    = `equal_${key}`;
+                          const meterKey    = `meter_${key}`;
+                          const prevKey     = `prevision_${key}`;
+                          const isIncluded  = getFieldValue(includedKey);
+                          const isEqual     = getFieldValue(equalKey);
+                          const isMeter     = getFieldValue(meterKey);
+                          return (
+                            <Col key={key} xs={24} sm={8} style={{ borderRight: "1px solid #F3F4F6", paddingRight: 12, marginBottom: 16 }}>
+                              {/* Toggle Incluido / No Incluido */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                                <Switch
+                                  size="small"
+                                  checked={isIncluded}
+                                  onChange={(v) => setFieldValue(includedKey, v)}
+                                />
+                                <Text style={{ fontSize: 14, fontWeight: 600 }}>{icon} {label}</Text>
+                              </div>
+                              <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 12, paddingLeft: 2 }}>
+                                {isIncluded ? "Incluido en el Alquiler" : "No Incluido en el Alquiler"}
+                              </div>
 
-                <Form.Item noStyle shouldUpdate={(prev, cur) => prev.utilities_included !== cur.utilities_included}>
-                  {({ getFieldValue }) => !getFieldValue("utilities_included") && (
-                    <>
-                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280" }}>Servicios a repartir</Divider>
-                      <Row gutter={[24, 8]}>
-                        {/* Electricidad */}
-                        <Col xs={24} sm={8}>
-                          <Form.Item name="split_electricity" valuePropName="checked" noStyle>
-                            <Switch size="small" />
-                          </Form.Item>
-                          <Text style={{ marginLeft: 8 }}>⚡ Electricidad</Text>
-                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_electricity !== c.split_electricity}>
-                            {({ getFieldValue: gfv }) => gfv("split_electricity") && (
-                              <Form.Item name="split_mode_electricity" style={{ marginTop: 8, marginBottom: 0 }}>
-                                <Select size="small" style={{ width: 180 }} options={[
-                                  { value: "equal", label: "Partes iguales" },
-                                  { value: "prorated", label: "Prorrateado por consumo" },
-                                ]} />
-                              </Form.Item>
-                            )}
-                          </Form.Item>
-                        </Col>
-                        {/* Agua */}
-                        <Col xs={24} sm={8}>
-                          <Form.Item name="split_water" valuePropName="checked" noStyle>
-                            <Switch size="small" />
-                          </Form.Item>
-                          <Text style={{ marginLeft: 8 }}>💧 Agua</Text>
-                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_water !== c.split_water}>
-                            {({ getFieldValue: gfv }) => gfv("split_water") && (
-                              <Form.Item name="split_mode_water" style={{ marginTop: 8, marginBottom: 0 }}>
-                                <Select size="small" style={{ width: 180 }} options={[
-                                  { value: "equal", label: "Partes iguales" },
-                                  { value: "prorated", label: "Prorrateado por consumo" },
-                                ]} />
-                              </Form.Item>
-                            )}
-                          </Form.Item>
-                        </Col>
-                        {/* Gas */}
-                        <Col xs={24} sm={8}>
-                          <Form.Item name="split_gas" valuePropName="checked" noStyle>
-                            <Switch size="small" />
-                          </Form.Item>
-                          <Text style={{ marginLeft: 8 }}>🔥 Gas</Text>
-                          <Form.Item noStyle shouldUpdate={(p, c) => p.split_gas !== c.split_gas}>
-                            {({ getFieldValue: gfv }) => gfv("split_gas") && (
-                              <Form.Item name="split_mode_gas" style={{ marginTop: 8, marginBottom: 0 }}>
-                                <Select size="small" style={{ width: 180 }} options={[
-                                  { value: "equal", label: "Partes iguales" },
-                                  { value: "prorated", label: "Prorrateado por consumo" },
-                                ]} />
-                              </Form.Item>
-                            )}
-                          </Form.Item>
-                        </Col>
+                              {!isIncluded && (
+                                <>
+                                  {/* Previsión Fondo */}
+                                  <div style={{ marginBottom: 14 }}>
+                                    <Text style={{ fontSize: 12, color: "#374151", display: "block", marginBottom: 4 }}>
+                                      Previsión Fondo
+                                    </Text>
+                                    <Form.Item name={prevKey} noStyle>
+                                      <InputNumber
+                                        size="small"
+                                        min={0}
+                                        precision={2}
+                                        addonAfter="€"
+                                        style={{ width: "100%" }}
+                                      />
+                                    </Form.Item>
+                                  </div>
+
+                                  {/* Reparto de Consumo Igualitario */}
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                                    <Switch
+                                      size="small"
+                                      checked={isEqual}
+                                      onChange={(v) => {
+                                        setFieldValue(equalKey, v);
+                                        if (v) setFieldValue(meterKey, false);
+                                      }}
+                                    />
+                                    <Text style={{ fontSize: 12 }}>Reparto de Consumo Igualitario</Text>
+                                  </div>
+
+                                  {/* Tiene Medidor individual */}
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                                    <Switch
+                                      size="small"
+                                      checked={isMeter}
+                                      disabled={isEqual}
+                                      onChange={(v) => {
+                                        setFieldValue(meterKey, v);
+                                        if (v) setFieldValue(equalKey, false);
+                                      }}
+                                    />
+                                    <Text style={{ fontSize: 12, color: isEqual ? "#9CA3AF" : undefined }}>
+                                      Tiene Medidor individual por habitación
+                                    </Text>
+                                  </div>
+                                  {isEqual && (
+                                    <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>
+                                      Desactiva reparto igualitario para habilitar medidor
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </Col>
+                          );
+                        })}
                       </Row>
-
-                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280", marginTop: 16 }}>Medidores individuales</Divider>
-                      <Space align="center" style={{ marginBottom: 8 }}>
-                        <Form.Item name="has_individual_meters" valuePropName="checked" noStyle>
-                          <Switch size="small" />
-                        </Form.Item>
-                        <Text style={{ fontSize: 13 }}>El alojamiento tiene <strong>medidores individuales</strong> por habitación</Text>
-                      </Space>
-
-                      <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280", marginTop: 16 }}>Otros gastos adicionales</Divider>
-                      <div style={{ marginBottom: 8 }}>
-                        {extraCosts.map((ec, idx) => (
-                          <Row key={idx} gutter={[8, 8]} align="middle" style={{ marginBottom: 6 }}>
-                            <Col xs={10} sm={7}>
-                              <Input
-                                size="small"
-                                placeholder="Concepto (ej. WiFi, Basura...)"
-                                value={ec.name}
-                                onChange={(e) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))}
-                              />
-                            </Col>
-                            <Col xs={6} sm={4}>
-                              <InputNumber
-                                size="small"
-                                style={{ width: "100%" }}
-                                placeholder="Importe"
-                                value={ec.amount}
-                                onChange={(v) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, amount: v } : x))}
-                                min={0}
-                                precision={2}
-                                addonAfter="€"
-                              />
-                            </Col>
-                            <Col xs={6} sm={5}>
-                              <Select
-                                size="small"
-                                style={{ width: "100%" }}
-                                value={ec.split_mode}
-                                onChange={(v) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, split_mode: v } : x))}
-                                options={[
-                                  { value: "equal", label: "Partes iguales" },
-                                  { value: "prorated", label: "Prorrateado" },
-                                ]}
-                              />
-                            </Col>
-                            <Col xs={2}>
-                              <Button size="small" danger icon={<DeleteOutlined />}
-                                onClick={() => setExtraCosts((prev) => prev.filter((_, i) => i !== idx))} />
-                            </Col>
-                          </Row>
-                        ))}
-                        <Button size="small" icon={<PlusOutlined />}
-                          onClick={() => setExtraCosts((prev) => [...prev, { name: "", amount: 0, split_mode: "equal" }])}>
-                          Añadir gasto adicional
-                        </Button>
-                      </div>
-                    </>
-                  )}
+                    );
+                  }}
                 </Form.Item>
+
+                {/* Otros gastos adicionales */}
+                <Divider orientation="left" plain style={{ fontSize: 13, color: "#6B7280", marginTop: 8 }}>
+                  Otros gastos adicionales
+                </Divider>
+                <div style={{ marginBottom: 8 }}>
+                  <Row gutter={[8, 4]} style={{ marginBottom: 4 }}>
+                    <Col xs={10} sm={7}><Text style={{ fontSize: 12, color: "#6B7280" }}>Concepto</Text></Col>
+                    <Col xs={6}  sm={4}><Text style={{ fontSize: 12, color: "#6B7280" }}>Importe</Text></Col>
+                    <Col xs={6}  sm={5}><Text style={{ fontSize: 12, color: "#6B7280" }}>Periodo Pago</Text></Col>
+                  </Row>
+                  {extraCosts.map((ec, idx) => (
+                    <Row key={idx} gutter={[8, 8]} align="middle" style={{ marginBottom: 6 }}>
+                      <Col xs={10} sm={7}>
+                        <Input
+                          size="small"
+                          placeholder="Concepto (ej. WiFi, Basura...)"
+                          value={ec.name}
+                          onChange={(e) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))}
+                        />
+                      </Col>
+                      <Col xs={6} sm={4}>
+                        <InputNumber
+                          size="small"
+                          style={{ width: "100%" }}
+                          placeholder="Importe"
+                          value={ec.amount}
+                          onChange={(v) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, amount: v } : x))}
+                          min={0}
+                          precision={2}
+                          addonAfter="€"
+                        />
+                      </Col>
+                      <Col xs={6} sm={5}>
+                        <Select
+                          size="small"
+                          style={{ width: "100%" }}
+                          value={ec.period || "monthly"}
+                          onChange={(v) => setExtraCosts((prev) => prev.map((x, i) => i === idx ? { ...x, period: v } : x))}
+                          options={[
+                            { value: "monthly", label: "Mensual" },
+                            { value: "annual",  label: "Anual" },
+                          ]}
+                        />
+                      </Col>
+                      <Col xs={2}>
+                        <Button size="small" danger icon={<DeleteOutlined />}
+                          onClick={() => setExtraCosts((prev) => prev.filter((_, i) => i !== idx))} />
+                      </Col>
+                    </Row>
+                  ))}
+                  <Button size="small" icon={<PlusOutlined />}
+                    onClick={() => setExtraCosts((prev) => [...prev, { name: "", amount: 0, period: "monthly" }])}>
+                    Añadir gasto adicional
+                  </Button>
+                </div>
               </Card>
 
               <Row justify="end">
@@ -1077,197 +1241,412 @@ export default function AccommodationDetail() {
         <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
           <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
           <div><Text type="secondary">Este alojamiento no tiene habitaciones configuradas</Text></div>
-          <Button type="link" onClick={() => navigate(`/v2/admin/alojamientos/${accId}/editar`)} style={{ marginTop: 8 }}>
-            Ir a editar alojamiento para añadir habitaciones
+          <Button type="link" onClick={() => { setActiveTab("datos"); setActiveSubTab("informacion"); }} style={{ marginTop: 8 }}>
+            Ir a Datos del Alojamiento para añadir habitaciones
           </Button>
         </Card>
       ) : activeTab === "habitaciones" ? (
-        <Row gutter={[20, 20]}>
-          {rooms.map((room) => {
+        <div style={{ marginTop: 6 }}>
+          {/* ── Cabecera filtros habitaciones ── */}
+          {rooms.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Select
+                  placeholder="Estado"
+                  size="small"
+                  style={{ width: 150 }}
+                  allowClear
+                  value={roomStatusFilter}
+                  onChange={v => setRoomStatusFilter(v ?? null)}
+                  options={[
+                    { value: "free",             label: "Libre" },
+                    { value: "occupied",         label: "Ocupada" },
+                    { value: "pending_checkout", label: "Pend. checkout" },
+                    { value: "maintenance",      label: "Mantenimiento" },
+                    { value: "reserved",         label: "Reservada" },
+                  ]}
+                />
+                <Select
+                  placeholder="Baño"
+                  size="small"
+                  style={{ width: 140 }}
+                  allowClear
+                  value={roomBathroomFilter}
+                  onChange={v => setRoomBathroomFilter(v ?? null)}
+                  options={[
+                    { value: "shared",  label: "Compartido" },
+                    { value: "private", label: "Privado" },
+                    { value: "ensuite", label: "En suite" },
+                  ]}
+                />
+                <Select
+                  placeholder="Cocina"
+                  size="small"
+                  style={{ width: 140 }}
+                  allowClear
+                  value={roomKitchenFilter}
+                  onChange={v => setRoomKitchenFilter(v ?? null)}
+                  options={[
+                    { value: "shared",  label: "Compartida" },
+                    { value: "private", label: "Privada" },
+                    { value: "none",    label: "Sin cocina" },
+                  ]}
+                />
+                {hasRoomFilters && (
+                  <Button
+                    type="link"
+                    danger
+                    size="small"
+                    style={{ paddingLeft: 0 }}
+                    onClick={() => { setRoomStatusFilter(null); setRoomBathroomFilter(null); setRoomKitchenFilter(null); }}
+                  >
+                    Limpiar
+                  </Button>
+                )}
+                <Text style={{ color: "#9CA3AF", fontSize: 13, marginLeft: "auto" }}>
+                  {filteredRooms.length}{filteredRooms.length !== rooms.length ? ` de ${rooms.length}` : ""} habitaciones
+                </Text>
+                <Space size={4} style={{ marginLeft: 12 }}>
+                  <Button
+                    size="small"
+                    icon={<AppstoreOutlined />}
+                    type={roomViewMode === "cards" ? "primary" : "default"}
+                    onClick={() => { setRoomViewMode("cards"); localStorage.setItem("smartrent_accdetail_viewMode", "cards"); }}
+                  />
+                  <Button
+                    size="small"
+                    icon={<UnorderedListOutlined />}
+                    type={roomViewMode === "list" ? "primary" : "default"}
+                    onClick={() => { setRoomViewMode("list"); localStorage.setItem("smartrent_accdetail_viewMode", "list"); }}
+                  />
+                </Space>
+              </div>
+            </div>
+          )}
+          {roomViewMode === "list" ? (
+            <Table
+              dataSource={filteredRooms}
+              rowKey="id"
+              size="middle"
+              pagination={{ pageSize: 50, showSizeChanger: false, showTotal: (t) => `${t} habitaciones` }}
+              scroll={{ x: 700 }}
+              columns={[
+                {
+                  title: "N.º",
+                  key: "number",
+                  width: 90,
+                  render: (_, r) => {
+                    const num = String(r.number);
+                    return num.startsWith("HAB-") ? num : `HAB-${num.padStart(3, "0")}`;
+                  },
+                },
+                {
+                  title: "Estado",
+                  key: "status",
+                  width: 130,
+                  render: (_, r) => {
+                    const st = getRoomStatus(r);
+                    const badge = ROOM_STATUS_BADGE_BG[st] || { bg: "#F3F4F6", color: "#4B5563" };
+                    const up = getRoomUpcoming(r);
+                    return (
+                      <span style={{ background: badge.bg, color: badge.color, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>
+                        {ROOM_STATUS_LABEL[st] || st}
+                      </span>
+                    );
+                  },
+                },
+                {
+                  title: "Inquilino",
+                  key: "lodger",
+                  render: (_, r) => {
+                    const st = getRoomStatus(r);
+                    const asgn = r.active_assignment?.[0];
+                    const lodger = asgn?.lodger;
+                    const up = getRoomUpcoming(r);
+                    if ((st === "occupied" || st === "pending_checkout") && lodger) {
+                      return (
+                        <span>
+                          <span style={{ fontWeight: 600 }}>{lodger.full_name}</span>
+                          {asgn?.move_in_date && <span style={{ color: "#6B7280", fontSize: 11, marginLeft: 8 }}>desde {formatDate(asgn.move_in_date)}</span>}
+                          {asgn?.move_out_date && <span style={{ color: "#DC2626", fontSize: 11, marginLeft: 8 }}>baja {formatDate(asgn.move_out_date)}</span>}
+                        </span>
+                      );
+                    }
+                    if (st === "reserved" && up?.lodger) {
+                      return <span style={{ color: "#C2410C", fontWeight: 600 }}>{up.lodger.full_name} <span style={{ fontWeight: 400, fontSize: 11 }}>(entrada {formatDate(up.move_in_date)})</span></span>;
+                    }
+                    return <span style={{ color: "#9CA3AF", fontStyle: "italic" }}>—</span>;
+                  },
+                },
+                {
+                  title: "Precio",
+                  key: "rent",
+                  width: 110,
+                  render: (_, r) => r.monthly_rent != null ? formatCurrency(r.monthly_rent) : "—",
+                },
+                {
+                  title: "Baño",
+                  key: "bathroom",
+                  width: 120,
+                  render: (_, r) => r.bathroom_type ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <img src="/images/baño-icono.webp" alt="Baño" style={{ width: 18, height: 18, objectFit: "contain" }} />
+                      <span style={{ fontSize: 12 }}>{BATHROOM_LABEL[r.bathroom_type] || r.bathroom_type}</span>
+                    </div>
+                  ) : "—",
+                },
+                {
+                  title: "Cocina",
+                  key: "kitchen",
+                  width: 120,
+                  render: (_, r) => r.kitchen_type ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <img src="/images/cocina-icono.webp" alt="Cocina" style={{ width: 22, height: 22, objectFit: "contain" }} />
+                      <span style={{ fontSize: 12 }}>{KITCHEN_LABEL[r.kitchen_type] || r.kitchen_type}</span>
+                    </div>
+                  ) : "—",
+                },
+                {
+                  title: "Acciones",
+                  key: "actions",
+                  width: 130,
+                  render: (_, r) => {
+                    const st = getRoomStatus(r);
+                    const asgn = r.active_assignment?.[0];
+                    const lodger = asgn?.lodger;
+                    const isOcc = st === "occupied" || st === "pending_checkout";
+                    return (
+                      <Space size={2}>
+                        {isOcc && lodger ? (
+                          <>
+                            <Tooltip title="Ver detalle"><Button size="small" type="text" icon={<UserOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} /></Tooltip>
+                            <Tooltip title="Editar inquilino"><Button size="small" type="text" icon={<EditOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} /></Tooltip>
+                            <Tooltip title="Cambiar habitación"><Button size="small" type="text" icon={<SwapOutlined />} onClick={() => { const asgn2 = r.active_assignment?.[0]; setLodgerToReassign({ ...lodger, _room: r, _assignment: asgn2 }); setShowReassignModal(true); }} /></Tooltip>
+                            {st === "occupied" && <Tooltip title="Check-out"><Button size="small" type="text" danger icon={<LogoutOutlined />} onClick={() => { setLodgerToCheckout({ ...lodger, active_assignment: r.active_assignment }); setShowCheckoutModal(true); }} /></Tooltip>}
+                          </>
+                        ) : st === "free" ? (
+                          <Tooltip title="Asignar inquilino">
+                            <Button size="small" type="primary" icon={<UserAddOutlined />} style={{ borderRadius: 20, fontSize: 11 }}
+                              onClick={() => setAssignRoom(r)}>
+                              Asignar
+                            </Button>
+                          </Tooltip>
+                        ) : null}
+                      </Space>
+                    );
+                  },
+                },
+              ]}
+            />
+          ) : (
+          <Row gutter={[20, 20]}>
+          {filteredRooms.map((room) => {
             const assignment = room.active_assignment?.[0];
             const lodger = assignment?.lodger;
             const roomStatus = getRoomStatus(room);
             const isOccupied = roomStatus === "occupied" || roomStatus === "pending_checkout";
             const rent = room.monthly_rent != null ? formatCurrency(room.monthly_rent) : null;
             const badge = ROOM_STATUS_BADGE_BG[roomStatus] || { bg: "#F3F4F6", color: "#4B5563" };
+            const upcoming = getRoomUpcoming(room);
             return (
               <Col key={room.id} xs={24} sm={12} md={8} xl={6}>
-                <Card
-                  style={{
-                    borderRadius: 16,
-                    border: "1px solid #E5E7EB",
-                    background: "#FFFFFF",
-                    height: "100%",
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                    overflow: "hidden",
-                  }}
-                  styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}
-                >
-                  {/* ── 1: Título + Badge ── */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                    <Text strong style={{ fontSize: 22, color: "#1D1D1F", letterSpacing: "-0.3px", lineHeight: 1.2 }}>
-                      Habitación &nbsp;{String(room.number).padStart(2, "0")}
-                    </Text>
-                    <span style={{
-                      background: badge.bg, color: badge.color,
-                      borderRadius: 20, padding: "4px 16px",
-                      fontSize: 13, fontWeight: 700,
-                      whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8,
-                    }}>
-                      {ROOM_STATUS_LABEL[roomStatus] || roomStatus}
-                    </span>
-                  </div>
-
-                  {/* ── 2: Precio ── */}
-                  <div style={{ marginBottom: 14, paddingLeft: 2 }}>
-                    <Text style={{ fontSize: 14, color: "#6B7280" }}>Precio </Text>
-                    {rent
-                      ? <><Text strong style={{ fontSize: 16, color: "#1D1D1F" }}>{rent}</Text><Text style={{ fontSize: 14, color: "#6B7280" }}>/mes</Text></>
-                      : <Text style={{ fontSize: 14, color: "#9CA3AF" }}>—</Text>
-                    }
-                  </div>
-
-                  {/* ── 3: Características 2 columnas ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: 5, columnGap: 8, marginBottom: 16 }}>
-                    {room.kitchen_type && (
-                      <div>
-                        <Text style={{ fontSize: 13, color: "#6B7280" }}>Cocina </Text>
-                        <Text strong style={{ fontSize: 13, color: "#1D1D1F" }}>{KITCHEN_LABEL[room.kitchen_type] || room.kitchen_type}</Text>
+                {(() => {
+                  const roomNum = String(room.number);
+                  const roomLabel = roomNum.startsWith("HAB-") ? roomNum : `HAB-${roomNum.padStart(3, "0")}`;
+                  const roomImg = !isOccupied ? ROOM_IMG_FREE
+                    : lodger?.gender === "female" ? ROOM_IMG_FEMALE
+                    : ROOM_IMG_OCCUPIED;
+                  const entityName = accommodation?.owner_entity
+                    ? (accommodation.owner_entity.legal_type === "persona_juridica"
+                        ? accommodation.owner_entity.legal_name
+                        : [accommodation.owner_entity.first_name, accommodation.owner_entity.last_name1].filter(Boolean).join(" ") || "—")
+                    : null;
+                  return (
+                    <Card
+                      style={{
+                        borderRadius: 12,
+                        border: "1px solid #E5E7EB",
+                        background: "#FFFFFF",
+                        height: "100%",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                        overflow: "hidden",
+                      }}
+                      styles={{ body: { padding: 0, background: "#fff" } }}
+                    >
+                      {/* ── 1: Cabecera blanca — título + badge habitación + precio ── */}
+                      <div style={{ padding: "12px 14px 8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3 }}>
+                          <Text strong style={{ fontSize: 13, color: "#1D1D1F", letterSpacing: "-0.2px", lineHeight: 1.2 }}>
+                            Habitación {roomLabel}
+                          </Text>
+                          <span style={{
+                            background: badge.bg, color: badge.color,
+                            borderRadius: 20, padding: "2px 10px",
+                            fontSize: 10, fontWeight: 700,
+                            whiteSpace: "nowrap", flexShrink: 0, marginLeft: 6,
+                          }}>
+                            {ROOM_STATUS_LABEL[roomStatus] || roomStatus}
+                          </span>
+                        </div>
+                        <div>
+                          <Text style={{ fontSize: 10, color: "#6B7280" }}>Precio </Text>
+                          {rent
+                            ? <><Text strong style={{ fontSize: 11, color: "#1D1D1F" }}>{rent}</Text><Text style={{ fontSize: 10, color: "#6B7280" }}>/mes</Text></>
+                            : <Text style={{ fontSize: 10, color: "#9CA3AF" }}>—</Text>
+                          }
+                        </div>
                       </div>
-                    )}
-                    {room.size_m2 != null && (
-                      <div>
-                        <Text style={{ fontSize: 13, color: "#6B7280" }}>Tamaño </Text>
-                        <Text strong style={{ fontSize: 13, color: "#1D1D1F" }}>{room.size_m2}m.</Text>
-                      </div>
-                    )}
-                    {room.bathroom_type && (
-                      <div>
-                        <Text style={{ fontSize: 13, color: "#6B7280" }}>Baño </Text>
-                        <Text strong style={{ fontSize: 13, color: "#1D1D1F" }}>{BATHROOM_LABEL[room.bathroom_type] || room.bathroom_type}</Text>
-                      </div>
-                    )}
-                    {room.lock_code && (
-                      <div>
-                        <Text style={{ fontSize: 13, color: "#6B7280" }}>Cod. Cerradura </Text>
-                        <Text strong style={{ fontSize: 13, color: "#1D1D1F" }}>{room.lock_code}</Text>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* ── 4: Divider ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 16px -20px" }} />
+                      {/* ── 2: Imagen grande — badge inquilino superpuesto abajo-izq ── */}
+                      <div
+                        style={{ position: "relative", height: 216, overflow: "hidden", background: "#fff", cursor: isOccupied && lodger ? "pointer" : "default" }}
+                        onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
+                        title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
+                      >
+                        <img
+                          src={roomImg}
+                          alt="Habitación"
+                          style={{ width: "100%", height: "100%", display: "block", objectFit: "contain", filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.10))" }}
+                        />
+                        {/* Badge estado inquilino superpuesto abajo-izquierda */}
+                        {isOccupied && lodger && (() => {
+                          const b = getLodgerStatusColor(getLodgerStatus(lodger));
+                          return (
+                            <span style={{
+                              position: "absolute", bottom: 10, left: 12,
+                              background: b.bg, color: b.color,
+                              borderRadius: 20, padding: "1px 9px",
+                              fontSize: 10, fontWeight: 700,
+                            }}>
+                              {getLodgerStatusLabel(getLodgerStatus(lodger))}
+                            </span>
+                          );
+                        })()}
+                        {/* Badge reserva futura abajo-derecha */}
+                        {upcoming && (
+                          <span style={{
+                            position: "absolute", bottom: 10, right: 12,
+                            background: "#FED7AA", color: "#C2410C",
+                            borderRadius: 20, padding: "1px 9px",
+                            fontSize: 10, fontWeight: 700,
+                          }}>
+                            Reservada {formatDate(upcoming.move_in_date)}
+                          </span>
+                        )}
+                      </div>
 
-                  {/* ── 5: Imagen con margen lateral (siempre fija) ── */}
-                  <div
-                    style={{ margin: "0 -20px 16px -20px", overflow: "hidden", background: "#F8FAFC", cursor: isOccupied && lodger ? "pointer" : "default", height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-                    onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
-                    title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
-                  >
-                    <img
-                      src={ROOM_CARD_IMAGE}
-                      alt="Habitación"
-                      style={{ width: "100%", height: "100%", display: "block", objectFit: "contain" }}
-                    />
-                  </div>
-
-                  {/* ── 6: Datos inquilino (debajo de la foto, altura fija) ── */}
-                  <div style={{ minHeight: 68, marginBottom: 4 }}>
-                    {isOccupied && lodger ? (
-                      <>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                          <div>
-                            <Text strong style={{ fontSize: 15, color: "#374151", display: "block" }}>
-                              {lodger.full_name}
-                            </Text>
-                            {assignment?.move_in_date && (
-                              <Text strong style={{ fontSize: 13, color: "#374151" }}>
-                                Entrada {formatDate(assignment.move_in_date)}
+                      {/* ── 3: Inquilino (izq) + Características (dcha) — sin separador ── */}
+                      <div style={{ padding: "10px 14px 8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          {/* Izquierda: nombre + entrada */}
+                          <div style={{ flex: 1, overflow: "hidden", paddingRight: 8 }}>
+                            {isOccupied && lodger ? (
+                              <>
+                                <Text strong style={{ fontSize: 11, color: "#1D1D1F", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {lodger.full_name}
+                                </Text>
+                                {assignment?.move_in_date && (
+                                  <Text style={{ fontSize: 10, color: "#6B7280", display: "block" }}>
+                                    Entrada {formatDate(assignment.move_in_date)}
+                                  </Text>
+                                )}
+                                {assignment?.move_out_date && (
+                                  <Text style={{ fontSize: 10, color: "#DC2626", display: "block" }}>
+                                    Baja {formatDate(assignment.move_out_date)}
+                                  </Text>
+                                )}
+                              </>
+                            ) : roomStatus === "reserved" && upcoming?.lodger ? (
+                              <>
+                                <Text strong style={{ fontSize: 11, color: "#C2410C", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {upcoming.lodger.full_name}
+                                </Text>
+                                <Text style={{ fontSize: 10, color: "#C2410C", display: "block" }}>
+                                  Entrada {formatDate(upcoming.move_in_date)}
+                                </Text>
+                              </>
+                            ) : (
+                              <Text style={{ fontSize: 10, color: "#9CA3AF", fontStyle: "italic" }}>
+                                {roomStatus === "free" ? "Habitación disponible" : "Sin inquilino asignado"}
                               </Text>
                             )}
                           </div>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                            {(() => {
-                              const b = getLodgerStatusColor(getLodgerStatus(lodger));
-                              return (
-                                <span style={{
-                                  background: b.bg, color: b.color,
-                                  borderRadius: 20, padding: "2px 10px",
-                                  fontSize: 13, fontWeight: 700,
-                                  whiteSpace: "nowrap",
-                                }}>
-                                  {getLodgerStatusLabel(getLodgerStatus(lodger))}
-                                </span>
-                              );
-                            })()}
-                            {assignment?.move_out_date && (
-                              <Text strong style={{ fontSize: 12, color: "#111827" }}>
-                                Baja {formatDate(assignment.move_out_date)}
-                              </Text>
+                          {/* Derecha: Cocina + Baño con iconos */}
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            {room.kitchen_type && (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, marginBottom: 2 }}>
+                                <img src="/images/cocina-icono.webp" alt="Cocina" style={{ width: 28, height: 28, objectFit: "contain" }} />
+                                <Text strong style={{ fontSize: 10, color: "#1D1D1F" }}>{KITCHEN_LABEL[room.kitchen_type] || room.kitchen_type}</Text>
+                              </div>
+                            )}
+                            {room.bathroom_type && (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                                <img src="/images/baño-icono.webp" alt="Baño" style={{ width: 23, height: 23, objectFit: "contain" }} />
+                                <Text strong style={{ fontSize: 10, color: "#1D1D1F" }}>{BATHROOM_LABEL[room.bathroom_type] || room.bathroom_type}</Text>
+                              </div>
                             )}
                           </div>
                         </div>
-                      </>
-                    ) : (
-                      <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
-                        {roomStatus === "free" ? "Habitación disponible" : "Sin inquilino asignado"}
-                      </Text>
-                    )}
-                  </div>
+                      </div>
 
-                  {/* ── 7: Divider + Botones ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
-                  <div style={{ paddingBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    {isOccupied && lodger ? (
-                      <>
-                        <Tooltip title="Ver consumo">
-                          <Button size="small" type="text" icon={<UserOutlined />}
-                            onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} />
-                        </Tooltip>
-                        <Tooltip title="Editar inquilino">
-                          <Button size="small" type="text" icon={<EditOutlined />}
-                            onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} />
-                        </Tooltip>
-                        <Tooltip title="Cambiar habitación">
-                          <Button size="small" type="text" icon={<SwapOutlined />}
-                            onClick={() => {
-                              setLodgerToReassign(lodger);
-                              setShowReassignModal(true);
-                            }} />
-                        </Tooltip>
-                        {roomStatus === "occupied" && (
-                          <Tooltip title="Check-out">
-                            <Button
-                              size="small" type="text" danger
-                              icon={<LogoutOutlined />}
-                              onClick={() => {
-                                setLodgerToCheckout({ ...lodger, active_assignment: room.active_assignment });
-                                setShowCheckoutModal(true);
-                              }}
-                            />
-                          </Tooltip>
+                      {/* ── 4: Botones de acción ── */}
+                      <div style={{ borderTop: "1px solid #F3F4F6", padding: "6px 10px", display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                        {isOccupied && lodger ? (
+                          <>
+                            <Tooltip title="Ver detalle">
+                              <Button size="small" type="text" icon={<UserOutlined />}
+                                onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} />
+                            </Tooltip>
+                            <Tooltip title="Editar inquilino">
+                              <Button size="small" type="text" icon={<EditOutlined />}
+                                onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} />
+                            </Tooltip>
+                            <Tooltip title="Cambiar habitación">
+                              <Button size="small" type="text" icon={<SwapOutlined />}
+                                onClick={() => { setLodgerToReassign({ ...lodger, _room: room, _assignment: assignment }); setShowReassignModal(true); }} />
+                            </Tooltip>
+                            {roomStatus === "occupied" && (
+                              <Tooltip title="Check-out">
+                                <Button size="small" type="text" danger icon={<LogoutOutlined />}
+                                  onClick={() => { setLodgerToCheckout({ ...lodger, active_assignment: room.active_assignment }); setShowCheckoutModal(true); }} />
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : roomStatus === "free" ? (
+                          <Button size="small" type="primary" icon={<UserAddOutlined />}
+                            style={{ borderRadius: 20, fontWeight: 600, fontSize: 11, background: "#0096D6", borderColor: "#0096D6" }}
+                            onClick={() => openAssignModal(room)}>
+                            Asignar Inquilino
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      {/* ── 5: Footer — Alojamiento + Entidad ── */}
+                      <div style={{ borderTop: "1px solid #F3F4F6", padding: "6px 14px 10px" }}>
+                        <div style={{ display: "flex", gap: 3, overflow: "hidden" }}>
+                          <Text style={{ fontSize: 10, color: "#9CA3AF", whiteSpace: "nowrap", flexShrink: 0 }}>Aloj.:</Text>
+                          <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {accommodation?.name || "—"}
+                          </Text>
+                        </div>
+                        {entityName && (
+                          <div style={{ display: "flex", gap: 3, overflow: "hidden" }}>
+                            <Text style={{ fontSize: 10, color: "#9CA3AF", whiteSpace: "nowrap", flexShrink: 0 }}>Entidad:</Text>
+                            <Text style={{ fontSize: 10, color: "#6B7280", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {entityName}
+                            </Text>
+                          </div>
                         )}
-                      </>
-                    ) : roomStatus === "free" ? (
-                      <>
-                        <Button size="middle" type="primary" icon={<UserAddOutlined />}
-                          style={{ borderRadius: 20, fontWeight: 600, fontSize: 13 }}
-                          onClick={() => navigate(`/v2/admin/inquilinos/nuevo?acc=${accId}&room=${room.id}`)}>
-                          Crear Inquilino Nuevo
-                        </Button>
-                        <Button size="middle" type="link"
-                          style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500 }}
-                          onClick={() => openAssignModal(room)}>
-                          Buscar Inquilino Existente &gt;
-                        </Button>
-                      </>
-                    ) : null}
-                  </div>
-                </Card>
+                      </div>
+                    </Card>
+                  );
+                })()}
               </Col>
             );
           })}
         </Row>
+          )}
+        </div>
       ) : null}
 
       {/* Modal: Asignar inquilino a habitación */}
@@ -1292,9 +1671,11 @@ export default function AccommodationDetail() {
           </Text>
         </div>
 
-        {/* Select de inquilinos */}
+        {/* Select de inquilinos + botón Crear */}
         <Form.Item label="Inquilino" required style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8 }}>
           <Select
+            style={{ flex: 1 }}
             showSearch
             loading={loadingLodgers}
             placeholder="Buscar por nombre o email..."
@@ -1335,6 +1716,21 @@ export default function AccommodationDetail() {
               };
             })}
           />
+          <Button
+            type="primary"
+            icon={<UserAddOutlined />}
+            style={{ borderRadius: 20, fontWeight: 600, whiteSpace: "nowrap", background: "#0096D6", borderColor: "#0096D6" }}
+            onClick={() => {
+              const roomId = assignRoom?.id;
+              setAssignRoom(null);
+              setSelectedLodgerForAssignment(null);
+              assignmentForm.resetFields();
+              navigate(`/v2/admin/inquilinos/nuevo?acc=${accId}&room=${roomId}`);
+            }}
+          >
+            Crear Inquilino
+          </Button>
+          </div>
           <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
             Solo se muestran inquilinos sin habitación asignada
           </Text>
@@ -1475,34 +1871,108 @@ export default function AccommodationDetail() {
         onCancel={() => {
           setShowReassignModal(false);
           setLodgerToReassign(null);
+          setReassignFreeRooms([]);
+          setReassignEntityId(null);
+          setReassignCheckoutDate(null);
           reassignForm.resetFields();
         }}
         footer={null}
-        width={600}
-        destroyOnClose
+        width={700}
+        destroyOnHidden
+        styles={{ body: { paddingTop: 4, paddingBottom: 8 } }}
       >
-        {lodgerToReassign && (
-          <>
-            <div style={{ marginBottom: 16, padding: '12px', backgroundColor: '#f5f5f5', borderRadius: 8 }}>
-              <div style={{ marginBottom: 8 }}>
-                <Text strong>Habitación actual:</Text>
-                <Text style={{ marginLeft: 8 }}>
-                  {lodgerToReassign.active_assignment?.[0]?.room?.number || 'N/A'} — {lodgerToReassign.active_assignment?.[0]?.accommodation?.name || 'N/A'}
-                </Text>
-              </div>
-            </div>
+        {lodgerToReassign && (() => {
+          const curRoom = lodgerToReassign._room;
+          const curAsgn = lodgerToReassign._assignment;
+          const curRoomNum = curRoom ? `HAB-${String(curRoom.number).padStart(3, "0")}` : "N/A";
+          const curRent = curAsgn?.monthly_rent ?? curRoom?.monthly_rent;
+          const curEntityName = accommodation?.owner_entity
+            ? (accommodation.owner_entity.legal_type === "persona_juridica"
+                ? accommodation.owner_entity.legal_name
+                : [accommodation.owner_entity.first_name, accommodation.owner_entity.last_name1].filter(Boolean).join(" "))
+            : "—";
 
+          // Entidades únicas derivadas de reassignAccommodations
+          const entityMap = new Map();
+          (reassignAccommodations || []).forEach(a => {
+            if (a.owner_entity_id && a.owner_entity && !entityMap.has(a.owner_entity_id)) {
+              entityMap.set(a.owner_entity_id, a.owner_entity);
+            }
+          });
+          const entityOptions = [...entityMap.entries()].map(([id, e]) => ({
+            value: id,
+            label: e.legal_type === "persona_juridica"
+              ? e.legal_name
+              : [e.first_name, e.last_name1].filter(Boolean).join(" "),
+          }));
+
+          const filteredAccOptions = (reassignAccommodations || [])
+            .filter(a => !reassignEntityId || a.owner_entity_id === reassignEntityId)
+            .map(a => ({ value: a.id, label: a.name }));
+
+          const iB = { marginBottom: 6 };
+
+          // Calcula el importe de corrección proporcional por cambio de habitación a mitad de mes
+          function calcCorrectionAmount(changeDate, currentRent, newRent) {
+            if (!changeDate || currentRent == null || newRent == null) return null;
+            const dayOfMonth = changeDate.date();
+            if (dayOfMonth === 1) return 0;
+            const daysInMonth = changeDate.daysInMonth();
+            const remainingDays = daysInMonth - dayOfMonth + 1;
+            const correction = (newRent - currentRent) * remainingDays / daysInMonth;
+            return Math.round(correction * 100) / 100;
+          }
+
+          return (
             <Form
               form={reassignForm}
               layout="vertical"
+              size="small"
               onFinish={async (values) => {
                 setAssigningLodger(true);
                 try {
-                  // Aquí iría la lógica de cambio de habitación
-                  // Por ahora solo cerramos el modal
-                  message.success('Habitación cambiada correctamente');
+                  const changeDate  = values.change_date.format("YYYY-MM-DD");
+                  const curAsgnId   = lodgerToReassign._assignment?.id;
+                  const curRoomNum  = lodgerToReassign._room
+                    ? `HAB-${String(lodgerToReassign._room.number).padStart(3, "0")}`
+                    : "?";
+                  const newRoom = reassignFreeRooms.find(r => r.id === values.new_room_id);
+                  const newRoomNum  = newRoom ? `HAB-${String(newRoom.number).padStart(3, "0")}` : "?";
+                  const changeNote  = `Cambio de habitación: ${curRoomNum} → ${newRoomNum} el ${dayjs(changeDate).format("DD/MM/YYYY")}`;
+
+                  // 1. Cerrar asignación actual con fecha de checkout y nota
+                  if (curAsgnId) {
+                    const { error: e1 } = await supabase
+                      .from("lodger_room_assignments")
+                      .update({ move_out_date: changeDate, notes: changeNote })
+                      .eq("id", curAsgnId);
+                    if (e1) throw new Error(e1.message);
+                  }
+
+                  // 2. Crear nueva asignación en la habitación destino
+                  const { error: e2 } = await supabase
+                    .from("lodger_room_assignments")
+                    .insert({
+                      lodger_id:          lodgerToReassign.id,
+                      room_id:            values.new_room_id,
+                      accommodation_id:   values.new_accommodation_id,
+                      client_account_id:  clientAccountId,
+                      move_in_date:       changeDate,
+                      billing_start_date: changeDate,
+                      monthly_rent:       values.monthly_rent ?? null,
+                      deposit_amount:     values.deposit_amount ?? null,
+                      commission_amount:  values.commission_amount ?? null,
+                      correction_amount:  values.correction_amount ?? null,
+                      notes:              changeNote,
+                    });
+                  if (e2) throw new Error(e2.message);
+
+                  message.success("Habitación cambiada correctamente");
                   setShowReassignModal(false);
                   setLodgerToReassign(null);
+                  setReassignFreeRooms([]);
+                  setReassignEntityId(null);
+                  setReassignCheckoutDate(null);
                   reassignForm.resetFields();
                   await load();
                 } catch (e) {
@@ -1512,121 +1982,194 @@ export default function AccommodationDetail() {
                 }
               }}
             >
-              <Form.Item
-                label="Nuevo alojamiento"
-                name="new_accommodation_id"
-                rules={[{ required: true, message: "Selecciona un alojamiento" }]}
-              >
-                <Select
-                  placeholder="Seleccionar alojamiento..."
-                  options={[{ value: accId, label: accommodation?.name }]}
-                />
-              </Form.Item>
+              {/* ── CHECK-OUT ── */}
+              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>Check-Out</Divider>
 
-              <Form.Item
-                label="Nueva habitación (solo libres)"
-                name="new_room_id"
-                rules={[{ required: true, message: "Selecciona una habitación" }]}
-              >
+              {/* Info fija actual */}
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "6px 10px", marginBottom: 8, fontSize: 12 }}>
+                <Row gutter={8}>
+                  <Col span={12}>
+                    <Text type="secondary">Entidad actual</Text>
+                    <div><Text strong>{curEntityName}</Text></div>
+                  </Col>
+                  <Col span={12}>
+                    <Text type="secondary">Apartamento</Text>
+                    <div><Text strong>{accommodation?.name || "—"}</Text></div>
+                  </Col>
+                </Row>
+                <Row gutter={8} style={{ marginTop: 4 }}>
+                  <Col span={12}>
+                    <Text type="secondary">Habitación</Text>
+                    <div><Text strong style={{ color: "#0071E3" }}>Hab. {curRoomNum}</Text></div>
+                  </Col>
+                  <Col span={12}>
+                    <Text type="secondary">Importe mensual</Text>
+                    <div><Text strong>{curRent != null ? formatCurrency(curRent) : "—"}</Text></div>
+                  </Col>
+                </Row>
+              </div>
+
+              <Row gutter={12} align="middle">
+                <Col span={14}>
+                  <Form.Item
+                    label="Fecha del cambio"
+                    name="change_date"
+                    style={iB}
+                    rules={[
+                      { required: true, message: "Obligatoria" },
+                      { validator: (_, v) => v && v.isBefore(dayjs().startOf("day")) ? Promise.reject("Debe ser hoy o posterior") : Promise.resolve() },
+                    ]}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      format="DD/MM/YYYY"
+                      disabledDate={d => d && d.isBefore(dayjs().startOf("day"))}
+                      onChange={v => {
+                        setReassignCheckoutDate(v);
+                        const accId = reassignForm.getFieldValue("new_accommodation_id");
+                        loadFreeRoomsForDate(accId, v);
+                        // Recalcular corrección si ya hay renta nueva seleccionada
+                        const newRent = reassignForm.getFieldValue("monthly_rent");
+                        if (newRent != null) {
+                          const corr = calcCorrectionAmount(v, curRent, newRent);
+                          if (corr !== null) reassignForm.setFieldValue("correction_amount", corr);
+                        }
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={10} style={{ paddingTop: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Hasta esa fecha: </Text>
+                  <Text strong style={{ color: "#B45309" }}>Pte. Baja</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>Desde esa fecha: </Text>
+                  <Text strong style={{ color: "#15803D" }}>Activo</Text>
+                </Col>
+              </Row>
+
+              {/* ── CHECK-IN ── */}
+              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: "#6B7280", margin: "2px 0 8px" }}>Check-In</Divider>
+
+              <Row gutter={12}>
+                <Col span={11}>
+                  <Form.Item label="Entidad" name="new_entity_id" style={iB}
+                    rules={[{ required: true, message: "Selecciona una entidad" }]}>
+                    <Select
+                      placeholder="Seleccionar entidad..."
+                      allowClear
+                      showSearch
+                      filterOption={(i, o) => o.label.toLowerCase().includes(i.toLowerCase())}
+                      options={entityOptions}
+                      onChange={v => {
+                        setReassignEntityId(v ?? null);
+                        reassignForm.setFieldValue("new_accommodation_id", undefined);
+                        reassignForm.setFieldValue("new_room_id", undefined);
+                        reassignForm.setFieldValue("monthly_rent", undefined);
+                        setReassignFreeRooms([]);
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={13}>
+                  <Form.Item label="Alojamiento" name="new_accommodation_id" style={iB}>
+                    <Select
+                      placeholder="Seleccionar..."
+                      allowClear
+                      showSearch
+                      filterOption={(i, o) => o.label.toLowerCase().includes(i.toLowerCase())}
+                      options={filteredAccOptions}
+                      onChange={(selectedAccId) => {
+                        reassignForm.setFieldValue("new_room_id", undefined);
+                        reassignForm.setFieldValue("monthly_rent", undefined);
+                        setReassignFreeRooms([]);
+                        if (!selectedAccId) return;
+                        const changeDate = reassignForm.getFieldValue("change_date");
+                        loadFreeRoomsForDate(selectedAccId, changeDate);
+                      }}
+                />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item label="Nueva habitación (libres en la fecha del cambio)" name="new_room_id" style={iB}
+                rules={[{ required: true, message: "Selecciona una habitación" }]}>
                 <Select
-                  placeholder="Seleccionar habitación..."
-                  options={rooms.filter(r => r.status === 'free').map(r => ({
+                  placeholder={!reassignCheckoutDate ? "Primero selecciona fecha del cambio" : "Seleccionar habitación..."}
+                  loading={loadingReassignRooms}
+                  disabled={!reassignCheckoutDate || !reassignForm.getFieldValue("new_accommodation_id")}
+                  options={reassignFreeRooms.map(r => ({
                     value: r.id,
-                    label: `Hab. ${r.number} — ${r.monthly_rent}€/mes`
+                    label: `Hab. ${String(r.number).padStart(3,"0")}${r.monthly_rent != null ? ` — ${formatCurrency(r.monthly_rent)}/mes` : ""}`,
                   }))}
+                  onChange={(roomId) => {
+                    const r = reassignFreeRooms.find(x => x.id === roomId);
+                    if (r?.monthly_rent != null) {
+                      reassignForm.setFieldValue("monthly_rent", r.monthly_rent);
+                      // Auto-calc corrección
+                      const changeDate = reassignForm.getFieldValue("change_date");
+                      const corr = calcCorrectionAmount(changeDate, curRent, r.monthly_rent);
+                      if (corr !== null) reassignForm.setFieldValue("correction_amount", corr);
+                    }
+                    // Auto-fill fianza desde asignación actual
+                    if (curAsgn?.deposit_amount != null) {
+                      reassignForm.setFieldValue("deposit_amount", curAsgn.deposit_amount);
+                    }
+                  }}
                 />
               </Form.Item>
 
-              <Form.Item
-                label="Fecha de Check-In"
-                name="move_in_date"
-                rules={[{ required: true, message: "La fecha es obligatoria" }]}
-              >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-              </Form.Item>
-
-              <Form.Item
-                label="Fecha de Inicio Cobro"
-                name="billing_start_date"
-              >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-              </Form.Item>
-
-              <Row gutter={16}>
+              <Row gutter={12}>
                 <Col span={12}>
-                  <Form.Item
-                    label="Renta mensual (€)"
-                    name="monthly_rent"
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Opcional"
-                    />
+                  <Form.Item label="Importe de la Fianza (€)" name="deposit_amount" style={iB}
+                    rules={[{ required: true, message: "Obligatorio" }]}>
+                    <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Ej. 900" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item
-                    label="Importe de la Fianza (€)"
-                    name="deposit_amount"
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Opcional"
-                    />
+                  <Form.Item label="Renta mensual (€)" name="monthly_rent" style={iB}>
+                    <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Ej. 450" />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Row gutter={16}>
+              <Row gutter={12}>
                 <Col span={12}>
-                  <Form.Item
-                    label="Importe Comisión (€)"
-                    name="commission_amount"
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Opcional"
-                    />
+                  <Form.Item label="Importe Comisión (€)" name="commission_amount" style={iB}>
+                    <InputNumber style={{ width: "100%" }} min={0} precision={2} placeholder="Opcional" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="Importe Mes Entrada (€)"
-                    name="first_month_amount"
+                    label="Corrección por cambio (€)"
+                    name="correction_amount"
+                    style={iB}
+                    tooltip="Diferencia proporcional por días restantes del mes. Positivo = paga más. Negativo = descuento. 0 si el cambio es el día 1."
                   >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      precision={2}
-                      placeholder="Opcional"
-                    />
+                    <InputNumber style={{ width: "100%" }} min={-99999} precision={2} placeholder="Auto-calculado" />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Row justify="end" style={{ marginTop: 24 }}>
+              <Row justify="end" style={{ marginTop: 12 }}>
                 <Space>
-                  <Button onClick={() => {
+                  <Button size="middle" onClick={() => {
                     setShowReassignModal(false);
                     setLodgerToReassign(null);
+                    setReassignEntityId(null);
+                    setReassignCheckoutDate(null);
                     reassignForm.resetFields();
                   }}>
                     Cancelar
                   </Button>
-                  <Button type="primary" htmlType="submit" icon={<SwapOutlined />} loading={assigningLodger}>
+                  <Button size="middle" type="primary" htmlType="submit" icon={<SwapOutlined />} loading={assigningLodger}
+                    style={{ background: "#0096D6", borderColor: "#0096D6" }}>
                     Confirmar cambio
                   </Button>
                 </Space>
               </Row>
             </Form>
-          </>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Modal: Check-Out */}
@@ -1674,7 +2217,7 @@ export default function AccommodationDetail() {
                       .from('lodger_room_assignments')
                       .update({
                         move_out_date: checkoutDate,
-                        checkout_notes: values.observations || null,
+                        notes: values.observations || null,
                       })
                       .eq('id', assignment.id);
                     

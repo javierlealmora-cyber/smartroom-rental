@@ -84,7 +84,7 @@ export async function createLodger(payload) {
     body: { action: "create", payload },
   });
   if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.lodger;
+  return result.data?.lodger ?? result.lodger;
 }
 
 export async function updateLodger(id, patch) {
@@ -148,7 +148,7 @@ export async function inviteLodger(lodgerId) {
   return result.data;
 }
 
-export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount }) {
+export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
   // Asignación directa para inquilinos sin habitación previa
   // Obtener client_account_id del inquilino
   const { data: lodgerProfile, error: profileErr } = await supabase
@@ -173,6 +173,7 @@ export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, mo
       deposit_amount: depositAmount || 0,
       commission_amount: commissionAmount || null,
       first_month_amount: firstMonthAmount || null,
+      services_provision_amount: servicesProvisionAmount || null,
     })
     .select()
     .single();
@@ -189,7 +190,7 @@ export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, mo
   return newAssignment;
 }
 
-export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount }) {
+export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
   // Query directa — evita 401 de manage_lodger. RLS exige client_account_id en INSERT,
   // lo obtenemos del propio perfil del inquilino.
 
@@ -234,6 +235,7 @@ export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, mo
       deposit_amount: depositAmount || 0,
       commission_amount: commissionAmount || null,
       first_month_amount: firstMonthAmount || null,
+      services_provision_amount: servicesProvisionAmount || null,
     })
     .select()
     .single();

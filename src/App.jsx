@@ -70,9 +70,12 @@ import ClientAccountDetailV2 from "./pages/v2/superadmin/ClientAccountDetail";
 
 // v2 - Admin
 import DashboardAdminV2 from "./pages/v2/admin/DashboardAdmin";
+import DashboardAdminV3 from "./pages/v2/admin/DashboardAdminV3";
+import DashboardAdminV3New from "./pages/v2/admin/DashboardAdminV3New";
 import AccommodationsListV2 from "./pages/v2/admin/accommodations/AccommodationsList";
 import AccommodationCreateV2 from "./pages/v2/admin/accommodations/AccommodationCreate";
-import AccommodationEditV2 from "./pages/v2/admin/accommodations/AccommodationEdit";
+import RoomsSearch from "./pages/v2/admin/rooms/RoomsSearch";
+// AccommodationEdit.jsx eliminado — ruta /editar redirige a AccommodationDetail
 import AccommodationServicesV2 from "./pages/v2/admin/accommodations/AccommodationServices";
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
@@ -287,15 +290,17 @@ export default function App() {
             <Route element={<RequireRole allow={["superadmin", "admin", "api", "agent", "viewer"]} />}>
               <Route path="/v2/admin" element={<DashboardAdminV2 />} />
               <Route path="/v2/admin/dashboard" element={<DashboardAdminV2 />} />
+              <Route path="/v2/admin/dashboard-v3" element={<DashboardAdminV3New />} />
               <Route path="/v2/admin/entidades" element={<EntitiesListV2 />} />
               <Route path="/v2/admin/entidades/nueva" element={<EntityCreateV2 />} />
               <Route path="/v2/admin/entidades/:id" element={<EntityDetailV2 />} />
               <Route path="/v2/admin/entidades/:id/editar" element={<EntityEditV2 />} />
               <Route path="/v2/admin/entidades/:entityId/alojamientos/:accId" element={<AccommodationDetailV2 />} />
               <Route path="/v2/admin/alojamientos/:accId/habitaciones" element={<AccommodationDetailV2 />} />
+              <Route path="/v2/admin/habitaciones" element={<RoomsSearch />} />
               <Route path="/v2/admin/alojamientos" element={<AccommodationsListV2 />} />
               <Route path="/v2/admin/alojamientos/nuevo" element={<AccommodationCreateV2 />} />
-              <Route path="/v2/admin/alojamientos/:id/editar" element={<AccommodationEditV2 />} />
+              <Route path="/v2/admin/alojamientos/:accId/editar" element={<AccommodationDetailV2 />} />
               <Route path="/v2/admin/alojamientos/:id/servicios" element={<AccommodationServicesV2 />} />
               <Route path="/v2/admin/inquilinos" element={<TenantsListV2 />} />
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />

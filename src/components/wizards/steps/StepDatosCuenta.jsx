@@ -14,22 +14,43 @@ export default function StepDatosCuenta({ formData, errors, onChange }) {
       </p>
 
       <div style={styles.formGrid}>
-        {/* Nombre completo */}
+        {/* Nombre */}
         <div style={styles.formGroup}>
           <label style={styles.label}>
-            Nombre completo del titular <span style={styles.required}>*</span>
+            Nombre del titular <span style={styles.required}>*</span>
           </label>
           <input
             type="text"
             value={formData.full_name}
             onChange={(e) => onChange("full_name", e.target.value)}
-            style={{
-              ...styles.input,
-              ...(errors.full_name ? styles.inputError : {}),
-            }}
-            placeholder="Ej: Juan Garcia Lopez"
+            style={{ ...styles.input, ...(errors.full_name ? styles.inputError : {}) }}
+            placeholder="Ej: Juan"
           />
           {errors.full_name && <span style={styles.errorText}>{errors.full_name}</span>}
+        </div>
+
+        {/* Primer apellido */}
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Primer apellido</label>
+          <input
+            type="text"
+            value={formData.account_last_name1}
+            onChange={(e) => onChange("account_last_name1", e.target.value)}
+            style={styles.input}
+            placeholder="Ej: García"
+          />
+        </div>
+
+        {/* Segundo apellido */}
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Segundo apellido</label>
+          <input
+            type="text"
+            value={formData.account_last_name2}
+            onChange={(e) => onChange("account_last_name2", e.target.value)}
+            style={styles.input}
+            placeholder="Ej: López"
+          />
         </div>
 
         {/* Email */}

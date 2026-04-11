@@ -13,7 +13,7 @@ export default function EntityEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { role } = useAuth();
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
 
   const canWrite = role !== "viewer";
 

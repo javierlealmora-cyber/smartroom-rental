@@ -44,7 +44,7 @@ import {
   setAccommodationStatus,
   listRooms,
   updateRoom,
-  setRoomStatus,
+  setRoomMaintenance,
 } from '../../services/accommodations.service'
 
 // ─── Datos de prueba ──────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ describe('accommodations.service.js', () => {
 
       const result = await listAccommodations()
 
-      expect(result).toEqual(mockData)
+      expect(result).toMatchObject(mockData)
       expect(mockSupabase.from).toHaveBeenCalledWith('accommodations')
     })
 
@@ -292,15 +292,17 @@ describe('accommodations.service.js', () => {
       const chain = buildChain({ data: MOCK_ROOMS, error: null })
       const eqSpy = vi.spyOn(chain, 'eq').mockReturnValue(chain)
       mockSupabase.from.mockReturnValueOnce(chain)
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: [], error: null }))
 
       const result = await listRooms('acc-1')
 
-      expect(result).toEqual(MOCK_ROOMS)
+      expect(result).toMatchObject(MOCK_ROOMS)
       expect(mockSupabase.from).toHaveBeenCalledWith('rooms')
       expect(eqSpy).toHaveBeenCalledWith('accommodation_id', 'acc-1')
     })
 
     it('retorna array vacío cuando no hay habitaciones', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: null }))
       mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: null }))
 
       const result = await listRooms('acc-sin-rooms')
@@ -311,6 +313,7 @@ describe('accommodations.service.js', () => {
     it('las habitaciones usan "number" (no floor, type ni capacity)', async () => {
       const chain = buildChain({ data: MOCK_ROOMS, error: null })
       mockSupabase.from.mockReturnValueOnce(chain)
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: [], error: null }))
 
       const result = await listRooms('acc-1')
 
@@ -324,6 +327,7 @@ describe('accommodations.service.js', () => {
 
     it('lanza error cuando la consulta de BD falla', async () => {
       mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: { message: 'DB Error' } }))
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: [], error: null }))
 
       await expect(listRooms('acc-1')).rejects.toThrow('DB Error')
     })
@@ -389,53 +393,46 @@ describe('accommodations.service.js', () => {
     })
   })
 
-  // ─── setRoomStatus ──────────────────────────────────────────────────────
-  // NOTA: setRoomStatus es una llamada directa a BD, NO Edge Function.
-  describe('setRoomStatus()', () => {
-    it('actualiza status directamente en BD sobre la tabla rooms', async () => {
-      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', status: 'maintenance' }, error: null }))
+  // ─── setRoomMaintenance ─────────────────────────────────────────────────────────
+  // NOTA: setRoomMaintenance reemplazó a setRoomStatus — rooms ya no tienen campo status,
+  // el estado se deriva de lodger_room_assignments. Solo is_maintenance es editable.
+  describe('setRoomMaintenance()', () => {
+    it('actualiza is_maintenance directamente en BD sobre la tabla rooms', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', is_maintenance: true }, error: null }))
 
-      await setRoomStatus('room-1', 'maintenance', CLIENT_ACCOUNT_ID)
+      await setRoomMaintenance('room-1', true, CLIENT_ACCOUNT_ID)
 
       expect(mockSupabase.from).toHaveBeenCalledWith('rooms')
     })
 
     it('NO usa invokeWithAuth — escribe directamente en BD', async () => {
-      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', status: 'free' }, error: null }))
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', is_maintenance: false }, error: null }))
 
-      await setRoomStatus('room-1', 'free', CLIENT_ACCOUNT_ID)
+      await setRoomMaintenance('room-1', false, CLIENT_ACCOUNT_ID)
 
       expect(invokeWithAuth).not.toHaveBeenCalled()
     })
 
-    it('acepta estado "free"', async () => {
-      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', status: 'free' }, error: null }))
+    it('acepta true (poner en mantenimiento)', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', is_maintenance: true }, error: null }))
 
-      const result = await setRoomStatus('room-1', 'free', CLIENT_ACCOUNT_ID)
+      const result = await setRoomMaintenance('room-1', true, CLIENT_ACCOUNT_ID)
 
-      expect(result).toMatchObject({ status: 'free' })
+      expect(result).toMatchObject({ is_maintenance: true })
     })
 
-    it('acepta estado "maintenance"', async () => {
-      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', status: 'maintenance' }, error: null }))
+    it('acepta false (sacar de mantenimiento)', async () => {
+      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', is_maintenance: false }, error: null }))
 
-      const result = await setRoomStatus('room-1', 'maintenance', CLIENT_ACCOUNT_ID)
+      const result = await setRoomMaintenance('room-1', false, CLIENT_ACCOUNT_ID)
 
-      expect(result).toMatchObject({ status: 'maintenance' })
+      expect(result).toMatchObject({ is_maintenance: false })
     })
 
-    it('acepta estado "reserved"', async () => {
-      mockSupabase.from.mockReturnValueOnce(buildChain({ data: { id: 'room-1', status: 'reserved' }, error: null }))
-
-      const result = await setRoomStatus('room-1', 'reserved', CLIENT_ACCOUNT_ID)
-
-      expect(result).toMatchObject({ status: 'reserved' })
-    })
-
-    it('lanza error cuando el cambio de estado falla', async () => {
+    it('lanza error cuando el cambio falla', async () => {
       mockSupabase.from.mockReturnValueOnce(buildChain({ data: null, error: { message: 'DB constraint violation' } }))
 
-      await expect(setRoomStatus('room-1', 'maintenance', CLIENT_ACCOUNT_ID)).rejects.toThrow('DB constraint violation')
+      await expect(setRoomMaintenance('room-1', true, CLIENT_ACCOUNT_ID)).rejects.toThrow('DB constraint violation')
     })
   })
 

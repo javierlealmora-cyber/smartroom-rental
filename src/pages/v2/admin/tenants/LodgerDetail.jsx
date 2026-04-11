@@ -5,11 +5,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert, Avatar, Badge, Button, Card, Col, Progress, Row,
-  Skeleton, Space, Statistic, Tabs, Tag, Tooltip, Typography,
+  Select, Skeleton, Space, Statistic, Tabs, Tag, Tooltip, Typography,
 } from "antd";
 import {
   ArrowLeftOutlined, BulbOutlined, EditOutlined,
-  FireOutlined, SwapOutlined, ThunderboltOutlined,
+  FireOutlined, ReloadOutlined, SwapOutlined, ThunderboltOutlined,
 } from "@ant-design/icons";
 import {
   CartesianGrid, Legend, Line, LineChart,
@@ -23,14 +23,12 @@ import { supabase } from "../../../../services/supabaseClient";
 import PayersList from "./components/PayersList";
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MONTHS_FULL  = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 const EMPTY_HUCHA = { balance: 0, deposited: 0, consumed: 0 };
-const EMPTY_CHART = Array.from({ length: 12 }, (_, i) => ({
-  mes: MONTHS_SHORT[(dayjs().month() - 11 + i + 12) % 12],
-  real: 0, estimado: 0, añoAnterior: 0,
-}));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_COLOR = { active: "#059669", invited: "#3B82F6", pending_checkout: "#F59E0B", inactive: "#9CA3AF" };
@@ -158,6 +156,51 @@ function buildHuchaData(bulletins, utilityType) {
   return { balance: 0, deposited: 0, consumed: +consumed.toFixed(2) };
 }
 
+function pivotByPeriod(items, getDate, getValue, filterMode, filterYear, filterMonth) {
+  const byKey = {};
+  for (const item of items) {
+    const d = dayjs(getDate(item));
+    if (!d.isValid()) continue;
+    if (filterMode === "year"  && d.year() !== filterYear) continue;
+    if (filterMode === "month" && (d.year() !== filterYear || d.month() + 1 !== filterMonth)) continue;
+    const key = filterMode === "month" ? d.format("DD") : d.format("YYYY-MM");
+    byKey[key] = (byKey[key] || 0) + Number(getValue(item) ?? 0);
+  }
+
+  if (filterMode === "month") {
+    const daysInMonth = dayjs(`${filterYear}-${String(filterMonth).padStart(2,"0")}-01`).daysInMonth();
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const day = String(i + 1).padStart(2, "0");
+      return { mes: day, real: +(byKey[day] ?? 0).toFixed(2), estimado: 0, añoAnterior: 0 };
+    });
+  }
+
+  if (filterMode === "year") {
+    return Array.from({ length: 12 }, (_, i) => {
+      const key = `${filterYear}-${String(i + 1).padStart(2, "0")}`;
+      return { mes: MONTHS_SHORT[i], real: +(byKey[key] ?? 0).toFixed(2), estimado: 0, añoAnterior: 0 };
+    });
+  }
+
+  // last12
+  const now = dayjs();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = now.subtract(11 - i, "month");
+    const key = d.format("YYYY-MM");
+    return { mes: `${MONTHS_SHORT[d.month()]} ${d.format("YY")}`, real: +(byKey[key] ?? 0).toFixed(2), estimado: 0, añoAnterior: 0 };
+  });
+}
+
+function buildKwhChartData(readings, utilityType, filterMode, filterYear, filterMonth) {
+  const relevant = readings.filter((r) => r.utility_type === utilityType);
+  return pivotByPeriod(relevant, (r) => r.reading_date, (r) => r.kwh, filterMode, filterYear, filterMonth);
+}
+
+function buildBulletinChartData(bulletins, utilityType, filterMode, filterYear, filterMonth) {
+  const relevant = bulletins.filter((b) => b.energy_bill?.utility_type === utilityType);
+  return pivotByPeriod(relevant, (b) => b.period_start, (b) => b.amount_total, filterMode, filterYear, filterMonth);
+}
+
 export default function LodgerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -167,11 +210,47 @@ export default function LodgerDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bulletins, setBulletins] = useState([]);
+  const [readings, setReadings] = useState([]);
+  const [roomId, setRoomId] = useState(null);
+  const [loadingReadings, setLoadingReadings] = useState(false);
+
+  // Filtro de período
+  const [filterMode, setFilterMode] = useState("last12");
+  const [filterYear, setFilterYear] = useState(dayjs().year());
+  const [filterMonth, setFilterMonth] = useState(dayjs().month() + 1);
+
+  // Carga de lecturas — reactiva al filtro y al roomId
+  const loadReadings = useCallback(async (rId) => {
+    if (!rId) { setReadings([]); return; }
+    setLoadingReadings(true);
+    let start, end;
+    if (filterMode === "last12") {
+      start = dayjs().subtract(11, "month").startOf("month").format("YYYY-MM-DD");
+      end   = dayjs().endOf("month").format("YYYY-MM-DD");
+    } else if (filterMode === "year") {
+      start = `${filterYear}-01-01`;
+      end   = `${filterYear}-12-31`;
+    } else {
+      const base = dayjs(`${filterYear}-${String(filterMonth).padStart(2,"0")}-01`);
+      start = base.startOf("month").format("YYYY-MM-DD");
+      end   = base.endOf("month").format("YYYY-MM-DD");
+    }
+    try {
+      const { data } = await supabase
+        .from("energy_readings")
+        .select("reading_date, kwh, utility_type, source")
+        .eq("room_id", rId)
+        .gte("reading_date", start)
+        .lte("reading_date", end)
+        .order("reading_date");
+      setReadings(data || []);
+    } catch (_) { setReadings([]); }
+    finally { setLoadingReadings(false); }
+  }, [filterMode, filterYear, filterMonth]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      // Consulta directa para asegurar que move_out_date se carga
       const { data: lodgerData, error: lodgerError } = await supabase
         .from("profiles")
         .select(`
@@ -201,11 +280,19 @@ export default function LodgerDetail() {
         .eq("lodger_id", id)
         .order("period_start", { ascending: false });
 
+      const sortedAss = [...(lodgerData.assignments || [])].sort(
+        (a, b) => new Date(b.move_in_date) - new Date(a.move_in_date)
+      );
+      const rId = sortedAss[0]?.room?.id || null;
+
       setLodger(lodgerData);
       setBulletins(bullData || []);
+      setRoomId(rId);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, [id, clientAccountId]);
+
+  useEffect(() => { loadReadings(roomId); }, [loadReadings, roomId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -218,13 +305,71 @@ export default function LodgerDetail() {
       })[0]
     : null;
 
-  const elecChart  = bulletins.length > 0 ? buildChartData(bulletins, "electricity") : EMPTY_CHART;
-  const waterChart = bulletins.length > 0 ? buildChartData(bulletins, "water")       : EMPTY_CHART;
-  const gasChart   = bulletins.length > 0 ? buildChartData(bulletins, "gas")         : EMPTY_CHART;
-
   const elecHucha  = buildHuchaData(bulletins, "electricity");
   const waterHucha = buildHuchaData(bulletins, "water");
   const gasHucha   = buildHuchaData(bulletins, "gas");
+
+  const hasData = (data) => data.some((d) => d.real > 0 || d.estimado > 0);
+
+  // Por suministro: preferir lecturas kWh; si no hay, usar importes de facturas (€)
+  function resolveChart(utilityType, kwhUnit) {
+    const kwhData  = buildKwhChartData(readings, utilityType, filterMode, filterYear, filterMonth);
+    if (hasData(kwhData)) return { data: kwhData, unit: kwhUnit, source: "readings" };
+    const billData = buildBulletinChartData(bulletins, utilityType, filterMode, filterYear, filterMonth);
+    if (hasData(billData)) return { data: billData, unit: "€", source: "bills" };
+    return { data: kwhData, unit: kwhUnit, source: "empty" };
+  }
+
+  const elecChart  = resolveChart("electricity", "kWh");
+  const waterChart = resolveChart("water", "m³");
+  const gasChart   = resolveChart("gas", "kWh");
+
+  const chartTitle = (ut) => {
+    const base =
+      filterMode === "last12" ? "Últimos 12 meses" :
+      filterMode === "year"   ? `Año ${filterYear}` :
+                                `${MONTHS_FULL[filterMonth - 1]} ${filterYear}`;
+    return base;
+  };
+
+  const emptyLabel =
+    filterMode === "last12" ? "los últimos 12 meses" :
+    filterMode === "year"   ? `el año ${filterYear}` :
+                              `${MONTHS_FULL[filterMonth - 1]} ${filterYear}`;
+
+  // UI compartida del filtro de período
+  const PeriodFilter = (
+    <Row gutter={[8, 8]} align="middle" style={{ marginBottom: 16 }}>
+      <Col xs={24} sm={8} md={7}>
+        <Select style={{ width: "100%" }} value={filterMode} onChange={(v) => setFilterMode(v)}>
+          <Option value="last12">Últimos 12 meses</Option>
+          <Option value="year">Año completo</Option>
+          <Option value="month">Mes específico</Option>
+        </Select>
+      </Col>
+      {filterMode !== "last12" && (
+        <Col xs={12} sm={5} md={4}>
+          <Select style={{ width: "100%" }} value={filterYear} onChange={setFilterYear}>
+            {Array.from({ length: 5 }, (_, i) => dayjs().year() - i).map((y) => (
+              <Option key={y} value={y}>{y}</Option>
+            ))}
+          </Select>
+        </Col>
+      )}
+      {filterMode === "month" && (
+        <Col xs={12} sm={6} md={5}>
+          <Select style={{ width: "100%" }} value={filterMonth} onChange={setFilterMonth}>
+            {MONTHS_FULL.map((m, i) => <Option key={i + 1} value={i + 1}>{m}</Option>)}
+          </Select>
+        </Col>
+      )}
+      <Col>
+        <Button icon={<ReloadOutlined />} onClick={() => loadReadings(roomId)} loading={loadingReadings}>
+          Actualizar
+        </Button>
+      </Col>
+    </Row>
+  );
 
   const tabItems = [
     {
@@ -244,11 +389,23 @@ export default function LodgerDetail() {
             data={elecHucha}
           />
           <div style={{ marginTop: 20 }}>
+            {PeriodFilter}
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Importe repartido últimos 12 meses (€)
+              {chartTitle()} ({elecChart.unit})
+              {elecChart.source === "bills" && (
+                <Text type="secondary" style={{ fontSize: 10, fontWeight: 400, marginLeft: 6, textTransform: "none" }}>
+                  · sin lecturas de contador — mostrando importe repartido
+                </Text>
+              )}
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={elecChart} unit="€" color="#F59E0B" />
+              {elecChart.source !== "empty"
+                ? <ConsumptionChart data={elecChart.data} unit={elecChart.unit} color="#F59E0B" />
+                : <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📈</div>
+                    <Text type="secondary">No hay datos de consumo en {emptyLabel}</Text>
+                  </div>
+              }
             </div>
           </div>
         </div>
@@ -271,11 +428,23 @@ export default function LodgerDetail() {
             data={waterHucha}
           />
           <div style={{ marginTop: 20 }}>
+            {PeriodFilter}
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Importe repartido últimos 12 meses (€)
+              {chartTitle()} ({waterChart.unit})
+              {waterChart.source === "bills" && (
+                <Text type="secondary" style={{ fontSize: 10, fontWeight: 400, marginLeft: 6, textTransform: "none" }}>
+                  · sin lecturas de contador — mostrando importe repartido
+                </Text>
+              )}
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={waterChart} unit="€" color="#3B82F6" />
+              {waterChart.source !== "empty"
+                ? <ConsumptionChart data={waterChart.data} unit={waterChart.unit} color="#3B82F6" />
+                : <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📈</div>
+                    <Text type="secondary">No hay datos de consumo en {emptyLabel}</Text>
+                  </div>
+              }
             </div>
           </div>
         </div>
@@ -298,11 +467,23 @@ export default function LodgerDetail() {
             data={gasHucha}
           />
           <div style={{ marginTop: 20 }}>
+            {PeriodFilter}
             <Text style={{ color: "#6B7280", fontWeight: 600, textTransform: "uppercase", fontSize: 11, letterSpacing: "0.05em" }}>
-              Importe repartido últimos 12 meses (€)
+              {chartTitle()} ({gasChart.unit})
+              {gasChart.source === "bills" && (
+                <Text type="secondary" style={{ fontSize: 10, fontWeight: 400, marginLeft: 6, textTransform: "none" }}>
+                  · sin lecturas de contador — mostrando importe repartido
+                </Text>
+              )}
             </Text>
             <div style={{ marginTop: 8 }}>
-              <ConsumptionChart data={gasChart} unit="€" color="#EF4444" />
+              {gasChart.source !== "empty"
+                ? <ConsumptionChart data={gasChart.data} unit={gasChart.unit} color="#EF4444" />
+                : <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📈</div>
+                    <Text type="secondary">No hay datos de consumo en {emptyLabel}</Text>
+                  </div>
+              }
             </div>
           </div>
         </div>
@@ -341,7 +522,7 @@ export default function LodgerDetail() {
           <Row gutter={[24, 16]} align="middle">
             <Col>
               <img
-                src={lodger?.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+                src={lodger?.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
                 alt="Inquilino"
                 style={{ width: 64, height: 64, objectFit: "contain" }}
               />

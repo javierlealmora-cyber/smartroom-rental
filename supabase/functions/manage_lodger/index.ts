@@ -117,13 +117,17 @@ serve(async (req) => {
       }
 
       // Extraer campos de asignación de habitación (si existen)
-      const { 
-        room_id, 
-        accommodation_id, 
-        move_in_date, 
-        billing_start_date, 
+      const {
+        room_id,
+        accommodation_id,
+        move_in_date,
+        billing_start_date,
         monthly_rent,
-        ...profileFields 
+        deposit_amount,
+        commission_amount,
+        first_month_amount,
+        services_provision_amount,
+        ...profileFields
       } = payload as any;
 
       // Crear perfil de lodger solo con campos válidos de profiles
@@ -162,6 +166,10 @@ serve(async (req) => {
             move_in_date,
             billing_start_date: billing_start_date || move_in_date,
             monthly_rent: monthly_rent || 0,
+            deposit_amount: deposit_amount || 0,
+            commission_amount: commission_amount || null,
+            first_month_amount: first_month_amount || null,
+            services_provision_amount: services_provision_amount || null,
           });
 
         if (assignError) {

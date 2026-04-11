@@ -13,6 +13,7 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listEnergyBills } from "../../../../services/energy.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
+import AccommodationSelectorModal from "../../../../components/modals/AccommodationSelectorModal";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -40,6 +41,7 @@ export default function EnergyBillsList() {
   const [search, setSearch] = useState("");
   const [filterAcc, setFilterAcc] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [showAccommodationModal, setShowAccommodationModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,7 +162,7 @@ export default function EnergyBillsList() {
         </Col>
         <Col>
           <Button type="primary" icon={<PlusOutlined />}
-            onClick={() => navigate("/v2/admin/energia/facturas/nueva")}>
+            onClick={() => setShowAccommodationModal(true)}>
             Nueva Factura
           </Button>
         </Col>
@@ -211,8 +213,14 @@ export default function EnergyBillsList() {
         pagination={{ pageSize: 20, hideOnSinglePage: true, showSizeChanger: false }}
         locale={{ emptyText: hasFilters
           ? <EmptyState icon="🔍" title="Sin resultados" description="No hay facturas que coincidan con los filtros aplicados" />
-          : <EmptyState icon="⚡" title="No hay facturas de energía" description="Registra la primera factura para empezar a gestionar el consumo" actionLabel="Nueva Factura" onAction={() => navigate("/v2/admin/energia/facturas/nueva")} />
+          : <EmptyState icon="⚡" title="No hay facturas de energía" description="Registra la primera factura para empezar a gestionar el consumo" actionLabel="Nueva Factura" onAction={() => setShowAccommodationModal(true)} />
         }}
+      />
+
+      {/* Modal de selección de alojamiento */}
+      <AccommodationSelectorModal 
+        open={showAccommodationModal} 
+        onCancel={() => setShowAccommodationModal(false)} 
       />
     </V2Layout>
   );

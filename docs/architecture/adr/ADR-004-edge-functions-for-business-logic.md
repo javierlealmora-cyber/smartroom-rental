@@ -1,6 +1,6 @@
 # ADR-004: Edge Functions para Lógica de Negocio
 
-**Estado:** Aceptado  
+**Estado:** ⚠️ PARCIALMENTE SUPERSEDIDO — ver sección "Revisión 2026-04-02"  
 **Fecha:** 2026-02-15 (estimado)  
 **Decisores:** Staff Engineer, Backend Lead  
 
@@ -347,5 +347,33 @@ if (currentCount >= maxEntities) {
 ---
 
 **Creado por:** Staff Engineer  
-**Última actualización:** 2026-03-28  
+**Última actualización:** 2026-04-02  
 **Revisores:** Backend Lead, Security Lead
+
+---
+
+## Revisión 2026-04-02 — Migración parcial a llamadas directas Supabase
+
+**Decisión revisada:** La estrategia Edge-First se mantiene para operaciones que requieren service role o APIs externas, pero se abandona para operaciones que RLS puede gestionar por sí sola.
+
+**Problema detectado:** Las edge functions provocaban errores 401 cuando el JWT del usuario expiraba. El `invokeWithAuth` wrapper intentaba refresh del token, pero si el refresh token también había caducado, el circuit breaker abría y forzaba logout — incluso en medio de formularios largos (BUG-047).
+
+**Nueva regla:** Usar llamadas directas a Supabase siempre que RLS sea suficiente. Reservar edge functions **solo** para operaciones que requieren:
+1. `auth.admin.createUser()` — service role key (imposible desde cliente)
+2. APIs externas con secretos (Stripe, OpenAI)
+3. Transacciones multi-tabla que RLS no puede garantizar
+
+### Estado actualizado de edge functions
+
+| Edge Function | Estado | Motivo para mantener / migrar |
+|---|---|---|
+| `manage_accommodation` | ✅ Migrada (2026-04-02) | RLS suficiente — BUG-047 |
+| `manage_entity` | ✅ Migrada (2026-04-02) | RLS suficiente — BUG-049 |
+| `wizard_init` | ✅ Migrada (2026-04-02) | Solo UPDATE en profiles — BUG-048 |
+| `settle_energy_bill` | ✅ Ya no se usaba | Lógica reimplementada en cliente |
+| `whoami` | ✅ Ya no se usaba | TenantProvider usa query directa |
+| `manage_lodger` | 🔴 Permanece | Crea usuarios en Auth (service role) |
+| `wizard_submit` | 🔴 Permanece | Auth creation + Stripe Checkout |
+| `provision_client_account_superadmin` | 🔴 Permanece | Service role + solo superadmin |
+| `scan_energy_bill` | 🔴 Permanece | OpenAI API key (server-side) |
+| `stripe_webhook` | 🔴 Permanece | Webhook externo Stripe |

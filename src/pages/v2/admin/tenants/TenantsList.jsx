@@ -285,7 +285,7 @@ export default function TenantsList() {
                     onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)}
                   >
                     <img
-                      src={t.gender === "female" ? "/icons/inquilina-card-model.png" : "/icons/inquilino-card-model.png"}
+                      src={t.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
                       alt="Inquilino"
                       style={{ width: 120, height: 120, objectFit: "contain", flexShrink: 0, borderRadius: 12 }}
                     />
@@ -344,8 +344,9 @@ export default function TenantsList() {
                       <Button size="small" icon={<FileTextOutlined />}
                         onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino`); }} />
                     </Tooltip>
-                    <Tooltip title="Ver Consumos">
+                    <Tooltip title={getLodgerStatus(t) === "invited" ? "Sin consumos (inquilino invitado)" : "Ver Consumos"}>
                       <Button size="small" icon={<LineChartOutlined />}
+                        disabled={getLodgerStatus(t) === "invited"}
                         onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
                     </Tooltip>
                     {t.status === "active" && (
@@ -434,6 +435,14 @@ export default function TenantsList() {
                         ? 'Check-out realizado. El inquilino ha sido dado de baja.'
                         : `Check-out programado para ${values.checkout_date.format('DD/MM/YYYY')}`
                     );
+                    
+                    // BUG-036 fix: Emitir evento para que AccommodationDetail recargue habitaciones
+                    window.dispatchEvent(new CustomEvent('lodger-checkout', { 
+                      detail: { 
+                        accommodationId: assignment.accommodation_id,
+                        roomId: assignment.room_id 
+                      } 
+                    }));
                     
                     setShowCheckoutModal(false);
                     setLodgerToCheckout(null);

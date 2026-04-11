@@ -1,5 +1,5 @@
 // src/components/icons3d/NavIcons3D.jsx
-// 3D-style icons — PNG images from /icons/ + SVG fallbacks
+// 3D-style icons — PNG images from /images/ + SVG fallbacks
 
 function ImgIcon({ src, alt, size }) {
   return (
@@ -14,19 +14,19 @@ function ImgIcon({ src, alt, size }) {
 }
 
 export function Icon3DDashboard({ size = 44 }) {
-  return <ImgIcon src="/icons/panelcontrol-icono-model.png" alt="Dashboard" size={size} />;
+  return <ImgIcon src="/images/panelcontrol-icono-model.webp" alt="Dashboard" size={size} />;
 }
 
 export function Icon3DEntidades({ size = 44 }) {
-  return <ImgIcon src="/icons/entidad-icono-model.png" alt="Entidades" size={size} />;
+  return <ImgIcon src="/images/entidad-icono-model.webp" alt="Entidades" size={size} />;
 }
 
 export function Icon3DAlojamientos({ size = 44 }) {
-  return <ImgIcon src="/icons/alojamiento-icono-model.png" alt="Alojamientos" size={size} />;
+  return <ImgIcon src="/images/alojamiento-icono-model.webp" alt="Alojamientos" size={size} />;
 }
 
 export function Icon3DInquilinos({ size = 44 }) {
-  return <ImgIcon src="/icons/inquilinos-icono-model.png" alt="Inquilinos" size={size} />;
+  return <ImgIcon src="/images/inquilinos-icono-model.webp" alt="Inquilinos" size={size} />;
 }
 
 export function Icon3DServicios({ size = 44 }) {
@@ -73,11 +73,11 @@ export function Icon3DCatalogo({ size = 44 }) {
 }
 
 export function Icon3DFacturas({ size = 44 }) {
-  return <ImgIcon src="/icons/energia-icono-model.png" alt="Facturas" size={size} />;
+  return <ImgIcon src="/images/energia-icono-model.webp" alt="Facturas" size={size} />;
 }
 
 export function Icon3DLiquidaciones({ size = 44 }) {
-  return <ImgIcon src="/icons/energia-icono-model.png" alt="Liquidaciones" size={size} />;
+  return <ImgIcon src="/images/energia-icono-model.webp" alt="Liquidaciones" size={size} />;
 }
 
 export function Icon3DBoletines({ size = 44 }) {
@@ -142,7 +142,7 @@ export function Icon3DPlanes({ size = 44 }) {
 }
 
 export function Icon3DMiPanel({ size = 44 }) {
-  return <ImgIcon src="/icons/panelcontrol-icono-model.png" alt="Mi Panel" size={size} />;
+  return <ImgIcon src="/images/panelcontrol-icono-model.webp" alt="Mi Panel" size={size} />;
 }
 
 export function Icon3DIncidencias({ size = 44 }) {
@@ -165,5 +165,9 @@ export function Icon3DIncidencias({ size = 44 }) {
 }
 
 export function Icon3DConsumo({ size = 44 }) {
-  return <ImgIcon src="/icons/energia-icono-model.png" alt="Consumo" size={size} />;
+  return <ImgIcon src="/images/energia-icono-model.png" alt="Consumo" size={size} />;
+}
+
+export function Icon3DHabitaciones({ size = 44 }) {
+  return <ImgIcon src="/images/buscar-habitacion-icon.webp" alt="Habitaciones" size={size} />;
 }

@@ -1,11 +1,4 @@
 import { supabase } from "./supabaseClient";
-import { invokeWithAuth } from "./supabaseInvoke.services";
-
-function extractEdgeError(result) {
-  if (result?.error?.message) return result.error.message;
-  if (result?.error) return JSON.stringify(result.error);
-  return "Error desconocido";
-}
 
 export async function listEntities({ type, clientAccountId } = {}) {
   let q = supabase
@@ -26,11 +19,13 @@ export async function listEntities({ type, clientAccountId } = {}) {
 }
 
 export async function createEntity(payload) {
-  const result = await invokeWithAuth("manage_entity", {
-    body: { action: "create", payload },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data;
+  const { data, error } = await supabase
+    .from("entities")
+    .insert(payload)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function updateEntity(id, patch, clientAccountId) {

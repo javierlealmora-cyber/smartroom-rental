@@ -576,7 +576,7 @@ CREATE POLICY "energy_settlements_insert_policy" ON public.energy_settlements FO
 WITH CHECK (get_my_role() = 'superadmin' OR (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id()));
 
 CREATE POLICY "energy_settlements_delete_policy" ON public.energy_settlements FOR DELETE TO authenticated
-USING (get_my_role() = 'superadmin');
+USING (get_my_role() = 'superadmin' OR (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id()));
 
 -- ============================================================================
 -- TABLA: bulletins
@@ -594,7 +594,7 @@ USING (get_my_role() = 'superadmin' OR (get_my_role() IN ('admin', 'agent') AND 
 WITH CHECK (get_my_role() = 'superadmin' OR (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id()));
 
 CREATE POLICY "bulletins_delete_policy" ON public.bulletins FOR DELETE TO authenticated
-USING (get_my_role() = 'superadmin');
+USING (get_my_role() = 'superadmin' OR (get_my_role() IN ('admin', 'agent') AND client_account_id = get_my_client_account_id()));
 
 -- ============================================================================
 -- TABLA: audit_log

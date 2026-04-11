@@ -57,7 +57,7 @@ export default function LodgerServiceCreate() {
         .eq("accommodation_id", selectedAccommodation)
         .eq("status", "active"),
     ]).then(([roomList, { data: svcData }]) => {
-      setRooms(roomList.filter((r) => r.status === "free" || r.status === "occupied"));
+      setRooms(roomList.filter((r) => r.derivedStatus === "free" || r.derivedStatus === "occupied"));
       setAccServices(svcData || []);
       form.setFieldsValue({ room_id: undefined, accommodation_service_id: undefined });
     });

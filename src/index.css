@@ -11,3 +11,23 @@ html {
   background: #ffffff !important;
 }
 
+/* Eliminar fondo gris de Recharts */
+.recharts-surface {
+  background: transparent !important;
+}
+
+.recharts-wrapper {
+  background: transparent !important;
+}
+
+.recharts-wrapper svg,
+.recharts-surface,
+.recharts-wrapper > svg {
+  background: transparent !important;
+  fill: transparent;
+}
+
+.recharts-wrapper .recharts-surface > rect:first-child {
+  fill: transparent !important;
+}
+

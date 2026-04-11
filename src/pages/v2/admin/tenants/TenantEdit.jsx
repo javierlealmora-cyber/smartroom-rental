@@ -480,6 +480,14 @@ export default function TenantEdit() {
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         {fDate(a.move_in_date)} → {a.move_out_date ? fDate(a.move_out_date) : "Actual"}
                       </Text>
+                      {a.notes && (
+                        <>
+                          <br />
+                          <Text style={{ fontSize: 11, color: "#6B7280", fontStyle: "italic" }}>
+                            {a.notes}
+                          </Text>
+                        </>
+                      )}
                     </div>
                   ))}
                 </Space>

@@ -23,7 +23,14 @@
       "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/qa/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/docs/qa/test-cases/*.md)",
       "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/specs/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/helpers/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/fixtures/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/e2e/.env* /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/test-cases/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/defects/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/tests/reports/*.md)",
       "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*/*.js /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/src/tests/*/*.md)",
-      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*/*.md)"
+      "Bash(wc -l /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*.md /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/agent-work/*/*/*.md)",
+      "Bash(grep -l \"lodger_room_assignments\\\\|services_provision\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/supabase/migrations/**/*.sql)",
+      "Bash(grep -n \"CREATE TABLE.*lodger_room_assignments\\\\|ALTER TABLE.*lodger_room_assignments\\\\|DROP.*lodger_room_assignments\" /c/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/supabase/migrations/**/*.sql)",
+      "Bash(find \"c:/Users/javie/SmartRoom-Rental/Proyecto/smartroom-rental/supabase/migrations\" -name \"*.sql\" -exec grep -l \"prorated\" {} \\\\;)",
+      "Bash(npm run:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\javie\\.claude\\plans"
     ]
   }
 }

@@ -43,6 +43,8 @@ interface WizardPayload {
   start_date?: string;
   contact_email?: string;
   contact_phone?: string;
+  last_name1?: string;
+  last_name2?: string;
   // Branding (Step B)
   branding_name?: string;
   branding_primary_color?: string;
@@ -189,6 +191,8 @@ serve(async (req) => {
         start_date: body.start_date || new Date().toISOString().split("T")[0],
         contact_email: body.contact_email || null,
         contact_phone: body.contact_phone || null,
+        last_name1:    body.last_name1    || null,
+        last_name2:    body.last_name2    || null,
         branding_name: body.branding_name,
         branding_primary_color: body.branding_primary_color,
         branding_secondary_color: body.branding_secondary_color,

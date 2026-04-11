@@ -9,6 +9,7 @@ export const ROOM_STATUS = {
   OCCUPIED: 'occupied',
   PENDING_CHECKOUT: 'pending_checkout',
   MAINTENANCE: 'maintenance',
+  RESERVED: 'reserved',
 };
 
 /**
@@ -19,6 +20,7 @@ export const ROOM_STATUS_LABEL = {
   [ROOM_STATUS.OCCUPIED]: 'Ocupada',
   [ROOM_STATUS.PENDING_CHECKOUT]: 'Pendiente de baja',
   [ROOM_STATUS.MAINTENANCE]: 'Mantenimiento',
+  [ROOM_STATUS.RESERVED]: 'Reservada',
 };
 
 /**
@@ -29,6 +31,7 @@ export const ROOM_STATUS_TAG = {
   [ROOM_STATUS.OCCUPIED]: 'error',
   [ROOM_STATUS.PENDING_CHECKOUT]: 'warning',
   [ROOM_STATUS.MAINTENANCE]: 'default',
+  [ROOM_STATUS.RESERVED]: 'purple',
 };
 
 /**
@@ -69,6 +72,7 @@ export const ROOM_STATUS_BADGE_BG = {
   [ROOM_STATUS.OCCUPIED]: { bg: '#FFE4E6', color: '#BE123C' },
   [ROOM_STATUS.PENDING_CHECKOUT]: { bg: '#FEF3C7', color: '#B45309' },
   [ROOM_STATUS.MAINTENANCE]: { bg: '#F3F4F6', color: '#4B5563' },
+  [ROOM_STATUS.RESERVED]: { bg: '#EDE9FE', color: '#6D28D9' },
 };
 
 /**

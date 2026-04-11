@@ -344,11 +344,11 @@ export default function PlansList() {
                       <div style={styles.pricingCell}>
                         <div style={styles.priceRow}>
                           <span style={styles.priceLabel}>Mensual:</span>
-                          <span style={styles.priceValue}>{formatCurrency(plan.price_monthly)}</span>
+                          <span style={styles.priceValue}>{formatCurrency(plan.monthly_price)}</span>
                         </div>
                         <div style={styles.priceRow}>
                           <span style={styles.priceLabel}>Anual:</span>
-                          <span style={styles.priceValue}>{formatCurrency(plan.price_annual)}</span>
+                          <span style={styles.priceValue}>{formatCurrency(plan.annual_price)}</span>
                         </div>
                         <div style={styles.ivaText}>
                           {plan.vat_applicable ? `+${plan.vat_percentage}% IVA` : "IVA incluido"}

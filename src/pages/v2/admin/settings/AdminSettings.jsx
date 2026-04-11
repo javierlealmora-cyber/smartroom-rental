@@ -3,17 +3,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Alert, Button, Card, Col, Divider, Form, Input,
+  Alert, Button, Card, Col, Divider, Form, Input, Modal,
   Row, Select, Skeleton, Space, Tag, Tabs, Typography, message,
 } from "antd";
 import {
   SaveOutlined, ReloadOutlined, UserOutlined,
-  BgColorsOutlined, CrownOutlined, InfoCircleOutlined, BankOutlined,
+  BgColorsOutlined, CrownOutlined, InfoCircleOutlined, BankOutlined, HomeOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useTenant } from "../../../../providers/TenantProvider";
 import { supabase } from "../../../../services/supabaseClient";
+import EntityFormFields from "../../../../components/shared/EntityFormFields";
+import { PROVINCIAS_ES } from "../../../../constants/formOptions";
+import { createEntity, updateEntity } from "../../../../services/entities.service";
 
 const { Title, Text } = Typography;
 
@@ -51,8 +54,29 @@ const STATUS_LABELS = {
   trial: "Prueba",
 };
 
+function DataRow({ label, value, valueStyle }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", padding: "9px 0", borderBottom: "1px solid #F3F4F6" }}>
+      <span style={{ width: 160, flexShrink: 0, fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 13, color: "#1F2937", fontWeight: 500, ...valueStyle }}>{value || "—"}</span>
+    </div>
+  );
+}
+
+function SectionBlock({ title, extra, children }) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, paddingBottom: 8, borderBottom: "2px solid #F3F4F6" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", letterSpacing: "0.04em", textTransform: "uppercase" }}>{title}</span>
+        {extra}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function AdminSettings() {
-  const { userName, companyBranding } = useAdminLayout();
+  const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const { tenant: _tenant, planCode, billingCycle, accountStatus, branding: _branding } = useTenant();
 
   const [accountData, setAccountData] = useState(null);
@@ -64,34 +88,54 @@ export default function AdminSettings() {
   const [brandingForm] = Form.useForm();
   const [contactForm] = Form.useForm();
   const [entityForm] = Form.useForm();
+  const [ownerForm] = Form.useForm();
 
   const [entityData, setEntityData] = useState(null);
   const [savingEntity, setSavingEntity] = useState(false);
+  const [entityLegalType, setEntityLegalType] = useState("persona_juridica");
+
+  const [ownerData, setOwnerData] = useState(null);
+  const [savingOwner, setSavingOwner] = useState(false);
+  const [ownerLegalType, setOwnerLegalType] = useState("persona_juridica");
+
+  const [userEmail, setUserEmail] = useState("");
+  const [editUserModalVisible, setEditUserModalVisible] = useState(false);
+  const [editBillingModalVisible, setEditBillingModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [{ data, error: err }, { data: entities }] = await Promise.all([
+      // Obtener email del usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserEmail(user.email || "");
+
+      const ENTITY_SELECT = "id, legal_type, legal_name, first_name, last_name1, last_name2, nickname, gender, tax_id, billing_email, phone, country, province, city, zip, street, street_number, address_extra, status, type";
+      const [{ data, error: err }, { data: payerEntities }] = await Promise.all([
         supabase.from("client_accounts")
-          .select("id, name, slug, plan_code, billing_cycle, status, start_date, end_date, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url, contact_email, contact_phone, created_at")
+          .select("id, name, slug, plan_code, billing_cycle, status, start_date, end_date, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url, contact_email, contact_phone, last_name1, last_name2, created_at")
           .single(),
         supabase.from("entities")
-          .select("id, legal_type, legal_name, first_name, last_name1, last_name2, tax_id, billing_email, phone, country, province, city, zip, street, street_number, address_extra, status")
+          .select(ENTITY_SELECT)
+          .eq("type", "payer")
           .order("created_at", { ascending: true })
           .limit(1),
       ]);
       if (err) throw new Error(err.message);
       setAccountData(data);
-      const entity = entities?.[0] || null;
+
+      const entity = payerEntities?.[0] || null;
       setEntityData(entity);
       if (entity) {
+        setEntityLegalType(entity.legal_type || "persona_juridica");
         entityForm.setFieldsValue({
           legal_type: entity.legal_type || null,
           legal_name: entity.legal_name || "",
           first_name: entity.first_name || "",
           last_name1: entity.last_name1 || "",
           last_name2: entity.last_name2 || "",
+          nickname: entity.nickname || "",
+          gender: entity.gender || null,
           tax_id: entity.tax_id || "",
           billing_email: entity.billing_email || "",
           phone: entity.phone || "",
@@ -104,6 +148,17 @@ export default function AdminSettings() {
           country: entity.country || "",
         });
       }
+
+      // Propietario de cuenta: datos directamente de client_accounts
+      const ownerFromAccount = {
+        first_name:    data.name            || "",
+        last_name1:    data.last_name1      || "",
+        last_name2:    data.last_name2      || "",
+        billing_email: data.contact_email   || "",
+        phone:         data.contact_phone   || "",
+      };
+      setOwnerData(ownerFromAccount);
+      ownerForm.setFieldsValue(ownerFromAccount);
 
       brandingForm.setFieldsValue({
         branding_name: data.branding_name || data.name || "",
@@ -121,7 +176,7 @@ export default function AdminSettings() {
     } finally {
       setLoading(false);
     }
-  }, [brandingForm, contactForm, entityForm]);
+  }, [brandingForm, contactForm, entityForm, ownerForm]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -168,37 +223,75 @@ export default function AdminSettings() {
     }
   };
 
+  const buildEntityPatch = (values) => ({
+    legal_type: values.legal_type || null,
+    legal_name: values.legal_name || null,
+    first_name: values.first_name || null,
+    last_name1: values.last_name1 || null,
+    last_name2: values.last_name2 || null,
+    nickname: values.nickname || null,
+    gender: values.gender || null,
+    tax_id: values.tax_id || null,
+    billing_email: values.billing_email || null,
+    phone: values.phone || null,
+    street: values.street || null,
+    street_number: values.street_number || null,
+    address_extra: values.address_extra || null,
+    city: values.city || null,
+    zip: values.zip || null,
+    province: values.province || null,
+    country: values.country || null,
+  });
+
   const handleSaveEntity = async (values) => {
-    if (!entityData?.id) return;
     setSavingEntity(true);
     try {
-      const { error: err } = await supabase
-        .from("entities")
-        .update({
-          legal_type: values.legal_type || null,
-          legal_name: values.legal_name || null,
-          first_name: values.first_name || null,
-          last_name1: values.last_name1 || null,
-          last_name2: values.last_name2 || null,
-          tax_id: values.tax_id || null,
-          billing_email: values.billing_email || null,
-          phone: values.phone || null,
-          street: values.street || null,
-          street_number: values.street_number || null,
-          address_extra: values.address_extra || null,
-          city: values.city || null,
-          zip: values.zip || null,
-          province: values.province || null,
-          country: values.country || null,
-        })
-        .eq("id", entityData.id);
-      if (err) throw new Error(err.message);
-      message.success("Entidad pagadora actualizada");
+      if (entityData?.id) {
+        await updateEntity(entityData.id, { ...buildEntityPatch(values), type: "payer" }, clientAccountId);
+      } else {
+        await createEntity({ ...buildEntityPatch(values), type: "payer", client_account_id: clientAccountId });
+      }
+      message.success("Entidad de facturación guardada correctamente");
+      setEditBillingModalVisible(false);
       load();
     } catch (e) {
       message.error(e.message);
     } finally {
       setSavingEntity(false);
+    }
+  };
+
+  const handleSaveOwner = async (values) => {
+    setSavingOwner(true);
+    try {
+      const fullName = [values.first_name, values.last_name1, values.last_name2]
+        .filter(Boolean).join(" ");
+
+      // Guardar todo en client_accounts
+      const { error: err } = await supabase
+        .from("client_accounts")
+        .update({
+          name:          values.first_name     || accountData.name,
+          last_name1:    values.last_name1     || null,
+          last_name2:    values.last_name2     || null,
+          contact_email: values.billing_email  || null,
+          contact_phone: values.phone          || null,
+        })
+        .eq("id", accountData.id);
+      if (err) throw new Error(err.message);
+
+      // Actualizar auth.users metadata
+      await supabase.auth.updateUser({
+        data: { full_name: fullName, phone: values.phone || null }
+      });
+
+      message.success("Información de usuario guardada correctamente");
+      setEditUserModalVisible(false);
+      load();
+    } catch (e) {
+      message.error(e.message);
+    } finally {
+      setSavingOwner(false);
     }
   };
 
@@ -213,77 +306,78 @@ export default function AdminSettings() {
   const tabItems = [
     {
       key: "cuenta",
-      label: <span><InfoCircleOutlined /> Cuenta</span>,
+      label: <span><InfoCircleOutlined /> Mi Cuenta</span>,
       children: (
         <div>
           {loading ? <Skeleton active paragraph={{ rows: 6 }} /> : accountData ? (
             <>
-              {/* Info de la cuenta */}
+              {/* Información de la Cuenta */}
               <Card
                 size="small"
-                title="Información de la cuenta"
+                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de la Cuenta</span>}
                 style={{ marginBottom: 20 }}
                 extra={<Button size="small" icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>}
               >
-                <Row gutter={[24, 12]}>
-                  <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Nombre de cuenta</Text>
-                    <Text strong>{accountData.name || "—"}</Text>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Slug / Identificador</Text>
-                    <Text code>{accountData.slug || "—"}</Text>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Estado</Text>
-                    <Tag color={STATUS_COLORS[accountData.status] || "default"}>
+                <SectionBlock title="Cuenta">
+                  <div style={{ display: "flex", alignItems: "baseline", padding: "9px 0", borderBottom: "1px solid #F3F4F6" }}>
+                    <span style={{ width: 160, flexShrink: 0, fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>Usuario de acceso</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 13, color: "#1F2937", fontWeight: 500 }}>{userEmail || "—"}</span>
+                      <Tag color="blue" style={{ margin: 0 }}>Admin</Tag>
+                    </span>
+                  </div>
+                  <DataRow label="Nombre de cuenta" value={[accountData.name, accountData.last_name1, accountData.last_name2].filter(Boolean).join(" ")} />
+                  <div style={{ display: "flex", alignItems: "baseline", padding: "9px 0", borderBottom: "1px solid #F3F4F6" }}>
+                    <span style={{ width: 160, flexShrink: 0, fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>Estado</span>
+                    <Tag color={STATUS_COLORS[accountData.status] || "default"} style={{ margin: 0 }}>
                       {STATUS_LABELS[accountData.status] || accountData.status}
                     </Tag>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Fecha de alta</Text>
-                    <Text>{fDate(accountData.created_at)}</Text>
-                  </Col>
-                  {accountData.contact_email && (
-                    <Col xs={24} sm={12}>
-                      <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Email de contacto</Text>
-                      <Text>{accountData.contact_email}</Text>
-                    </Col>
-                  )}
-                  {accountData.contact_phone && (
-                    <Col xs={24} sm={12}>
-                      <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Teléfono</Text>
-                      <Text>{accountData.contact_phone}</Text>
-                    </Col>
-                  )}
-                </Row>
+                  </div>
+                  <DataRow label="Fecha de alta"  value={fDate(accountData.created_at)} />
+                  <DataRow label="Teléfono"       value={ownerData?.phone || accountData.contact_phone} />
+                </SectionBlock>
               </Card>
 
-              {/* Editar datos de contacto */}
-              <Card size="small" title="Editar datos de contacto">
-                <Form form={contactForm} layout="vertical" onFinish={handleSaveContact}>
-                  <Row gutter={[16, 0]}>
-                    <Col xs={24} sm={12}>
-                      <Form.Item label="Nombre de la cuenta" name="name">
-                        <Input placeholder="Mi empresa SL" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Form.Item label="Email de contacto" name="contact_email"
-                        rules={[{ type: "email", message: "Email no válido" }]}>
-                        <Input placeholder="admin@miempresa.com" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Form.Item label="Teléfono" name="contact_phone">
-                        <Input placeholder="+34 600 000 000" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingContact}>
-                    Guardar cambios
+              {/* Información de Usuario */}
+              <Card
+                size="small"
+                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de Usuario</span>}
+                style={{ marginBottom: 20 }}
+                extra={
+                  <Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => setEditUserModalVisible(true)}>
+                    Editar
                   </Button>
-                </Form>
+                }
+              >
+                {accountData?.name || accountData?.contact_email ? (
+                  <SectionBlock title="Propietario de la Cuenta">
+                    <DataRow label="Nombre"     value={accountData?.name} />
+                    <DataRow label="Apellido 1" value={accountData?.last_name1} />
+                    <DataRow label="Apellido 2" value={accountData?.last_name2} />
+                    <DataRow label="Email"     value={accountData?.contact_email} />
+                    <DataRow label="Teléfono"  value={accountData?.contact_phone} />
+                  </SectionBlock>
+                ) : (
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="No hay información de usuario registrada"
+                    description="Haz clic en 'Editar' para añadir la información del usuario propietario de la cuenta."
+                  />
+                )}
+              </Card>
+
+              {/* Cambio de Contraseña */}
+              <Card
+                size="small"
+                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Cambio de contraseña</span>}
+              >
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Cambio de contraseña"
+                  description="Para cambiar tu contraseña, cierra sesión y usa la opción '¿Olvidaste tu contraseña?' en el login."
+                />
               </Card>
             </>
           ) : (
@@ -301,11 +395,12 @@ export default function AdminSettings() {
             <>
               <Card
                 size="small"
-                title="Plan contratado"
+                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Plan contratado</span>}
                 style={{ marginBottom: 20 }}
               >
                 <Row gutter={[24, 16]} align="middle">
-                  <Col xs={24} sm={8}>
+                  {/* Tarjeta visual del plan */}
+                  <Col xs={24} sm={7}>
                     <div style={{
                       background: "linear-gradient(135deg, #0071E3 0%, #0051a8 100%)",
                       borderRadius: 16, padding: "24px 20px", textAlign: "center", color: "#fff",
@@ -319,33 +414,24 @@ export default function AdminSettings() {
                       </Tag>
                     </div>
                   </Col>
-                  <Col xs={24} sm={16}>
-                    <Row gutter={[16, 12]}>
-                      <Col xs={24} sm={12}>
-                        <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Código de plan</Text>
-                        <Tag color={PLAN_COLORS[planCode || accountData?.plan_code] || "default"}>
+                  {/* Detalle del plan con DataRow */}
+                  <Col xs={24} sm={17}>
+                    <SectionBlock title="Suscripción">
+                      <div style={{ display: "flex", alignItems: "baseline", padding: "9px 0", borderBottom: "1px solid #F3F4F6" }}>
+                        <span style={{ width: 160, flexShrink: 0, fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>Código de plan</span>
+                        <Tag color={PLAN_COLORS[planCode || accountData?.plan_code] || "default"} style={{ margin: 0 }}>
                           {planCode || accountData?.plan_code || "—"}
                         </Tag>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Estado de suscripción</Text>
-                        <Tag color={STATUS_COLORS[accountStatus || accountData?.status] || "default"}>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", padding: "9px 0", borderBottom: "1px solid #F3F4F6" }}>
+                        <span style={{ width: 160, flexShrink: 0, fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>Estado</span>
+                        <Tag color={STATUS_COLORS[accountStatus || accountData?.status] || "default"} style={{ margin: 0 }}>
                           {STATUS_LABELS[accountStatus || accountData?.status] || accountStatus || "—"}
                         </Tag>
-                      </Col>
-                      {accountData?.start_date && (
-                        <Col xs={24} sm={12}>
-                          <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Inicio</Text>
-                          <Text>{fDate(accountData.start_date)}</Text>
-                        </Col>
-                      )}
-                      {accountData?.end_date && (
-                        <Col xs={24} sm={12}>
-                          <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Vencimiento</Text>
-                          <Text>{fDate(accountData.end_date)}</Text>
-                        </Col>
-                      )}
-                    </Row>
+                      </div>
+                      {accountData?.start_date && <DataRow label="Inicio"      value={fDate(accountData.start_date)} />}
+                      {accountData?.end_date   && <DataRow label="Vencimiento" value={fDate(accountData.end_date)} />}
+                    </SectionBlock>
                   </Col>
                 </Row>
               </Card>
@@ -373,7 +459,7 @@ export default function AdminSettings() {
       children: (
         <div>
           {loading ? <Skeleton active paragraph={{ rows: 5 }} /> : (
-            <Card size="small" title="Personalización visual">
+            <Card size="small" title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Personalización visual</span>}>
               <Alert
                 type="info"
                 showIcon
@@ -488,151 +574,260 @@ export default function AdminSettings() {
       ),
     },
     {
-      key: "entidad",
-      label: <span><BankOutlined /> Entidad Pagadora</span>,
+      key: "facturacion",
+      label: <span><BankOutlined /> Entidad de Facturación</span>,
       children: (
         <div>
-          {loading ? <Skeleton active paragraph={{ rows: 8 }} /> : !entityData ? (
-            <Alert
-              type="warning"
-              showIcon
-              message="No hay entidad pagadora registrada"
-              description="Crea una entidad desde la sección Entidades para poder gestionarla aquí."
-            />
-          ) : (
-            <Card size="small" title="Datos de la entidad pagadora" extra={<Button size="small" icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>}>
-              <Form form={entityForm} layout="vertical" onFinish={handleSaveEntity}>
-                <Row gutter={[16, 0]}>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Tipo de entidad" name="legal_type">
-                      <Select options={LEGAL_TYPE_OPTIONS} placeholder="Seleccionar" allowClear />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={16}>
-                    <Form.Item label="Razón social / Nombre legal" name="legal_name">
-                      <Input placeholder="Mi Empresa SL" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Nombre" name="first_name">
-                      <Input placeholder="Juan" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Primer apellido" name="last_name1">
-                      <Input placeholder="García" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Segundo apellido" name="last_name2">
-                      <Input placeholder="López" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="NIF / CIF" name="tax_id">
-                      <Input placeholder="B12345678" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Email de facturación" name="billing_email"
-                      rules={[{ type: "email", message: "Email no válido" }]}>
-                      <Input placeholder="facturacion@empresa.com" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Teléfono" name="phone">
-                      <Input placeholder="+34 600 000 000" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>Dirección</Divider>
-                <Row gutter={[16, 0]}>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label="Calle" name="street">
-                      <Input placeholder="Calle Mayor" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={4}>
-                    <Form.Item label="Número" name="street_number">
-                      <Input placeholder="12" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Piso / Puerta" name="address_extra">
-                      <Input placeholder="3º B" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Form.Item label="Ciudad" name="city">
-                      <Input placeholder="Madrid" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={4}>
-                    <Form.Item label="C.P." name="zip">
-                      <Input placeholder="28001" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Form.Item label="Provincia" name="province">
-                      <Input placeholder="Madrid" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Form.Item label="País" name="country">
-                      <Input placeholder="España" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingEntity}>
-                  Guardar entidad
+          {loading ? <Skeleton active paragraph={{ rows: 8 }} /> : (
+            <Card
+              size="small"
+              title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de la Entidad de Facturación</span>}
+              extra={
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={() => setEditBillingModalVisible(true)}
+                >
+                  Editar
                 </Button>
-              </Form>
+              }
+            >
+              <Text type="secondary" style={{ fontSize: 13, display: "block", marginBottom: 16 }}>
+                Datos fiscales y de facturación de la entidad responsable del pago
+              </Text>
+              {entityData ? (
+                <>
+                  <SectionBlock title="Tipo de Entidad">
+                    <Tag color={entityData.legal_type === "persona_juridica" ? "blue" : "default"} style={{ marginTop: 8 }}>
+                      {LEGAL_TYPE_OPTIONS.find(opt => opt.value === entityData.legal_type)?.label || entityData.legal_type}
+                    </Tag>
+                  </SectionBlock>
+
+                  <SectionBlock title="Datos Fiscales">
+                    <DataRow label="Razón social" value={entityData.legal_name} />
+                    <DataRow label="CIF / NIF"    value={entityData.tax_id} />
+                  </SectionBlock>
+
+                  <SectionBlock title="Dirección Fiscal">
+                    <DataRow label="Calle"         value={[entityData.street, entityData.street_number].filter(Boolean).join(" ") || "—"} />
+                    <DataRow label="Info adicional" value={entityData.address_extra} />
+                    <DataRow label="Código postal"  value={entityData.zip} />
+                    <DataRow label="Ciudad"         value={entityData.city} />
+                    <DataRow label="Provincia"      value={entityData.province} />
+                    <DataRow label="País"           value={entityData.country} />
+                  </SectionBlock>
+
+                  <SectionBlock title="Contacto de Facturación">
+                    <DataRow label="Email"    value={entityData.billing_email} />
+                    <DataRow label="Teléfono" value={entityData.phone} />
+                  </SectionBlock>
+                </>
+              ) : (
+                <Alert
+                  type="info"
+                  showIcon
+                  message="No hay entidad de facturación registrada"
+                  description="Haz clic en 'Editar' para añadir la información de facturación."
+                />
+              )}
             </Card>
           )}
         </div>
-      ),
-    },
-    {
-      key: "usuario",
-      label: <span><UserOutlined /> Mi usuario</span>,
-      children: (
-        <Card size="small" title="Información del usuario actual">
-          <Row gutter={[24, 12]}>
-            <Col xs={24} sm={12}>
-              <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Nombre</Text>
-              <Text strong>{userName}</Text>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Text type="secondary" style={{ fontSize: 12, display: "block" }}>Rol</Text>
-              <Tag color="blue">Admin</Tag>
-            </Col>
-          </Row>
-          <Divider />
-          <Alert
-            type="info"
-            showIcon
-            message="Cambio de contraseña"
-            description="Para cambiar tu contraseña, cierra sesión y usa la opción '¿Olvidaste tu contraseña?' en el login."
-          />
-        </Card>
       ),
     },
   ];
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ margin: 0 }}>⚙️ Configuración</Title>
-          <Text type="secondary">Gestiona los datos de tu cuenta, plan y personalización</Text>
-        </Col>
-      </Row>
+      {/* Modal: Editar Información de Usuario */}
+      <Modal
+        title="Información de Usuario (persona o entidad propietaria de la cuenta)"
+        open={editUserModalVisible}
+        onCancel={() => setEditUserModalVisible(false)}
+        footer={null}
+        width={700}
+      >
+        <Form form={ownerForm} layout="vertical" onFinish={handleSaveOwner}>
+          <Row gutter={[16, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Nombre de la Persona propietaria de la Cuenta"
+                name="first_name"
+                rules={[{ required: true, message: "Campo requerido" }]}
+              >
+                <Input placeholder="María Rosa" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Primer Apellido" name="last_name1">
+                <Input placeholder="Martínez" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Segundo Apellido" name="last_name2">
+                <Input placeholder="Díaz" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Email de contacto"
+                name="billing_email"
+                rules={[
+                  { required: true, message: "Campo requerido" },
+                  { type: "email", message: "Email no válido" }
+                ]}
+              >
+                <Input placeholder="rosikikkki@gmail.com" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Teléfono"
+                name="phone"
+                rules={[{ required: true, message: "Campo requerido" }]}
+              >
+                <Input placeholder="+34658520256" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <div style={{ textAlign: "right", marginTop: 16 }}>
+            <Button onClick={() => setEditUserModalVisible(false)} style={{ marginRight: 8 }}>
+              Cancelar
+            </Button>
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingOwner}>
+              Guardar cambios
+            </Button>
+          </div>
+        </Form>
+      </Modal>
 
-      {error && !loading && (
-        <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />
-      )}
+      {/* Modal: Editar Entidad de Facturación */}
+      <Modal
+        title="Entidad Pagadora"
+        open={editBillingModalVisible}
+        onCancel={() => setEditBillingModalVisible(false)}
+        footer={null}
+        width={900}
+      >
+        <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+          Datos fiscales y de facturación de la entidad responsable del pago. Se creará exactamente una entidad pagadora por cuenta.
+        </Text>
+        <Form form={entityForm} layout="vertical" onFinish={handleSaveEntity}>
+          {/* Tipo de Entidad */}
+          <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>Tipo de Entidad</Divider>
+          <Row gutter={[16, 0]}>
+            <Col xs={24}>
+              <Form.Item
+                label="Tipo de entidad"
+                name="legal_type"
+                rules={[{ required: true, message: "Seleccione el tipo legal" }]}
+              >
+                <Select
+                  options={LEGAL_TYPE_OPTIONS}
+                  placeholder="Seleccionar"
+                  onChange={(value) => setEntityLegalType(value)}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-      <Tabs items={tabItems} defaultActiveKey="cuenta" />
+          {/* Datos Fiscales */}
+          <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>Datos Fiscales</Divider>
+          <EntityFormFields legalType={entityLegalType} showLegalTypeSelector={false} />
+
+          {/* Dirección Fiscal */}
+          <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 16 }}>Dirección Fiscal</Divider>
+          <Row gutter={[16, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Calle" name="street" rules={[{ required: true, message: "Campo requerido" }]}>
+                <Input placeholder="Calle Gran Vía" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={6}>
+              <Form.Item label="Número" name="street_number">
+                <Input placeholder="45" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={6}>
+              <Form.Item label="Info adicional" name="address_extra">
+                <Input placeholder="Planta 3, Oficina 12" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={6}>
+              <Form.Item label="Código postal" name="zip" rules={[{ required: true, message: "Campo requerido" }]}>
+                <Input placeholder="28013" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={9}>
+              <Form.Item label="Ciudad" name="city" rules={[{ required: true, message: "Campo requerido" }]}>
+                <Input placeholder="Madrid" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={9}>
+              <Form.Item label="Provincia" name="province">
+                <Select
+                  options={PROVINCIAS_ES}
+                  placeholder="Seleccionar"
+                  showSearch
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="País" name="country" rules={[{ required: true, message: "Campo requerido" }]}>
+                <Input placeholder="España" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Contacto de Facturación */}
+          <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>Contacto de Facturación</Divider>
+          <Row gutter={[16, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Email de facturación"
+                name="billing_email"
+                rules={[
+                  { required: true, message: "Campo requerido" },
+                  { type: "email", message: "Email no válido" }
+                ]}
+              >
+                <Input placeholder="Rosi@gmail.com" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item label="Teléfono de facturación" name="phone">
+                <Input placeholder="+34 915 123 456" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <div style={{ textAlign: "right", marginTop: 16 }}>
+            <Button onClick={() => setEditBillingModalVisible(false)} style={{ marginRight: 8 }}>
+              Cancelar
+            </Button>
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingEntity}>
+              Guardar cambios
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>⚙️ Configuración</Title>
+            <Text type="secondary">Gestiona los datos de tu cuenta, plan y personalización</Text>
+          </Col>
+        </Row>
+
+        {error && !loading && (
+          <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />
+        )}
+
+        <Tabs items={tabItems} defaultActiveKey="cuenta" />
+      </div>
     </V2Layout>
   );
 }

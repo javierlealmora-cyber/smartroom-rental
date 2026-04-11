@@ -61,10 +61,13 @@ describe('SEC-03 — Operaciones sensibles pasan por Edge Functions', () => {
     expect(src).not.toContain('crypto.randomUUID()');
   });
 
-  it('settleEnergyBill usa Edge Function settle_energy_bill', () => {
+  it('settleEnergyBill usa RLS directa con client_account_id (no Edge Function)', () => {
+    // Migrado de Edge Function a llamadas directas con RLS.
+    // Seguridad multi-tenant garantizada por: eq("client_account_id", clientAccountId) + políticas RLS en BD.
     const src = read('src/services/energy.service.js');
-    expect(src).toContain('settle_energy_bill');
-    expect(src).toContain('invokeWithAuth');
+    expect(src).toContain('client_account_id');
+    expect(src).toContain('clientAccountId');
+    expect(src).not.toContain('invokeWithAuth');
   });
 });
 

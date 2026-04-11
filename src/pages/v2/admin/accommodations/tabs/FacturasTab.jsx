@@ -9,12 +9,12 @@ import {
 } from "antd";
 import {
   CameraOutlined, CheckCircleOutlined, DeleteOutlined, EditOutlined, EyeOutlined,
-  FileTextOutlined, InboxOutlined, ReloadOutlined, SwapOutlined,
+  FileTextOutlined, InboxOutlined, ReloadOutlined, RollbackOutlined, SwapOutlined,
   ThunderboltOutlined, FireOutlined, CloudOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { supabase } from "../../../../../services/supabaseClient";
-import { settleEnergyBill } from "../../../../../services/energy.service";
+import { settleEnergyBill, unsettleEnergyBill } from "../../../../../services/energy.service";
 
 const { Text, Title } = Typography;
 const { Dragger } = Upload;
@@ -293,7 +293,7 @@ function CargarFacturas({ accId, clientAccountId }) {
             <Button type="primary" size="large" loading={scanning} disabled={!file} onClick={onScan} icon={<FileTextOutlined />}>
               {scanning ? "Escaneando con IA..." : "Escanear con IA (GPT-4o)"}
             </Button>
-            <Button size="large" disabled={!file} onClick={() => {
+            <Button size="large" onClick={() => {
               setExtracted({});
               setScanError(null);
               form.setFieldsValue({
@@ -383,8 +383,12 @@ function ListaFacturas({ accId, clientAccountId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingBill, setEditingBill] = useState(null);
+  const [viewingBill, setViewingBill] = useState(null);
+  const [viewFileUrl, setViewFileUrl] = useState(null);
+  const [loadingFile, setLoadingFile] = useState(false);
   const [editForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [filterYear, setFilterYear] = useState("all");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -401,6 +405,16 @@ function ListaFacturas({ accId, clientAccountId }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Años disponibles en las facturas
+  const availableYears = [...new Set(
+    bills.map((b) => b.issue_date ? dayjs(b.issue_date).year() : null).filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  // Facturas filtradas por año
+  const filteredBills = filterYear === "all"
+    ? bills
+    : bills.filter((b) => b.issue_date && dayjs(b.issue_date).year() === Number(filterYear));
+
   const onDelete = async (bill) => {
     try {
       await supabase.from("energy_settlements").delete().eq("energy_bill_id", bill.id);
@@ -412,10 +426,19 @@ function ListaFacturas({ accId, clientAccountId }) {
     } catch (e) { setError(e.message); }
   };
 
-  const onViewFile = async (bill) => {
-    if (!bill.storage_path) return;
-    const { data } = await supabase.storage.from("energy-bills").createSignedUrl(bill.storage_path, 300);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  const onViewBill = async (bill) => {
+    setViewingBill(bill);
+    setViewFileUrl(null);
+    if (bill.storage_path) {
+      setLoadingFile(true);
+      try {
+        const { data, error: urlErr } = await supabase.storage
+          .from("energy-bills")
+          .createSignedUrl(bill.storage_path, 300);
+        if (!urlErr && data?.signedUrl) setViewFileUrl(data.signedUrl);
+      } catch (_) {}
+      finally { setLoadingFile(false); }
+    }
   };
 
   const onSaveEdit = async (values) => {
@@ -440,7 +463,14 @@ function ListaFacturas({ accId, clientAccountId }) {
 
   const onSettle = async (bill) => {
     try {
-      await settleEnergyBill(bill.id);
+      await settleEnergyBill(bill.id, clientAccountId);
+      load();
+    } catch (e) { setError(e.message); }
+  };
+
+  const onUnsettle = async (bill) => {
+    try {
+      await unsettleEnergyBill(bill.id, clientAccountId);
       load();
     } catch (e) { setError(e.message); }
   };
@@ -453,11 +483,29 @@ function ListaFacturas({ accId, clientAccountId }) {
     { title: "Estado", dataIndex: "status", key: "status", width: 100, render: (v) => <Tag color={STATUS_COLORS[v]}>{STATUS_LABELS[v] || v}</Tag> },
     { title: "Acciones", key: "actions", render: (_, b) => (
       <Space size="small">
-        {b.storage_path && <Button size="small" icon={<EyeOutlined />} onClick={() => onViewFile(b)}>Ver</Button>}
+        <Button size="small" icon={<EyeOutlined />} onClick={() => onViewBill(b)}>Ver</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingBill(b); editForm.setFieldsValue({ supplier: b.supplier, bill_number: b.bill_number, issue_date: b.issue_date ? dayjs(b.issue_date) : null, period_start: b.period_start ? dayjs(b.period_start) : null, period_end: b.period_end ? dayjs(b.period_end) : null, total_kwh: b.total_kwh, amount_energy: b.amount_energy, amount_power: b.amount_power, amount_meter: b.amount_meter, amount_discounts: b.amount_discounts, amount_other: b.amount_other, amount_taxes: b.amount_taxes, amount_total: b.amount_total }); }}>Editar</Button>
         {b.status !== "settled" && (
           <Popconfirm title="¿Repartir esta factura?" description="Se generarán boletines para cada inquilino." onConfirm={() => onSettle(b)} okText="Repartir" cancelText="Cancelar">
             <Button size="small" type="primary">Repartir</Button>
+          </Popconfirm>
+        )}
+        {b.status === "settled" && (
+          <Popconfirm
+            title="¿Borrar el reparto de esta factura?"
+            description={
+              <span>
+                Se eliminarán todos los boletines generados,<br />
+                <strong>incluidos los que ya se publicaron a los inquilinos.</strong><br />
+                La factura volverá al estado <em>Validada</em> para poder repartirse de nuevo.
+              </span>
+            }
+            onConfirm={() => onUnsettle(b)}
+            okText="Sí, borrar reparto"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
+          >
+            <Button size="small" icon={<RollbackOutlined />}>Borrar reparto</Button>
           </Popconfirm>
         )}
         <Popconfirm title="¿Eliminar esta factura?" description={b.status === "settled" ? "Se eliminarán también los repartos y boletines." : "Esta acción no se puede deshacer."} onConfirm={() => onDelete(b)} okText="Eliminar" cancelText="Cancelar" okButtonProps={{ danger: true }}>
@@ -467,22 +515,118 @@ function ListaFacturas({ accId, clientAccountId }) {
     )},
   ];
 
+  const [activeType, setActiveType] = useState("electricity");
+  const activeBills = filteredBills.filter((b) => b.utility_type === activeType);
+
   return (
     <div>
-      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Lista de Facturas</Title>
       {error && <Alert type="error" message={error} showIcon closable onClose={() => setError(null)} style={{ marginBottom: 12 }} />}
-      <Button icon={<ReloadOutlined />} onClick={load} style={{ marginBottom: 16 }}>Actualizar</Button>
-      {TYPES.map((type) => {
-        const tb = bills.filter((b) => b.utility_type === type);
-        return (
-          <Card key={type} size="small" style={{ marginBottom: 16 }}
-            title={<Space>{UTILITY_ICONS[type]}<Text strong>{UTILITY_LABELS[type]}</Text><Tag color={UTILITY_COLORS[type]}>{tb.length}</Tag></Space>}>
-            {loading ? <div style={{ textAlign: "center", padding: 24 }}><Spin /></div>
-              : tb.length === 0 ? <Text type="secondary">No hay facturas de {UTILITY_LABELS[type]}</Text>
-              : <Table rowKey="id" columns={cols} dataSource={tb} pagination={false} size="small" scroll={{ x: true }} />}
-          </Card>
-        );
-      })}
+
+      {/* Sub-tabs de suministro */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB", marginBottom: 16 }}>
+        {TYPES.map((type) => {
+          const count = bills.filter((b) => b.utility_type === type).length;
+          const isActive = activeType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setActiveType(type)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 18px", background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? "2px solid #0071E3" : "2px solid transparent",
+                marginBottom: -2,
+                color: isActive ? "#0071E3" : "#6B7280",
+                fontWeight: isActive ? 700 : 500, fontSize: 14,
+              }}
+            >
+              {UTILITY_ICONS[type]}
+              {UTILITY_LABELS[type]}
+              <Tag color={isActive ? UTILITY_COLORS[type] : "default"} style={{ fontSize: 11, marginLeft: 2 }}>
+                {count}
+              </Tag>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filtro de año + botón actualizar */}
+      <Row gutter={[12, 8]} align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Select
+            style={{ width: 160 }}
+            value={filterYear}
+            onChange={setFilterYear}
+            options={[
+              { value: "all", label: "Todos los años" },
+              ...availableYears.map((y) => ({ value: String(y), label: String(y) })),
+            ]}
+          />
+        </Col>
+        <Col>
+          <Button icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>
+        </Col>
+      </Row>
+
+      {/* Tabla del suministro activo */}
+      {loading
+        ? <div style={{ textAlign: "center", padding: 40 }}><Spin /></div>
+        : activeBills.length === 0
+          ? <Text type="secondary">No hay facturas de {UTILITY_LABELS[activeType]}{filterYear !== "all" ? ` en ${filterYear}` : ""}</Text>
+          : <Table rowKey="id" columns={cols} dataSource={activeBills} pagination={{ pageSize: 15 }} size="small" scroll={{ x: true }} />
+      }
+
+      {/* Modal Ver factura */}
+      <Modal
+        title={`Factura — ${viewingBill?.bill_number ?? ""}`}
+        open={!!viewingBill}
+        onCancel={() => { setViewingBill(null); setViewFileUrl(null); }}
+        footer={
+          <Space>
+            {viewFileUrl && <Button type="primary" icon={<EyeOutlined />} onClick={() => window.open(viewFileUrl, "_blank")}>Abrir PDF</Button>}
+            <Button onClick={() => { setViewingBill(null); setViewFileUrl(null); }}>Cerrar</Button>
+          </Space>
+        }
+        width={560}
+      >
+        {viewingBill && (
+          <>
+            <Descriptions bordered size="small" column={2} style={{ marginBottom: 12 }}>
+              <Descriptions.Item label="Tipo" span={1}>
+                <Tag color={UTILITY_COLORS[viewingBill.utility_type]} icon={UTILITY_ICONS[viewingBill.utility_type]}>
+                  {UTILITY_LABELS[viewingBill.utility_type] ?? viewingBill.utility_type}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Estado" span={1}>
+                <Tag color={STATUS_COLORS[viewingBill.status]}>{STATUS_LABELS[viewingBill.status] ?? viewingBill.status}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Empresa" span={2}>{viewingBill.supplier ?? "-"}</Descriptions.Item>
+              <Descriptions.Item label="Nº Factura" span={1}>{viewingBill.bill_number ?? "-"}</Descriptions.Item>
+              <Descriptions.Item label="Referencia" span={1}>{viewingBill.reference ?? "-"}</Descriptions.Item>
+              <Descriptions.Item label="Fecha emisión" span={1}>{fmtDate(viewingBill.issue_date)}</Descriptions.Item>
+              <Descriptions.Item label="Período" span={1}>{fmtDate(viewingBill.period_start)} – {fmtDate(viewingBill.period_end)}</Descriptions.Item>
+              <Descriptions.Item label="Consumo (kWh/m³)" span={2}>{viewingBill.total_kwh != null ? `${viewingBill.total_kwh}` : "-"}</Descriptions.Item>
+              <Descriptions.Item label="Energía" span={1}>{fmt(viewingBill.amount_energy)}</Descriptions.Item>
+              <Descriptions.Item label="Potencia" span={1}>{fmt(viewingBill.amount_power)}</Descriptions.Item>
+              <Descriptions.Item label="Alq. contador" span={1}>{fmt(viewingBill.amount_meter)}</Descriptions.Item>
+              <Descriptions.Item label="Descuentos" span={1}>{fmt(viewingBill.amount_discounts)}</Descriptions.Item>
+              <Descriptions.Item label="Otros" span={1}>{fmt(viewingBill.amount_other)}</Descriptions.Item>
+              <Descriptions.Item label="Impuestos" span={1}>{fmt(viewingBill.amount_taxes)}</Descriptions.Item>
+              <Descriptions.Item label="TOTAL" span={2}>
+                <Text strong style={{ fontSize: 16 }}>{fmt(viewingBill.amount_total)}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+            {loadingFile && <div style={{ textAlign: "center", padding: 8 }}><Spin size="small" /> <Text type="secondary"> Cargando archivo...</Text></div>}
+            {!loadingFile && !viewFileUrl && viewingBill.storage_path && (
+              <Alert type="warning" message="No se puede cargar el archivo adjunto" showIcon />
+            )}
+            {!loadingFile && !viewingBill.storage_path && (
+              <Alert type="info" message="Esta factura no tiene archivo adjunto" showIcon />
+            )}
+          </>
+        )}
+      </Modal>
+
       <Modal title={`Editar — ${editingBill?.bill_number ?? ""}`} open={!!editingBill} onCancel={() => setEditingBill(null)} footer={null} width={640} destroyOnHidden>
         <Form form={editForm} layout="vertical" onFinish={onSaveEdit}>
           <Row gutter={[12, 0]}>
@@ -508,6 +652,8 @@ function BoletinesFacturas({ accId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewBulletin, setViewBulletin] = useState(null);
+  const [filterYear, setFilterYear] = useState("all");
+  const [activeType, setActiveType] = useState("electricity");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -523,9 +669,18 @@ function BoletinesFacturas({ accId }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const availableYears = [...new Set(
+    bulletins.map((b) => b.period_start ? dayjs(b.period_start).year() : null).filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  const filteredBulletins = filterYear === "all"
+    ? bulletins
+    : bulletins.filter((b) => b.period_start && dayjs(b.period_start).year() === Number(filterYear));
+
+  const activeBulletins = filteredBulletins.filter((b) => b.energy_bill?.utility_type === activeType);
+
   const cols = [
     { title: "Período", key: "period", width: 150, render: (_, r) => `${fmtDate(r.period_start)} – ${fmtDate(r.period_end)}` },
-    { title: "Tipo", key: "type", width: 110, render: (_, r) => { const t = r.energy_bill?.utility_type; return t ? <Tag color={UTILITY_COLORS[t]} icon={UTILITY_ICONS[t]}>{UTILITY_LABELS[t]}</Tag> : "-"; } },
     { title: "Habitación", key: "room", width: 90, render: (_, r) => r.room ? <Tag>Hab. {r.room.number}</Tag> : "-" },
     { title: "Inquilino", key: "lodger", width: 180, render: (_, r) => r.lodger?.full_name ?? <Text type="secondary">Sin inquilino</Text> },
     { title: "Total asignado", dataIndex: "amount_total", width: 120, render: (v) => <Text strong>{fmt(v)}</Text> },
@@ -535,20 +690,62 @@ function BoletinesFacturas({ accId }) {
 
   return (
     <div>
-      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Boletines de Facturas</Title>
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
-      <Button icon={<ReloadOutlined />} onClick={load} style={{ marginBottom: 16 }}>Actualizar</Button>
-      {TYPES.map((type) => {
-        const tb = bulletins.filter((b) => b.energy_bill?.utility_type === type);
-        return (
-          <Card key={type} size="small" style={{ marginBottom: 16 }}
-            title={<Space>{UTILITY_ICONS[type]}<Text strong>{UTILITY_LABELS[type]}</Text><Tag color={UTILITY_COLORS[type]}>{tb.length}</Tag></Space>}>
-            {loading ? <div style={{ textAlign: "center", padding: 24 }}><Spin /></div>
-              : tb.length === 0 ? <Text type="secondary">No hay boletines de {UTILITY_LABELS[type]}</Text>
-              : <Table rowKey="id" columns={cols} dataSource={tb} pagination={{ pageSize: 10 }} size="small" scroll={{ x: true }} />}
-          </Card>
-        );
-      })}
+      {error && <Alert type="error" message={error} showIcon closable onClose={() => setError(null)} style={{ marginBottom: 12 }} />}
+
+      {/* Sub-tabs de suministro */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB", marginBottom: 16 }}>
+        {TYPES.map((type) => {
+          const count = bulletins.filter((b) => b.energy_bill?.utility_type === type).length;
+          const isActive = activeType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setActiveType(type)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 18px", background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? "2px solid #0071E3" : "2px solid transparent",
+                marginBottom: -2,
+                color: isActive ? "#0071E3" : "#6B7280",
+                fontWeight: isActive ? 700 : 500, fontSize: 14,
+              }}
+            >
+              {UTILITY_ICONS[type]}
+              {UTILITY_LABELS[type]}
+              <Tag color={isActive ? UTILITY_COLORS[type] : "default"} style={{ fontSize: 11, marginLeft: 2 }}>
+                {count}
+              </Tag>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filtro de año + botón actualizar */}
+      <Row gutter={[12, 8]} align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Select
+            style={{ width: 160 }}
+            value={filterYear}
+            onChange={setFilterYear}
+            options={[
+              { value: "all", label: "Todos los años" },
+              ...availableYears.map((y) => ({ value: String(y), label: String(y) })),
+            ]}
+          />
+        </Col>
+        <Col>
+          <Button icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>
+        </Col>
+      </Row>
+
+      {/* Tabla del suministro activo */}
+      {loading
+        ? <div style={{ textAlign: "center", padding: 40 }}><Spin /></div>
+        : activeBulletins.length === 0
+          ? <Text type="secondary">No hay boletines de {UTILITY_LABELS[activeType]}{filterYear !== "all" ? ` en ${filterYear}` : ""}</Text>
+          : <Table rowKey="id" columns={cols} dataSource={activeBulletins} pagination={{ pageSize: 15 }} size="small" scroll={{ x: true }} />
+      }
+
       <Modal title={`Boletín — Hab. ${viewBulletin?.room?.number ?? ""} · ${viewBulletin?.lodger?.full_name ?? "Sin inquilino"}`}
         open={!!viewBulletin} onCancel={() => setViewBulletin(null)}
         footer={<Button onClick={() => setViewBulletin(null)}>Cerrar</Button>} width={500}>

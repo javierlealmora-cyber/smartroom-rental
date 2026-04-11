@@ -1,21 +1,18 @@
 import { supabase } from "./supabaseClient";
-import { invokeWithAuth } from "./supabaseInvoke.services";
-
-function extractEdgeError(result) {
-  if (result?.error?.message) return result.error.message;
-  if (result?.error) return JSON.stringify(result.error);
-  return "Error desconocido";
-}
 
 // ─── Accommodations ───────────────────────────────────────────────────────────
 
 export async function listAccommodations({ status, clientAccountId } = {}) {
+  const today = new Date().toISOString().split("T")[0];
+
   let q = supabase
     .from("accommodations")
     .select(`
       *,
       owner_entity:entities(id, legal_name, first_name, last_name1, legal_type),
-      rooms(id, is_maintenance)
+      rooms(id, is_maintenance, 
+        current_assignments:lodger_room_assignments(room_id, move_out_date)
+      )
     `)
     .order("created_at", { ascending: false });
 
@@ -26,9 +23,27 @@ export async function listAccommodations({ status, clientAccountId } = {}) {
 
   if (status) q = q.eq("status", status);
 
+  // Filtrar solo asignaciones activas/futuras en la subconsulta
+  q = q.or(`move_out_date.is.null,move_out_date.gt.${today}`, { foreignTable: 'rooms.current_assignments' });
+
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return data || [];
+
+  // Calcular derivedStatus para cada habitación
+  return (data || []).map(acc => ({
+    ...acc,
+    rooms: (acc.rooms || []).map(room => {
+      const asgn = (room.current_assignments || []).find(
+        a => !a.move_out_date || a.move_out_date > today
+      );
+      let derivedStatus;
+      if (room.is_maintenance) derivedStatus = "maintenance";
+      else if (!asgn) derivedStatus = "free";
+      else if (!asgn.move_out_date) derivedStatus = "occupied";
+      else derivedStatus = "pending_checkout";
+      return { ...room, derivedStatus };
+    })
+  }));
 }
 
 export async function getAccommodation(id, clientAccountId = null) {
@@ -52,11 +67,24 @@ export async function getAccommodation(id, clientAccountId = null) {
 }
 
 export async function createAccommodation(payload, rooms = []) {
-  const result = await invokeWithAuth("manage_accommodation", {
-    body: { action: "create", payload: { ...payload, rooms } },
-  });
-  if (!result?.ok) throw new Error(extractEdgeError(result));
-  return result.data?.accommodation ?? result.data;
+  const { data: newAcc, error: accError } = await supabase
+    .from("accommodations")
+    .insert(payload)
+    .select("*")
+    .single();
+  if (accError) throw new Error(accError.message);
+
+  if (rooms.length > 0) {
+    const roomRows = rooms.map(({ id: _id, ...r }) => ({
+      ...r,
+      accommodation_id: newAcc.id,
+      client_account_id: payload.client_account_id,
+    }));
+    const { error: roomsError } = await supabase.from("rooms").insert(roomRows);
+    if (roomsError) throw new Error(roomsError.message);
+  }
+
+  return newAcc;
 }
 
 export async function updateAccommodation(id, patch, clientAccountId) {

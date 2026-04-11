@@ -99,12 +99,15 @@ CREATE INDEX IF NOT EXISTS idx_energy_readings_room ON public.energy_readings (r
 CREATE INDEX IF NOT EXISTS idx_energy_readings_date ON public.energy_readings (reading_date);
 
 -- ============================================================================
--- TABLA: energy_settlements
+-- TABLA: energy_settlements (granularidad diaria)
 -- ============================================================================
-CREATE INDEX IF NOT EXISTS idx_energy_settlements_client_account ON public.energy_settlements (client_account_id);
-CREATE INDEX IF NOT EXISTS idx_energy_settlements_bill ON public.energy_settlements (energy_bill_id);
-CREATE INDEX IF NOT EXISTS idx_energy_settlements_room ON public.energy_settlements (room_id);
-CREATE INDEX IF NOT EXISTS idx_energy_settlements_lodger ON public.energy_settlements (lodger_id);
+CREATE INDEX IF NOT EXISTS idx_energy_settlements_bill
+  ON public.energy_settlements (energy_bill_id);
+CREATE INDEX IF NOT EXISTS idx_energy_settlements_acc_date
+  ON public.energy_settlements (accommodation_id, settlement_date);
+CREATE INDEX IF NOT EXISTS idx_energy_settlements_lodger_date
+  ON public.energy_settlements (lodger_id, settlement_date)
+  WHERE lodger_id IS NOT NULL;
 
 -- ============================================================================
 -- TABLA: bulletins

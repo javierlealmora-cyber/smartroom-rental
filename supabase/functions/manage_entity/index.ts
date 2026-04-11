@@ -91,17 +91,17 @@ serve(async (req) => {
           .single();
 
         if (plan && plan.max_owners !== -1) {
+          // Contar TODAS las entidades owner (activas e inactivas) para validar límite del plan
           const { count } = await supabase
             .from("entities")
             .select("id", { count: "exact", head: true })
             .eq("client_account_id", clientAccountId)
-            .eq("type", "owner")
-            .eq("status", "active");
+            .eq("type", "owner");
 
           if ((count ?? 0) >= plan.max_owners) {
             return err(
               ERROR_CODES.PLAN_LIMIT_EXCEEDED,
-              `Tu plan permite un máximo de ${plan.max_owners} entidades propietarias activas`,
+              `Tu plan permite un máximo de ${plan.max_owners} entidad${plan.max_owners > 1 ? 'es' : ''} propietaria${plan.max_owners > 1 ? 's' : ''}. Para crear una nueva, elimina o desactiva una existente.`,
               403,
               { current: count, limit: plan.max_owners }
             );

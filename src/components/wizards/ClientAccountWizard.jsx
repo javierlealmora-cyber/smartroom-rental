@@ -376,6 +376,8 @@ export default function ClientAccountWizard({
     // Construir payload para Edge Function
     const payload = {
       account_name: formData.account_name,
+      last_name1: formData.account_last_name1 || null,
+      last_name2: formData.account_last_name2 || null,
       slug: formData.slug,
       plan_code: formData.plan_code,
       billing_cycle: formData.billing_cycle,

@@ -6,7 +6,7 @@ import {
   Alert, Button, Col, DatePicker, Form, Input, InputNumber,
   Modal, Row, Select, Skeleton, Space, Table, Tag, Typography,
 } from "antd";
-import { EditOutlined, ReloadOutlined } from "@ant-design/icons";
+import { CloudOutlined, EditOutlined, FireOutlined, ReloadOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
   Legend, ResponsiveContainer,
@@ -16,6 +16,11 @@ import { supabase } from "../../../../../services/supabaseClient";
 
 const { Text, Title } = Typography;
 const { Option } = Select;
+
+const UTILITY_LABELS = { electricity: "Electricidad", water: "Agua", gas: "Gas" };
+const UTILITY_COLORS = { electricity: "gold", water: "blue", gas: "orange" };
+const UTILITY_ICONS  = { electricity: <ThunderboltOutlined />, water: <CloudOutlined />, gas: <FireOutlined /> };
+const TYPES = ["electricity", "water", "gas"];
 
 export default function ConsumoTab({ accId, subTab, rooms }) {
   if (subTab === "registros") return <DetalleRegistros accId={accId} rooms={rooms} />;
@@ -35,6 +40,7 @@ function DetalleRegistros({ accId, rooms }) {
   const [editingRow, setEditingRow] = useState(null);
   const [editForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [activeType, setActiveType] = useState("electricity");
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -60,6 +66,9 @@ function DetalleRegistros({ accId, rooms }) {
   }, [accId, filterRoom, filterYear, filterMonth]);
 
   useEffect(() => { load(); }, [load]);
+
+  // energy_readings no tiene utility_type — todos los registros son de electricidad
+  const displayReadings = activeType === "electricity" ? readings : [];
 
   const onSaveEdit = async (values) => {
     setSaving(true);
@@ -135,7 +144,33 @@ function DetalleRegistros({ accId, rooms }) {
 
   return (
     <div>
-      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Detalle de Registros de Consumo</Title>
+      {/* Sub-tabs de suministro */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB", marginBottom: 16 }}>
+        {TYPES.map((type) => {
+          const count = type === "electricity" ? readings.length : 0;
+          const isActive = activeType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setActiveType(type)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 18px", background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? "2px solid #0071E3" : "2px solid transparent",
+                marginBottom: -2,
+                color: isActive ? "#0071E3" : "#6B7280",
+                fontWeight: isActive ? 700 : 500, fontSize: 14,
+              }}
+            >
+              {UTILITY_ICONS[type]}
+              {UTILITY_LABELS[type]}
+              <Tag color={isActive ? UTILITY_COLORS[type] : "default"} style={{ fontSize: 11, marginLeft: 2 }}>
+                {count}
+              </Tag>
+            </button>
+          );
+        })}
+      </div>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
 
@@ -171,18 +206,23 @@ function DetalleRegistros({ accId, rooms }) {
 
       {loading ? (
         <Skeleton active paragraph={{ rows: 6 }} />
-      ) : readings.length === 0 ? (
+      ) : displayReadings.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
-          <Text type="secondary">No hay registros de consumo para el período seleccionado</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>Los datos son enviados automáticamente por n8n</Text>
+          <Text type="secondary">
+            {activeType === "electricity"
+              ? "No hay registros de consumo para el período seleccionado"
+              : `No hay registros de ${UTILITY_LABELS[activeType]} — los datos de contador solo están disponibles para Electricidad`}
+          </Text>
+          {activeType === "electricity" && (
+            <><br /><Text type="secondary" style={{ fontSize: 12 }}>Los datos son enviados automáticamente por n8n</Text></>
+          )}
         </div>
       ) : (
         <Table
           rowKey="id"
           columns={columns}
-          dataSource={readings}
+          dataSource={displayReadings}
           pagination={{ pageSize: 20, showSizeChanger: false }}
           size="small"
           scroll={{ x: true }}
@@ -215,72 +255,212 @@ function DetalleRegistros({ accId, rooms }) {
 
 // ─── Visor de Consumo ─────────────────────────────────────────────────────────
 
+const MONTHS_ES = [
+  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
+];
+const MONTHS_SHORT_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
 function VisorConsumo({ accId, rooms }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterRoom, setFilterRoom] = useState("all");
+  const [filterRoom, setFilterRoom]   = useState("all");
+  const [filterMode, setFilterMode]   = useState("last12"); // "last12" | "year" | "month"
+  const [filterYear, setFilterYear]   = useState(dayjs().year());
+  const [filterMonth, setFilterMonth] = useState(dayjs().month() + 1);
+  const [dataSource, setDataSource]   = useState("readings"); // "readings" | "bills"
+  const [activeType, setActiveType]   = useState("electricity");
 
-  const COLORS = ["#0071E3", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+  const COLORS  = ["#0071E3", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+  const DASHES  = ["0", "6 3", "3 3", "8 4 2 4", "2 2", "10 2", "4 1", "8 2 2 2"];
+  const years  = Array.from({ length: 5 }, (_, i) => dayjs().year() - i);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      // Últimos 12 meses: desde hace 11 meses hasta fin del mes actual
-      const start = dayjs().subtract(11, "month").startOf("month").format("YYYY-MM-DD");
-      const end = dayjs().endOf("month").format("YYYY-MM-DD");
+      // ── Calcular rango y tipo de agrupación ───────────────────────────────
+      let start, end, groupBy;
+      if (filterMode === "last12") {
+        start   = dayjs().subtract(11, "month").startOf("month").format("YYYY-MM-DD");
+        end     = dayjs().endOf("month").format("YYYY-MM-DD");
+        groupBy = "month_labeled";
+      } else if (filterMode === "year") {
+        start   = `${filterYear}-01-01`;
+        end     = `${filterYear}-12-31`;
+        groupBy = "month_short";
+      } else {
+        const base = dayjs(`${filterYear}-${String(filterMonth).padStart(2, "0")}-01`);
+        start   = base.startOf("month").format("YYYY-MM-DD");
+        end     = base.endOf("month").format("YYYY-MM-DD");
+        groupBy = "day";
+      }
 
-      let q = supabase
-        .from("energy_readings")
-        .select("reading_date, kwh, room_id, room:rooms(number)")
-        .eq("accommodation_id", accId)
-        .gte("reading_date", start)
-        .lte("reading_date", end)
-        .order("reading_date");
+      const pivotKey = (dateStr) => {
+        const d = dayjs(dateStr);
+        if (groupBy === "day") return { key: d.format("DD"), sort: d.format("YYYY-MM-DD") };
+        return { key: `${MONTHS_SHORT_ES[d.month()]} ${d.format("YY")}`, sort: d.format("YYYY-MM") };
+      };
 
-      if (filterRoom !== "all") q = q.eq("room_id", filterRoom);
+      const pivotRows = (rows, getLabel, getAmount, dateField) => {
+        const byKey = {};
+        (rows || []).forEach((r) => {
+          const { key, sort } = pivotKey(r[dateField]);
+          if (!byKey[key]) byKey[key] = { month: key, _sort: sort };
+          const label = getLabel(r);
+          byKey[key][label] = (byKey[key][label] || 0) + Number(getAmount(r));
+        });
+        const sorted = Object.values(byKey).sort((a, b) => a._sort.localeCompare(b._sort));
+        sorted.forEach((d) => delete d._sort);
+        return sorted;
+      };
 
-      const { data: rows, error: err } = await q;
-      if (err) throw new Error(err.message);
+      // ── Electricidad: intentar lecturas de contador ───────────────────────
+      let hasReadings = false;
+      if (activeType === "electricity") {
+        let q = supabase
+          .from("energy_readings")
+          .select("reading_date, kwh, room_id, room:rooms(number)")
+          .eq("accommodation_id", accId)
+          .gte("reading_date", start)
+          .lte("reading_date", end)
+          .order("reading_date");
+        if (filterRoom !== "all") q = q.eq("room_id", filterRoom);
+        const { data: rows, error: err } = await q;
+        if (err) throw new Error(err.message);
 
-      // Pivot: mes (MMM YY) → { month, "Hab. 01": kWh total, ... }
-      const byMonth = {};
-      (rows || []).forEach((r) => {
-        const monthKey = dayjs(r.reading_date).format("MMM YY");
-        const monthSort = dayjs(r.reading_date).format("YYYY-MM");
-        if (!byMonth[monthKey]) byMonth[monthKey] = { month: monthKey, _sort: monthSort };
-        const label = `Hab. ${r.room?.number ?? r.room_id.slice(0, 4)}`;
-        byMonth[monthKey][label] = (byMonth[monthKey][label] || 0) + Number(r.kwh);
-      });
+        if ((rows || []).length > 0) {
+          const sorted = pivotRows(rows,
+            (r) => `Hab. ${r.room?.number ?? r.room_id.slice(0, 4)}`,
+            (r) => r.kwh,
+            "reading_date"
+          );
+          setDataSource("readings");
+          setData(sorted);
+          hasReadings = true;
+        }
+      }
 
-      const sorted = Object.values(byMonth).sort((a, b) => a._sort.localeCompare(b._sort));
-      sorted.forEach((d) => delete d._sort);
-      setData(sorted);
+      // ── Fallback: coste de facturas del suministro activo ─────────────────
+      // energy_bills es a nivel de alojamiento (no de habitación).
+      if (!hasReadings) {
+        if (filterRoom !== "all") {
+          setDataSource("readings");
+          setData([]);
+        } else {
+          const { data: bills, error: billErr } = await supabase
+            .from("energy_bills")
+            .select("period_end, amount_total, utility_type")
+            .eq("accommodation_id", accId)
+            .eq("status", "settled")
+            .eq("utility_type", activeType)
+            .gte("period_end", start)
+            .lte("period_end", end)
+            .order("period_end");
+          if (billErr) throw new Error(billErr.message);
+
+          const sorted = pivotRows(bills,
+            (b) => UTILITY_LABELS[b.utility_type] || b.utility_type,
+            (b) => b.amount_total,
+            "period_end"
+          );
+          setDataSource("bills");
+          setData(sorted);
+        }
+      }
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [accId, filterRoom]);
+  }, [accId, filterRoom, filterMode, filterYear, filterMonth, activeType]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Líneas a mostrar
   const lineKeys = data.length > 0
-    ? Object.keys(data[0]).filter((k) => k !== "month")
+    ? [...new Set(data.flatMap((d) => Object.keys(d).filter((k) => k !== "month")))]
     : [];
+
+  const utilLabel = UTILITY_LABELS[activeType];
+
+  const title =
+    filterMode === "last12" ? `Visor de Consumo — ${utilLabel} — Últimos 12 meses` :
+    filterMode === "year"   ? `Visor de Consumo — ${utilLabel} — ${filterYear}` :
+                              `Visor de Consumo — ${utilLabel} — ${MONTHS_ES[filterMonth - 1]} ${filterYear}`;
+
+  const emptyMsg =
+    filterMode === "last12" ? `No hay datos de ${utilLabel} para los últimos 12 meses` :
+    filterMode === "year"   ? `No hay datos de ${utilLabel} en ${filterYear}` :
+                              `No hay datos de ${utilLabel} en ${MONTHS_ES[filterMonth - 1]} ${filterYear}`;
 
   return (
     <div>
-      <Title level={5} style={{ marginBottom: 16, color: "#374151" }}>Visor de Consumo — Últimos 12 meses</Title>
+      {/* Sub-tabs de suministro */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB", marginBottom: 16 }}>
+        {TYPES.map((type) => {
+          const isActive = activeType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setActiveType(type)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 18px", background: "none", border: "none", cursor: "pointer",
+                borderBottom: isActive ? "2px solid #0071E3" : "2px solid transparent",
+                marginBottom: -2,
+                color: isActive ? "#0071E3" : "#6B7280",
+                fontWeight: isActive ? 700 : 500, fontSize: 14,
+              }}
+            >
+              {UTILITY_ICONS[type]}
+              {UTILITY_LABELS[type]}
+            </button>
+          );
+        })}
+      </div>
+
+      {dataSource === "bills" && data.length > 0 && (
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+          Sin lecturas de contador — mostrando coste de facturas (€)
+        </Text>
+      )}
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 12 }} />}
 
       {/* Filtros */}
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }} align="middle">
+        {/* Habitación */}
         <Col xs={24} sm={8} md={6}>
           <Select style={{ width: "100%" }} value={filterRoom} onChange={setFilterRoom}>
             <Option value="all">Todas las habitaciones</Option>
             {rooms.map((r) => <Option key={r.id} value={r.id}>Hab. {r.number}</Option>)}
           </Select>
         </Col>
+
+        {/* Modo de período */}
+        <Col xs={24} sm={7} md={5}>
+          <Select style={{ width: "100%" }} value={filterMode} onChange={setFilterMode}>
+            <Option value="last12">Últimos 12 meses</Option>
+            <Option value="year">Año completo</Option>
+            <Option value="month">Mes específico</Option>
+          </Select>
+        </Col>
+
+        {/* Año (visible si no es last12) */}
+        {filterMode !== "last12" && (
+          <Col xs={12} sm={4} md={3}>
+            <Select style={{ width: "100%" }} value={filterYear} onChange={setFilterYear}>
+              {years.map((y) => <Option key={y} value={y}>{y}</Option>)}
+            </Select>
+          </Col>
+        )}
+
+        {/* Mes (visible solo en modo month) */}
+        {filterMode === "month" && (
+          <Col xs={12} sm={5} md={4}>
+            <Select style={{ width: "100%" }} value={filterMonth} onChange={setFilterMonth}>
+              {MONTHS_ES.map((m, i) => <Option key={i + 1} value={i + 1}>{m}</Option>)}
+            </Select>
+          </Col>
+        )}
+
         <Col>
           <Button icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>
         </Col>
@@ -291,7 +471,7 @@ function VisorConsumo({ accId, rooms }) {
       ) : data.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>📈</div>
-          <Text type="secondary">No hay datos de consumo para los últimos 12 meses</Text>
+          <Text type="secondary">{emptyMsg}</Text>
         </div>
       ) : (
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E5E7EB", padding: "20px 12px" }}>
@@ -300,10 +480,15 @@ function VisorConsumo({ accId, rooms }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false}
-                tickFormatter={(v) => `${v} kWh`} width={65} />
+                tickFormatter={(v) => dataSource === "bills" ? `${v} €` : `${v} kWh`} width={70} />
               <ChartTooltip
                 contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 12 }}
-                formatter={(value, name) => [`${Number(value).toFixed(2)} kWh`, name]}
+                formatter={(value, name) => [
+                  dataSource === "bills"
+                    ? `${Number(value).toFixed(2)} €`
+                    : `${Number(value).toFixed(2)} kWh`,
+                  name,
+                ]}
               />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
               {lineKeys.map((key, i) => (
@@ -313,8 +498,9 @@ function VisorConsumo({ accId, rooms }) {
                   dataKey={key}
                   stroke={COLORS[i % COLORS.length]}
                   strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  strokeDasharray={DASHES[i % DASHES.length]}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
                 />
               ))}
             </LineChart>

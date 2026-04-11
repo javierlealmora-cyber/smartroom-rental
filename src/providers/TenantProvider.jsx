@@ -63,6 +63,7 @@ export function TenantProvider({ children }) {
         if (account) {
           const tenantData = {
             client_account_id: clientAccountId,
+            account_name: account.name,
             plan_code: account.plan_code,
             billing_cycle: account.billing_cycle,
             account_status: account.status,
@@ -95,6 +96,7 @@ export function TenantProvider({ children }) {
     () => ({
       tenant,
       loading,
+      accountName: tenant?.account_name ?? null,
       planCode: tenant?.plan_code ?? null,
       billingCycle: tenant?.billing_cycle ?? null,
       accountStatus: tenant?.account_status ?? null,

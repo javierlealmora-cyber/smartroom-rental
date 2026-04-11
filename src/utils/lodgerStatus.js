@@ -9,7 +9,8 @@ import dayjs from 'dayjs';
  * @returns {string} Estado del inquilino: 'active' | 'pending_checkout' | 'inactive' | 'invited'
  */
 export function getLodgerStatus(lodger) {
-  const assignments = lodger?.assignments || [];
+  // Aceptar tanto 'assignments' (de getLodger) como 'active_assignment' (de listLodgers)
+  const assignments = lodger?.assignments || lodger?.active_assignment || [];
   
   if (!assignments || assignments.length === 0) {
     return 'invited';
@@ -110,7 +111,7 @@ export function hasLodgerPendingCheckout(lodger) {
  * @returns {Object|null} Asignación activa o null
  */
 export function getActiveAssignment(lodger) {
-  const assignments = lodger?.assignments || [];
+  const assignments = lodger?.assignments || lodger?.active_assignment || [];
   if (assignments.length === 0) return null;
   
   const today = new Date().toISOString().split('T')[0];

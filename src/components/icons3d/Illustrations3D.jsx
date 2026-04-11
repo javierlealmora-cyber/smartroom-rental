@@ -163,7 +163,7 @@ export function IllustrationEntity({ width = 280, height = 180 }) {
 export function IllustrationTenant({ width = 280, height = 180 }) {
   return (
     <img
-      src="/icons/inquilinos-icono-model.png"
+      src="/images/inquilinos-icono-model.webp"
       alt="Inquilino"
       width={width}
       height={height}

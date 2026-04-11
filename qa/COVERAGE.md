@@ -1,6 +1,6 @@
 # Matriz de Trazabilidad — SmartRent QA
 
-Última actualización: 2026-03-28
+Última actualización: 2026-04-11
 
 ## Leyenda de estado
 - ✅ Cubierto
@@ -35,6 +35,15 @@
 | TEN-06  | Checkout → move_out_date guardada          | —                                          | services/lodgers.service.test.js | e2e/specs/tenants.spec.js ⚠️fixme | 🚧 Pendiente |
 | TEN-07  | updateLodger filtra campos inmutables      | src/tests/inquilinos/lodger-creation       | —                                | —                                | ✅ Cubierto |
 | TEN-08  | listLodgers filtra por client_account_id   | —                                          | services/lodgers.service.test.js | —                                | ✅ Cubierto |
+| TEN-09  | Botón "Ver Consumos" deshabilitado si estado=invited | —                              | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-10  | TenantDetail foto cama = libre si sin asignación activa | —                         | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-11  | TenantDetail badge estado = getLodgerStatus() no onboarding_status | —           | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-12  | TenantCreate stepper — paso 1 registra inquilino y avanza a paso 2 | —          | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-13  | TenantCreate stepper — paso 2 asigna habitación y navega a detalle | —          | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-14  | TenantCreate stepper — "Saltar" en paso 2 navega a detalle sin habitación | —   | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-15  | TenantDetail — botón "Editar" abre modal con datos pre-rellenados | —            | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-16  | TenantDetail — modal edición guarda cambios vía updateLodger y recarga | —       | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-17  | TenantDetail — línea gris muestra alojamiento + habitación actual (o "Sin habitación") | — | —                       | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
 
 ---
 
@@ -48,23 +57,76 @@
 | ACC-04  | Estado mantenimiento: is_maintenance=true  | logic/roomStatus.test.js                   | —                                        | —                                    | ✅ Cubierto |
 | ACC-05  | Crear alojamiento con habitaciones         | —                                          | src/tests/alojamientos/accommodations    | e2e/specs/accommodations.spec.js     | ⚠️ Parcial |
 | ACC-06  | split_mode por tipo de suministro          | —                                          | —                                        | —                                    | 🚧 Pendiente |
+| ACC-07  | Modal cambiar hab. — sección Check-Out: info fija (entidad, aloj., hab., precio) | — | —                               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-08  | Modal cambiar hab. — fecha Check-Out >= hoy (disabledDate)        | —           | —                                        | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-09  | Modal cambiar hab. — sección Check-In: entidad → aloj. → hab. libres con precio | — | —                               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-10  | Modal cambiar hab. — fecha Check-In > fecha Check-Out             | —           | —                                        | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-11  | Modal cambiar hab. — checkbox "pagar hasta fin de mes" habilita campo importe | — | —                                | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-12  | Modal cambiar hab. — fianza obligatoria, renta se autocompleta con precio de la hab. | — | —                           | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-13  | Estado reservada: solo asignación futura, sin activa → reserved            | logic/roomStatus.test.js           | —                                        | —                                    | ✅ Cubierto |
+| ACC-14  | getRoomUpcoming devuelve asignación futura o null (badge secundario)        | logic/roomStatus.test.js           | —                                        | —                                    | ✅ Cubierto |
+| ACC-15  | Combo occupied + reservada futura → estado principal occupied + upcoming presente | logic/roomStatus.test.js       | —                                        | —                                    | ✅ Cubierto |
+| ACC-16  | Combo pending_checkout + reservada futura → pending_checkout + upcoming presente | logic/roomStatus.test.js        | —                                        | —                                    | ✅ Cubierto |
+| ACC-17  | Múltiples asignaciones futuras → reserved, upcoming = primera en el tiempo  | logic/roomStatus.test.js           | —                                        | —                                    | ✅ Cubierto |
+| ACC-18  | Modal cambiar hab. — selector habitaciones libres calcula disponibilidad en la fecha del cambio (no hoy) | — | —                     | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-19  | Formulario alojamiento — campo `street_number` (número de calle) se guarda y carga correctamente | — | —                          | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-20  | Subtítulo del alojamiento muestra "Calle + Número, CP, Ciudad"              | —                                  | —                                        | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-21  | Toggle vista cards/lista en AccommodationDetail — persiste en localStorage  | —                                  | —                                        | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| ACC-22  | Vista lista — columna Inquilino muestra futuro inquilino en naranja cuando estado = Reservada | — | —                        | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+
+---
+
+## CHG — Cambio de habitación
+
+| ID      | Funcionalidad                                                                | Unit (lógica)                          | Unit (servicio) | E2E                                  | Estado  |
+|---------|------------------------------------------------------------------------------|----------------------------------------|-----------------|--------------------------------------|---------|
+| CHG-01  | `calcCorrectionAmount` día 1 del mes → 0                                    | logic/correctionAmount.test.js         | —               | —                                    | ✅ Cubierto |
+| CHG-02  | `calcCorrectionAmount` nueva renta mayor → resultado positivo                | logic/correctionAmount.test.js         | —               | —                                    | ✅ Cubierto |
+| CHG-03  | `calcCorrectionAmount` nueva renta menor → resultado negativo                | logic/correctionAmount.test.js         | —               | —                                    | ✅ Cubierto |
+| CHG-04  | `calcCorrectionAmount` misma renta → 0                                       | logic/correctionAmount.test.js         | —               | —                                    | ✅ Cubierto |
+| CHG-05  | `calcCorrectionAmount` sin fecha o sin renta → null                          | logic/correctionAmount.test.js         | —               | —                                    | ✅ Cubierto |
+| CHG-06  | Modal reassign: fianza se auto-rellena con valor de asignación actual        | —                                      | —               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| CHG-07  | Modal reassign: `correction_amount` se auto-calcula al cambiar hab. o fecha | —                                      | —               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| CHG-08  | Modal reassign graba `notes` en ambas asignaciones (origen y destino)        | —                                      | —               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| CHG-09  | TenantEdit historial muestra campo `notes` de cambio de habitación           | —                                      | —               | qa/e2e/specs/tenants.spec.js         | 🚧 Pendiente |
+| CHG-10  | Checkout modal graba `notes` (campo renombrado desde checkout_notes)         | —                                      | —               | qa/e2e/specs/accommodations.spec.js  | 🚧 Pendiente |
+| CHG-11  | Alta normal de inquilino (TenantCreate): checkbox prorrateo y campo importe se mantienen | —                           | —               | qa/e2e/specs/tenants.spec.js         | 🚧 Pendiente |
+| CHG-12  | ChangeRoomModal disponible desde TenantDetail (botón "Cambiar") — misma lógica que AccommodationDetail | —           | —               | qa/e2e/specs/tenants.spec.js         | 🚧 Pendiente |
 
 ---
 
 ## ENE — Energía y Facturas
 
-| ID      | Funcionalidad                              | Unit (lógica)                              | Unit (servicio)                 | E2E                         | Estado  |
-|---------|--------------------------------------------|--------------------------------------------|----------------------------------|-----------------------------|---------|
-| ENE-01  | days_present: overlap correcto             | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-02  | days_present: inquilino fuera del período  | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-03  | Reparto equal: partes iguales              | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-04  | Reparto prorated: por días                 | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-05  | Reparto meter: por kWh                     | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-06  | Reconciliación: SUM == total exacto        | logic/energy-settlement.test.js            | —                                | —                           | ✅ Cubierto |
-| ENE-07  | settleEnergyBill llama Edge Function       | —                                          | services/energy.service.test.js  | —                           | ✅ Cubierto |
-| ENE-08  | Subir factura manual                       | —                                          | —                                | e2e/specs/energy.spec.js    | 🚧 Pendiente |
-| ENE-09  | Botón Repartir genera settlements+bulletins| —                                          | —                                | e2e/specs/energy.spec.js    | 🚧 Pendiente |
-| ENE-10  | Modo meter sin lecturas → error claro      | logic/energy-settlement.test.js            | services/energy.service.test.js  | —                           | 🚧 Pendiente |
+Algoritmo: **fracción diaria** (fracción[lodger] = Σ 1/totalDays/n_activos_hoy).
+Lecturas kWh opcionales: si existen → variable proporcional a kWh; si no → proporcional a fracción.
+
+| ID      | Funcionalidad                                      | Unit (lógica)                    | Unit (servicio)                 | E2E                         | Estado  |
+|---------|----------------------------------------------------|-----------------------------------|---------------------------------|-----------------------------|---------|
+| ENE-01  | buildDayMap: mapa día → inquilinos activos         | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-02  | calcFractions: 3 inquilinos período completo = 1/3 | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-03  | calcFractions: solapamientos parciales             | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-04  | Variable proporcional a kWh (con lecturas)         | logic/energy-settlement.test.js   | services/energy.service.test.js | —                           | ✅ Cubierto |
+| ENE-05  | Variable proporcional a fracción (sin lecturas)    | logic/energy-settlement.test.js   | services/energy.service.test.js | —                           | ✅ Cubierto |
+| ENE-06  | Reconciliación: SUM == total exacto                | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-07  | settleEnergyBill: llamadas a Supabase correctas    | —                                 | services/energy.service.test.js | —                           | ✅ Cubierto |
+| ENE-08  | unsettleEnergyBill: borrar reparto                 | —                                 | services/energy.service.test.js | —                           | ✅ Cubierto |
+| ENE-09  | Propiedad global: 3 inquilinos → suma exacta       | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-10  | Propiedad global: inquilino parcial → A > B, suma  | logic/energy-settlement.test.js   | —                               | —                           | ✅ Cubierto |
+| ENE-11  | Subir factura manual (UI)                          | —                                 | —                               | e2e/specs/energy.spec.js    | 🚧 Pendiente |
+| ENE-12  | Botón Repartir genera settlements+bulletins (UI)   | —                                 | —                               | e2e/specs/energy.spec.js    | 🚧 Pendiente |
+
+---
+
+## CON — Consumos (Visor de Período)
+
+Funcionalidad: `src/pages/v2/admin/accommodations/tabs/ConsumoTab.jsx` — `VisorConsumo`
+Requisito: REQ-008
+
+| ID      | Funcionalidad                                         | Unit (lógica) | E2E                                  | Estado  |
+|---------|-------------------------------------------------------|---------------|--------------------------------------|---------|
+| CON-01  | Modo "Últimos 12 meses" → gráfico con 12 puntos       | —             | qa/e2e/specs/consumos.spec.js        | 🚧 Pendiente |
+| CON-02  | Modo "Año completo" → selector año + meses Ene–Dic    | —             | qa/e2e/specs/consumos.spec.js        | 🚧 Pendiente |
+| CON-03  | Modo "Mes específico" → selector mes + puntos por día | —             | qa/e2e/specs/consumos.spec.js        | 🚧 Pendiente |
 
 ---
 
@@ -75,7 +137,7 @@
 | SEC-01  | RLS activo en tablas críticas              | security/multi-tenant-isolation.test.js    | —                                | ✅ Cubierto |
 | SEC-02  | Queries incluyen client_account_id         | security/multi-tenant-isolation.test.js    | —                                | ✅ Cubierto |
 | SEC-03  | Tenant A no ve datos de Tenant B           | security/multi-tenant-isolation.test.js    | e2e/specs/security (🚧 futuro)   | ⚠️ Parcial |
-| SEC-04  | Edge Functions validan JWT + tenant        | security/multi-tenant-isolation.test.js    | —                                | ⚠️ Parcial |
+| SEC-04  | RLS valida tenant en escrituras directas   | security/multi-tenant-isolation.test.js    | —                                | ⚠️ Parcial |
 
 ---
 
@@ -89,19 +151,93 @@
 
 ---
 
+## ENT — Gestión de Entidades (Owner / Payer)
+
+Funcionalidad: `src/pages/v2/admin/settings/AdminSettings.jsx` — tabs Entidad Propietaria y Entidad Pagadora  
+Requisito: REQ-011
+
+| ID      | Funcionalidad                                          | Unit (lógica) | E2E                                     | Estado  |
+|---------|--------------------------------------------------------|---------------|-----------------------------------------|---------|
+| ENT-01  | Crear entidad owner desde Configuración (plan Basic)   | —             | qa/e2e/specs/settings.spec.js           | 🚧 Pendiente |
+| ENT-02  | Editar entidad owner existente                         | —             | qa/e2e/specs/settings.spec.js           | 🚧 Pendiente |
+| ENT-03  | Tab Entidad Pagadora carga solo entidad type='payer'   | —             | qa/e2e/specs/settings.spec.js           | 🚧 Pendiente |
+| ENT-04  | Crear entidad payer si no existe                       | —             | qa/e2e/specs/settings.spec.js           | 🚧 Pendiente |
+| ENT-05  | Editar entidad payer existente                         | —             | qa/e2e/specs/settings.spec.js           | 🚧 Pendiente |
+| ENT-06  | Sin owner → AccommodationCreate bloquea creación       | —             | qa/e2e/specs/accommodations.spec.js     | 🚧 Pendiente |
+| ENT-07  | Con owner creado → AccommodationCreate permite flujo   | —             | qa/e2e/specs/accommodations.spec.js     | 🚧 Pendiente |
+
+---
+
+## UI — Interfaz de Alojamientos y Habitaciones
+
+Funcionalidad: `src/components/AccommodationCard.jsx` (nuevo), `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`  
+Cambio: CHG-2026-04-05
+
+| ID      | Funcionalidad                                                       | Unit | E2E                                        | Estado        |
+|---------|---------------------------------------------------------------------|------|--------------------------------------------|---------------|
+| UI-01   | AccommodationCard unificado — AccommodationsList usa card nueva     | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-02   | AccommodationCard unificado — EntityDetail usa card nueva           | —    | qa/e2e/specs/entities.spec.js              | 🚧 Pendiente  |
+| UI-03   | Room card — cabecera blanca con título+precio separados de imagen   | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-04   | Room card — formato HAB-XXX sin duplicar prefijo                    | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-05   | Room card — imagen dinámica por estado (libre/ocupado-M/ocupado-F)  | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-06   | Room card — badge inquilino superpuesto en imagen (abajo-izq)       | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-07   | Room card — iconos cocina-icono.webp / baño-icono.webp              | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-08   | Room card — footer Alojamiento + Entidad truncado a 1 línea         | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-09   | Room card — sombra 3D en imagen (drop-shadow)                       | —    | —                                          | 🚧 Pendiente  |
+| UI-10   | Panel filtros habitaciones — select Estado siempre visible          | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-11   | Panel filtros habitaciones — select Baño siempre visible            | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-12   | Panel filtros habitaciones — select Cocina siempre visible          | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-13   | Panel filtros habitaciones — "Limpiar" aparece solo si hay filtro   | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-14   | Panel filtros habitaciones — se limpian al entrar al tab            | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-15   | Room card libre — botón único "Asignar Inquilino" abre modal        | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+| UI-16   | Modal asignar — botón "Crear Inquilino" navega a formulario         | —    | qa/e2e/specs/accommodations.spec.js        | 🚧 Pendiente  |
+
+---
+
+## RSE — Búsqueda Global de Habitaciones
+
+Funcionalidad: `src/pages/v2/admin/rooms/RoomsSearch.jsx`  
+Requisito: REQ-012  
+Cambio: CHG-2026-04-06-room-search
+
+| ID      | Funcionalidad                                                           | Unit | E2E                                        | Estado        |
+|---------|-------------------------------------------------------------------------|------|--------------------------------------------|---------------|
+| RSE-01  | Icono "Habitaciones" aparece en barra de nav admin                      | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-02  | Clic en icono navega a `/v2/admin/habitaciones`                         | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-03  | Sin búsqueda activa → no muestra resultados (mensaje orientativo)       | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-04  | Filtro Entidad → selector Alojamiento muestra solo sus alojamientos     | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-05  | Cambio de Entidad limpia Alojamiento si ya no aplica                    | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-06  | Filtro Estado=Libre → solo habitaciones libres                          | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-07  | Filtro Baño=Compartido → solo habitaciones con baño compartido          | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-08  | Filtro Cocina=Privada → solo habitaciones con cocina privada            | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-09  | "Limpiar campos" resetea filtros, resultados y localStorage             | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-10  | Toggle lista/cards — cambia vista sin perder filtros                    | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-11  | Vista lista — columnas Alojamiento, Entidad, Estado, Precio, Baño, Cocina | —  | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-12  | Card libre → botón "Asignar Inquilino" navega al alojamiento            | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-13  | Card ocupada — Ver detalle navega a `/v2/admin/inquilinos/:id/detalle`  | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-14  | Card ocupada — imagen femenina si gender=female                         | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-15  | Filtros persisten al navegar a otra página y volver                     | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+| RSE-16  | "Limpiar campos" → vuelve a estado inicial sin resultados               | —    | qa/e2e/specs/rooms-search.spec.js          | 🚧 Pendiente  |
+
+---
+
 ## Resumen de cobertura
 
 | Módulo       | Total funcionalidades | Cubiertas | Parciales | Pendientes |
 |--------------|-----------------------|-----------|-----------|------------|
 | AUTH         | 6                     | 2         | 1         | 3          |
-| TEN          | 8                     | 4         | 2         | 2          |
-| ACC          | 6                     | 4         | 1         | 1          |
-| ENE          | 10                    | 7         | 0         | 3          |
+| TEN          | 11                    | 4         | 2         | 5          |
+| ACC          | 12                    | 4         | 1         | 7          |
+| ENE          | 12                    | 10        | 0         | 2          |
+| CON          | 3                     | 0         | 0         | 3          |
 | SEC          | 4                     | 1         | 3         | 0          |
 | PERF         | 3                     | 3         | 0         | 0          |
-| **TOTAL**    | **37**                | **21**    | **7**     | **9**      |
+| ENT          | 7                     | 0         | 0         | 7          |
+| UI           | 16                    | 0         | 0         | 16         |
+| RSE          | 16                    | 0         | 0         | 16         |
+| **TOTAL**    | **79**                | **24**    | **7**     | **48**     |
 
-**Cobertura actual: 57% completa, 76% con parciales**
+**Cobertura actual: 41% completa, 50% con parciales**
 
 ---
 
@@ -109,9 +245,11 @@
 
 1. **AUTH-03 E2E** — Login con portal cruzado no tiene spec activo
 2. **TEN-05/06 E2E** — BUG-033 bloquea todos los tests de creación/checkout de inquilinos
-3. **ENE-08/09 E2E** — Flujo completo de factura+reparto sin spec
+3. **ENE-11/12 E2E** — Flujo completo de factura+reparto+borrar en browser sin spec activo
+4. **ENT-01/06/07** — Crear entidad owner → crear alojamiento: flujo crítico post-BUG-046/049 sin test E2E
 
 ## Gaps P2 para siguiente iteración
 
-4. **ACC-06** — Tests del modo split_mode de energía por alojamiento
-5. **ENE-10** — Modo meter sin lecturas: fallo silencioso documentado pero sin test
+5. **ACC-06** — Tests de configuración `has_individual_meters` por alojamiento
+6. **ENT-02..05** — Editar owner/payer, tab payer filtra correctamente
+7. **ENE-11/12 E2E** — Flujo completo de factura + reparto + borrar reparto en browser

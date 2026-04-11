@@ -6,8 +6,8 @@
 // =============================================================================
 
 import { invokeWithAuth } from "./supabaseInvoke.services";
+import { supabase } from "./supabaseClient";
 
-const FN_WIZARD_INIT = import.meta.env.VITE_FN_WIZARD_INIT || "wizard_init";
 const FN_WIZARD_SUBMIT = import.meta.env.VITE_FN_WIZARD_SUBMIT || "wizard_submit";
 const FN_PROVISION_SUPERADMIN = import.meta.env.VITE_FN_PROVISION_SUPERADMIN || "provision_client_account_superadmin";
 
@@ -15,9 +15,14 @@ const FN_PROVISION_SUPERADMIN = import.meta.env.VITE_FN_PROVISION_SUPERADMIN || 
  * Inicia el wizard (marca onboarding_status = 'in_progress')
  */
 export async function callWizardInit() {
-  return invokeWithAuth(FN_WIZARD_INIT, {
-    body: {},
-  });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("No hay sesión activa");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ onboarding_status: "in_progress" })
+    .eq("id", user.id);
+  if (error) throw new Error(error.message);
+  return { ok: true, step: "A" };
 }
 
 /**

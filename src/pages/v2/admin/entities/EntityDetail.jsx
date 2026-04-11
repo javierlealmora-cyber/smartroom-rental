@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert, Button, Card, Checkbox, Col, Input, Progress, Row, Skeleton, Tag, Tooltip, Typography,
+  Alert, Button, Card, Checkbox, Col, Input, Row, Skeleton, Tag, Tooltip, Typography,
 } from "antd";
 import {
   ArrowLeftOutlined, BankOutlined, EditOutlined, HomeOutlined,
@@ -13,14 +13,10 @@ import {
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { supabase } from "../../../../services/supabaseClient";
+import AccommodationCard from "../../../../components/AccommodationCard";
 
 const { Title, Text } = Typography;
 
-const STATUS_TAG = { active: "success", inactive: "warning", archived: "default" };
-const STATUS_LABEL = { active: "Activo", inactive: "Inactivo", archived: "Archivado" };
-const STATUS_COLOR = { active: "#16A34A", inactive: "#DC2626", archived: "#6B7280" };
-
-const ACC_CARD_IMAGE = "/icons/alojamiento-card-model.jpg";
 
 const LEGAL_TYPE_LABEL = {
   autonomo: "Autónomo",
@@ -35,15 +31,6 @@ function formatEntityName(e) {
   return parts.join(" ") || e.legal_name || "(sin nombre)";
 }
 
-function getStats(acc) {
-  const rooms = acc.rooms || [];
-  const total = rooms.length;
-  const occupied = rooms.filter((r) => r.status === "occupied").length;
-  const free = rooms.filter((r) => r.status === "free").length;
-  const pending = rooms.filter((r) => r.status === "pending_checkout").length;
-  const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
-  return { total, occupied, free, pending, rate };
-}
 
 export default function EntityDetail() {
   const { id } = useParams();
@@ -65,7 +52,7 @@ export default function EntityDetail() {
         supabase.from("entities").select("*").eq("id", id).eq("client_account_id", clientAccountId).single(),
         supabase
           .from("accommodations")
-          .select("*, rooms(id, is_maintenance)")
+          .select("*, rooms(id, is_maintenance, current_assignments:lodger_room_assignments(room_id, move_out_date))")
           .eq("owner_entity_id", id)
           .eq("client_account_id", clientAccountId)
           .order("name"),
@@ -73,7 +60,22 @@ export default function EntityDetail() {
       if (entErr) throw new Error(entErr.message);
       if (accsErr) throw new Error(accsErr.message);
       setEntity(ent);
-      setAccommodations(accs || []);
+      const today = new Date().toISOString().split("T")[0];
+      const accsWithStatus = (accs || []).map(acc => ({
+        ...acc,
+        rooms: (acc.rooms || []).map(room => {
+          const asgn = (room.current_assignments || []).find(
+            a => !a.move_out_date || a.move_out_date > today
+          );
+          let derivedStatus;
+          if (room.is_maintenance)     derivedStatus = "maintenance";
+          else if (!asgn)              derivedStatus = "free";
+          else if (!asgn.move_out_date) derivedStatus = "occupied";
+          else                         derivedStatus = "pending_checkout";
+          return { ...room, derivedStatus };
+        }),
+      }));
+      setAccommodations(accsWithStatus);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -194,95 +196,17 @@ export default function EntityDetail() {
         );
         return (
         <Row gutter={[20, 20]}>
-          {filtered.map((acc) => {
-            const { total, occupied, free, pending, rate } = getStats(acc);
-            const progressColor = rate > 80 ? "#059669" : rate > 50 ? "#F59E0B" : "#DC2626";
-            const isActive = acc.status === "active";
-            return (
-              <Col key={acc.id} xs={24} sm={12} lg={8} xl={6}>
-                <Card
-                  style={{
-                    borderRadius: 16,
-                    border: "1px solid #E5E7EB",
-                    background: "#FFFFFF",
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                    overflow: "hidden",
-                    opacity: isActive ? 1 : 0.78,
-                  }}
-                  styles={{ body: { padding: "20px 20px 0 20px", background: "#fff" } }}
-                >
-                  {/* ── 1: Nombre + Estado ── */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                    <Text strong style={{ fontSize: 20, color: "#1D1D1F", letterSpacing: "-0.3px", lineHeight: 1.3, flex: 1, paddingRight: 8 }}>
-                      {acc.name}
-                    </Text>
-                    <span style={{ color: STATUS_COLOR[acc.status] || "#6B7280", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
-                      {STATUS_LABEL[acc.status] || acc.status}
-                    </span>
-                  </div>
-
-                  {/* ── 2: Dirección ── */}
-                  <Text style={{ fontSize: 13, color: "#6B7280", display: "block", marginBottom: 16 }}>
-                    {[acc.address_line1 || acc.street, acc.postal_code, acc.city].filter(Boolean).join(", ") || "Sin dirección"}
-                  </Text>
-
-                  {/* ── 3: KPI boxes con borde ── */}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-                    {[
-                      { v: total,    l: "Total",   c: "#374151" },
-                      { v: occupied, l: "Ocupado", c: "#DC2626" },
-                      { v: free,     l: "Libres",  c: "#16A34A" },
-                      { v: pending,  l: "Pend.",   c: "#D97706" },
-                    ].map(({ v, l, c }) => (
-                      <div key={l} style={{ border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "8px 14px", minWidth: 60, textAlign: "left" }}>
-                        <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 2 }}>{l}</div>
-                        <div style={{ fontSize: 22, fontWeight: 700, color: c, lineHeight: 1 }}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* ── 4: Divider ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 16px -20px" }} />
-
-                  {/* ── 5: Imagen ── */}
-                  <div onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)} style={{ margin: "0 -20px 14px -20px", overflow: "hidden", background: "#fff", cursor: "pointer" }}>
-                    <img src={ACC_CARD_IMAGE} alt="Alojamiento"
-                      style={{ width: "100%", display: "block", objectFit: "contain", height: 180 }} />
-                  </div>
-
-                  {/* ── 6: Barra ocupación ── */}
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                      <Text style={{ fontSize: 12, color: "#6B7280" }}>Ocupación</Text>
-                      <Text style={{ fontSize: 12, color: "#6B7280" }}>{rate}%</Text>
-                    </div>
-                    <Progress percent={rate} showInfo={false} strokeColor={progressColor} size="small" trailColor="#E5E7EB" />
-                  </div>
-
-                  {/* ── 7: Divider + Botones ── */}
-                  <div style={{ height: 1, background: "#E5E7EB", margin: "0 -20px 14px -20px" }} />
-                  <div style={{ paddingBottom: 16, display: "flex", alignItems: "center", gap: 0 }}
-                    onClick={(e) => e.stopPropagation()}>
-                    <Button type="primary" size="middle"
-                      style={{ borderRadius: 20, fontWeight: 600, fontSize: 13, marginRight: 16 }}
-                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/editar`)}>
-                      Editar
-                    </Button>
-                    <Button type="link" size="middle"
-                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500, marginRight: 16 }}
-                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/servicios`)}>
-                      Servicios &gt;
-                    </Button>
-                    <Button type="link" size="middle"
-                      style={{ fontSize: 13, padding: 0, color: "#3B82F6", fontWeight: 500 }}
-                      onClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)}>
-                      Habitaciones &gt;
-                    </Button>
-                  </div>
-                </Card>
-              </Col>
-            );
-          })}
+          {filtered.map((acc) => (
+            <Col key={acc.id} xs={24} sm={12} lg={8} xl={6}>
+              <AccommodationCard
+                accommodation={acc}
+                onCardClick={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)}
+                onEdit={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones?tab=datos`)}
+                onServices={() => navigate(`/v2/admin/alojamientos/${acc.id}/servicios`)}
+                onRooms={() => navigate(`/v2/admin/alojamientos/${acc.id}/habitaciones`)}
+              />
+            </Col>
+          ))}
         </Row>
         );
       })()}

@@ -185,7 +185,7 @@ export default function AccommodationServices() {
               Añadir Servicio
             </Button>
             <Button icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/v2/admin/alojamientos/${id}/editar`)}>
+              onClick={() => navigate(`/v2/admin/alojamientos/${id}/habitaciones`)}>
               Volver
             </Button>
           </Space>

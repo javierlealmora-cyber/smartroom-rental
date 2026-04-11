@@ -416,31 +416,34 @@ CREATE TABLE public.energy_readings (
   -- Datos de lectura
   reading_date date NOT NULL,
   kwh numeric NOT NULL DEFAULT 0,
-  source text NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'api', 'import')),
+  source text NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'api', 'import', 'estimated')),
   
   -- Auditoria
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- ============================================================================
--- TABLA 15: energy_settlements
+-- TABLA 15: energy_settlements (granularidad diaria — una fila por día)
 -- ============================================================================
 CREATE TABLE public.energy_settlements (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_account_id uuid NOT NULL REFERENCES public.client_accounts(id) ON DELETE CASCADE,
-  energy_bill_id uuid NOT NULL REFERENCES public.energy_bills(id) ON DELETE CASCADE,
-  room_id uuid NOT NULL REFERENCES public.rooms(id) ON DELETE CASCADE,
-  lodger_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
-  
-  -- Datos de liquidación
-  days_present int NOT NULL DEFAULT 0,
-  kwh_assigned numeric NOT NULL DEFAULT 0,
-  amount_fixed numeric NOT NULL DEFAULT 0,
-  amount_variable numeric NOT NULL DEFAULT 0,
-  amount_total numeric NOT NULL DEFAULT 0,
-  
-  -- Auditoria
-  created_at timestamptz NOT NULL DEFAULT now()
+  id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_account_id   uuid        NOT NULL REFERENCES public.client_accounts(id)  ON DELETE CASCADE,
+  energy_bill_id      uuid        NOT NULL REFERENCES public.energy_bills(id)     ON DELETE CASCADE,
+  accommodation_id    uuid        NOT NULL REFERENCES public.accommodations(id)   ON DELETE CASCADE,
+  room_id             uuid        NOT NULL REFERENCES public.rooms(id)            ON DELETE CASCADE,
+  lodger_id           uuid                 REFERENCES public.profiles(id)         ON DELETE SET NULL,
+
+  -- Granularidad diaria
+  settlement_date       date        NOT NULL,
+  kwh_day               numeric     NOT NULL DEFAULT 0,
+  amount_fixed_day      numeric     NOT NULL DEFAULT 0,
+  amount_variable_day   numeric     NOT NULL DEFAULT 0,
+  amount_total_day      numeric     NOT NULL DEFAULT 0,
+
+  -- Auditoría
+  created_at          timestamptz NOT NULL DEFAULT now(),
+
+  UNIQUE (energy_bill_id, room_id, lodger_id, settlement_date)
 );
 
 -- ============================================================================

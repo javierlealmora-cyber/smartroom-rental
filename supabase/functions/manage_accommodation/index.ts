@@ -91,9 +91,11 @@ serve(async (req) => {
         .eq("type", "owner")
         .single();
 
-      if (!ownerEntity) return err(ERROR_CODES.NOT_FOUND, "Owner entity not found or not active", 404);
+      if (!ownerEntity) {
+        return err(ERROR_CODES.NOT_FOUND, "No se encontró una entidad propietaria con ese ID. Debes crear o activar una entidad propietaria antes de crear un alojamiento.", 404);
+      }
       if (ownerEntity.status !== "active") {
-        return err(ERROR_CODES.VALIDATION, "Owner entity is not active", 400);
+        return err(ERROR_CODES.VALIDATION, "La entidad propietaria seleccionada no está activa. Actívala antes de crear un alojamiento.", 400);
       }
 
       // Validar límite de plan
