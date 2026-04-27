@@ -5,6 +5,166 @@
 -- PRESERVA: Datos de superadmin, planes, y datos estáticos
 -- =====================================================
 
+-- ─── 0. Eliminar datos SAL antes de deshabilitar triggers ────────────────────
+-- IMPORTANTE: session_replication_role='replica' desactiva FK CASCADE.
+-- Las tablas SAL NO se eliminan en cascada al borrar client_accounts,
+-- así que hay que borrarlas explícitamente ANTES para evitar filas huérfanas
+-- con UUIDs obsoletos que rompan la idempotencia del seed 09_sal_shard_seed.sql.
+-- Se usan bloques DO con IF EXISTS para que el script sea seguro si las
+-- migraciones SAL no están aplicadas en el entorno.
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'gateway_lock_links') THEN
+    DELETE FROM public.gateway_lock_links;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_access_grants') THEN
+    DELETE FROM public.lock_access_grants;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_credentials') THEN
+    DELETE FROM public.lock_credentials;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_notifications') THEN
+    DELETE FROM public.lock_notifications;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_records') THEN
+    DELETE FROM public.lock_records;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_claim_sessions') THEN
+    DELETE FROM public.lock_claim_sessions;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_sync_commands') THEN
+    DELETE FROM public.lock_sync_commands;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'locks') THEN
+    DELETE FROM public.locks;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_placements') THEN
+    DELETE FROM public.lock_placements;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_access_group_members') THEN
+    DELETE FROM public.lock_access_group_members;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_access_group_scopes') THEN
+    DELETE FROM public.lock_access_group_scopes;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_access_groups') THEN
+    DELETE FROM public.lock_access_groups;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_access_actors') THEN
+    DELETE FROM public.lock_access_actors;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'gateway_claim_sessions') THEN
+    DELETE FROM public.gateway_claim_sessions;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'gateways') THEN
+    DELETE FROM public.gateways;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'lock_integrations') THEN
+    DELETE FROM public.lock_integrations;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'saas_service_subscriptions') THEN
+    DELETE FROM public.saas_service_subscriptions;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'provider_account_assignments') THEN
+    DELETE FROM public.provider_account_assignments;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'common_areas') THEN
+    DELETE FROM public.common_areas;
+  END IF;
+END $$;
+
 -- Deshabilitar triggers temporalmente para evitar problemas de cascada
 SET session_replication_role = 'replica';
 
