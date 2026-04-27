@@ -171,3 +171,28 @@ export function Icon3DConsumo({ size = 44 }) {
 export function Icon3DHabitaciones({ size = 44 }) {
   return <ImgIcon src="/images/buscar-habitacion-icon.webp" alt="Habitaciones" size={size} />;
 }
+
+export function Icon3DSmartAccess({ size = 44 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
+      <defs>
+        <filter id="sal-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#1D1D1F" floodOpacity="0.18"/></filter>
+        <linearGradient id="sal-g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FFFFFF"/><stop offset="100%" stopColor="#C8C8CC"/></linearGradient>
+        <linearGradient id="sal-g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F2F2F7"/><stop offset="100%" stopColor="#8E8E93"/></linearGradient>
+      </defs>
+      <g filter="url(#sal-sh)">
+        {/* Shackle (arco del candado) */}
+        <path d="M14 20 L14 13 A8 8 0 0 1 30 13 L30 20" stroke="url(#sal-g2)" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
+        {/* Cuerpo del candado */}
+        <rect x="9" y="19" width="26" height="17" rx="3.5" fill="url(#sal-g1)" stroke="#C8C8CC" strokeWidth="0.5"/>
+        {/* Reflejo */}
+        <rect x="10" y="20" width="8" height="3" rx="1.5" fill="white" opacity="0.4"/>
+        {/* Ojo del candado */}
+        <circle cx="22" cy="27" r="4" fill="url(#sal-g2)" opacity="0.85"/>
+        <circle cx="22" cy="27" r="2" fill="url(#sal-g1)"/>
+        {/* Hendidura */}
+        <rect x="21" y="28" width="2" height="4" rx="1" fill="#636366" opacity="0.7"/>
+      </g>
+    </svg>
+  );
+}

@@ -79,7 +79,6 @@ import RoomsSearch from "./pages/v2/admin/rooms/RoomsSearch";
 import AccommodationServicesV2 from "./pages/v2/admin/accommodations/AccommodationServices";
 import TenantsListV2 from "./pages/v2/admin/tenants/TenantsList";
 import TenantCreateV2 from "./pages/v2/admin/tenants/TenantCreate";
-import TenantEditV2 from "./pages/v2/admin/tenants/TenantEdit";
 import TenantDetailV2 from "./pages/v2/admin/tenants/TenantDetail";
 
 // v2 - Admin Entities
@@ -126,6 +125,15 @@ import PlanDetailV2 from "./pages/v2/superadmin/plans/PlanDetail";
 
 // v2 - Superadmin Services (DBSU-GS)
 import ServicesListV2 from "./pages/v2/superadmin/services/ServicesList";
+
+// v2 - Superadmin SAL (REQ-014)
+import SaasServicesListV2 from "./pages/v2/superadmin/saas-services/SaasServicesList";
+import SaasServiceDetailV2 from "./pages/v2/superadmin/saas-services/SaasServiceDetail";
+import ClientSalActivationV2 from "./pages/v2/superadmin/client-sal/ClientSalActivation";
+import SalShardsListV2 from "./pages/v2/superadmin/sal-shards/SalShardsList";
+
+// v2 - Admin Smart Access Lock (REQ-014 §15)
+import SalGestion from "./pages/v2/admin/services/smart-access/SalGestion";
 
 // v2 - Autoregistro (RCCP)
 import AutoRegistroCuenta from "./pages/v2/autoregistro/AutoRegistroCuenta";
@@ -280,6 +288,12 @@ export default function App() {
 
               {/* v2 - Superadmin Services (DBSU-GS) */}
               <Route path="/v2/superadmin/servicios" element={<ServicesListV2 />} />
+
+              {/* v2 - Superadmin SAL (REQ-014) */}
+              <Route path="/v2/superadmin/saas-servicios" element={<SaasServicesListV2 />} />
+              <Route path="/v2/superadmin/saas-servicios/:id" element={<SaasServiceDetailV2 />} />
+              <Route path="/v2/superadmin/cuentas/:id/smart-access" element={<ClientSalActivationV2 />} />
+              <Route path="/v2/superadmin/sal-shards" element={<SalShardsListV2 />} />
             </Route>
           </Route>
 
@@ -306,7 +320,6 @@ export default function App() {
               <Route path="/v2/admin/inquilinos/nuevo" element={<TenantCreateV2 />} />
               <Route path="/v2/admin/inquilinos/:id/detalle-inquilino" element={<TenantDetailV2 />} />
               <Route path="/v2/admin/inquilinos/:id/detalle" element={<LodgerDetailV2 />} />
-              <Route path="/v2/admin/inquilinos/:id/editar" element={<TenantEditV2 />} />
               <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
               <Route path="/v2/admin/servicios/nuevo" element={<ServiceCreateV2 />} />
               <Route path="/v2/admin/servicios/:id/editar" element={<ServiceEditV2 />} />
@@ -320,6 +333,8 @@ export default function App() {
               <Route path="/v2/admin/inquilinos/servicios" element={<LodgerServicesListV2 />} />
               <Route path="/v2/admin/inquilinos/servicios/nuevo" element={<LodgerServiceCreateV2 />} />
               <Route path="/v2/admin/settings" element={<AdminSettingsV2 />} />
+              <Route path="/v2/admin/smart-access" element={<SalGestion />} />
+              <Route path="/v2/admin/smart-access/:tab" element={<SalGestion />} />
             </Route>
           </Route>
 

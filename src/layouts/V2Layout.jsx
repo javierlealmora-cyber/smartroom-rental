@@ -12,7 +12,7 @@ import {
   Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
   Icon3DServicios, Icon3DCatalogo, Icon3DFacturas, Icon3DLiquidaciones,
   Icon3DBoletines, Icon3DCuentas, Icon3DPlanes, Icon3DMiPanel, Icon3DConsumo, Icon3DIncidencias,
-  Icon3DHabitaciones,
+  Icon3DHabitaciones, Icon3DSmartAccess,
 } from "../components/icons3d/NavIcons3D";
 
 // ─── Menus de navegacion por rol ─────────────────────────────────────────────
@@ -25,13 +25,16 @@ const ADMIN_NAV = [
   { label: "Inquilinos",    path: "/v2/admin/inquilinos",            Icon: Icon3DInquilinos },
   { label: "Servicios",     path: "/v2/admin/inquilinos/servicios",  Icon: Icon3DServicios },
   { label: "Catálogo",      path: "/v2/admin/servicios",             Icon: Icon3DCatalogo },
+  { label: "Acceso",        path: "/v2/admin/smart-access",          Icon: Icon3DSmartAccess },
 ];
 
 const SUPERADMIN_NAV = [
-  { label: "Dashboard",       path: "/v2/superadmin",          Icon: Icon3DDashboard },
-  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas",  Icon: Icon3DCuentas },
-  { label: "Planes",          path: "/v2/superadmin/planes",   Icon: Icon3DPlanes },
-  { label: "Servicios",       path: "/v2/superadmin/servicios",Icon: Icon3DServicios },
+  { label: "Dashboard",       path: "/v2/superadmin",                Icon: Icon3DDashboard },
+  { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas",        Icon: Icon3DCuentas },
+  { label: "Planes",          path: "/v2/superadmin/planes",         Icon: Icon3DPlanes },
+  { label: "Servicios",       path: "/v2/superadmin/servicios",      Icon: Icon3DServicios },
+  { label: "Add-ons SaaS",    path: "/v2/superadmin/saas-servicios", Icon: Icon3DCatalogo },
+  { label: "SAL Shards",      path: "/v2/superadmin/sal-shards",     Icon: Icon3DSmartAccess },
 ];
 
 const LODGER_NAV = [
@@ -73,6 +76,25 @@ const BREADCRUMB_ROUTES = {
     { label: "Dashboard", path: "/v2/superadmin" },
     { label: "Catálogo de Servicios", path: "/v2/superadmin/servicios" },
     { label: "Nuevo Servicio", path: null },
+  ],
+  "/v2/superadmin/saas-servicios": [
+    { label: "Dashboard", path: "/v2/superadmin" },
+    { label: "Add-ons SaaS", path: "/v2/superadmin/saas-servicios" },
+  ],
+  "/v2/superadmin/saas-servicios/:id": [
+    { label: "Dashboard", path: "/v2/superadmin" },
+    { label: "Add-ons SaaS", path: "/v2/superadmin/saas-servicios" },
+    { label: "Detalle", path: null },
+  ],
+  "/v2/superadmin/cuentas/:id/smart-access": [
+    { label: "Dashboard", path: "/v2/superadmin" },
+    { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
+    { label: "Detalle", path: null },
+    { label: "SmartAccessLock", path: null },
+  ],
+  "/v2/superadmin/sal-shards": [
+    { label: "Dashboard", path: "/v2/superadmin" },
+    { label: "SAL Shards", path: "/v2/superadmin/sal-shards" },
   ],
   // Admin
   "/v2/admin": [{ label: "Dashboard", path: "/v2/admin" }],
@@ -144,11 +166,6 @@ const BREADCRUMB_ROUTES = {
     { label: "Inquilinos", path: "/v2/admin/inquilinos" },
     { label: "Detalle", path: null },
   ],
-  "/v2/admin/inquilinos/:id/editar": [
-    { label: "Dashboard", path: "/v2/admin" },
-    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
-    { label: "Editar", path: null },
-  ],
   "/v2/admin/servicios": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Servicios", path: "/v2/admin/servicios" },
@@ -203,6 +220,14 @@ const BREADCRUMB_ROUTES = {
   "/v2/admin/settings": [
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Configuración", path: null },
+  ],
+  "/v2/admin/smart-access": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Smart Access", path: "/v2/admin/smart-access" },
+  ],
+  "/v2/admin/smart-access/:tab": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Smart Access", path: "/v2/admin/smart-access" },
   ],
   "/v2/admin/inquilinos/servicios": [
     { label: "Dashboard", path: "/v2/admin" },
