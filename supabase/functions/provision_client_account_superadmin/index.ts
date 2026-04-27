@@ -16,13 +16,13 @@ interface PayerPayload {
   tax_id?: string;
   billing_email?: string;
   phone?: string;
-  country?: string;
-  province?: string;
-  city?: string;
-  zip?: string;
-  street?: string;
-  street_number?: string;
-  address_extra?: string;
+  address_country?: string;
+  address_province?: string;
+  address_city?: string;
+  address_postal_code?: string;
+  address_street?: string;
+  address_number?: string;
+  address_floor?: string;
 }
 
 interface AdminPayload {
@@ -211,13 +211,13 @@ serve(async (req) => {
         tax_id: body.payer.tax_id,
         billing_email: body.payer.billing_email,
         phone: body.payer.phone,
-        country: body.payer.country || "Espana",
-        province: body.payer.province,
-        city: body.payer.city,
-        zip: body.payer.zip,
-        street: body.payer.street,
-        street_number: body.payer.street_number,
-        address_extra: body.payer.address_extra,
+        address_country: body.payer.address_country || "Espana",
+        address_province: body.payer.address_province,
+        address_city: body.payer.address_city,
+        address_postal_code: body.payer.address_postal_code,
+        address_street: body.payer.address_street,
+        address_number: body.payer.address_number,
+        address_floor: body.payer.address_floor,
       });
 
     if (payerError) {
@@ -253,13 +253,13 @@ serve(async (req) => {
         tax_id: body.payer.tax_id,
         billing_email: body.payer.billing_email,
         phone: body.payer.phone,
-        country: body.payer.country || "Espana",
-        province: body.payer.province,
-        city: body.payer.city,
-        zip: body.payer.zip,
-        street: body.payer.street,
-        street_number: body.payer.street_number,
-        address_extra: body.payer.address_extra,
+        address_country: body.payer.address_country || "Espana",
+        address_province: body.payer.address_province,
+        address_city: body.payer.address_city,
+        address_postal_code: body.payer.address_postal_code,
+        address_street: body.payer.address_street,
+        address_number: body.payer.address_number,
+        address_floor: body.payer.address_floor,
       });
 
     if (ownerError) {

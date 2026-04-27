@@ -1,6 +1,6 @@
 // Edge Function: manage_lodger
 // Gestiona operaciones de escritura sobre inquilinos (profiles con role='lodger')
-// Acciones: create | update | set_status | invite | reassign_room | schedule_checkout
+// Acciones: create | update | set_status | invite | assign_room | reassign_room | schedule_checkout
 // Valida: JWT + rol admin/superadmin + tenant + límites de plan
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -56,7 +56,7 @@ serve(async (req) => {
 
     if (!action || !payload) return err(ERROR_CODES.VALIDATION, "Missing action or payload", 400);
 
-    const validActions = ["create", "update", "set_status", "invite", "reassign_room", "schedule_checkout"];
+    const validActions = ["create", "update", "set_status", "invite", "assign_room", "reassign_room", "schedule_checkout"];
     if (!validActions.includes(action)) {
       return err(ERROR_CODES.INVALID_ACTION, `Unknown action: ${action}`, 400);
     }
@@ -324,14 +324,139 @@ serve(async (req) => {
       return ok({ message: "Invitation sent", email: lodger.email, magic_link: magicLink.properties.action_link });
     }
 
-    // ── 9. Acción: REASSIGN_ROOM ──────────────────────────────────────────────
+    // ── 9. Acción: ASSIGN_ROOM ────────────────────────────────────────────────
+    if (action === "assign_room") {
+      const { 
+        id, room_id, accommodation_id, move_in_date, billing_start_date, 
+        monthly_rent, deposit_amount, commission_amount, first_month_amount, 
+        services_provision_amount 
+      } = payload as {
+        id: string;
+        room_id: string;
+        accommodation_id: string;
+        move_in_date: string;
+        billing_start_date?: string;
+        monthly_rent?: number;
+        deposit_amount?: number;
+        commission_amount?: number;
+        first_month_amount?: number;
+        services_provision_amount?: number;
+      };
+
+      if (!id) return err(ERROR_CODES.VALIDATION, "id (lodger id) is required", 400);
+      if (!room_id) return err(ERROR_CODES.VALIDATION, "room_id is required", 400);
+      if (!accommodation_id) return err(ERROR_CODES.VALIDATION, "accommodation_id is required", 400);
+      if (!move_in_date) return err(ERROR_CODES.VALIDATION, "move_in_date is required", 400);
+
+      // Verificar que el lodger existe y pertenece al tenant
+      const { data: lodger } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", id)
+        .eq("role", "lodger")
+        .eq("client_account_id", clientAccountId)
+        .single();
+
+      if (!lodger) return err(ERROR_CODES.NOT_FOUND, "Lodger not found", 404);
+
+      // Verificar que no tiene asignación activa
+      const { data: existingAssignment } = await supabase
+        .from("lodger_room_assignments")
+        .select("id")
+        .eq("lodger_id", id)
+        .is("move_out_date", null)
+        .maybeSingle();
+
+      if (existingAssignment) {
+        return err(ERROR_CODES.VALIDATION, "Lodger already has an active room assignment", 400);
+      }
+
+      // Verificar que la habitación existe, está libre y pertenece al tenant
+      const { data: room } = await supabase
+        .from("rooms")
+        .select("id, is_maintenance")
+        .eq("id", room_id)
+        .eq("client_account_id", clientAccountId)
+        .single();
+
+      if (!room) return err(ERROR_CODES.NOT_FOUND, "Room not found", 404);
+      if (room.is_maintenance) {
+        return err(ERROR_CODES.VALIDATION, "Room is under maintenance", 400);
+      }
+
+      // Verificar que no hay asignación activa o futura en la habitación
+      const today = new Date().toISOString().split("T")[0];
+      const { data: activeRoomAsgn } = await supabase
+        .from("lodger_room_assignments")
+        .select("id")
+        .eq("room_id", room_id)
+        .or(`move_out_date.is.null,move_out_date.gt.${today}`)
+        .maybeSingle();
+
+      if (activeRoomAsgn) {
+        return err(ERROR_CODES.VALIDATION, "Room is not available", 400);
+      }
+
+      // Crear asignación
+      const { data: newAssignment, error: assignError } = await supabase
+        .from("lodger_room_assignments")
+        .insert({
+          lodger_id: id,
+          room_id,
+          accommodation_id,
+          client_account_id: clientAccountId,
+          move_in_date,
+          billing_start_date: billing_start_date || move_in_date,
+          monthly_rent: monthly_rent || null,
+          deposit_amount: deposit_amount || 0,
+          commission_amount: commission_amount || null,
+          first_month_amount: first_month_amount || null,
+          services_provision_amount: services_provision_amount || null,
+        })
+        .select("*")
+        .single();
+
+      if (assignError) {
+        return err(ERROR_CODES.INTERNAL, "Error creating room assignment", 500, assignError.message);
+      }
+
+      // Activar inquilino
+      await supabase
+        .from("profiles")
+        .update({ onboarding_status: "active" })
+        .eq("id", id)
+        .eq("role", "lodger");
+
+      // Registrar en audit_log
+      await supabase.from("audit_log").insert({
+        client_account_id: clientAccountId,
+        actor_user_id: user.id,
+        actor_role: profile.role,
+        entity_type: "lodger_assignment",
+        entity_id: newAssignment.id,
+        action: "assign_room",
+        new_values: newAssignment,
+      });
+
+      return ok(newAssignment);
+    }
+
+    // ── 10. Acción: REASSIGN_ROOM ─────────────────────────────────────────────
     if (action === "reassign_room") {
-      const { id, new_room_id, move_in_date, billing_start_date, monthly_rent } = payload as {
+      const { 
+        id, new_room_id, move_in_date, billing_start_date, 
+        monthly_rent, deposit_amount, commission_amount, first_month_amount, 
+        services_provision_amount 
+      } = payload as {
         id: string;
         new_room_id: string;
         move_in_date: string;
         billing_start_date?: string;
         monthly_rent?: number;
+        deposit_amount?: number;
+        commission_amount?: number;
+        first_month_amount?: number;
+        services_provision_amount?: number;
       };
 
       if (!id) return err(ERROR_CODES.VALIDATION, "id (lodger id) is required", 400);
@@ -396,9 +521,14 @@ serve(async (req) => {
           lodger_id: id,
           room_id: new_room_id,
           accommodation_id: newRoom.accommodation_id,
+          client_account_id: clientAccountId,
           move_in_date,
           billing_start_date: billing_start_date || move_in_date,
           monthly_rent: monthly_rent || null,
+          deposit_amount: deposit_amount || 0,
+          commission_amount: commission_amount || null,
+          first_month_amount: first_month_amount || null,
+          services_provision_amount: services_provision_amount || null,
         })
         .select("*")
         .single();
