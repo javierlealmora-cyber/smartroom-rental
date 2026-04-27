@@ -212,7 +212,7 @@ export default function DashboardSuperadmin() {
         { data: lodgers },
         { data: auditLog },
       ] = await Promise.all([
-        supabase.from("client_accounts").select("id,name,slug,plan_code,billing_cycle,status,start_date,created_at,contact_email").order("created_at", { ascending: false }),
+        supabase.from("client_accounts").select("id,name,last_name1,last_name2,slug,plan_code,billing_cycle,status,start_date,created_at,contact_email").order("created_at", { ascending: false }),
         supabase.from("entities").select("id,client_account_id,type,status"),
         supabase.from("accommodations").select("id,status"),
         supabase.from("rooms").select("id,is_maintenance"),
@@ -222,7 +222,10 @@ export default function DashboardSuperadmin() {
         supabase.from("audit_log").select("id,entity_type,action,actor_role,new_values,created_at").order("created_at", { ascending: false }).limit(20),
       ]);
 
-      const allAccounts      = accounts || [];
+      const allAccounts      = (accounts || []).map((a) => ({
+        ...a,
+        ownerFullName: [a.name, a.last_name1, a.last_name2].filter(Boolean).join(" ") || a.name,
+      }));
       const allEntities      = entities || [];
       const allRooms         = rooms    || [];
       const allLodgers       = lodgers  || [];
@@ -474,10 +477,10 @@ export default function DashboardSuperadmin() {
                       <td style={S.td}>
                         <div style={S.accountCell}>
                           <div style={{ ...S.avatar, background: "#0B2E6D" }}>
-                            {a.name.charAt(0).toUpperCase()}
+                            {a.ownerFullName.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={S.accountName}>{a.name}</div>
+                            <div style={S.accountName}>{a.ownerFullName}</div>
                             <div style={S.accountSlug}>{a.slug}</div>
                           </div>
                         </div>

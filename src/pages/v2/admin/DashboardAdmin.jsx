@@ -392,7 +392,7 @@ export default function DashboardAdmin() {
               const actorDisplay = item.actorName || item.actor_role || "—";
               const ENTITY_ROUTE = {
                 accommodation: `/v2/admin/alojamientos/${item.entity_id}/habitaciones`,
-                lodger:        `/v2/admin/inquilinos/${item.entity_id}/editar`,
+                lodger:        `/v2/admin/inquilinos/${item.entity_id}/detalle-inquilino`,
                 entity:        `/v2/admin/entidades/${item.entity_id}`,
               };
               const route = item.entity_id ? ENTITY_ROUTE[item.entity_type] : null;

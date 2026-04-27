@@ -63,7 +63,7 @@ export default function LodgerDashboard() {
       const [{ data: asgn }, { data: bulls }, { data: svcs }] = await Promise.all([
         supabase
           .from("lodger_room_assignments")
-          .select("id, move_in_date, billing_start_date, monthly_rent, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_line1,city)")
+          .select("id, move_in_date, billing_start_date, monthly_rent, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_street,address_city)")
           .eq("lodger_id", lodgerData.id)
           .is("move_out_date", null)
           .maybeSingle(),
@@ -154,8 +154,8 @@ export default function LodgerDashboard() {
                 <Descriptions.Item label="Alojamiento">
                   <Text strong>{assignment.accommodation?.name}</Text>
                 </Descriptions.Item>
-                {assignment.accommodation?.address_line1 && (
-                  <Descriptions.Item label="Dirección">{assignment.accommodation.address_line1}{assignment.accommodation.city ? `, ${assignment.accommodation.city}` : ""}</Descriptions.Item>
+                {assignment.accommodation?.address_street && (
+                  <Descriptions.Item label="Dirección">{assignment.accommodation.address_street}{assignment.accommodation.address_city ? `, ${assignment.accommodation.address_city}` : ""}</Descriptions.Item>
                 )}
                 <Descriptions.Item label="Habitación">
                   <Tag color="geekblue" style={{ fontSize: 13, padding: "1px 10px" }}>

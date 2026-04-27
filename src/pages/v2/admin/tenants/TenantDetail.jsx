@@ -1,7 +1,7 @@
 // src/pages/v2/admin/tenants/TenantDetail.jsx
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Button, DatePicker, Form, InputNumber, message, Modal, Row, Col, Space, Skeleton, Alert,
 } from "antd";
@@ -88,6 +88,7 @@ export default function TenantDetail() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const navigate = useNavigate();
   const { id }   = useParams();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading]                   = useState(true);
   const [lodger,  setLodger]                    = useState(null);
@@ -114,6 +115,12 @@ export default function TenantDetail() {
   const [reassignOpen, setReassignOpen] = useState(false);
 
   useEffect(() => { if (clientAccountId) loadLodger(); }, [id, clientAccountId]);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "reassign" && lodger) {
+      setReassignOpen(true);
+    }
+  }, [searchParams, lodger]);
 
   async function loadLodger() {
     try {
@@ -276,7 +283,7 @@ export default function TenantDetail() {
           <div style={{
             display:"flex", alignItems:"flex-start",
             justifyContent:"space-between",
-            marginBottom:24, gap:16, flexWrap:"wrap",
+            marginBottom:8, gap:16, flexWrap:"wrap",
             paddingTop:8,
           }}>
             <div>
@@ -293,26 +300,48 @@ export default function TenantDetail() {
                   {statusLabel}
                 </span>
               </div>
-              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                {lodger.phone    && <span style={{fontSize:13,color:"#6B7280"}}>{lodger.phone}</span>}
-                {lodger.address_province && <span style={{fontSize:13,color:"#6B7280"}}>{lodger.address_province}</span>}
-              </div>
-              {/* Línea gris: alojamiento y habitación actual */}
-              <div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,color:"#9CA3AF"}}>
-                  {activeAssignment
-                    ? <>{activeAssignment.accommodation?.name} · <span style={{color:"#6366F1",fontWeight:600}}>Hab. {activeAssignment.room?.number}</span></>
-                    : <span style={{fontStyle:"italic"}}>Sin habitación asignada</span>}
-                </span>
-              </div>
             </div>
             <div style={{display:"flex",gap:8}}>
               <Button icon={<ArrowLeftOutlined/>} onClick={()=>navigate(-1)}>Volver</Button>
             </div>
           </div>
 
+          {/* Línea estética gris bajo el nombre - ancho completo */}
+          <div style={{borderBottom:"2px solid #E5E7EB",marginBottom:8}}></div>
+
+          <div style={{maxWidth:1000, margin:"0 auto", padding: isMobile ? "0 16px" : "0"}}>
+            <div>
+              {/* Alojamiento y habitación actual */}
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                <span style={{fontSize:12,color:"#9CA3AF"}}>
+                  {activeAssignment
+                    ? <>{activeAssignment.accommodation?.name} · <span style={{color:"#6366F1",fontWeight:600}}>Hab. {activeAssignment.room?.number}</span></>
+                    : <span style={{fontStyle:"italic"}}>Sin habitación asignada</span>}
+                </span>
+              </div>
+              {/* Teléfono */}
+              <div style={{display:"flex",gap:6,alignItems:"baseline"}}>
+                {lodger.phone && (
+                  <>
+                    <span style={{fontSize:12,color:"#9CA3AF"}}>Teléfono:</span>
+                    <span style={{fontSize:13,color:"#6B7280"}}>{lodger.phone}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* ── CUERPO — izq foto | der datos ───────────────── */}
-          <div style={{display:"grid", gridTemplateColumns:isMobile?"1fr":"336px 1fr", gap:isMobile?24:40, alignItems:"start"}}>
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:isMobile?"1fr":"336px 1fr",
+            gap:isMobile?24:40,
+            alignItems:"start",
+            border:"2px solid #E5E7EB",
+            borderRadius:12,
+            padding:isMobile?16:24,
+            background:"#FFFFFF"
+          }}>
 
             {/* COLUMNA IZQUIERDA — foto persona + dirección */}
             <div>
@@ -321,12 +350,13 @@ export default function TenantDetail() {
                   filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.12))"}}/>
 
               <Section title="Dirección">
-                <DataRow label="Calle"        value={lodger.address_street}/>
-                <DataRow label="Número"       value={lodger.address_number}/>
-                <DataRow label="Piso / Puerta"value={lodger.address_floor}/>
-                <DataRow label="Código Postal"value={lodger.address_postal_code}/>
-                <DataRow label="Localidad"    value={lodger.address_city}/>
-                <DataRow label="Provincia"    value={lodger.address_province}/>
+                <DataRow label="Calle"                    value={lodger.address_street}/>
+                <DataRow label="Número"                   value={lodger.address_number}/>
+                <DataRow label="Piso / Puerta / Escalera" value={lodger.address_floor}/>
+                <DataRow label="Código Postal"            value={lodger.address_postal_code}/>
+                <DataRow label="Localidad"                value={lodger.address_city}/>
+                <DataRow label="Provincia"                value={lodger.address_province}/>
+                <DataRow label="País"                     value={lodger.address_country}/>
               </Section>
             </div>
 
@@ -392,6 +422,10 @@ export default function TenantDetail() {
             gap:isMobile?24:48,
             alignItems:"start",
             marginTop:8,
+            border:"2px solid #E5E7EB",
+            borderRadius:12,
+            padding:isMobile?16:24,
+            background:"#FFFFFF"
           }}>
             {/* Foto cama */}
             <div style={{overflow:"hidden"}}>
@@ -453,7 +487,13 @@ export default function TenantDetail() {
 
           {/* ── PAGADORES — ancho completo, al final ── */}
           {clientAccountId && (
-            <div style={{marginTop:32}}>
+            <div style={{
+              marginTop:12,
+              border:"2px solid #E5E7EB",
+              borderRadius:12,
+              padding:isMobile?16:24,
+              background:"#FFFFFF"
+            }}>
               <Section title="Gestión de pagadores">
                 <PayersList
                   lodgerId={id}
@@ -611,7 +651,12 @@ export default function TenantDetail() {
       <ChangeRoomModal
         open={reassignOpen}
         onClose={() => setReassignOpen(false)}
-        onSuccess={() => { loadLodger(); message.success("Habitación cambiada correctamente"); }}
+        onSuccess={() => {
+          setReassignOpen(false);
+          navigate(`/v2/admin/inquilinos/${id}/detalle-inquilino`, { replace: true });
+          loadLodger();
+          message.success("Habitación cambiada correctamente");
+        }}
         lodger={lodger}
         activeAssignment={activeAssignment}
         clientAccountId={clientAccountId}

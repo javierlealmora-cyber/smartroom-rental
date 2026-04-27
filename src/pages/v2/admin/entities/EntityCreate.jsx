@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from "antd";
+import { Alert, Button, Card, Col, Form, Input, Row, Select, Space, Typography } from "antd";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { createEntity } from "../../../../services/entities.service";
 import EntityFormFields from "../../../../components/shared/EntityFormFields";
-import { PROVINCIAS_ES, LEGAL_TYPES } from "../../../../constants/formOptions";
+import AddressFormFields from "../../../../components/AddressFormFields";
+import { LEGAL_TYPES } from "../../../../constants/formOptions";
 
 export default function EntityCreate() {
   const navigate = useNavigate();
@@ -47,13 +48,13 @@ export default function EntityCreate() {
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
-        country: values.country || "España",
-        province: values.province || null,
-        city: values.city || null,
-        zip: values.zip || null,
-        street: values.street || null,
-        street_number: values.street_number || null,
-        address_extra: values.address_extra || null,
+        address_country: values.address_country || "España",
+        address_province: values.address_province || null,
+        address_city: values.address_city || null,
+        address_postal_code: values.address_postal_code || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_floor: values.address_floor || null,
       });
 
       navigate("/v2/admin/entidades", { replace: true });
@@ -82,7 +83,7 @@ export default function EntityCreate() {
           layout="vertical"
           initialValues={{
             legal_type: "persona_juridica",
-            country: "España",
+            address_country: "España",
           }}
           onFinish={onFinish}
           disabled={!canWrite || busy}
@@ -100,67 +101,7 @@ export default function EntityCreate() {
 
             <EntityFormFields legalType={legalType} showLegalTypeSelector={false} />
 
-            <Col xs={24}>
-              <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Tipo de vía" name="street"
-                rules={[{ required: true, message: "Indique la calle" }]}
-                extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
-                <Input placeholder="Calle, Avenida, Plaza, Paseo..." />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={4}>
-              <Form.Item label="Número" name="street_number"
-                rules={[{ required: true, message: "Indique el número" }]}>
-                <Input placeholder="12" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={4}>
-              <Form.Item label="Piso" name="floor">
-                <Input placeholder="2" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={4}>
-              <Form.Item label="Puerta" name="door">
-                <Input placeholder="A" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Código Postal" name="zip"
-                rules={[{ required: true, message: "Indique el código postal" }]}>
-                <Input placeholder="28001" maxLength={5} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Ciudad / Municipio" name="city"
-                rules={[{ required: true, message: "Indique la ciudad" }]}>
-                <Input placeholder="Madrid" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Provincia" name="province"
-                rules={[{ required: true, message: "Seleccione la provincia" }]}>
-                <Select
-                  showSearch
-                  placeholder="Seleccionar provincia..."
-                  optionFilterProp="label"
-                  options={PROVINCIAS_ES}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="País" name="country"
-                rules={[{ required: true, message: "Indique el país" }]}>
-                <Input placeholder="España" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={16}>
-              <Form.Item label="Información adicional" name="address_extra"
-                extra="Escalera, bloque, referencia catastral, etc.">
-                <Input placeholder="Escalera B, Bloque 3..." />
-              </Form.Item>
-            </Col>
+            <AddressFormFields />
           </Row>
 
           <Row justify="end">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Card, Checkbox, Col, Input, Row, Skeleton, Tooltip, Typography } from "antd";
+import { Alert, Button, Card, Checkbox, Col, Input, Row, Select, Skeleton, Tooltip, Typography } from "antd";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import { IllustrationEntity, IllustrationTenant } from "../../../../components/icons3d/Illustrations3D";
@@ -60,6 +60,7 @@ export default function EntitiesList() {
   const [entityKpis, setEntityKpis] = useState({});
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("");
   const [hoveredId, setHoveredId] = useState(null);
 
   const limitReached = useMemo(() =>
@@ -69,12 +70,13 @@ export default function EntitiesList() {
   const filteredOwners = useMemo(() => {
     let r = owners;
     if (!showInactive) r = r.filter((e) => e.status === "active");
+    if (filterStatus) r = r.filter((e) => e.status === filterStatus);
     if (search) {
       const q = search.toLowerCase();
       r = r.filter((e) => formatEntityName(e).toLowerCase().includes(q) || e.billing_email?.toLowerCase().includes(q) || e.tax_id?.toLowerCase().includes(q));
     }
     return r;
-  }, [owners, search, showInactive]);
+  }, [owners, search, showInactive, filterStatus]);
 
   const _ownerLimitLabel = useMemo(() => {
     if (!planCode || maxOwners == null) return "";
@@ -172,12 +174,14 @@ export default function EntitiesList() {
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* ── Header ── */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 6 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
-          <Typography.Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>
+          <Typography.Title level={2} style={{ margin: 0 }}>
             Entidades
           </Typography.Title>
-
+          <Typography.Text type="secondary">
+            {loading ? "Cargando..." : `${filteredOwners.length} entidad${filteredOwners.length !== 1 ? "es" : ""}`}
+          </Typography.Text>
         </div>
         <Tooltip 
           title={limitReached ? `Has alcanzado el límite de tu plan (máx. ${maxOwners} entidad${maxOwners !== 1 ? 'es' : ''}). Actualiza tu plan para añadir más.` : undefined}
@@ -200,13 +204,28 @@ export default function EntitiesList() {
             allowClear
           />
         </Col>
+        <Col xs={12} sm={8} md={5}>
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Estado"
+            value={filterStatus || undefined}
+            onChange={(v) => setFilterStatus(v || "")}
+            allowClear
+            options={[
+              { value: "active", label: "Activo" },
+              { value: "disabled", label: "Deshabilitado" },
+              { value: "inactive", label: "Inactivo" },
+              { value: "suspended", label: "Suspendido" },
+            ]}
+          />
+        </Col>
         <Col>
           <Checkbox checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}>
             Mostrar desactivados
           </Checkbox>
         </Col>
         <Col>
-          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(""); setShowInactive(false); }}>Limpiar</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(""); setShowInactive(false); setFilterStatus(""); }}>Limpiar</Button>
         </Col>
       </Row>
 

@@ -1,632 +1,214 @@
-// =============================================================================
 // src/pages/v2/superadmin/ClientAccountsList.jsx
-// =============================================================================
-// DBSU-VC-LI: Lista de Cuentas de Clientes
-// Pantalla para ver y gestionar todas las Cuentas Cliente
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
-// =============================================================================
+// Lista de cuentas cliente — datos reales de Supabase
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import V2Layout from "../../../layouts/V2Layout";
 import {
-  mockClientAccounts,
-  PLANS,
-  STATUS,
-  getPlanLabel,
-  getPlanColor,
-  getStatusLabel,
-  getStatusColor,
-  formatDate,
-} from "../../../mocks/clientAccountsData";
+  Badge, Button, Input, Select, Space, Table, Tag, Typography, message,
+} from "antd";
+import {
+  PlusOutlined, ReloadOutlined, EyeOutlined, KeyOutlined,
+} from "@ant-design/icons";
+import V2Layout from "../../../layouts/V2Layout";
+import { useAuth } from "../../../providers/AuthProvider";
+import { supabase } from "../../../services/supabaseClient";
+
+const { Title } = Typography;
+const { Search } = Input;
+
+const STATUS_CONFIG = {
+  active:    { badge: "success", label: "Activo" },
+  suspended: { badge: "warning", label: "Suspendido" },
+  cancelled: { badge: "error",   label: "Cancelado" },
+  pending:   { badge: "default", label: "Pendiente" },
+};
 
 export default function ClientAccountsList() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterPlan, setFilterPlan] = useState("");
+  const { user, profile } = useAuth();
+
+  const [accounts, setAccounts]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState("desc");
 
-  // Filtrar y ordenar cuentas
-  const filteredAccounts = useMemo(() => {
-    let result = [...mockClientAccounts];
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("client_accounts")
+        .select(`
+          id, name, last_name1, last_name2, status, plan_code, created_at, slug,
+          entities(legal_type, legal_name, first_name, last_name1, last_name2, type)
+        `)
+        .order("created_at", { ascending: false });
 
-    // Filtrar por búsqueda
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      result = result.filter(
-        (acc) =>
-          acc.name.toLowerCase().includes(search) ||
-          acc.slug.toLowerCase().includes(search)
-      );
-    }
+      if (error) throw new Error(error.message);
 
-    // Filtrar por plan
-    if (filterPlan) {
-      result = result.filter((acc) => acc.plan === filterPlan);
-    }
+      const withDisplayName = (data ?? []).map((acc) => {
+        // Nombre completo del titular de la cuenta (name + apellidos propios)
+        const ownerFullName = [acc.name, acc.last_name1, acc.last_name2]
+          .filter(Boolean).join(" ") || acc.name;
 
-    // Filtrar por estado
-    if (filterStatus) {
-      result = result.filter((acc) => acc.status === filterStatus);
-    }
+        // Entidad pagadora (para mostrar debajo solo si es distinta)
+        const payer = (acc.entities ?? []).find((e) => e.type === "payer");
+        let payerName = null;
+        if (payer) {
+          const isPhysical = ["persona_fisica", "autonomo"].includes(payer.legal_type);
+          if (isPhysical) {
+            const full = [payer.first_name, payer.last_name1, payer.last_name2].filter(Boolean).join(" ");
+            if (full && full !== ownerFullName) payerName = full;
+          } else if (payer.legal_name && payer.legal_name !== ownerFullName) {
+            payerName = payer.legal_name;
+          }
+        }
+        return { ...acc, ownerFullName, payerName };
+      });
 
-    // Ordenar
-    result.sort((a, b) => {
-      let aVal, bVal;
-      switch (sortBy) {
-        case "name":
-          aVal = a.name.toLowerCase();
-          bVal = b.name.toLowerCase();
-          break;
-        case "plan":
-          aVal = a.plan;
-          bVal = b.plan;
-          break;
-        case "status":
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        case "accommodations":
-          aVal = a.stats?.total_accommodations || 0;
-          bVal = b.stats?.total_accommodations || 0;
-          break;
-        case "rooms":
-          aVal = a.stats?.total_rooms || 0;
-          bVal = b.stats?.total_rooms || 0;
-          break;
-        case "created_at":
-        default:
-          aVal = new Date(a.created_at);
-          bVal = new Date(b.created_at);
-      }
-
-      if (sortOrder === "asc") {
-        return aVal > bVal ? 1 : -1;
-      }
-      return aVal < bVal ? 1 : -1;
-    });
-
-    return result;
-  }, [searchTerm, filterPlan, filterStatus, sortBy, sortOrder]);
-
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("desc");
+      setAccounts(withDisplayName);
+    } catch (e) {
+      message.error("Error cargando cuentas: " + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getSortIcon = (column) => {
-    if (sortBy !== column) return "↕";
-    return sortOrder === "asc" ? "↑" : "↓";
-  };
+  useEffect(() => { load(); }, []);
 
-  const handleSuspend = (account) => {
-    if (window.confirm(`¿Suspender la cuenta "${account.name}"?`)) {
-      alert(`Cuenta "${account.name}" suspendida (mock)`);
-    }
-  };
+  const filtered = accounts.filter((a) => {
+    const q = search.toLowerCase();
+    const matchSearch = !search ||
+      a.ownerFullName?.toLowerCase().includes(q) ||
+      a.slug?.toLowerCase().includes(q);
+    const matchStatus = !filterStatus || a.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
 
-  const handleReactivate = (account) => {
-    if (window.confirm(`¿Reactivar la cuenta "${account.name}"?`)) {
-      alert(`Cuenta "${account.name}" reactivada (mock)`);
-    }
-  };
+  const columns = [
+    {
+      title: (
+        <span>
+          Cuenta Cliente
+          <span style={{ color: "#D1D5DB", margin: "0 6px" }}>|</span>
+          <span style={{ color: "#9CA3AF", fontWeight: 400 }}>Entidad de Facturación</span>
+        </span>
+      ),
+      key: "name",
+      render: (_, row) => (
+        <div>
+          <div style={{ fontWeight: 600, color: "#111827" }}>{row.ownerFullName}</div>
+          {row.payerName && (
+            <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
+              Entidad: {row.payerName}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Plan",
+      dataIndex: "plan_code",
+      key: "plan_code",
+      render: (v) => v ? <Tag>{v}</Tag> : <Tag color="default">—</Tag>,
+    },
+    {
+      title: "Estado",
+      dataIndex: "status",
+      key: "status",
+      render: (v) => {
+        const cfg = STATUS_CONFIG[v] ?? { badge: "default", label: v };
+        return <Badge status={cfg.badge} text={cfg.label} />;
+      },
+    },
+    {
+      title: "Alta",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (v) => v ? new Date(v).toLocaleDateString("es-ES") : "—",
+    },
+    {
+      title: "Acciones",
+      key: "actions",
+      render: (_, row) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/v2/superadmin/cuentas/${row.id}`)}
+          >
+            Ver
+          </Button>
+          <Button
+            size="small"
+            icon={<KeyOutlined />}
+            onClick={() => navigate(`/v2/superadmin/cuentas/${row.id}/smart-access`)}
+          >
+            SAL
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const userName = profile?.full_name || user?.email || "Superadmin";
 
   return (
-    <V2Layout role="superadmin" userName="Administrador">
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Cuentas Cliente</h1>
-          <p style={styles.subtitle}>
-            {filteredAccounts.length} de {mockClientAccounts.length} cuentas
-          </p>
+    <V2Layout role="superadmin" userName={userName}>
+      <div style={{ padding: "24px 32px", maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <Title level={4} style={{ margin: 0 }}>Cuentas Cliente</Title>
+            <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+              {filtered.length} cuenta{filtered.length !== 1 ? "s" : ""}
+            </div>
+          </div>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/v2/superadmin/cuentas/nueva")}
+            >
+              Nueva cuenta
+            </Button>
+          </Space>
         </div>
-      </div>
 
-      {/* Toolbar */}
-      <div style={styles.toolbar}>
-        <button
-          style={styles.toolbarButton}
-          onClick={() => navigate("/v2/superadmin/cuentas/nueva")}
-        >
-          <span style={styles.toolbarIcon}>+</span>
-          <span>Nuevo</span>
-          <span style={styles.toolbarBold}>Cliente</span>
-        </button>
-        <button
-          style={styles.toolbarButton}
-          onClick={() => {
-            setSearchTerm("");
-            setFilterPlan("");
-            setFilterStatus("");
-          }}
-        >
-          <span style={styles.toolbarIcon}>🔄</span>
-          <span>Limpiar Filtros</span>
-        </button>
-      </div>
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+          <Search
+            placeholder="Buscar por nombre o slug..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 340 }}
+            allowClear
+          />
+          <Select
+            placeholder="Estado"
+            value={filterStatus || undefined}
+            onChange={setFilterStatus}
+            allowClear
+            style={{ width: 160 }}
+            options={[
+              { value: "active",    label: "Activo" },
+              { value: "suspended", label: "Suspendido" },
+              { value: "cancelled", label: "Cancelado" },
+              { value: "pending",   label: "Pendiente" },
+            ]}
+          />
+        </div>
 
-      {/* Filtros */}
-      <div style={styles.filters}>
-        <input
-          type="text"
-          placeholder="Buscar por nombre o slug..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={styles.searchInput}
-        />
-        <select
-          value={filterPlan}
-          onChange={(e) => setFilterPlan(e.target.value)}
-          style={styles.select}
-        >
-          <option value="">Todos los planes</option>
-          {Object.values(PLANS).map((plan) => (
-            <option key={plan} value={plan}>
-              {getPlanLabel(plan)}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={styles.select}
-        >
-          <option value="">Todos los estados</option>
-          <option value={STATUS.ACTIVE}>Activo</option>
-          <option value={STATUS.SUSPENDED}>Suspendido</option>
-          <option value={STATUS.CANCELLED}>Cancelado</option>
-        </select>
-      </div>
-
-      {/* Tabla */}
-      <div style={styles.tableCard}>
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("name")}
-                >
-                  Cuenta Cliente {getSortIcon("name")}
-                </th>
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("plan")}
-                >
-                  Plan {getSortIcon("plan")}
-                </th>
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("status")}
-                >
-                  Estado {getSortIcon("status")}
-                </th>
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("accommodations")}
-                >
-                  Alojamientos {getSortIcon("accommodations")}
-                </th>
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("rooms")}
-                >
-                  Habitaciones {getSortIcon("rooms")}
-                </th>
-                <th style={styles.th}>Ocupación</th>
-                {/* DBSU-VC-LI: Columnas de fechas */}
-                <th
-                  style={{ ...styles.th, cursor: "pointer" }}
-                  onClick={() => handleSort("created_at")}
-                >
-                  Fecha Alta {getSortIcon("created_at")}
-                </th>
-                <th style={styles.th}>Fecha Inicio</th>
-                <th style={styles.th}>Fecha Fin</th>
-                {/* DBSU-VC-LI: Columna Branding */}
-                <th style={styles.th}>Branding</th>
-                <th style={styles.th}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccounts.length === 0 ? (
-                <tr>
-                  <td colSpan={11} style={styles.emptyState}>
-                    No se encontraron cuentas cliente con los filtros aplicados
-                  </td>
-                </tr>
-              ) : (
-                filteredAccounts.map((account) => {
-                  const occRate =
-                    account.stats?.total_rooms > 0
-                      ? Math.round(
-                          (account.stats.occupied_rooms /
-                            account.stats.total_rooms) *
-                            100
-                        )
-                      : 0;
-
-                  return (
-                    <tr key={account.id} style={styles.tr}>
-                      <td style={styles.td}>
-                        <div style={styles.accountCell}>
-                          {account.logo_url ? (
-                            <img
-                              src={account.logo_url}
-                              alt=""
-                              style={styles.accountLogo}
-                            />
-                          ) : (
-                            <div
-                              style={{
-                                ...styles.accountLogoPlaceholder,
-                                backgroundColor:
-                                  account.theme_primary_color || "#6B7280",
-                              }}
-                            >
-                              {account.name.charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <div style={styles.accountName}>{account.name}</div>
-                            <div style={styles.accountSlug}>{account.slug}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={styles.td}>
-                        <span
-                          style={{
-                            ...styles.badge,
-                            backgroundColor: `${getPlanColor(account.plan)}15`,
-                            color: getPlanColor(account.plan),
-                            border: `1px solid ${getPlanColor(account.plan)}40`,
-                          }}
-                        >
-                          {getPlanLabel(account.plan)}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        <span
-                          style={{
-                            ...styles.badge,
-                            backgroundColor: `${getStatusColor(account.status)}15`,
-                            color: getStatusColor(account.status),
-                            border: `1px solid ${getStatusColor(account.status)}40`,
-                          }}
-                        >
-                          {getStatusLabel(account.status)}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        {account.stats?.total_accommodations || 0}
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.roomsText}>
-                          {account.stats?.occupied_rooms || 0} /{" "}
-                          {account.stats?.total_rooms || 0}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.progressContainer}>
-                          <div style={styles.progressBar}>
-                            <div
-                              style={{
-                                ...styles.progressFill,
-                                width: `${occRate}%`,
-                                backgroundColor:
-                                  occRate > 80
-                                    ? "#059669"
-                                    : occRate > 50
-                                    ? "#F59E0B"
-                                    : "#DC2626",
-                              }}
-                            />
-                          </div>
-                          <span style={styles.progressText}>{occRate}%</span>
-                        </div>
-                      </td>
-                      <td style={styles.td}>{formatDate(account.created_at)}</td>
-                      {/* DBSU-VC-LI: Fecha Inicio */}
-                      <td style={styles.td}>
-                        {formatDate(account.billing_start_date)}
-                      </td>
-                      {/* DBSU-VC-LI: Fecha Fin */}
-                      <td style={styles.td}>
-                        {account.end_date ? formatDate(account.end_date) : "-"}
-                      </td>
-                      {/* DBSU-VC-LI: Branding */}
-                      <td style={styles.td}>
-                        <span
-                          style={{
-                            ...styles.brandingBadge,
-                            backgroundColor: account.logo_url ? "#DCFCE7" : "#F3F4F6",
-                            color: account.logo_url ? "#166534" : "#6B7280",
-                          }}
-                        >
-                          {account.logo_url ? "Sí" : "No"}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.actions}>
-                          <button
-                            style={styles.actionButton}
-                            onClick={() =>
-                              navigate(`/v2/superadmin/cuentas/${account.id}`)
-                            }
-                            title="Ver detalle"
-                          >
-                            👁
-                          </button>
-                          <button
-                            style={styles.actionButton}
-                            onClick={() =>
-                              navigate(`/v2/superadmin/cuentas/${account.id}/editar`)
-                            }
-                            title="Editar"
-                          >
-                            ✏️
-                          </button>
-                          {account.status === STATUS.ACTIVE ? (
-                            <button
-                              style={{ ...styles.actionButton, color: "#F59E0B" }}
-                              onClick={() => handleSuspend(account)}
-                              title="Suspender"
-                            >
-                              ⏸
-                            </button>
-                          ) : account.status === STATUS.SUSPENDED ? (
-                            <button
-                              style={{ ...styles.actionButton, color: "#059669" }}
-                              onClick={() => handleReactivate(account)}
-                              title="Reactivar"
-                            >
-                              ▶
-                            </button>
-                          ) : null}
-                          <button
-                            style={styles.actionButton}
-                            onClick={() =>
-                              navigate(`/v2/superadmin/cuentas/${account.id}/usuarios`)
-                            }
-                            title="Gestionar usuarios"
-                          >
-                            👥
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E5E7EB", overflow: "hidden" }}>
+          <Table
+            columns={columns}
+            dataSource={filtered}
+            rowKey="id"
+            loading={loading}
+            size="middle"
+            pagination={{ pageSize: 20, showSizeChanger: false }}
+            onRow={() => ({ style: { cursor: "pointer" } })}
+          />
         </div>
       </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  primaryButton: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: 8,
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "opacity 0.2s ease",
-  },
-  toolbar: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 20,
-  },
-  toolbarButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "10px 20px",
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  toolbarIcon: {
-    fontSize: 16,
-  },
-  toolbarBold: {
-    fontWeight: "700",
-    color: "#111827",
-  },
-  filters: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 24,
-    flexWrap: "wrap",
-    alignItems: "center",
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: 250,
-    maxWidth: 400,
-    padding: "10px 16px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    transition: "border-color 0.2s ease",
-  },
-  select: {
-    padding: "10px 16px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    backgroundColor: "#FFFFFF",
-    cursor: "pointer",
-    minWidth: 160,
-  },
-  clearButton: {
-    padding: "10px 16px",
-    fontSize: 14,
-    backgroundColor: "#F3F4F6",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#374151",
-  },
-  tableCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    overflow: "hidden",
-  },
-  tableContainer: {
-    overflowX: "auto",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px 16px",
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    backgroundColor: "#F9FAFB",
-    borderBottom: "1px solid #E5E7EB",
-    whiteSpace: "nowrap",
-  },
-  tr: {
-    borderBottom: "1px solid #F3F4F6",
-    transition: "background-color 0.2s ease",
-  },
-  td: {
-    padding: "16px",
-    fontSize: 14,
-    color: "#374151",
-    verticalAlign: "middle",
-  },
-  accountCell: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  },
-  accountLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    objectFit: "cover",
-  },
-  accountLogoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  accountName: {
-    fontWeight: "600",
-    color: "#111827",
-  },
-  accountSlug: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  badge: {
-    display: "inline-block",
-    padding: "4px 12px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  roomsText: {
-    fontWeight: "500",
-  },
-  progressContainer: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  progressBar: {
-    width: 80,
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 3,
-    transition: "width 0.3s ease",
-  },
-  progressText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#374151",
-    minWidth: 35,
-  },
-  actions: {
-    display: "flex",
-    gap: 4,
-  },
-  actionButton: {
-    padding: "6px 10px",
-    backgroundColor: "transparent",
-    border: "1px solid #E5E7EB",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontSize: 14,
-    transition: "all 0.2s ease",
-  },
-  emptyState: {
-    padding: 48,
-    textAlign: "center",
-    color: "#6B7280",
-    fontSize: 14,
-  },
-  brandingBadge: {
-    display: "inline-block",
-    padding: "4px 10px",
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-};

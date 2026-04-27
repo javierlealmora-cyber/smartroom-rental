@@ -111,7 +111,7 @@ export default function EntityFormFields({
       )}
 
       <Row gutter={16}>
-        <Col xs={24} sm={12}>
+        <Col xs={24} sm={12} md={8}>
           <Form.Item
             label={isCompany ? "CIF/NIF" : "DNI/NIE"}
             name="tax_id"
@@ -131,7 +131,7 @@ export default function EntityFormFields({
             <Input placeholder={isCompany ? "B12345678" : "12345678A"} maxLength={9} style={{ textTransform: 'uppercase' }} />
           </Form.Item>
         </Col>
-        <Col xs={24} sm={12}>
+        <Col xs={24} sm={12} md={8}>
           <Form.Item
             label="Email de facturación"
             name="billing_email"
@@ -144,10 +144,7 @@ export default function EntityFormFields({
             <Input placeholder="billing@basicrentals1.com" type="email" />
           </Form.Item>
         </Col>
-      </Row>
-
-      <Row gutter={16}>
-        <Col xs={24} sm={12}>
+        <Col xs={24} sm={12} md={8}>
           <Form.Item 
             label="Teléfono" 
             name="phone"

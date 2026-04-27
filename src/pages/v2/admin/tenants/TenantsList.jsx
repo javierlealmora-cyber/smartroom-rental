@@ -5,9 +5,9 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert, Button, Input, message, Row, Col, Select, Space,
-  Tag, Typography, Tooltip, Skeleton, Modal, Form, DatePicker, Divider,
+  Tag, Typography, Tooltip, Skeleton, Modal, Form, DatePicker, Divider, Table,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined, FileTextOutlined, LineChartOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined, FileTextOutlined, LineChartOutlined, AppstoreOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import EmptyState from "../../../../components/EmptyState";
 import { getLodgerStatus, getLodgerStatusColor, getLodgerStatusLabel } from "../../../../utils/lodgerStatus";
@@ -69,6 +69,9 @@ export default function TenantsList() {
   const [filterAccommodation, setFilterAccommodation] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [sendingInvite, setSendingInvite] = useState({});
+  const [viewMode, setViewMode] = useState(
+    () => localStorage.getItem("smartrent_tenants_viewMode") || "cards"
+  );
   
   // Estados para modal de check-out
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -92,7 +95,7 @@ export default function TenantsList() {
       if (lodgerIds.length > 0) {
         const { data: allAssignments } = await supabase
           .from("lodger_room_assignments")
-          .select("id, lodger_id, move_in_date, move_out_date, room_id, accommodation_id, deposit_amount")
+          .select("id, lodger_id, move_in_date, move_out_date, room_id, accommodation_id, deposit_amount, monthly_rent")
           .in("lodger_id", lodgerIds)
           .eq("client_account_id", clientAccountId); // ✅ SEGURIDAD: Filtro multi-tenant
         
@@ -170,7 +173,7 @@ export default function TenantsList() {
       {/* Header */}
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Gestión de Inquilinos</Title>
+          <Title level={2} style={{ margin: 0 }}>Búsqueda de Inquilinos</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${tenants.length} inquilino${tenants.length !== 1 ? "s" : ""}`}
           </Text>
@@ -230,6 +233,23 @@ export default function TenantsList() {
             Limpiar
           </Button>
         </Col>
+        <Col flex="auto" />
+        <Col>
+          <Space size={4}>
+            <Button
+              size="small"
+              icon={<AppstoreOutlined />}
+              type={viewMode === "cards" ? "primary" : "default"}
+              onClick={() => { setViewMode("cards"); localStorage.setItem("smartrent_tenants_viewMode", "cards"); }}
+            />
+            <Button
+              size="small"
+              icon={<UnorderedListOutlined />}
+              type={viewMode === "list" ? "primary" : "default"}
+              onClick={() => { setViewMode("list"); localStorage.setItem("smartrent_tenants_viewMode", "list"); }}
+            />
+          </Space>
+        </Col>
       </Row>
 
       {/* Error */}
@@ -243,8 +263,145 @@ export default function TenantsList() {
         />
       )}
 
-      {/* Cards grid */}
-      {loading ? (
+      {/* Vista: Cards o Lista */}
+      {viewMode === "list" ? (
+        <Table
+          dataSource={tenants}
+          rowKey="id"
+          loading={loading}
+          size="small"
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Total: ${total} inquilinos` }}
+          style={{ 
+            '--ant-table-padding-vertical': '6px',
+            '--ant-table-padding-horizontal': '8px'
+          }}
+          className="compact-table"
+          locale={{
+            emptyText: hasFilters
+              ? <EmptyState icon="🔍" title="Sin resultados" description="No se encontraron inquilinos con los filtros aplicados" />
+              : <EmptyState icon="👥" title="No hay inquilinos" description="Registra tu primer inquilino para empezar" actionLabel="Nuevo Inquilino" onAction={() => navigate("/v2/admin/inquilinos/nuevo")} />
+          }}
+          columns={[
+            {
+              title: "Nombre",
+              dataIndex: "full_name",
+              key: "full_name",
+              render: (name, record) => (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <img
+                    src={record.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
+                    alt="Inquilino"
+                    style={{ width: 41, height: 41, objectFit: "contain", borderRadius: 8 }}
+                  />
+                  <div style={{ fontWeight: 600, color: "#111827" }}>{name}</div>
+                </div>
+              ),
+            },
+            {
+              title: "Email",
+              dataIndex: "email",
+              key: "email",
+              render: (email) => <div style={{ fontSize: 13, color: "#6B7280" }}>{email}</div>,
+            },
+            {
+              title: "Teléfono",
+              dataIndex: "phone",
+              key: "phone",
+              render: (phone) => phone || "—",
+            },
+            {
+              title: "Estado",
+              key: "status",
+              render: (_, record) => (
+                <Tag color={getLodgerStatusColor(getLodgerStatus(record))} style={{ fontWeight: 600 }}>
+                  {getLodgerStatusLabel(getLodgerStatus(record))}
+                </Tag>
+              ),
+            },
+            {
+              title: "Alojamiento",
+              key: "accommodation",
+              render: (_, record) => {
+                const asgn = record.active_assignment?.[0];
+                return asgn?.accommodation?.name ? (
+                  <div style={{ fontWeight: 600, color: "#0071E3" }}>{asgn.accommodation.name}</div>
+                ) : (
+                  <Text style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>—</Text>
+                );
+              },
+            },
+            {
+              title: "Habitación",
+              key: "room",
+              render: (_, record) => {
+                const asgn = record.active_assignment?.[0];
+                return asgn?.room?.number ? (
+                  <div style={{ fontSize: 13, color: "#374151" }}>Hab. {asgn.room.number}</div>
+                ) : (
+                  "—"
+                );
+              },
+            },
+            {
+              title: "Precio",
+              key: "rent",
+              render: (_, record) => {
+                const asgn = record.active_assignment?.[0];
+                return asgn?.monthly_rent ? (
+                  <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>{formatCurrency(asgn.monthly_rent)}</div>
+                ) : (
+                  "—"
+                );
+              },
+            },
+            {
+              title: "Check-in",
+              key: "move_in_date",
+              render: (_, record) => {
+                const asgn = record.active_assignment?.[0];
+                return asgn?.move_in_date ? new Date(asgn.move_in_date).toLocaleDateString('es-ES') : "—";
+              },
+            },
+            {
+              title: "Acciones",
+              key: "actions",
+              render: (_, record) => (
+                <Space size="small">
+                  <Tooltip title="Detalle del Inquilino">
+                    <Button size="small" icon={<FileTextOutlined />}
+                      onClick={() => navigate(`/v2/admin/inquilinos/${record.id}/detalle-inquilino`)} />
+                  </Tooltip>
+                  <Tooltip title={getLodgerStatus(record) === "invited" ? "Sin consumos (inquilino invitado)" : "Ver Consumos"}>
+                    <Button size="small" icon={<LineChartOutlined />}
+                      disabled={getLodgerStatus(record) === "invited"}
+                      onClick={() => navigate(`/v2/admin/inquilinos/${record.id}/detalle`)} />
+                  </Tooltip>
+                  {getLodgerStatus(record) === "active" && (
+                    <Tooltip title="Cambiar habitación">
+                      <Button size="small" icon={<SwapOutlined />}
+                        onClick={() => navigate(`/v2/admin/inquilinos/${record.id}/detalle-inquilino?action=reassign`)} />
+                    </Tooltip>
+                  )}
+                  {getLodgerStatus(record) === "active" && (
+                    <Tooltip title="Hacer Check-Out">
+                      <Button size="small" danger icon={<LogoutOutlined />}
+                        onClick={() => { 
+                          setLodgerToCheckout(record);
+                          setShowCheckoutModal(true);
+                        }} />
+                    </Tooltip>
+                  )}
+                  <Tooltip title="Enviar email de acceso">
+                    <Button size="small" icon={<MailOutlined />}
+                      loading={!!sendingInvite[record.id]}
+                      onClick={() => onSendInvite(record)} />
+                  </Tooltip>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      ) : loading ? (
         <Row gutter={[16, 16]}>
           {[1,2,3,4,5,6].map((i) => (
             <Col key={i} xs={24} sm={12} md={8} lg={6}>
@@ -349,10 +506,10 @@ export default function TenantsList() {
                         disabled={getLodgerStatus(t) === "invited"}
                         onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
                     </Tooltip>
-                    {t.status === "active" && (
+                    {getLodgerStatus(t) === "active" && (
                       <Tooltip title="Cambiar habitación">
                         <Button size="small" icon={<SwapOutlined />}
-                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/editar?action=reassign`); }} />
+                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino?action=reassign`); }} />
                       </Tooltip>
                     )}
                     {getLodgerStatus(t) === "active" && (

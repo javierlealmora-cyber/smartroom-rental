@@ -171,7 +171,7 @@ export default function LodgerConsumo() {
           .from("lodger_room_assignments")
           .select(`id, move_in_date, billing_start_date, monthly_rent,
             room:rooms(id, number, square_meters, bathroom_type, kitchen_type),
-            accommodation:accommodations(id, name, address_line1, city)`)
+            accommodation:accommodations(id, name, address_street, address_city)`)
           .eq("lodger_id", lodgerData.id)
           .is("move_out_date", null)
           .maybeSingle(),

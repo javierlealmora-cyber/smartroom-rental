@@ -6,17 +6,29 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
 import { supabase } from "../../../services/supabaseClient";
-import {
-  mockClientAccounts,
-  mockAccommodations,
-  mockUsers,
-  STATUS,
-  getPlanLabel,
-  getPlanColor,
-  getStatusLabel,
-  getStatusColor,
-  formatDate,
-} from "../../../mocks/clientAccountsData";
+
+// Helpers locales — sustituyen el mock que usaba IDs ficticios
+const STATUS = { ACTIVE: "active", SUSPENDED: "suspended", CANCELLED: "cancelled" };
+const getPlanLabel = (p) => p ?? "—";
+const getPlanColor = () => "#6B7280";
+const getStatusLabel = (s) => ({ active: "Activo", suspended: "Suspendido", cancelled: "Cancelado" }[s] ?? s ?? "—");
+const getStatusColor = (s) => ({ active: "#059669", suspended: "#D97706", cancelled: "#DC2626" }[s] ?? "#6B7280");
+const formatDate = (d) => d ? new Date(d).toLocaleDateString("es-ES") : "—";
+
+/** Devuelve el nombre de visualización:
+ *  - persona_fisica / autonomo → "Nombre Apellido1 Apellido2"
+ *  - persona_juridica          → legal_name
+ *  - sin entidad               → fallback (account.name)
+ */
+const getDisplayName = (entity, fallback) => {
+  if (!entity) return fallback;
+  const isPhysical = ["persona_fisica", "autonomo"].includes(entity.legal_type);
+  if (isPhysical) {
+    return [entity.first_name, entity.last_name1, entity.last_name2]
+      .filter(Boolean).join(" ") || fallback;
+  }
+  return entity.legal_name || fallback;
+};
 
 export default function ClientAccountDetail() {
   const navigate = useNavigate();
@@ -28,33 +40,134 @@ export default function ClientAccountDetail() {
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+  const [salSubscription, setSalSubscription] = useState(null); // { status, activated_at, plan_name }
 
   useEffect(() => {
     const load = async () => {
-      const acc = mockClientAccounts.find((a) => a.id === id);
-      if (acc) {
-        setAccount(acc);
-        setAccommodations(mockAccommodations.filter((a) => a.client_account_id === id));
-        setUsers(mockUsers.filter((u) => u.client_account_id === id));
+      setLoading(true);
+      try {
+        // Cargar account real de Supabase (no mock)
+        const { data: acc, error: accErr } = await supabase
+          .from("client_accounts")
+          .select("id, name, last_name1, last_name2, status, plan_code, created_at, updated_at")
+          .eq("id", id)
+          .single();
 
+        if (accErr) throw new Error(accErr.message);
+
+        // Nombre completo: name (nombre de pila) + apellidos propios de client_accounts
+        const ownerFullName = [acc.name, acc.last_name1, acc.last_name2]
+          .filter(Boolean).join(" ") || acc.name;
+
+        // Adaptar plan_code → plan; rellenar campos opcionales del mock con null
+        setAccount({
+          slug: null, billing_start_date: null, theme_primary_color: "#6B7280", logo_url: null,
+          ...acc,
+          ownerFullName,
+          plan: acc.plan_code,
+        });
+
+        // Entidades reales
         try {
-          const { data: entities, error } = await supabase
+          const { data: entities } = await supabase
             .from("entities")
             .select("*")
             .eq("client_account_id", id);
-
-          if (!error) {
-            const payer = (entities || []).find((e) => e.type === "payer") || null;
-            const owners = (entities || []).filter((e) => e.type === "owner");
-            setPayerEntity(payer);
-            setOwnerEntities(owners);
-          }
+          const payer = (entities || []).find((e) => e.type === "payer") || null;
+          const owners = (entities || []).filter((e) => e.type === "owner");
+          setPayerEntity(payer);
+          setOwnerEntities(owners);
         } catch {
           setPayerEntity(null);
           setOwnerEntities([]);
         }
+
+        // Alojamientos reales con conteo de habitaciones
+        try {
+          const { data: accs } = await supabase
+            .from("accommodations")
+            .select("id, name, address_street, address_city, status")
+            .eq("client_account_id", id);
+
+          if (accs?.length) {
+            const accIds = accs.map((a) => a.id);
+
+            // Habitaciones de estos alojamientos
+            const { data: rooms } = await supabase
+              .from("rooms")
+              .select("id, accommodation_id")
+              .in("accommodation_id", accIds);
+
+            const allRooms = rooms ?? [];
+            const allRoomIds = allRooms.map((r) => r.id);
+
+            // Asignaciones activas (sin fecha de salida)
+            const { data: activeAssignments } = allRoomIds.length
+              ? await supabase
+                  .from("lodger_room_assignments")
+                  .select("room_id")
+                  .in("room_id", allRoomIds)
+                  .is("move_out_date", null)
+              : { data: [] };
+
+            // Mapas: room_id → accommodation_id
+            const roomToAcc = {};
+            allRooms.forEach((r) => { roomToAcc[r.id] = r.accommodation_id; });
+
+            // Conteo total de habitaciones por alojamiento
+            const roomCount = {};
+            allRooms.forEach((r) => {
+              roomCount[r.accommodation_id] = (roomCount[r.accommodation_id] || 0) + 1;
+            });
+
+            // Conteo de habitaciones ocupadas por alojamiento
+            const occupiedCount = {};
+            (activeAssignments ?? []).forEach((a) => {
+              const accId = roomToAcc[a.room_id];
+              if (accId) occupiedCount[accId] = (occupiedCount[accId] || 0) + 1;
+            });
+
+            setAccommodations(accs.map((a) => ({
+              ...a,
+              stats: {
+                total_rooms: roomCount[a.id] || 0,
+                occupied:    occupiedCount[a.id] || 0,
+              },
+            })));
+          } else {
+            setAccommodations([]);
+          }
+        } catch {
+          setAccommodations([]);
+        }
+
+        // Usuarios/perfiles reales
+        try {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, full_name, email, role, status")
+            .eq("client_account_id", id);
+          setUsers(profs ?? []);
+        } catch {
+          setUsers([]);
+        }
+
+        // Suscripción SAL (no bloquea si la tabla no existe)
+        try {
+          const { data: sub } = await supabase
+            .from("saas_service_subscriptions")
+            .select(`id, status, activated_at, saas_service_plans ( name )`)
+            .eq("client_account_id", id)
+            .maybeSingle();
+          setSalSubscription(sub ?? null);
+        } catch {
+          setSalSubscription(null);
+        }
+      } catch (e) {
+        setAccount(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     load();
@@ -89,17 +202,26 @@ export default function ClientAccountDetail() {
 
   const accountCompany = payerEntity;
   const fiscalCompanies = ownerEntities;
-  const occupancyRate = account.stats?.total_rooms > 0
-    ? Math.round((account.stats.occupied_rooms / account.stats.total_rooms) * 100)
-    : 0;
+  // Nombre de la entidad pagadora (solo si es distinto del nombre del titular de la cuenta)
+  const payerDisplayName = getDisplayName(payerEntity, null);
+  const showPayerName = payerDisplayName && payerDisplayName !== account.ownerFullName;
+  const totalRooms    = accommodations.reduce((s, a) => s + (a.stats?.total_rooms || 0), 0);
+  const occupiedRooms = accommodations.reduce((s, a) => s + (a.stats?.occupied    || 0), 0);
+  const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
   const tabs = [
     { id: "overview", label: "Resumen", icon: "📊" },
     { id: "companies", label: "Empresas", icon: "🏢" },
     { id: "accommodations", label: "Alojamientos", icon: "🏠" },
     { id: "users", label: "Usuarios", icon: "👥" },
+    { id: "addons", label: "Add-ons", icon: "🔌" },
     { id: "settings", label: "Configuración", icon: "⚙️" },
   ];
+
+  // ── Helpers SAL ────────────────────────────────────────────────────────────
+  const salStatus = salSubscription?.status ?? null;
+  const salStatusLabel = { active: "Activo", pending: "Pendiente", suspended: "Suspendido", cancelled: "Cancelado" };
+  const salStatusColor = { active: "#059669", pending: "#D97706", suspended: "#D97706", cancelled: "#DC2626" };
 
   return (
     <V2Layout
@@ -108,7 +230,7 @@ export default function ClientAccountDetail() {
       customBreadcrumbs={[
         { label: "Dashboard", path: "/v2/superadmin" },
         { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
-        { label: account.name, path: null },
+        { label: account.ownerFullName, path: null },
       ]}
     >
       {/* Header con info de la cuenta */}
@@ -123,13 +245,27 @@ export default function ClientAccountDetail() {
                 backgroundColor: account.theme_primary_color || "#6B7280",
               }}
             >
-              {account.name.charAt(0)}
+              {account.ownerFullName.charAt(0).toUpperCase()}
             </div>
           )}
           <div>
-            <h1 style={styles.title}>{account.name}</h1>
-            <div style={styles.headerMeta}>
-              <span style={styles.slug}>{account.slug}</span>
+            {/* Cuenta Cliente */}
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
+              Cuenta Cliente
+            </div>
+            <h1 style={styles.title}>{account.ownerFullName}</h1>
+
+            {/* Entidad de Facturación — solo si existe y es distinta del nombre del titular */}
+            {showPayerName && (
+              <div style={{ marginTop: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Entidad de Facturación&nbsp;
+                </span>
+                <span style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>{payerDisplayName}</span>
+              </div>
+            )}
+
+            <div style={{ ...styles.headerMeta, marginTop: 8 }}>
               <span
                 style={{
                   ...styles.planBadge,
@@ -158,7 +294,7 @@ export default function ClientAccountDetail() {
             <button
               style={styles.warningButton}
               onClick={() => {
-                if (window.confirm(`¿Suspender la cuenta "${account.name}"?`)) {
+                if (window.confirm(`¿Suspender la cuenta "${account.ownerFullName}"?`)) {
                   alert("Cuenta suspendida (mock)");
                 }
               }}
@@ -169,7 +305,7 @@ export default function ClientAccountDetail() {
             <button
               style={styles.successButton}
               onClick={() => {
-                if (window.confirm(`¿Reactivar la cuenta "${account.name}"?`)) {
+                if (window.confirm(`¿Reactivar la cuenta "${account.ownerFullName}"?`)) {
                   alert("Cuenta reactivada (mock)");
                 }
               }}
@@ -212,16 +348,16 @@ export default function ClientAccountDetail() {
             <div style={styles.kpiGrid}>
               <div style={styles.kpiCard}>
                 <div style={styles.kpiLabel}>Alojamientos</div>
-                <div style={styles.kpiValue}>{account.stats?.total_accommodations || 0}</div>
+                <div style={styles.kpiValue}>{accommodations.length}</div>
               </div>
               <div style={styles.kpiCard}>
                 <div style={styles.kpiLabel}>Habitaciones</div>
-                <div style={styles.kpiValue}>{account.stats?.total_rooms || 0}</div>
+                <div style={styles.kpiValue}>{totalRooms}</div>
               </div>
               <div style={styles.kpiCard}>
                 <div style={styles.kpiLabel}>Ocupadas</div>
                 <div style={{ ...styles.kpiValue, color: "#059669" }}>
-                  {account.stats?.occupied_rooms || 0}
+                  {occupiedRooms}
                 </div>
               </div>
               <div style={styles.kpiCard}>
@@ -374,7 +510,7 @@ export default function ClientAccountDetail() {
                           <span style={styles.accName}>{acc.name}</span>
                         </td>
                         <td style={styles.td}>
-                          {acc.address_line1}, {acc.city}
+                          {[acc.address_street, acc.address_city].filter(Boolean).join(", ") || "—"}
                         </td>
                         <td style={styles.td}>
                           <span style={styles.roomStats}>
@@ -471,6 +607,92 @@ export default function ClientAccountDetail() {
             ) : (
               <p style={styles.emptyText}>No hay usuarios registrados</p>
             )}
+          </div>
+        )}
+
+        {/* Tab: Add-ons SaaS */}
+        {activeTab === "addons" && (
+          <div>
+            {/* SmartAccessLock */}
+            <div style={styles.card}>
+              <div style={styles.cardHeader}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 24 }}>🔐</span>
+                  <div>
+                    <h3 style={{ ...styles.cardTitle, marginBottom: 2 }}>SmartAccessLock</h3>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>
+                      Gestión de accesos con cerraduras TTLock
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {salStatus ? (
+                    <span style={{
+                      ...styles.badge,
+                      backgroundColor: `${salStatusColor[salStatus]}15`,
+                      color: salStatusColor[salStatus],
+                    }}>
+                      {salStatusLabel[salStatus] ?? salStatus}
+                    </span>
+                  ) : (
+                    <span style={{ ...styles.badge, backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+                      No contratado
+                    </span>
+                  )}
+                  <button
+                    style={styles.primaryButton}
+                    onClick={() => navigate(`/v2/superadmin/cuentas/${id}/smart-access`)}
+                  >
+                    {salStatus === "active" ? "Gestionar SAL" : "Activar SAL"}
+                  </button>
+                </div>
+              </div>
+
+              {salSubscription && (
+                <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: 16, marginTop: 4 }}>
+                  <div style={styles.infoGrid}>
+                    <div style={styles.infoRow}>
+                      <span style={styles.infoLabel}>Plan</span>
+                      <span style={styles.infoValue}>
+                        {salSubscription.saas_service_plans?.name ?? "Sin plan asignado"}
+                      </span>
+                    </div>
+                    <div style={styles.infoRow}>
+                      <span style={styles.infoLabel}>Activado el</span>
+                      <span style={styles.infoValue}>
+                        {salSubscription.activated_at
+                          ? formatDate(salSubscription.activated_at)
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!salSubscription && (
+                <p style={{ ...styles.emptyText, paddingTop: 12, paddingBottom: 4 }}>
+                  SmartAccessLock no está activo para esta cuenta. Haz clic en "Activar SAL" para configurarlo.
+                </p>
+              )}
+            </div>
+
+            {/* Placeholder para futuros add-ons */}
+            <div style={{ ...styles.card, opacity: 0.5, border: "1px dashed #D1D5DB" }}>
+              <div style={styles.cardHeader}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 24 }}>📋</span>
+                  <div>
+                    <h3 style={{ ...styles.cardTitle, marginBottom: 2 }}>Ticket Incidencias</h3>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>
+                      Sistema de tickets para gestión de incidencias
+                    </span>
+                  </div>
+                </div>
+                <span style={{ ...styles.badge, backgroundColor: "#F3F4F6", color: "#9CA3AF" }}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

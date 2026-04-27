@@ -7,7 +7,8 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { updateEntity } from "../../../../services/entities.service";
 import { supabase } from "../../../../services/supabaseClient";
 import EntityFormFields from "../../../../components/shared/EntityFormFields";
-import { PROVINCIAS_ES, LEGAL_TYPES } from "../../../../constants/formOptions";
+import AddressFormFields from "../../../../components/AddressFormFields";
+import { LEGAL_TYPES } from "../../../../constants/formOptions";
 
 export default function EntityEdit() {
   const navigate = useNavigate();
@@ -60,13 +61,13 @@ export default function EntityEdit() {
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
-          country: data.country || "España",
-          province: data.province || "",
-          city: data.city || "",
-          zip: data.zip || "",
-          street: data.street || "",
-          street_number: data.street_number || "",
-          address_extra: data.address_extra || "",
+          address_country: data.address_country || "España",
+          address_province: data.address_province || "",
+          address_city: data.address_city || "",
+          address_postal_code: data.address_postal_code || "",
+          address_street: data.address_street || "",
+          address_number: data.address_number || "",
+          address_floor: data.address_floor || "",
           status: data.status,
         });
 
@@ -81,13 +82,13 @@ export default function EntityEdit() {
           tax_id: data.tax_id || "",
           billing_email: data.billing_email || "",
           phone: data.phone || "",
-          country: data.country || "España",
-          province: data.province || "",
-          city: data.city || "",
-          zip: data.zip || "",
-          street: data.street || "",
-          street_number: data.street_number || "",
-          address_extra: data.address_extra || "",
+          address_country: data.address_country || "España",
+          address_province: data.address_province || "",
+          address_city: data.address_city || "",
+          address_postal_code: data.address_postal_code || "",
+          address_street: data.address_street || "",
+          address_number: data.address_number || "",
+          address_floor: data.address_floor || "",
           status: data.status,
         });
       } catch (e) {
@@ -120,13 +121,13 @@ export default function EntityEdit() {
         tax_id: values.tax_id || null,
         billing_email: values.billing_email || null,
         phone: values.phone || null,
-        country: values.country || "España",
-        province: values.province || null,
-        city: values.city || null,
-        zip: values.zip || null,
-        street: values.street || null,
-        street_number: values.street_number || null,
-        address_extra: values.address_extra || null,
+        address_country: values.address_country || "España",
+        address_province: values.address_province || null,
+        address_city: values.address_city || null,
+        address_postal_code: values.address_postal_code || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_floor: values.address_floor || null,
         status: values.status,
       });
 
@@ -164,109 +165,47 @@ export default function EntityEdit() {
             onFinish={onFinish}
             disabled={!canWrite || busy}
           >
+            {/* Datos de Entidad */}
+            <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>
+              Datos de Entidad
+            </Divider>
             <Row gutter={[16, 0]}>
-              <Col xs={24} md={8}>
+              <Col xs={24} sm={12} md={8}>
                 <Form.Item
                   label="Tipo legal"
                   name="legal_type"
                   rules={[{ required: true, message: "Seleccione el tipo legal" }]}
                 >
-                  <Select options={LEGAL_TYPES} />
+                  <Select options={LEGAL_TYPES} placeholder="Seleccionar" />
                 </Form.Item>
               </Col>
-
-              <EntityFormFields legalType={form?.legal_type} showLegalTypeSelector={false} />
-
-              <Col xs={24} md={8}>
+              <Col xs={24} sm={12} md={8}>
                 <Form.Item
                   label="Estado"
                   name="status"
                   rules={[{ required: true, message: "Seleccione el estado" }]}
                 >
                   <Select
+                    placeholder="Seleccionar"
                     options={[
-                      { value: "active", label: "active" },
-                      { value: "disabled", label: "disabled" },
+                      { value: "active", label: "Activo" },
+                      { value: "disabled", label: "Deshabilitado" },
                     ]}
                   />
                 </Form.Item>
               </Col>
-
-              <Col xs={24}>
-                <Divider orientation="left" style={{ fontSize: 13, color: "#6B7280", margin: "8px 0 4px" }}>Dirección</Divider>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label="Calle / Vía" name="street"
-                  rules={[
-                    { required: true, message: "Indique la calle" },
-                    { min: 3, message: "La calle debe tener al menos 3 caracteres" },
-                    { max: 200, message: "La calle no puede exceder 200 caracteres" }
-                  ]}
-                  extra="Ej: Calle Mayor, Avda. de la Constitución, Plaza del Sol...">
-                  <Input placeholder="Calle Pendiente" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={4}>
-                <Form.Item label="Número" name="street_number"
-                  rules={[
-                    { required: true, message: "Indique el número" },
-                    { max: 10, message: "El número no puede exceder 10 caracteres" }
-                  ]}>
-                  <Input placeholder="S/N" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Piso / Puerta / Escalera" name="address_extra"
-                  rules={[
-                    { max: 50, message: "No puede exceder 50 caracteres" }
-                  ]}
-                  extra="Ej: 2º B, Escalera C, Bloque 3...">
-                  <Input placeholder="Ej. 2º B, Escalera C, Bloque 3..." />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={4}>
-                <Form.Item label="C.P." name="zip"
-                  rules={[
-                    { required: true, message: "Indique el código postal" },
-                    { pattern: /^\d{5}$/, message: "Debe ser un código postal válido de 5 dígitos" }
-                  ]}>
-                  <Input placeholder="00000" maxLength={5} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item label="Ciudad / Municipio" name="city"
-                  rules={[
-                    { required: true, message: "Indique la ciudad" },
-                    { min: 2, message: "La ciudad debe tener al menos 2 caracteres" },
-                    { max: 100, message: "La ciudad no puede exceder 100 caracteres" }
-                  ]}>
-                  <Input placeholder="Ciudad Pendiente" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={6}>
-                <Form.Item label="Provincia" name="province"
-                  rules={[{ required: true, message: "Seleccione la provincia" }]} >
-                  <Select
-                    showSearch
-                    placeholder="Seleccionar provincia..."
-                    optionFilterProp="label"
-                    options={PROVINCIAS_ES}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={6}>
-                <Form.Item label="País" name="country"
-                  rules={[
-                    { required: true, message: "Indique el país" },
-                    { min: 2, message: "El país debe tener al menos 2 caracteres" },
-                    { max: 50, message: "El país no puede exceder 50 caracteres" }
-                  ]} >
-                  <Input placeholder="España" />
-                </Form.Item>
-              </Col>
             </Row>
 
-            <Row justify="end">
+            {/* Datos Fiscales */}
+            <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>
+              Datos Fiscales
+            </Divider>
+            <Row gutter={[16, 0]}>
+              <EntityFormFields legalType={legalType} showLegalTypeSelector={false} />
+              <AddressFormFields />
+            </Row>
+
+            <Row justify="end" style={{ marginTop: 16 }}>
               <Col>
                 <Space>
                   <Button onClick={() => navigate("/v2/admin/entidades")}>Volver</Button>

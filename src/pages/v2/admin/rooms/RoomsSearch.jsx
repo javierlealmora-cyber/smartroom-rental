@@ -144,7 +144,7 @@ export default function RoomsSearch() {
         // Alojamientos con entidad propietaria (sin filtrar rooms aquí)
         supabase
           .from("accommodations")
-          .select("id, name, address_line1, postal_code, city, status, owner_entity_id, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
+          .select("id, name, address_street, address_postal_code, address_city, status, owner_entity_id, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
           .order("name"),
         // TODAS las habitaciones (sin filtro de asignaciones para no excluir las libres)
         supabase
@@ -280,10 +280,20 @@ export default function RoomsSearch() {
     {
       title: "N.º",
       key: "number",
-      width: 90,
+      width: 120,
       render: (_, r) => {
         const num = String(r.number);
-        return num.startsWith("HAB-") ? num : `HAB-${num.padStart(3, "0")}`;
+        const roomLabel = num.startsWith("HAB-") ? num : `HAB-${num.padStart(3, "0")}`;
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img
+              src="/images/habitacion-icono-model.webp"
+              alt="Habitación"
+              style={{ width: 41, height: 41, objectFit: "contain" }}
+            />
+            <span style={{ fontWeight: 600, color: "#374151" }}>{roomLabel}</span>
+          </div>
+        );
       },
     },
     {
@@ -363,9 +373,9 @@ export default function RoomsSearch() {
                   <Button size="small" type="text" icon={<UserOutlined />}
                     onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} />
                 </Tooltip>
-                <Tooltip title="Editar inquilino">
+                <Tooltip title="Ver / Editar inquilino">
                   <Button size="small" type="text" icon={<EditOutlined />}
-                    onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} />
+                    onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`)} />
                 </Tooltip>
                 <Tooltip title="Ir al alojamiento">
                   <Button size="small" type="text" icon={<SwapOutlined />}
@@ -451,8 +461,8 @@ export default function RoomsSearch() {
         {/* ── 2: Imagen con badge inquilino superpuesto ── */}
         <div
           style={{ position: "relative", height: 216, overflow: "hidden", background: "#fff", cursor: isOccupied && lodger ? "pointer" : "default" }}
-          onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
-          title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
+          onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`); }}
+          title={isOccupied && lodger ? `Ver inquilino: ${lodger.full_name}` : undefined}
         >
           <img
             src={roomImg}
@@ -545,9 +555,9 @@ export default function RoomsSearch() {
                 <Button size="small" type="text" icon={<UserOutlined />}
                   onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} />
               </Tooltip>
-              <Tooltip title="Editar inquilino">
+              <Tooltip title="Ver / Editar inquilino">
                 <Button size="small" type="text" icon={<EditOutlined />}
-                  onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} />
+                  onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`)} />
               </Tooltip>
               <Tooltip title="Ir al alojamiento">
                 <Button size="small" type="text" icon={<SwapOutlined />}
@@ -594,123 +604,115 @@ export default function RoomsSearch() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ padding: "24px 24px 40px" }}>
-        {/* Cabecera */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div>
-            <Title level={4} style={{ margin: 0, color: "#1D1D1F" }}>Búsqueda de Habitaciones</Title>
-            <Text style={{ color: "#6B7280", fontSize: 13 }}>
-              {loading ? "Cargando…" : hasSearched ? `${filteredRooms.length}${filteredRooms.length !== allRooms.length ? ` de ${allRooms.length}` : ""} habitaciones` : "Usa los filtros para buscar habitaciones"}
+      {/* Header */}
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
+          <Col flex="auto">
+            <Title level={2} style={{ margin: 0 }}>Búsqueda de Habitaciones</Title>
+            <Text type="secondary">
+              {loading ? "Cargando..." : `${filteredRooms.length} habitación${filteredRooms.length !== 1 ? "es" : ""}`}
             </Text>
-          </div>
-          {/* Toggle vista */}
-          <Space>
-            <Button
-              icon={<AppstoreOutlined />}
-              type={viewMode === "cards" ? "primary" : "default"}
-              onClick={() => changeViewMode("cards")}
-            />
-            <Button
-              icon={<UnorderedListOutlined />}
-              type={viewMode === "list" ? "primary" : "default"}
-              onClick={() => changeViewMode("list")}
-            />
-          </Space>
-        </div>
+          </Col>
+        </Row>
 
-        {/* Panel de filtros */}
-        <div style={{
-          background: "#F9FAFB",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          padding: "16px 20px",
-          marginBottom: 24,
-        }}>
-          <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} sm={12} md={6} lg={5}>
-              <Select
-                placeholder="Entidad propietaria"
-                style={{ width: "100%" }}
-                allowClear
-                showSearch
-                filterOption={(input, opt) => opt.label.toLowerCase().includes(input.toLowerCase())}
-                value={filterEntityId}
-                onChange={v => { setFilterEntityId(v ?? null); setCardPage(1); setHasSearched(true); }}
-                options={entities.map(e => ({
-                  value: e.id,
-                  label: getEntityName(e),
-                }))}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={6} lg={5}>
-              <Select
-                placeholder="Alojamiento"
-                style={{ width: "100%" }}
-                allowClear
-                showSearch
-                filterOption={(input, opt) => opt.label.toLowerCase().includes(input.toLowerCase())}
-                value={filterAccId}
-                onChange={v => { setFilterAccId(v ?? null); setCardPage(1); setHasSearched(true); }}
-                options={availableAccs.map(a => ({ value: a.id, label: a.name }))}
-              />
-            </Col>
-            <Col xs={24} sm={8} md={4} lg={4}>
-              <Select
-                placeholder="Estado"
-                style={{ width: "100%" }}
-                allowClear
-                value={filterStatus}
-                onChange={v => { setFilterStatus(v ?? null); setCardPage(1); setHasSearched(true); }}
-                options={[
-                  { value: "free",             label: "Libre" },
-                  { value: "occupied",          label: "Ocupada" },
-                  { value: "pending_checkout",  label: "Pend. baja" },
-                  { value: "maintenance",       label: "Mantenimiento" },
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={8} md={4} lg={4}>
-              <Select
-                placeholder="Baño"
-                style={{ width: "100%" }}
-                allowClear
-                value={filterBathroom}
-                onChange={v => { setFilterBathroom(v ?? null); setCardPage(1); setHasSearched(true); }}
-                options={[
-                  { value: "shared",  label: "Compartido" },
-                  { value: "private", label: "Privado" },
-                  { value: "ensuite", label: "En suite" },
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={8} md={4} lg={4}>
-              <Select
-                placeholder="Cocina"
-                style={{ width: "100%" }}
-                allowClear
-                value={filterKitchen}
-                onChange={v => { setFilterKitchen(v ?? null); setCardPage(1); setHasSearched(true); }}
-                options={[
-                  { value: "shared",  label: "Compartida" },
-                  { value: "private", label: "Privada" },
-                  { value: "none",    label: "Sin cocina" },
-                ]}
-              />
-            </Col>
-            <Col xs={24} sm={24} md={2} lg={2}>
+        {/* Filtros */}
+        <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
+          <Col xs={24} sm={12} md={6} lg={5}>
+            <Select
+              placeholder="Entidad propietaria"
+              style={{ width: "100%" }}
+              allowClear
+              showSearch
+              filterOption={(input, opt) => opt.label.toLowerCase().includes(input.toLowerCase())}
+              value={filterEntityId}
+              onChange={v => { setFilterEntityId(v ?? null); setCardPage(1); setHasSearched(true); }}
+              options={entities.map(e => ({
+                value: e.id,
+                label: getEntityName(e),
+              }))}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6} lg={5}>
+            <Select
+              placeholder="Alojamiento"
+              style={{ width: "100%" }}
+              allowClear
+              showSearch
+              filterOption={(input, opt) => opt.label.toLowerCase().includes(input.toLowerCase())}
+              value={filterAccId}
+              onChange={v => { setFilterAccId(v ?? null); setCardPage(1); setHasSearched(true); }}
+              options={availableAccs.map(a => ({ value: a.id, label: a.name }))}
+            />
+          </Col>
+          <Col xs={12} sm={8} md={4} lg={3}>
+            <Select
+              placeholder="Estado"
+              style={{ width: "100%" }}
+              allowClear
+              value={filterStatus}
+              onChange={v => { setFilterStatus(v ?? null); setCardPage(1); setHasSearched(true); }}
+              options={[
+                { value: "free",             label: "Libre" },
+                { value: "occupied",          label: "Ocupada" },
+                { value: "pending_checkout",  label: "Pend. baja" },
+                { value: "maintenance",       label: "Mantenimiento" },
+              ]}
+            />
+          </Col>
+          <Col xs={12} sm={8} md={4} lg={3}>
+            <Select
+              placeholder="Baño"
+              style={{ width: "100%" }}
+              allowClear
+              value={filterBathroom}
+              onChange={v => { setFilterBathroom(v ?? null); setCardPage(1); setHasSearched(true); }}
+              options={[
+                { value: "shared",  label: "Compartido" },
+                { value: "private", label: "Privado" },
+                { value: "ensuite", label: "En suite" },
+              ]}
+            />
+          </Col>
+          <Col xs={12} sm={8} md={4} lg={3}>
+            <Select
+              placeholder="Cocina"
+              style={{ width: "100%" }}
+              allowClear
+              value={filterKitchen}
+              onChange={v => { setFilterKitchen(v ?? null); setCardPage(1); setHasSearched(true); }}
+              options={[
+                { value: "shared",  label: "Compartida" },
+                { value: "private", label: "Privada" },
+                { value: "none",    label: "Sin cocina" },
+              ]}
+            />
+          </Col>
+          <Col xs={12} sm={4} md={3}>
+            <Button
+              icon={<ClearOutlined />}
+              onClick={clearFilters}
+              disabled={!hasSearched && !hasFilters}
+            >
+              Limpiar
+            </Button>
+          </Col>
+          <Col flex="auto" />
+          <Col>
+            <Space size={4}>
               <Button
-                type="link"
-                danger
-                icon={<ClearOutlined />}
-                onClick={clearFilters}
-                disabled={!hasSearched && !hasFilters}
-                style={{ paddingLeft: 0, opacity: (!hasSearched && !hasFilters) ? 0.4 : 1 }}
-              >
-                Limpiar
-              </Button>
-            </Col>
-          </Row>
-        </div>
+                size="small"
+                icon={<AppstoreOutlined />}
+                type={viewMode === "cards" ? "primary" : "default"}
+                onClick={() => changeViewMode("cards")}
+              />
+              <Button
+                size="small"
+                icon={<UnorderedListOutlined />}
+                type={viewMode === "list" ? "primary" : "default"}
+                onClick={() => changeViewMode("list")}
+              />
+            </Space>
+          </Col>
+        </Row>
 
         {/* Error */}
         {error && (
@@ -759,12 +761,12 @@ export default function RoomsSearch() {
             dataSource={filteredRooms}
             columns={tableColumns}
             rowKey="id"
-            size="middle"
-            pagination={{ pageSize: 50, showSizeChanger: true, showTotal: (t) => `${t} habitaciones` }}
+            size="small"
+            className="compact-table"
+            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t} habitaciones` }}
             scroll={{ x: 900 }}
           />
         )}
-      </div>
     </V2Layout>
   );
 }

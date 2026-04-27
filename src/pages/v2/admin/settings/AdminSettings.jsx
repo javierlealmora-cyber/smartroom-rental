@@ -110,7 +110,7 @@ export default function AdminSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setUserEmail(user.email || "");
 
-      const ENTITY_SELECT = "id, legal_type, legal_name, first_name, last_name1, last_name2, nickname, gender, tax_id, billing_email, phone, country, province, city, zip, street, street_number, address_extra, status, type";
+      const ENTITY_SELECT = "id, legal_type, legal_name, first_name, last_name1, last_name2, nickname, gender, tax_id, billing_email, phone, address_country, address_province, address_city, address_postal_code, address_street, address_number, address_floor, status, type";
       const [{ data, error: err }, { data: payerEntities }] = await Promise.all([
         supabase.from("client_accounts")
           .select("id, name, slug, plan_code, billing_cycle, status, start_date, end_date, branding_name, branding_primary_color, branding_secondary_color, branding_logo_url, contact_email, contact_phone, last_name1, last_name2, created_at")
@@ -139,13 +139,13 @@ export default function AdminSettings() {
           tax_id: entity.tax_id || "",
           billing_email: entity.billing_email || "",
           phone: entity.phone || "",
-          street: entity.street || "",
-          street_number: entity.street_number || "",
-          address_extra: entity.address_extra || "",
-          city: entity.city || "",
-          zip: entity.zip || "",
-          province: entity.province || "",
-          country: entity.country || "",
+          address_street: entity.address_street || "",
+          address_number: entity.address_number || "",
+          address_floor: entity.address_floor || "",
+          address_city: entity.address_city || "",
+          address_postal_code: entity.address_postal_code || "",
+          address_province: entity.address_province || "",
+          address_country: entity.address_country || "",
         });
       }
 
@@ -234,13 +234,13 @@ export default function AdminSettings() {
     tax_id: values.tax_id || null,
     billing_email: values.billing_email || null,
     phone: values.phone || null,
-    street: values.street || null,
-    street_number: values.street_number || null,
-    address_extra: values.address_extra || null,
-    city: values.city || null,
-    zip: values.zip || null,
-    province: values.province || null,
-    country: values.country || null,
+    address_street: values.address_street || null,
+    address_number: values.address_number || null,
+    address_floor: values.address_floor || null,
+    address_city: values.address_city || null,
+    address_postal_code: values.address_postal_code || null,
+    address_province: values.address_province || null,
+    address_country: values.address_country || null,
   });
 
   const handleSaveEntity = async (values) => {
@@ -610,12 +610,13 @@ export default function AdminSettings() {
                   </SectionBlock>
 
                   <SectionBlock title="Dirección Fiscal">
-                    <DataRow label="Calle"         value={[entityData.street, entityData.street_number].filter(Boolean).join(" ") || "—"} />
-                    <DataRow label="Info adicional" value={entityData.address_extra} />
-                    <DataRow label="Código postal"  value={entityData.zip} />
-                    <DataRow label="Ciudad"         value={entityData.city} />
-                    <DataRow label="Provincia"      value={entityData.province} />
-                    <DataRow label="País"           value={entityData.country} />
+                    <DataRow label="Calle"                    value={entityData.address_street} />
+                    <DataRow label="Número"                   value={entityData.address_number} />
+                    <DataRow label="Piso / Puerta / Escalera" value={entityData.address_floor} />
+                    <DataRow label="Código postal"            value={entityData.address_postal_code} />
+                    <DataRow label="Ciudad"                   value={entityData.address_city} />
+                    <DataRow label="Provincia"                value={entityData.address_province} />
+                    <DataRow label="País"                     value={entityData.address_country} />
                   </SectionBlock>
 
                   <SectionBlock title="Contacto de Facturación">
@@ -740,32 +741,32 @@ export default function AdminSettings() {
           <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 16 }}>Dirección Fiscal</Divider>
           <Row gutter={[16, 0]}>
             <Col xs={24} sm={12}>
-              <Form.Item label="Calle" name="street" rules={[{ required: true, message: "Campo requerido" }]}>
+              <Form.Item label="Calle" name="address_street" rules={[{ required: true, message: "Campo requerido" }]}>
                 <Input placeholder="Calle Gran Vía" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={6}>
-              <Form.Item label="Número" name="street_number">
+              <Form.Item label="Número" name="address_number">
                 <Input placeholder="45" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={6}>
-              <Form.Item label="Info adicional" name="address_extra">
-                <Input placeholder="Planta 3, Oficina 12" />
+              <Form.Item label="Piso / Puerta / Escalera" name="address_floor">
+                <Input placeholder="2º A, Escalera B..." />
               </Form.Item>
             </Col>
             <Col xs={24} sm={6}>
-              <Form.Item label="Código postal" name="zip" rules={[{ required: true, message: "Campo requerido" }]}>
+              <Form.Item label="Código postal" name="address_postal_code" rules={[{ required: true, message: "Campo requerido" }]}>
                 <Input placeholder="28013" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={9}>
-              <Form.Item label="Ciudad" name="city" rules={[{ required: true, message: "Campo requerido" }]}>
+              <Form.Item label="Ciudad" name="address_city" rules={[{ required: true, message: "Campo requerido" }]}>
                 <Input placeholder="Madrid" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={9}>
-              <Form.Item label="Provincia" name="province">
+              <Form.Item label="Provincia" name="address_province">
                 <Select
                   options={PROVINCIAS_ES}
                   placeholder="Seleccionar"
@@ -775,7 +776,7 @@ export default function AdminSettings() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="País" name="country" rules={[{ required: true, message: "Campo requerido" }]}>
+              <Form.Item label="País" name="address_country" rules={[{ required: true, message: "Campo requerido" }]}>
                 <Input placeholder="España" />
               </Form.Item>
             </Col>

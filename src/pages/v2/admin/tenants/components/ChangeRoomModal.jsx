@@ -102,39 +102,32 @@ export default function ChangeRoomModal({ open, onClose, onSuccess, lodger, acti
     setSaving(true);
     try {
       const changeDateStr = values.change_date.format("YYYY-MM-DD");
-      const curAsgnId = activeAssignment?.id;
       const newRoom = freeRooms.find(r => r.id === values.new_room_id);
       const newRoomNum = newRoom ? `HAB-${String(newRoom.number).padStart(3, "0")}` : "?";
       const changeNote = `Cambio de habitación: ${curRoomNum} → ${newRoomNum} el ${dayjs(changeDateStr).format("DD/MM/YYYY")}`;
 
-      if (curAsgnId) {
-        const { error: e1 } = await supabase
-          .from("lodger_room_assignments")
-          .update({ move_out_date: changeDateStr, notes: changeNote })
-          .eq("id", curAsgnId);
-        if (e1) throw new Error(e1.message);
-      }
-
-      const { error: e2 } = await supabase
-        .from("lodger_room_assignments")
-        .insert({
-          lodger_id:          lodger.id,
-          room_id:            values.new_room_id,
-          accommodation_id:   values.new_accommodation_id,
-          client_account_id:  clientAccountId,
-          move_in_date:       changeDateStr,
-          billing_start_date: changeDateStr,
-          monthly_rent:       values.monthly_rent ?? null,
-          deposit_amount:     values.deposit_amount ?? null,
-          commission_amount:  values.commission_amount ?? null,
-          correction_amount:  values.correction_amount ?? null,
-        });
-      if (e2) throw new Error(e2.message);
+      // supabase.rpc() usa el token cacheado internamente (igual que .from())
+      // sin llamar a getSession() explícitamente — sin riesgo de logout.
+      // La función reassign_lodger_room es SECURITY DEFINER y escribe en
+      // audit_log aunque el RLS solo tenga política SELECT para authenticated.
+      const { error } = await supabase.rpc("reassign_lodger_room", {
+        p_lodger_id:            lodger.id,
+        p_current_asgn_id:      activeAssignment?.id ?? null,
+        p_new_room_id:          values.new_room_id,
+        p_new_accommodation_id: values.new_accommodation_id,
+        p_change_date:          changeDateStr,
+        p_monthly_rent:         values.monthly_rent       ?? null,
+        p_deposit_amount:       values.deposit_amount     ?? null,
+        p_commission_amount:    values.commission_amount  ?? null,
+        p_correction_amount:    values.correction_amount  ?? null,
+        p_client_account_id:    clientAccountId,
+        p_notes:                changeNote,
+      });
+      if (error) throw new Error(error.message);
 
       handleClose();
       onSuccess?.();
     } catch (e) {
-      // mostrar en el Alert del form
       form.setFields([{ name: "new_room_id", errors: [e.message] }]);
     } finally {
       setSaving(false);

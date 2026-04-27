@@ -34,6 +34,7 @@ export default function AccommodationsList() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("");
   const [filterEntityId, setFilterEntityId] = useState(null);
   const [allAccommodations, setAllAccommodations] = useState([]);
   const [_ownerEntities, setOwnerEntities] = useState([]);
@@ -62,6 +63,7 @@ export default function AccommodationsList() {
   const filtered = useMemo(() => {
     let result = allAccommodations;
     if (!showInactive) result = result.filter((a) => a.status === "active");
+    if (filterStatus) result = result.filter((a) => a.status === filterStatus);
     if (filterEntityId) result = result.filter((a) => a.owner_entity_id === filterEntityId);
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
@@ -74,7 +76,7 @@ export default function AccommodationsList() {
       );
     }
     return result;
-  }, [allAccommodations, searchTerm, showInactive, filterEntityId]);
+  }, [allAccommodations, searchTerm, showInactive, filterStatus, filterEntityId]);
 
   // Agrupar por owner_entity_id, ordenado por nombre de empresa
   const grouped = useMemo(() => {
@@ -116,7 +118,10 @@ export default function AccommodationsList() {
       {/* Header */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
-          <Title level={1} style={{ margin: 0, fontWeight: 700, fontSize: 30, letterSpacing: "-0.5px", color: "#1D1D1F" }}>Alojamientos</Title>
+          <Title level={2} style={{ margin: 0 }}>Alojamientos</Title>
+          <Text type="secondary">
+            {loading ? "Cargando..." : `${filtered.length} alojamiento${filtered.length !== 1 ? "s" : ""}`}
+          </Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />}
           onClick={() => navigate("/v2/admin/alojamientos/nuevo")}
@@ -147,6 +152,19 @@ export default function AccommodationsList() {
             allowClear
           />
         </Col>
+        <Col xs={12} sm={8} md={5}>
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Estado"
+            value={filterStatus || undefined}
+            onChange={(v) => setFilterStatus(v || "")}
+            allowClear
+            options={[
+              { value: "active", label: "Activo" },
+              { value: "inactive", label: "Inactivo" },
+            ]}
+          />
+        </Col>
         <Col>
           <Checkbox checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}>
             Mostrar desactivados
@@ -155,7 +173,7 @@ export default function AccommodationsList() {
         <Col>
           <Button
             icon={<ReloadOutlined />}
-            onClick={() => { setSearchTerm(""); setShowInactive(false); setFilterEntityId(null); }}
+            onClick={() => { setSearchTerm(""); setShowInactive(false); setFilterStatus(""); setFilterEntityId(null); }}
           >
             Limpiar
           </Button>

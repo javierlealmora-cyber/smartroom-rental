@@ -319,12 +319,13 @@ export default function AccommodationDetail() {
     accForm.setFieldsValue({
       name: accommodation.name,
       owner_entity_id: accommodation.owner_entity_id,
-      address_line1: accommodation.address_line1 || "",
-      street_number: accommodation.street_number || "",
-      address_line2: accommodation.address_line2 || "",
-      postal_code: accommodation.postal_code || "",
-      city: accommodation.city || "",
-      province: accommodation.province || null,
+      address_street: accommodation.address_street || "",
+      address_number: accommodation.address_number || "",
+      address_floor: accommodation.address_floor || "",
+      address_postal_code: accommodation.address_postal_code || "",
+      address_city: accommodation.address_city || "",
+      address_province: accommodation.address_province || null,
+      address_country: accommodation.address_country || "España",
       notes: accommodation.notes || "",
       status: accommodation.status,
       // Configuración por suministro
@@ -415,12 +416,13 @@ export default function AccommodationDetail() {
       await updateAccommodation(accId, {
         name: values.name,
         owner_entity_id: values.owner_entity_id,
-        address_line1: values.address_line1 || null,
-        street_number: values.street_number || null,
-        address_line2: values.address_line2 || null,
-        postal_code: values.postal_code || null,
-        city: values.city || null,
-        province: values.province || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_floor: values.address_floor || null,
+        address_postal_code: values.address_postal_code || null,
+        address_city: values.address_city || null,
+        address_province: values.address_province || null,
+        address_country: values.address_country || "España",
         notes: values.notes || null,
         status: values.status,
         // Configuración por suministro (included_X es la inversa de split_X en BD)
@@ -523,6 +525,10 @@ export default function AccommodationDetail() {
       render: (v) => v ? `${v} m²` : "-" },
     { title: "Baño", dataIndex: "bathroom_type", key: "bathroom_type", responsive: ["lg"],
       render: (v) => BATHROOM_OPTIONS.find((o) => o.value === v)?.label || v },
+    { title: "Cocina", dataIndex: "kitchen_type", key: "kitchen_type", responsive: ["lg"],
+      render: (v) => KITCHEN_OPTIONS.find((o) => o.value === v)?.label || v },
+    { title: "Notas", dataIndex: "notes", key: "notes", responsive: ["xl"],
+      render: (v) => v || "-" },
     { title: "Acciones", key: "actions", render: (_, room) => {
       const roomStatus = getRoomStatus(room);
       return (
@@ -714,27 +720,27 @@ export default function AccommodationDetail() {
                       <Select options={[{ value: "active", label: "Activo" }, { value: "inactive", label: "Inactivo" }]} />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} sm={11}>
-                    <Form.Item label="Calle" name="address_line1" rules={[
+                  <Col xs={24} sm={12}>
+                    <Form.Item label="Calle / Vía" name="address_street" rules={[
                       { required: true, message: "La calle es obligatoria" },
                       { min: 3, message: "La calle debe tener al menos 3 caracteres" },
                       { max: 200, message: "La calle no puede exceder 200 caracteres" }
                     ]}>
-                      <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={3}>
-                    <Form.Item label="Número" name="street_number">
-                      <Input placeholder="12" maxLength={10} />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={10}>
-                    <Form.Item label="Bloque / Escalera / Piso (opcional)" name="address_line2">
-                      <Input placeholder="Bloque B, Escalera 2, 3ºA..." />
+                      <Input placeholder="Calle Gran Vía, Av. de la Constitución..." maxLength={200} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={4}>
-                    <Form.Item label="Código Postal" name="postal_code" rules={[
+                    <Form.Item label="Número" name="address_number">
+                      <Input placeholder="12" maxLength={10} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Form.Item label="Piso / Puerta / Escalera" name="address_floor">
+                      <Input placeholder="2º A, Escalera B..." maxLength={50} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={4}>
+                    <Form.Item label="C.P." name="address_postal_code" rules={[
                       { required: true, message: "El código postal es obligatorio" },
                       { pattern: /^\d{5}$/, message: "Debe ser un código postal válido de 5 dígitos" }
                     ]}>
@@ -742,19 +748,24 @@ export default function AccommodationDetail() {
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={8}>
-                    <Form.Item label="Ciudad" name="city" rules={[
+                    <Form.Item label="Ciudad / Municipio" name="address_city" rules={[
                       { required: true, message: "La ciudad es obligatoria" },
                       { min: 2, message: "La ciudad debe tener al menos 2 caracteres" },
                       { max: 100, message: "La ciudad no puede exceder 100 caracteres" }
                     ]}>
-                      <Input placeholder="Madrid" />
+                      <Input placeholder="Madrid" maxLength={100} />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} sm={12}>
-                    <Form.Item label="Provincia" name="province" rules={[{ required: true, message: "La provincia es obligatoria" }]}>
+                  <Col xs={24} sm={6}>
+                    <Form.Item label="Provincia" name="address_province" rules={[{ required: true, message: "La provincia es obligatoria" }]}>
                       <Select showSearch placeholder="Seleccionar provincia..." optionFilterProp="label"
                         options={PROVINCIAS_ES} allowClear
                         filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Form.Item label="País" name="address_country" rules={[{ required: true, message: "El país es obligatorio" }]}>
+                      <Input placeholder="España" maxLength={100} />
                     </Form.Item>
                   </Col>
                   <Col xs={24}>
@@ -1015,7 +1026,15 @@ export default function AccommodationDetail() {
                         <Select options={KITCHEN_OPTIONS} />
                       </Form.Item>
                     </Col>
-                    <Col span={18}>
+                    <Col span={12}>
+                      <Form.Item 
+                        name="notes" 
+                        label="Notas"
+                      >
+                        <Input placeholder="Notas opcionales..." />
+                      </Form.Item>
+                    </Col>
+                    <Col span={6}>
                       <Form.Item label=" " colon={false}>
                         <Space>
                           <Button 
@@ -1420,7 +1439,7 @@ export default function AccommodationDetail() {
                         {isOcc && lodger ? (
                           <>
                             <Tooltip title="Ver detalle"><Button size="small" type="text" icon={<UserOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} /></Tooltip>
-                            <Tooltip title="Editar inquilino"><Button size="small" type="text" icon={<EditOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} /></Tooltip>
+                            <Tooltip title="Ver / Editar inquilino"><Button size="small" type="text" icon={<EditOutlined />} onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`)} /></Tooltip>
                             <Tooltip title="Cambiar habitación"><Button size="small" type="text" icon={<SwapOutlined />} onClick={() => { const asgn2 = r.active_assignment?.[0]; setLodgerToReassign({ ...lodger, _room: r, _assignment: asgn2 }); setShowReassignModal(true); }} /></Tooltip>
                             {st === "occupied" && <Tooltip title="Check-out"><Button size="small" type="text" danger icon={<LogoutOutlined />} onClick={() => { setLodgerToCheckout({ ...lodger, active_assignment: r.active_assignment }); setShowCheckoutModal(true); }} /></Tooltip>}
                           </>
@@ -1500,8 +1519,8 @@ export default function AccommodationDetail() {
                       {/* ── 2: Imagen grande — badge inquilino superpuesto abajo-izq ── */}
                       <div
                         style={{ position: "relative", height: 216, overflow: "hidden", background: "#fff", cursor: isOccupied && lodger ? "pointer" : "default" }}
-                        onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/editar`); }}
-                        title={isOccupied && lodger ? `Editar inquilino: ${lodger.full_name}` : undefined}
+                        onClick={() => { if (isOccupied && lodger) navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`); }}
+                        title={isOccupied && lodger ? `Ver inquilino: ${lodger.full_name}` : undefined}
                       >
                         <img
                           src={roomImg}
@@ -1597,9 +1616,9 @@ export default function AccommodationDetail() {
                               <Button size="small" type="text" icon={<UserOutlined />}
                                 onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle`)} />
                             </Tooltip>
-                            <Tooltip title="Editar inquilino">
+                            <Tooltip title="Ver / Editar inquilino">
                               <Button size="small" type="text" icon={<EditOutlined />}
-                                onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/editar`)} />
+                                onClick={() => navigate(`/v2/admin/inquilinos/${lodger.id}/detalle-inquilino`)} />
                             </Tooltip>
                             <Tooltip title="Cambiar habitación">
                               <Button size="small" type="text" icon={<SwapOutlined />}
@@ -1651,7 +1670,7 @@ export default function AccommodationDetail() {
 
       {/* Modal: Asignar inquilino a habitación */}
       <Modal
-        title={`Asignar Inquilino a Habitación ${assignRoom?.number || ''}`}
+        title={`Asignar Inquilino a Habitación ${assignRoom?.number || ''}${assignRoom?.monthly_rent ? ` — ${formatCurrency(assignRoom.monthly_rent)}/mes` : ''}`}
         open={!!assignRoom}
         onCancel={() => {
           setAssignRoom(null);
@@ -1686,7 +1705,7 @@ export default function AccommodationDetail() {
               const hasAssignment = selectedLodger?.active_assignment?.length > 0;
               
               if (hasAssignment) {
-                navigate(`/v2/admin/inquilinos/${lodgerId}/editar?action=reassign&acc=${accId}&room=${assignRoom?.id}`);
+                navigate(`/v2/admin/inquilinos/${lodgerId}/detalle-inquilino?action=reassign`);
                 setAssignRoom(null);
               } else {
                 setSelectedLodgerForAssignment(selectedLodger);

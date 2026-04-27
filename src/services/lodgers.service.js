@@ -45,16 +45,10 @@ export async function listLodgers({ status, clientAccountId } = {}) {
 }
 
 export async function getLodger(id, clientAccountId = null) {
+  // Primero obtener el perfil del inquilino
   let q = supabase
     .from("profiles")
-    .select(`
-      *,
-      assignments:lodger_room_assignments!lodger_id(
-        *,
-        room:rooms(id, number),
-        accommodation:accommodations(id, name)
-      )
-    `)
+    .select("*")
     .eq("id", id)
     .eq("role", "lodger");
 
@@ -63,10 +57,34 @@ export async function getLodger(id, clientAccountId = null) {
     q = q.eq("client_account_id", clientAccountId);
   }
 
-  const { data, error } = await q.maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Inquilino no encontrado");
-  return data;
+  const { data: profile, error: profileError } = await q.maybeSingle();
+  if (profileError) throw new Error(profileError.message);
+  if (!profile) throw new Error("Inquilino no encontrado");
+
+  // Luego obtener las asignaciones ordenadas por created_at DESC
+  let assignmentsQuery = supabase
+    .from("lodger_room_assignments")
+    .select(`
+      *,
+      room:rooms(id, number),
+      accommodation:accommodations(id, name)
+    `)
+    .eq("lodger_id", id)
+    .order("created_at", { ascending: false });
+
+  // Filtro tenant para asignaciones (seguridad multi-tenant)
+  if (clientAccountId) {
+    assignmentsQuery = assignmentsQuery.eq("client_account_id", clientAccountId);
+  }
+
+  const { data: assignments, error: assignmentsError } = await assignmentsQuery;
+  if (assignmentsError) throw new Error(assignmentsError.message);
+
+  // Combinar los datos
+  return {
+    ...profile,
+    assignments: assignments || []
+  };
 }
 
 // ─── Escrituras por Edge Function (manage_lodger) ─────────────────────────────
@@ -88,20 +106,17 @@ export async function createLodger(payload) {
 }
 
 export async function updateLodger(id, patch) {
-  // Query directa — evita 401 de manage_lodger y el session clearing que provoca.
-  // RLS profiles_update_by_client_account permite al admin actualizar lodgers de su tenant.
+  // ✅ SEGURIDAD: Usar Edge Function para actualización segura con auditoría
   const { id: _id, email: _email, role: _role, client_account_id: _cai, created_at: _cat, ...safePatch } = patch;
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(safePatch)
-    .eq("id", id)
-    .eq("role", "lodger")
-    .select("*")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { 
+      action: "update", 
+      payload: { id, ...safePatch }
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data?.lodger ?? result.lodger;
 }
 
 export async function setLodgerStatus(id, status) {
@@ -119,25 +134,15 @@ export async function setLodgerStatus(id, status) {
 }
 
 export async function scheduleCheckout(lodgerId, moveOutDate) {
-  // Query directa — evita invocar manage_lodger para operación que no requiere service_role.
-  // 1. Obtener asignación activa
-  const { data: assignment, error: asgErr } = await supabase
-    .from("lodger_room_assignments")
-    .select("id, room_id")
-    .eq("lodger_id", lodgerId)
-    .is("move_out_date", null)
-    .maybeSingle();
-  if (asgErr) throw new Error(asgErr.message);
-  if (!assignment) throw new Error("No hay asignación activa para este inquilino");
-
-  // 2. Registrar fecha de baja en asignación (el estado se deriva de esta fecha, sin tocar rooms.status)
-  const { error: updateErr } = await supabase
-    .from("lodger_room_assignments")
-    .update({ move_out_date: moveOutDate })
-    .eq("id", assignment.id);
-  if (updateErr) throw new Error(updateErr.message);
-
-  return { assignment_id: assignment.id };
+  // ✅ SEGURIDAD: Usar Edge Function para programar check-out con auditoría
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { 
+      action: "schedule_checkout", 
+      payload: { id: lodgerId, checkout_date: moveOutDate }
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function inviteLodger(lodgerId) {
@@ -149,105 +154,46 @@ export async function inviteLodger(lodgerId) {
 }
 
 export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
-  // Asignación directa para inquilinos sin habitación previa
-  // Obtener client_account_id del inquilino
-  const { data: lodgerProfile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("client_account_id")
-    .eq("id", lodgerId)
-    .single();
-  if (profileErr) throw new Error(`Error obteniendo perfil: ${profileErr.message}`);
-  const clientAccountId = lodgerProfile.client_account_id;
-
-  // Crear asignación
-  const { data: newAssignment, error: assignErr } = await supabase
-    .from("lodger_room_assignments")
-    .insert({
-      lodger_id: lodgerId,
-      room_id: roomId,
-      accommodation_id: accommodationId,
-      client_account_id: clientAccountId,
-      move_in_date: moveInDate,
-      billing_start_date: billingStartDate || moveInDate,
-      monthly_rent: monthlyRent || null,
-      deposit_amount: depositAmount || 0,
-      commission_amount: commissionAmount || null,
-      first_month_amount: firstMonthAmount || null,
-      services_provision_amount: servicesProvisionAmount || null,
-    })
-    .select()
-    .single();
-  if (assignErr) throw new Error(`Error creando asignación: ${assignErr.message}`);
-
-  // Activar inquilino
-  const { error: statusErr } = await supabase
-    .from("profiles")
-    .update({ onboarding_status: "active" })
-    .eq("id", lodgerId)
-    .eq("role", "lodger");
-  if (statusErr) throw new Error(`Error activando inquilino: ${statusErr.message}`);
-
-  return newAssignment;
+  // ✅ SEGURIDAD: Usar Edge Function para asignación segura con auditoría
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { 
+      action: "assign_room", 
+      payload: { 
+        id: lodgerId,
+        room_id: roomId,
+        accommodation_id: accommodationId,
+        move_in_date: moveInDate,
+        billing_start_date: billingStartDate,
+        monthly_rent: monthlyRent,
+        deposit_amount: depositAmount,
+        commission_amount: commissionAmount,
+        first_month_amount: firstMonthAmount,
+        services_provision_amount: servicesProvisionAmount,
+      }
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }
 
 export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
-  // Query directa — evita 401 de manage_lodger. RLS exige client_account_id en INSERT,
-  // lo obtenemos del propio perfil del inquilino.
-
-  // 0. Obtener client_account_id del inquilino (requerido por RLS en lodger_room_assignments)
-  const { data: lodgerProfile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("client_account_id")
-    .eq("id", lodgerId)
-    .single();
-  if (profileErr) throw new Error(`Error obteniendo perfil: ${profileErr.message}`);
-  const clientAccountId = lodgerProfile.client_account_id;
-
-  // 1. Obtener asignación activa actual para liberar habitación anterior
-  const { data: currentAssignment } = await supabase
-    .from("lodger_room_assignments")
-    .select("room_id")
-    .eq("lodger_id", lodgerId)
-    .is("move_out_date", null)
-    .maybeSingle();
-
-  if (currentAssignment) {
-    // 2. Cerrar asignación activa: poner move_out_date = nueva fecha de entrada
-    const { error: e1 } = await supabase
-      .from("lodger_room_assignments")
-      .update({ move_out_date: moveInDate })
-      .eq("lodger_id", lodgerId)
-      .is("move_out_date", null);
-    if (e1) throw new Error(`Error cerrando asignación anterior: ${e1.message}`);
-  }
-
-  // 4. Crear nueva asignación — client_account_id requerido por RLS WITH CHECK
-  const { data: newAssignment, error: e3 } = await supabase
-    .from("lodger_room_assignments")
-    .insert({
-      lodger_id: lodgerId,
-      room_id: newRoomId,
-      accommodation_id: newAccommodationId,
-      client_account_id: clientAccountId,
-      move_in_date: moveInDate,
-      billing_start_date: billingStartDate || moveInDate,
-      monthly_rent: monthlyRent || null,
-      deposit_amount: depositAmount || 0,
-      commission_amount: commissionAmount || null,
-      first_month_amount: firstMonthAmount || null,
-      services_provision_amount: servicesProvisionAmount || null,
-    })
-    .select()
-    .single();
-  if (e3) throw new Error(`Error creando nueva asignación: ${e3.message}`);
-
-  // 5. Activar inquilino
-  const { error: e5 } = await supabase
-    .from("profiles")
-    .update({ onboarding_status: "active" })
-    .eq("id", lodgerId)
-    .eq("role", "lodger");
-  if (e5) throw new Error(`Error activando inquilino: ${e5.message}`);
-
-  return newAssignment;
+  // ✅ SEGURIDAD: Usar Edge Function para reasignación segura con auditoría
+  const result = await invokeWithAuth("manage_lodger", {
+    body: { 
+      action: "reassign_room", 
+      payload: { 
+        id: lodgerId,
+        new_room_id: newRoomId,
+        move_in_date: moveInDate,
+        billing_start_date: billingStartDate,
+        monthly_rent: monthlyRent,
+        deposit_amount: depositAmount,
+        commission_amount: commissionAmount,
+        first_month_amount: firstMonthAmount,
+        services_provision_amount: servicesProvisionAmount,
+      }
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
 }

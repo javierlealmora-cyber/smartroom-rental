@@ -504,7 +504,7 @@ export default function LodgerDetail() {
         </Col>
         <Col>
           <Button type="primary" icon={<EditOutlined />}
-            onClick={() => navigate(`/v2/admin/inquilinos/${id}/editar`)}>
+            onClick={() => navigate(`/v2/admin/inquilinos/${id}/detalle-inquilino`)}>
             Editar
           </Button>
         </Col>
