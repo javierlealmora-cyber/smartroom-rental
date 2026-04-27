@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.jsx",
+    "src/App.jsx",
+    "src/router/**/*.{js,jsx}",
+    "scripts/**/*.js"
+  ],
+  "project": [
+    "src/**/*.{js,jsx,ts,tsx}",
+    "!src/tests/**",
+    "!src/mocks/**"
+  ],
+  "ignore": [
+    "vitest.config.js",
+    "playwright.config.js",
+    "vite.config.js",
+    "qa/**",
+    "src/tests/**",
+    "scripts/**"
+  ],
+  "ignoreDependencies": [
+    "@axe-core/playwright",
+    "msw",
+    "jsdom"
+  ],
+  "vitest": false,
+  "playwright": false,
+  "vite": false
+}

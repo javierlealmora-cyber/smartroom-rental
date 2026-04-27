@@ -2,7 +2,7 @@
 
 Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funcional operativa, ver también [qa/COVERAGE.md](../../qa/COVERAGE.md).
 
-**Última actualización:** 2026-04-11 (rev21)
+**Última actualización:** 2026-04-12 (rev24)
 
 ---
 
@@ -10,11 +10,12 @@ Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funciona
 
 | Elemento | Total | Con Tests | Sin Tests |
 |----------|-------|-----------|-----------|
-| Requisitos (REQ) | 12 | 4 | 8 |
+| Requisitos (REQ) | 14 | 4 | 10 |
 | Cambios (CHG) | 6 | 1 | 5 |
-| Migraciones schema | 9 | 0 | 9 |
-| Migraciones security | 1 | 1 | 0 |
+| Migraciones schema | 12 | 0 | 12 |
+| Migraciones security | 2 | 1 | 1 |
 | Edge Functions activas | 5 | 1 | 4 |
+| Edge Functions SAL (diseño) | 13 | 0 | 13 |
 | Edge Functions migradas a RLS directo | 3 | — | — |
 
 **Cobertura funcional:** 39% completa, 50% con parciales (detalle en [qa/COVERAGE.md](../../qa/COVERAGE.md))
@@ -187,6 +188,43 @@ completo, los valores son iguales — esto es correcto y esperado (no es un bug 
 | Tests unitarios | ENT-01..07 — pendientes | 🚧 |
 | Tests E2E | `qa/e2e/specs/settings.spec.js` — pendiente | 🚧 |
 | Cobertura | 0% (ENT-01..07 pendientes) | 🚧 |
+
+---
+
+### REQ-013 — Catálogo de Servicios SaaS (Add-ons)
+
+| Aspecto | Detalle | Estado |
+|---------|---------|--------|
+| Requisito | `docs/requirements/current/REQ-013-saas-services-catalog.md` | ✅ Documentado (2026-04-12) |
+| Estado implementación | Diseño completado — sin implementación frontend todavía | 🟡 Diseño |
+| Migraciones | `20260412000001_create_saas_services_catalog.sql` — tablas + seed smart_access_lock | 🟡 Pendiente ejecutar |
+| RLS | `20260412000004_smart_access_lock_rls.sql` — catálogo SELECT público; suscripciones por tenant | 🟡 Pendiente ejecutar |
+| Edge Functions | `sal-activate-subscription` (diseño) — activa/desactiva suscripción + Stripe item | 🟡 No implementada |
+| Tests unitarios | SaaS-01..07 — pendientes | 🚧 |
+| Tests E2E | `qa/e2e/specs/superadmin-saas.spec.js` — pendiente | 🚧 |
+| Dependencias | REQ-002 (client_accounts, stripe_customer_id), REQ-014 (primer consumidor) | — |
+| Cobertura | 0% (diseño completado, sin implementación) | 🚧 |
+
+---
+
+### REQ-014 — SmartAccessLock
+
+| Aspecto | Detalle | Estado |
+|---------|---------|--------|
+| Requisito | `docs/requirements/current/REQ-014-smart-access-lock.md` | ✅ Documentado (2026-04-12) |
+| Estado implementación | Diseño completado — sin implementación frontend todavía | 🟡 Diseño |
+| Migraciones Core | `20260412000002_create_smart_access_lock_core.sql` — lock_integrations, locks, common_areas, lock_placements | 🟡 Pendiente ejecutar |
+| Migraciones Acceso | `20260412000003_create_smart_access_lock_access.sql` — lock_access_actors, groups, members, scopes, grants, credentials, records, notifications | 🟡 Pendiente ejecutar |
+| RLS | `20260412000004_smart_access_lock_rls.sql` — RLS en todas las tablas SAL | 🟡 Pendiente ejecutar |
+| Tablas nuevas | 12 tablas (4 core + 8 acceso) + 4 tablas SaaS = 16 tablas con RLS | 🟡 |
+| Edge Functions (diseño) | sal-sync-locks, sal-issue-credential, sal-revoke-credential, sal-assign-lodger-grants, sal-revoke-lodger-grants, sal-remote-unlock, sal-sync-events, sal-resolve-active-grants, sal-renew-credentials, sal-activate-subscription, sal-deactivate-subscription, sal-send-notification, sal-sync-records-cron | 🟡 No implementadas |
+| Proveedor inicial | TTLock — arquitectura vendor-agnostic (campo `provider` en lock_integrations y locks) | — |
+| Seguridad crítica | `lock_credentials.credential_value` (PINs) — debe cifrarse con Supabase Vault antes de producción | ⚠️ Pendiente |
+| Tests unitarios | SAL-01..20 — pendientes | 🚧 |
+| Tests E2E | `qa/e2e/specs/sal-integration.spec.js`, `sal-actors.spec.js`, `sal-grants.spec.js` — pendientes | 🚧 |
+| Dependencias | REQ-013 (suscripción activa requerida), REQ-003 (lodger_room_assignments → grants automáticos) | — |
+| Cobertura | 0% (diseño completado, sin implementación) | 🚧 |
+| Cambio 2026-04-12 (rev22) | **Diseño completo del módulo SmartAccessLock:** REQ-013 + REQ-014 documentados. 4 migraciones SQL creadas (20260412000001..000004): catálogo SaaS, tablas core locks, tablas de acceso, RLS. 12 tablas nuevas, 13 Edge Functions diseñadas, 3 pg_cron jobs. Patrón vendor-agnostic con TTLock como proveedor inicial. Seguridad: credential_value requiere Vault antes de producción. Tests SAL-01..20 y SaaS-01..07 añadidos en COVERAGE.md. | 🟡 2026-04-12 |
 
 ---
 

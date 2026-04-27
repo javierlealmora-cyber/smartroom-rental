@@ -1,5 +1,382 @@
 # Defectos Abiertos — SmartRent
-**Fuente autoritativa** | Última actualización: 2026-04-07
+**Fuente autoritativa** | Última actualización: 2026-04-12
+
+---
+
+## ✅ MEJORAS RECIENTES (2026-04-12)
+
+### FEATURE-060 [ALTA] — Estandarización de campos de dirección en toda la aplicación ✅ COMPLETADO
+**Completado:** 2026-04-12  
+**Módulos:** Base de datos (entities, accommodations) + Frontend (8 componentes) + Edge Functions (2)  
+**Descripción:** Estandarización completa de campos de dirección para usar un modelo único de 7 campos con nomenclatura consistente en toda la aplicación.
+
+**Problema identificado:**
+1. **Inconsistencia en nomenclatura:**
+   - `entities`: Usaba `street`, `street_number`, `address_extra`, `zip`, `city`, `province`, `country` (sin prefijo `address_`)
+   - `accommodations`: Usaba `address_line1` (concatenación), `address_line2`, `postal_code`, `city`, `province`, `country` + campos adicionales `street_number`, `floor`, `door`
+   - `profiles`: Ya usaba el modelo correcto con prefijo `address_`
+
+2. **Lógica de concatenación en accommodations:**
+   - AccommodationCreate.jsx concatenaba `street + street_number + floor + door` en `address_line1`
+   - Difícil de separar y buscar por campos individuales
+   - Inconsistente con el resto de la aplicación
+
+3. **Campos duplicados en EntityCreate.jsx:**
+   - Formulario tenía campos `floor` y `door` que NO se guardaban en la BD
+   - Solo se guardaba `address_extra`, perdiendo información
+
+4. **Edge Functions con modelo antiguo:**
+   - `provision_client_account_superadmin` y `wizard_submit` usaban nombres antiguos
+   - Incompatibles con el nuevo modelo
+
+**Modelo estándar implementado (7 campos):**
+```
+1. address_street     → Calle / Vía
+2. address_number     → Número
+3. address_floor      → Piso / Puerta / Escalera
+4. address_postal_code → Código Postal
+5. address_city       → Ciudad / Municipio
+6. address_province   → Provincia
+7. address_country    → País
+```
+
+**Solución implementada:**
+
+1. **Migraciones SQL (2 archivos):**
+   - `20260412000001_standardize_entities_address.sql`:
+     - Renombradas 7 columnas en `entities` con prefijo `address_`
+     - Añadidos comentarios de documentación
+   - `20260412000002_standardize_accommodations_address.sql`:
+     - Renombradas 6 columnas existentes con prefijo `address_`
+     - Añadida nueva columna `address_street`
+     - Migrados datos de `address_line1` → `address_street` (solo registros sin datos desglosados)
+     - Concatenados `door` y `address_line2` en `address_floor`
+     - Eliminadas 3 columnas antiguas: `address_line1`, `address_line2`, `door`
+
+2. **Componente reutilizable:**
+   - Creado `src/components/AddressFormFields.jsx`
+   - Genera los 7 campos con validaciones estándar
+   - Configurable con prop `requiredFields`
+   - Reutilizable en entities, accommodations y profiles
+
+3. **Frontend actualizado (8 archivos):**
+   - **Entities:**
+     - `EntityCreate.jsx`: Eliminados campos `floor` y `door` que no se guardaban, reemplazada sección de dirección por `<AddressFormFields />`
+     - `EntityEdit.jsx`: Actualizado `setFieldsValue` y payload con nuevos nombres
+     - `EntityDetail.jsx`: Actualizada búsqueda de `address_line1` → `address_street`
+   - **Accommodations:**
+     - `AccommodationCreate.jsx`: Eliminada lógica de concatenación, reemplazada por `<AddressFormFields />`
+     - `AccommodationEdit.jsx`: Actualizado `setFieldsValue` y payload con nuevos nombres
+     - `AccommodationDetail.jsx`: Actualizada visualización y búsqueda, eliminado fallback incorrecto a `accommodation?.street`
+     - `AccommodationsList.jsx`: Actualizada búsqueda y visualización
+
+4. **Edge Functions actualizadas (2 archivos):**
+   - `provision_client_account_superadmin/index.ts`:
+     - Interface `PayerPayload` actualizada con nuevos nombres
+     - INSERT de payer y owner actualizados
+   - `wizard_submit/index.ts`:
+     - Interface `PayerPayload` actualizada
+     - INSERT de payer y owner actualizados
+
+**Migración de datos:**
+- **Entities:** 42 registros migrados sin pérdida de datos
+- **Accommodations:** 25 registros migrados:
+  - 10 con `address_line1` → migrados a `address_street` (solo si no tenían datos desglosados)
+  - Datos de `door` y `address_line2` concatenados en `address_floor`
+
+**Archivos modificados:**
+- **Migraciones:** 2 archivos SQL
+- **Frontend:** 8 componentes (7 actualizados + 1 nuevo)
+- **Edge Functions:** 2 archivos TypeScript
+- **Documentación:** 2 archivos (MIGRATION-INDEX.md, ADDRESS-STANDARDIZATION.md)
+- **Total:** ~500 líneas modificadas, ~200 eliminadas, ~150 nuevas
+
+**Beneficios:**
+- ✅ Modelo único de dirección en toda la aplicación
+- ✅ Nomenclatura consistente con prefijo `address_`
+- ✅ Componente reutilizable para evitar duplicación
+- ✅ Búsquedas y validaciones mejoradas
+- ✅ Eliminada lógica de concatenación compleja
+- ✅ Edge Functions compatibles con nuevo modelo
+- ✅ Documentación completa del modelo estándar
+
+**Referencias:**
+- Migraciones: `supabase/migrations/schema/20260412000001_standardize_entities_address.sql`, `20260412000002_standardize_accommodations_address.sql`
+- Documentación: `docs/database/ADDRESS-STANDARDIZATION.md`
+- Índice de migraciones: `docs/database/MIGRATION-INDEX.md`
+
+---
+
+### FEATURE-059 [ALTA] — Reemplazo de modal incorrecto de cambio de habitación y fix de pantalla en blanco ✅ COMPLETADO
+**Completado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/tenants/TenantEdit.jsx`  
+**Descripción:** Eliminado el modal inline incorrecto de cambio de habitación y reemplazado por el componente `ChangeRoomModal` correcto. Añadido manejo de estados de carga para evitar pantalla en blanco.
+
+**Problemas identificados:**
+1. **Modal incorrecto en TenantEdit.jsx:**
+   - Existían 2 modales diferentes para cambio de habitación
+   - Modal incorrecto (inline en TenantEdit): Simple, solo pedía alojamiento, habitación, fecha y fianza
+   - Modal correcto (ChangeRoomModal): Completo con Check-Out/Check-In, entidad, corrección automática, validaciones
+   - Los botones en TenantEdit.jsx abrían el modal incorrecto
+
+2. **Pantalla en blanco al navegar desde cards:**
+   - TenantEdit.jsx no tenía manejo de estados de carga (`loading`, `error`)
+   - Al navegar desde las cards de inquilinos, la página quedaba completamente en blanco
+   - No había Skeleton ni mensaje de error durante la carga
+
+**Solución implementada:**
+1. **Eliminación del modal incorrecto:**
+   - Eliminado modal inline de ~140 líneas (líneas 541-678)
+   - Eliminadas funciones `onAccommodationChange` y `onReassignFinish` (~53 líneas)
+   - Eliminados estados: `reassignForm`, `reassignBusy`, `reassignError`, `payUntilEndOfMonth`, `allAccommodations`, `availableRooms`, `loadingRooms`
+   - Limpiados imports no utilizados: `dayjs`, `listAccommodations`, `reassignRoom`, `Modal`, `DatePicker`, `InputNumber`, `Select`
+
+2. **Reemplazo por ChangeRoomModal:**
+   - Importado componente `ChangeRoomModal` correcto
+   - Reemplazado modal inline por `<ChangeRoomModal />` (12 líneas)
+   - Configurado con props: `open`, `onClose`, `onSuccess`, `lodger`, `activeAssignment`, `clientAccountId`
+
+3. **Manejo de estados de carga:**
+   - Añadido `Skeleton` a imports de Ant Design
+   - Añadidos `Row` y `Col` a imports (faltaban)
+   - Implementado patrón de TenantDetail.jsx (líneas 242-253):
+     - `if (loading)` → Muestra Skeleton
+     - `if (error)` → Muestra Alert de error
+     - `if (!lodger)` → Return null
+   - Separado auto-apertura del modal en useEffect independiente para evitar loops
+
+**Llamadas corregidas:**
+- ❌ **Antes:** 2 botones en TenantEdit.jsx abrían modal incorrecto
+- ✅ **Ahora:** Todos los botones de cambio de habitación usan ChangeRoomModal correcto:
+  - TenantsList.jsx (cards y tabla) → Navega a `/editar?action=reassign` → Abre ChangeRoomModal
+  - TenantDetail.jsx → Abre ChangeRoomModal directamente
+  - TenantEdit.jsx → Abre ChangeRoomModal directamente
+
+**Archivos modificados:**
+- `src/pages/v2/admin/tenants/TenantEdit.jsx` (imports, estados, funciones, modal, manejo de carga)
+- `src/pages/v2/admin/tenants/TenantsList.jsx` (condición de botón corregida a `getLodgerStatus`)
+
+**Beneficios:**
+- ✅ Consistencia: Un solo modal correcto en toda la aplicación
+- ✅ UX mejorada: Skeleton durante carga, mensajes de error claros
+- ✅ Código limpio: ~200 líneas eliminadas, sin duplicación
+- ✅ Funcionalidad completa: Check-Out/Check-In, entidad, corrección automática
+
+---
+
+### FEATURE-058 [ALTA] — Migración de operaciones de inquilinos a Edge Functions para auditoría completa ✅ COMPLETADO
+**Completado:** 2026-04-12  
+**Módulo:** `supabase/functions/manage_lodger` + `src/services/lodgers.service.js`  
+**Descripción:** Migradas 4 operaciones críticas de inquilinos desde queries directas del frontend a Edge Functions para garantizar que todas las acciones se registren en `audit_log` y aparezcan en "Actividad Reciente".
+
+**Problema identificado:**
+- Las operaciones de asignar habitación, cambiar habitación, actualizar inquilino y programar check-out se ejecutaban directamente desde el frontend **sin registrar auditoría**
+- Esto causaba que estas acciones no aparecieran en el dashboard de "Actividad Reciente"
+- Falta de trazabilidad sobre quién realizó qué acción y cuándo
+
+**Solución implementada:**
+1. **Edge Function `manage_lodger`:**
+   - Añadida nueva acción `assign_room` para primera asignación de habitación
+   - Actualizada acción `reassign_room` para aceptar todos los parámetros de billing
+   - Las acciones `update` y `schedule_checkout` ya existían pero no se usaban desde el frontend
+
+2. **Frontend `lodgers.service.js`:**
+   - `assignRoomToLodger`: Migrado de INSERT directo a invocar Edge Function con acción `assign_room`
+   - `reassignRoom`: Migrado de INSERT/UPDATE directo a invocar Edge Function con acción `reassign_room`
+   - `updateLodger`: Migrado de UPDATE directo a invocar Edge Function con acción `update`
+   - `scheduleCheckout`: Migrado de UPDATE directo a invocar Edge Function con acción `schedule_checkout`
+
+**Registros de auditoría creados:**
+- `entity_type: "lodger_assignment"` + `action: "assign_room"` - Primera asignación de habitación
+- `entity_type: "lodger_assignment"` + `action: "reassign_room"` - Cambio de habitación
+- `entity_type: "lodger"` + `action: "update"` - Actualización de datos del inquilino
+- `entity_type: "lodger"` + `action: "schedule_checkout"` - Programación de check-out
+
+**Archivos modificados:**
+- `supabase/functions/manage_lodger/index.ts` (líneas 3, 59, 327-442, 444-460, 517-531)
+- `src/services/lodgers.service.js` (líneas 108-120, 136-146, 156-177, 179-199)
+
+**Beneficios:**
+- ✅ Auditoría completa de todas las operaciones de inquilinos
+- ✅ Seguridad mejorada (validaciones en servidor)
+- ✅ Visibilidad total en "Actividad Reciente"
+- ✅ Trazabilidad completa (quién, qué, cuándo, qué cambió)
+
+**Migración SQL:** No requerida (tabla `audit_log` ya existe)
+
+**Pendiente:** Desplegar Edge Function actualizada a Supabase
+
+---
+
+### FEATURE-057 [MEDIA] — Añadidas columnas Cocina y Notas a tabla de habitaciones ✅ COMPLETADO
+**Completado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`  
+**Descripción:** Añadidas dos nuevas columnas a la tabla de habitaciones en el detalle de alojamiento:
+- **Cocina**: Muestra el tipo de cocina (Compartida/Privada/Suite) - visible en pantallas `lg` y superiores
+- **Notas**: Muestra las notas opcionales de la habitación - visible en pantallas `xl` y superiores
+
+**Cambios realizados:**
+1. Añadidas columnas `kitchen_type` y `notes` a `roomColumns` (líneas 526-529)
+2. Añadido campo `notes` al formulario de nueva habitación (líneas 1022-1029)
+3. El formulario de edición ya incluía el campo `notes` (línea 1052)
+
+**Migración SQL:** `supabase/migrations/schema/20260412150000_add_notes_to_rooms.sql`  
+- Añade columna `notes TEXT` a la tabla `rooms`
+- Incluye comentario de documentación
+
+**Archivos modificados:**
+- `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`
+
+**Pendiente:** Ejecutar migración en Supabase Dashboard (DEV)
+
+---
+
+## ✅ CERRADOS RECIENTEMENTE (2026-04-12)
+
+### BUG-064 [ALTA] — Cambio de habitación no aparece en "Actividad Reciente" del Dashboard ✅ CERRADO
+**Cerrado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/tenants/components/ChangeRoomModal.jsx`  
+**Síntoma:** Al cambiar la habitación de un inquilino desde `ChangeRoomModal`, la operación no aparecía en la sección "Actividad Reciente" del Dashboard (`DashboardAdmin`). El Dashboard lee de `audit_log`, pero el cambio nunca se registraba ahí.
+
+**Causa raíz:** `ChangeRoomModal.jsx` hacía dos queries directas a Supabase en `onFinish` que bypasaban la lógica de auditoría. La tabla `audit_log` tiene RLS con solo política SELECT para usuarios autenticados — no es posible hacer INSERT directo desde el frontend. Solo service_role (Edge Functions) puede escribir en ella.
+
+Alternativa EF descartada: llamar a `invokeWithAuth("manage_lodger", ...)` causaba logout porque internamente llama a `supabase.auth.getSession()`, que puede disparar el evento `SIGNED_OUT` si el token está próximo a caducar durante el refresh.
+
+**Fix aplicado:** Función PostgreSQL `SECURITY DEFINER` invocada via `supabase.rpc()`:
+- `supabase.rpc()` usa el token cacheado internamente (igual que `supabase.from()`), sin llamar a `getSession()` explícitamente → sin riesgo de logout.
+- `SECURITY DEFINER` permite escribir en `audit_log` sin política INSERT en RLS. `auth.uid()` sigue disponible via el contexto JWT que PostgREST inyecta.
+- La función es atómica: cierra la asignación anterior, crea la nueva, y escribe en `audit_log` en una única transacción.
+
+```diff
+- // ❌ Dos queries directas → no escriben en audit_log
+- await supabase.from("lodger_room_assignments").update({ move_out_date, notes }).eq("id", curAsgnId)
+- await supabase.from("lodger_room_assignments").insert({ lodger_id, room_id, ... })
+
++ // ✅ RPC SECURITY DEFINER → atómico + escribe en audit_log → aparece en Dashboard
++ await supabase.rpc("reassign_lodger_room", {
++   p_lodger_id, p_current_asgn_id, p_new_room_id, p_new_accommodation_id,
++   p_change_date, p_monthly_rent, p_deposit_amount, p_commission_amount,
++   p_correction_amount, p_client_account_id, p_notes,
++ })
+```
+
+**Archivos modificados:**
+- `src/pages/v2/admin/tenants/components/ChangeRoomModal.jsx` — `onFinish` usa `supabase.rpc("reassign_lodger_room", ...)`
+- `supabase/migrations/schema/20260412160000_reassign_room_rpc.sql` — nueva función `SECURITY DEFINER`
+
+---
+
+### BUG-063 [ALTA] — Modal "Cambiar habitación" queda en pantalla vacío tras confirmar el cambio ✅ CERRADO
+**Cerrado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/tenants/TenantDetail.jsx`  
+**Síntoma:** Tras confirmar un cambio de habitación en `ChangeRoomModal` desde `TenantDetail`, el modal se vaciaba (formulario en blanco, sin datos) pero permanecía abierto en pantalla. El usuario debía cerrarlo manualmente.
+
+**Causa raíz:** Doble fallo en el callback `onSuccess` del `ChangeRoomModal`:
+
+1. **Modal no se cerraba** — `setReassignOpen(false)` no estaba en `onSuccess`. El modal seguía montado con `open={true}` mientras el formulario interno se reseteaba tras el submit, dejándolo visualmente vacío.
+
+2. **useEffect lo reabría** — `loadLodger()` actualizaba el estado `lodger`, lo que disparaba el `useEffect([searchParams, lodger])`. Si la URL aún contenía `?action=reassign` (navegación desde `TenantsList`), la condición era verdadera y ejecutaba `setReassignOpen(true)`, manteniéndolo abierto en el siguiente ciclo de render.
+
+**Fix aplicado:**
+```diff
+- onSuccess={() => { loadLodger(); message.success("Habitación cambiada correctamente"); }}
++ onSuccess={() => {
++   setReassignOpen(false);
++   navigate(`/v2/admin/inquilinos/${id}/detalle-inquilino`, { replace: true });
++   loadLodger();
++   message.success("Habitación cambiada correctamente");
++ }}
+```
+
+- `setReassignOpen(false)` — cierra el modal inmediatamente
+- `navigate(..., { replace: true })` — elimina `?action=reassign` de la URL sin añadir entrada al historial, cortando el ciclo del `useEffect`
+- `loadLodger()` — recarga los datos del inquilino para reflejar la nueva habitación
+
+**Archivos modificados:** `src/pages/v2/admin/tenants/TenantDetail.jsx`  
+**Migración:** No requerida.
+
+---
+
+### BUG-062 [ALTA] — Página TenantEdit.jsx obsoleta — eliminada y reemplazada por TenantDetail ✅ CERRADO
+**Cerrado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/tenants/TenantEdit.jsx` (eliminado)  
+**Síntoma:** La ruta `/v2/admin/inquilinos/:id/editar` mostraba una página de edición completa (página entera) que duplicaba la funcionalidad ya integrada en `TenantDetail.jsx` (modal "Editar datos del inquilino" + `ChangeRoomModal`). Era una pantalla redundante y fuente de regresiones.
+
+**Fix aplicado:**
+1. **Eliminado** `src/pages/v2/admin/tenants/TenantEdit.jsx`
+2. **`App.jsx`**: Eliminado import `TenantEditV2` y ruta `/v2/admin/inquilinos/:id/editar`
+3. **`V2Layout.jsx`**: Eliminado breadcrumb `/v2/admin/inquilinos/:id/editar`
+4. **`TenantDetail.jsx`**: Añadido soporte `?action=reassign` — `useSearchParams` + `useEffect` que abre `ChangeRoomModal` automáticamente cuando la URL contiene `?action=reassign`
+5. **Todos los `navigate` a `/editar`** redirigidos a `/detalle-inquilino`:
+   - `AccommodationDetail.jsx` (3 ocurrencias) → `/detalle-inquilino`
+   - `AccommodationDetail.jsx` (1 ocurrencia) → `/detalle-inquilino?action=reassign`
+   - `RoomsSearch.jsx` (3 ocurrencias) → `/detalle-inquilino`
+   - `LodgerDetail.jsx` (1 ocurrencia) → `/detalle-inquilino`
+   - `DashboardAdmin.jsx` (1 ocurrencia) → `/detalle-inquilino`
+   - `TenantsList.jsx` (2 ocurrencias) → `/detalle-inquilino?action=reassign`
+
+**Archivos modificados:** `TenantEdit.jsx` (eliminado), `App.jsx`, `V2Layout.jsx`, `TenantDetail.jsx`, `AccommodationDetail.jsx`, `RoomsSearch.jsx`, `LodgerDetail.jsx`, `DashboardAdmin.jsx`, `TenantsList.jsx`  
+**Migración:** No requerida.
+
+---
+
+### BUG-061 [ALTA] — Modal "Cambiar habitación" se reabre solo tras confirmar el cambio ✅ CERRADO
+**Cerrado:** 2026-04-12  
+**Módulo:** `src/pages/v2/admin/tenants/TenantEdit.jsx`  
+**Síntoma:** Al confirmar el cambio de habitación en el modal `ChangeRoomModal`, el modal se cerraba y se volvía a abrir inmediatamente. La pantalla quedaba de nuevo en el formulario de cambio de habitación en lugar de redirigir a la lista de inquilinos.
+
+**Causa raíz:** El callback `onSuccess` llamaba a `load()`, que actualizaba el estado `lodger`. El `useEffect` que vigila `[searchParams, lodger]` se disparaba de nuevo al cambiar `lodger`; como la URL seguía conteniendo `?action=reassign`, la condición era verdadera y ejecutaba `setReassignOpen(true)` reabriendo el modal.
+
+```js
+// Flujo del bug:
+// 1. Usuario confirma cambio → onSuccess()
+// 2. onSuccess llama load() → actualiza estado lodger
+// 3. useEffect([searchParams, lodger]) se dispara
+// 4. searchParams.get("action") === "reassign" → sigue siendo true
+// 5. setReassignOpen(true) → modal se reabre
+```
+
+**Fix aplicado:**
+```diff
+  onSuccess={() => {
+-   load();
+-   message.success("Habitación cambiada correctamente");
+-   setReassignOpen(false);
++   message.success("Habitación cambiada correctamente");
++   navigate("/v2/admin/inquilinos");
+  }}
+```
+Navegar fuera desmonta el componente por completo, eliminando el riesgo de que el `useEffect` reactive el modal con la URL obsoleta.
+
+**Archivos modificados:** `src/pages/v2/admin/tenants/TenantEdit.jsx` (callback `onSuccess` del `ChangeRoomModal`)  
+**Migración:** No requerida.
+
+---
+
+### BUG-060 [ALTA] — `Select` e `Input` no importados en TenantEdit.jsx → pantalla en blanco al pulsar "Cambiar habitación" ✅ CERRADO
+**Cerrado:** 2026-04-12  
+**Síntoma:** Al pulsar el botón "Cambiar habitación" (o navegar a `/editar?action=reassign`) la página quedaba completamente en blanco. La consola del navegador mostraba:
+- `Uncaught ReferenceError: Select is not defined` en `TenantEdit.jsx:307`
+- `Warning: Instance created by 'useForm' is not connected to any Form element` en `TenantEdit.jsx:94`
+
+**Causa raíz:** Regresión en `TenantEdit.jsx`: los componentes `Select` (usado en línea 307 para el campo "Estado") e `Input` (usado en línea 507 para el renombrado de documentos) no estaban incluidos en el import de `antd`. React lanza `ReferenceError` al evaluar el JSX, lo que desmonta todo el árbol de componentes y produce la pantalla en blanco.
+
+El warning de `useForm` es secundario y benigno: `form.setFieldsValue()` se llama durante la carga (cuando el Skeleton está montado y el `<Form>` aún no existe), pero Ant Design encola los valores y los aplica cuando el Form monta. No produce crash.
+
+**Fix aplicado:**
+```diff
+- import {
+-   Alert, Button, Card, Col, Descriptions, Form,
+-   message, Popconfirm, Row, Skeleton, Space, Tag, Tooltip, Typography, Upload,
+- } from "antd";
++ import {
++   Alert, Button, Card, Col, Descriptions, Form, Input,
++   message, Popconfirm, Row, Select, Skeleton, Space, Tag, Tooltip, Typography, Upload,
++ } from "antd";
+```
+
+**Archivos modificados:** `src/pages/v2/admin/tenants/TenantEdit.jsx` (línea 7–9)  
+**Migración:** No requerida.
 
 ---
 

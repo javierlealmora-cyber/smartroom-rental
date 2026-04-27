@@ -1,0 +1,14 @@
+{
+  "modo": "sin_lector",
+  "periodo": { "dias": 15, "fecha_inicio": "2026-04-01", "fecha_fin": "2026-04-15" },
+  "factura": {
+    "gasto_fijo":     { "potencia": 20.05, "descuentos": -4.75, "otros": 1.27, "impuestos": 9.61 },
+    "gasto_variable": { "energia": 18.99 },
+    "consumo_total_kwh": 109.828
+  },
+  "inquilinos": [
+    { "id": "juan",  "nombre": "Juan",  "dias_activos": [9,10,11,12,13,14,15] },
+    { "id": "pedro", "nombre": "Pedro", "dias_activos": [5,6,7,8,9,10,11,12,13,14,15] },
+    { "id": "ana",   "nombre": "Ana",   "dias_activos": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] }
+  ]
+}

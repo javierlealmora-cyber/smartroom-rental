@@ -6,14 +6,14 @@
 
 ## 📊 Resumen
 
-- **Total migraciones:** 27 archivos
+- **Total migraciones:** 34 archivos
 - **Baseline:** 7 archivos (inmutables)
-- **Schema:** 15 migraciones
+- **Schema:** 21 migraciones
 - **Data:** 2 migraciones
-- **Security:** 2 migraciones
+- **Security:** 3 migraciones
 - **Performance:** 3 migraciones (en carpeta /performance)
 
-**Última migración:** `20260411000002_rename_owner_fields_client_accounts.sql` ⚠️ PENDIENTE EJECUTAR EN STAGING/PROD
+**Última migración:** `20260412000002_standardize_accommodations_address.sql` (Estandarización de campos de dirección) ✅ Ejecutada en DEV
 
 > **REQ-012 (Búsqueda global de habitaciones) — Sin migración requerida.** Usa esquema existente: `rooms`, `lodger_room_assignments`, `accommodations`, `entities`, `profiles.gender`. BUG-051: columna `size_sqm` no existe (la real es `square_meters`) — corregido en código, sin cambio de BD.
 
@@ -438,6 +438,64 @@
 
 ---
 
+### 20260412000001_create_saas_services_catalog.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-12
+**Estado:** 🟡 Diseño completado — pendiente ejecutar
+**Descripción:** Catálogo genérico de servicios SaaS add-on para la plataforma
+**Contenido:**
+- `saas_services` — catálogo de add-ons (code, name, status, visible_in_catalog, requires_manual_activation)
+- `saas_service_plans` — planes de pricing por servicio (billing_period, price_amount, stripe_price_id)
+- `saas_service_features` — feature flags por plan (feature_code, is_enabled, config jsonb)
+- `saas_service_subscriptions` — suscripciones de client_accounts a add-ons (UNIQUE client+service)
+- Triggers `updated_at` en 3 tablas
+- Seed: `smart_access_lock` en `saas_services` con status='draft'
+
+**REQ:** REQ-013 (SaaS Services Catalog)
+**Tests:** SaaS-01..07 (pendientes)
+
+---
+
+### 20260412000002_create_smart_access_lock_core.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-12
+**Estado:** 🟡 Diseño completado — pendiente ejecutar
+**Descripción:** Tablas de infraestructura del módulo SmartAccessLock
+**Contenido:**
+- `lock_integrations` — conexión de client_account con proveedor de locks (TTLock, etc.)
+- `locks` — dispositivos sincronizados del proveedor (no se crean en la web)
+- `common_areas` — zonas comunes de alojamientos (lavandería, bicicletas, etc.)
+- `lock_placements` — mapeo lock ↔ ubicación lógica (UNIQUE partial: una lock activa = un placement)
+- Triggers `updated_at` en 4 tablas
+- CHECK constraints de coherencia de placement_type
+- Índice único parcial `idx_lock_placements_one_active` (lock_id WHERE is_active = true)
+
+**REQ:** REQ-014 (SmartAccessLock)
+**Tests:** SAL-01..06 (pendientes)
+
+---
+
+### 20260412000003_create_smart_access_lock_access.sql
+**Tipo:** Schema
+**Fecha:** 2026-04-12
+**Estado:** 🟡 Diseño completado — pendiente ejecutar
+**Descripción:** Tablas de gestión de accesos del módulo SmartAccessLock
+**Contenido:**
+- `lock_access_actors` — actores no-inquilinos (limpieza, mantenimiento, propietario, etc.)
+- `lock_access_groups` — grupos de acceso reutilizables con `credential_policy` jsonb
+- `lock_access_group_members` — pertenencia actor ↔ grupo (UNIQUE actor+grupo)
+- `lock_access_group_scopes` — qué entidades tiene acceso un grupo (jerarquía aloj.→hab.→lock)
+- `lock_access_grants` — grant efectivo resuelto (XOR: lodger OR actor, nunca ambos)
+- `lock_credentials` — credenciales emitidas por grant (PIN, card, app_key, qr) ⚠️ cifrar con Vault
+- `lock_records` — log de eventos del proveedor (UNIQUE lock_id+provider_record_id)
+- `lock_notifications` — trazabilidad de notificaciones enviadas (email, sms, whatsapp, push)
+- Triggers `updated_at` en 7 tablas
+
+**REQ:** REQ-014 (SmartAccessLock)
+**Tests:** SAL-07..20 (pendientes)
+
+---
+
 ## 🟡 DATA (Migraciones de Datos)
 
 ### 20260325150000_remove_status_from_assignments.sql
@@ -525,6 +583,30 @@
 
 ---
 
+### 20260412000004_smart_access_lock_rls.sql
+**Tipo:** Security
+**Fecha:** 2026-04-12
+**Estado:** 🟡 Diseño completado — pendiente ejecutar
+**Descripción:** Políticas RLS para las 16 tablas del módulo SmartAccessLock (REQ-013 + REQ-014)
+**Contenido:**
+- `ENABLE ROW LEVEL SECURITY` en las 16 tablas nuevas
+- **Catálogo SaaS** (saas_services, plans, features): SELECT público para authenticated; INSERT/UPDATE/DELETE solo superadmin
+- **Suscripciones** (saas_service_subscriptions): SELECT por client_account_id o superadmin; INSERT/UPDATE/DELETE solo superadmin
+- **Lock core** (lock_integrations, locks, common_areas, lock_placements): CRUD completo admin+agent en su tenant; DELETE solo admin o superadmin
+- **Lock access** (lock_access_actors, lock_access_groups, lock_access_group_scopes): CRUD completo admin+agent; DELETE solo admin o superadmin
+- **lock_access_group_members**: políticas via JOIN a lock_access_groups (sin client_account_id propio)
+- **lock_access_grants**: SELECT+INSERT+UPDATE por admin; DELETE solo superadmin
+- **lock_credentials**: SELECT por admin+agent; INSERT/UPDATE/DELETE solo superadmin (Edge Functions usan service_role)
+- **lock_records**: SELECT por admin+agent; INSERT solo service_role (Edge Function sal-sync-events)
+- **lock_notifications**: CRUD admin en su tenant; DELETE solo superadmin
+- Verificación post-migración: comprueba RLS habilitado en las 16 tablas
+
+**REQ:** REQ-013, REQ-014
+**Tests:** SEC-05..08 (pendientes)
+**Nota seguridad:** `lock_credentials.credential_value` (PINs) debe cifrarse con Supabase Vault antes de producción — la migración RLS NO lo implementa, es responsabilidad de la Edge Function `sal-issue-credential`
+
+---
+
 ## 🟣 PERFORMANCE (Optimizaciones)
 
 ### 20260326000001_add_performance_indexes.sql
@@ -591,11 +673,11 @@
 ## 📊 Estadísticas
 
 ### Por Tipo
-- **Baseline:** 7 archivos (36.8%)
-- **Schema:** 6 archivos (31.6%)
-- **Data:** 2 archivos (10.5%)
-- **Security:** 1 archivo (5.3%)
-- **Performance:** 3 archivos (15.8%)
+- **Baseline:** 7 archivos (22.6%)
+- **Schema:** 18 archivos (58.1%)
+- **Data:** 2 archivos (6.5%)
+- **Security:** 3 archivos (9.7%)
+- **Performance:** 3 archivos (9.7%)
 
 ### Por Requisito
 - **REQ-001 (Auth):** 1 migración
@@ -734,5 +816,154 @@ Las siguientes migraciones son **críticas** para la integridad del sistema:
 
 ---
 
-**Última actualización:** 2026-04-10  
+### 20260412150000_add_notes_to_rooms.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-12  
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN DEV
+**Descripción:** Añadir columna `notes` a tabla `rooms`  
+**Contenido:**
+- `ADD COLUMN notes TEXT` — campo opcional para notas/comentarios sobre la habitación
+- Comentario de documentación en la columna
+
+**REQ:** Mejora UI — visualización de información de habitaciones  
+**CHG:** N/A  
+**Issue:** FEATURE-057  
+**Tests:** N/A (campo de datos)
+
+**Impacto:**
+- Frontend: Nueva columna "Notas" en tabla de habitaciones (`AccommodationDetail.jsx` líneas 528-529)
+- Frontend: Campo "Notas" añadido al formulario de nueva habitación (líneas 1022-1029)
+- Frontend: Campo "Notas" ya existía en formulario de edición (línea 1052)
+- DB: Columna nullable, sin impacto en datos existentes
+
+**Archivos modificados:**
+- `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`
+
+**⚠️ Ejecutar en Supabase Dashboard (DEV):**
+```sql
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS notes TEXT;
+COMMENT ON COLUMN rooms.notes IS 'Optional notes or comments about the room';
+```
+
+---
+
+### 20260412000001_standardize_entities_address.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-12  
+**Estado:** ✅ Ejecutada en DEV
+**Descripción:** Estandarización de campos de dirección en tabla `entities`  
+**Contenido:**
+- Renombrar 7 columnas para usar nomenclatura estándar con prefijo `address_`:
+  - `street` → `address_street`
+  - `street_number` → `address_number`
+  - `address_extra` → `address_floor`
+  - `zip` → `address_postal_code`
+  - `city` → `address_city`
+  - `province` → `address_province`
+  - `country` → `address_country`
+- Comentarios de documentación en todas las columnas
+- NOTIFY pgrst para recargar caché de PostgREST
+
+**REQ:** FEATURE-060 (Estandarización de direcciones)  
+**CHG:** N/A  
+**Issue:** N/A  
+**Tests:** Pendiente
+
+**Impacto:**
+- Frontend: 3 componentes actualizados (EntityCreate, EntityEdit, EntityDetail)
+- Edge Functions: 2 funciones actualizadas (provision_client_account_superadmin, wizard_submit)
+- DB: 7 columnas renombradas, sin pérdida de datos
+
+**Archivos modificados:**
+- `src/pages/v2/admin/entities/EntityCreate.jsx`
+- `src/pages/v2/admin/entities/EntityEdit.jsx`
+- `src/pages/v2/admin/entities/EntityDetail.jsx`
+- `supabase/functions/provision_client_account_superadmin/index.ts`
+- `supabase/functions/wizard_submit/index.ts`
+
+---
+
+### 20260412000002_standardize_accommodations_address.sql
+**Tipo:** Schema + Data  
+**Fecha:** 2026-04-12  
+**Estado:** ✅ Ejecutada en DEV
+**Descripción:** Estandarización de campos de dirección en tabla `accommodations`  
+**Contenido:**
+- Renombrar 6 columnas existentes:
+  - `street_number` → `address_number`
+  - `floor` → `address_floor`
+  - `postal_code` → `address_postal_code`
+  - `city` → `address_city`
+  - `province` → `address_province`
+  - `country` → `address_country`
+- Añadir nueva columna `address_street`
+- Migrar datos de `address_line1` a `address_street` (solo registros sin datos desglosados)
+- Concatenar `door` en `address_floor`
+- Migrar `address_line2` a `address_floor`
+- Eliminar 3 columnas antiguas: `door`, `address_line1`, `address_line2`
+- Comentarios de documentación en todas las columnas
+- NOTIFY pgrst para recargar caché de PostgREST
+
+**REQ:** FEATURE-060 (Estandarización de direcciones)  
+**CHG:** N/A  
+**Issue:** N/A  
+**Tests:** Pendiente
+
+**Impacto:**
+- Frontend: 4 componentes actualizados (AccommodationCreate, AccommodationEdit, AccommodationDetail, AccommodationsList)
+- DB: 6 columnas renombradas + 1 nueva + 3 eliminadas
+- Datos: Migración automática de address_line1/line2/door a nuevos campos
+- Vista materializada: Compatible (ya usaba address_street)
+
+**Archivos modificados:**
+- `src/pages/v2/admin/accommodations/AccommodationCreate.jsx`
+- `src/pages/v2/admin/accommodations/AccommodationEdit.jsx`
+- `src/pages/v2/admin/accommodations/AccommodationDetail.jsx`
+- `src/pages/v2/admin/accommodations/AccommodationsList.jsx`
+- `src/components/AddressFormFields.jsx` (nuevo componente reutilizable)
+
+**Nota:** Datos históricos en `address_line1` (concatenación de calle+número+piso) se migraron a `address_street` solo si no había datos desglosados. Registros con datos desglosados mantienen su información en los campos separados.
+
+---
+
+### 20260412160000_reassign_room_rpc.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-12  
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN DEV  
+**Descripción:** RPC `reassign_lodger_room` — reasignar inquilino a nueva habitación de forma atómica  
+**Contenido:**
+- Función `public.reassign_lodger_room(p_lodger_id, p_new_room_id, p_move_in_date, p_notes)` SECURITY DEFINER
+- Cierra asignación anterior + crea nueva en una transacción
+**REQ:** UI ChangeRoomModal
+
+---
+
+### 20260412170000_automation_jobs.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-12  
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN DEV  
+**Descripción:** Tablas de trazabilidad de workflows n8n para SmartAccessLock  
+**Contenido:**
+- `automation_jobs` — registro de trabajos programados o manuales
+- `automation_job_runs` — un intento de ejecución por fila
+- RLS: admin/agent ven solo sus jobs; n8n usa service_role  
+**REQ:** REQ-014 §12.7
+
+---
+
+### 20260412180000_vault_helpers.sql
+**Tipo:** Schema  
+**Fecha:** 2026-04-12  
+**Estado:** ⚠️ PENDIENTE EJECUTAR EN DEV  
+**Descripción:** Funciones SECURITY DEFINER para acceder a Supabase Vault desde Edge Functions SAL  
+**Contenido:**
+- `sal_vault_create_secret(p_secret, p_name, p_description)` — wrapper de `vault.create_secret`
+- `sal_vault_update_secret(p_id, p_secret)` — wrapper de `vault.update_secret`
+- Solo `service_role` puede llamar estas funciones
+**REQ:** REQ-014 §1.3 (cifrado Vault)  
+**Dependencias:** Requiere extensión `pgsodium` / Vault habilitado en Supabase
+
+---
+
+**Última actualización:** 2026-04-13  
 **Próxima revisión:** Tras cada nueva migración

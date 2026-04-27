@@ -372,8 +372,36 @@ if (currentCount >= maxEntities) {
 | `wizard_init` | ✅ Migrada (2026-04-02) | Solo UPDATE en profiles — BUG-048 |
 | `settle_energy_bill` | ✅ Ya no se usaba | Lógica reimplementada en cliente |
 | `whoami` | ✅ Ya no se usaba | TenantProvider usa query directa |
-| `manage_lodger` | 🔴 Permanece | Crea usuarios en Auth (service role) |
+| `manage_lodger` | � **Expandida (2026-04-12)** | **Auditoría completa** — FEATURE-058 |
 | `wizard_submit` | 🔴 Permanece | Auth creation + Stripe Checkout |
 | `provision_client_account_superadmin` | 🔴 Permanece | Service role + solo superadmin |
 | `scan_energy_bill` | 🔴 Permanece | OpenAI API key (server-side) |
 | `stripe_webhook` | 🔴 Permanece | Webhook externo Stripe |
+
+---
+
+## Revisión 2026-04-12 — Migración de operaciones de inquilinos para auditoría completa
+
+**Problema detectado:** Las operaciones de asignar habitación, cambiar habitación, actualizar inquilino y programar check-out se ejecutaban directamente desde el frontend sin registrar auditoría. Esto causaba:
+- Falta de trazabilidad sobre quién realizó qué acción
+- Las acciones no aparecían en "Actividad Reciente"
+- Imposibilidad de auditar cambios críticos
+
+**Solución implementada (FEATURE-058):**
+
+Migradas 4 operaciones críticas de `lodgers.service.js` desde queries directas a Edge Function `manage_lodger`:
+
+| Operación Frontend | Acción Edge Function | Auditoría |
+|---|---|---|
+| `assignRoomToLodger()` | `assign_room` | `entity_type: "lodger_assignment"`, `action: "assign_room"` |
+| `reassignRoom()` | `reassign_room` | `entity_type: "lodger_assignment"`, `action: "reassign_room"` |
+| `updateLodger()` | `update` | `entity_type: "lodger"`, `action: "update"` |
+| `scheduleCheckout()` | `schedule_checkout` | `entity_type: "lodger"`, `action: "schedule_checkout"` |
+
+**Beneficios logrados:**
+- ✅ Auditoría completa de todas las operaciones de inquilinos
+- ✅ Seguridad mejorada con validaciones en servidor
+- ✅ Visibilidad total en dashboard de "Actividad Reciente"
+- ✅ Trazabilidad completa (quién, qué, cuándo, valores anteriores/nuevos)
+
+**Documentación:** Ver `docs/edge-functions/EDGE-FUNCTIONS.md` para detalles de implementación.

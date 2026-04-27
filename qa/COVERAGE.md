@@ -1,6 +1,6 @@
 # Matriz de Trazabilidad — SmartRent QA
 
-Última actualización: 2026-04-11
+Última actualización: 2026-04-12
 
 ## Leyenda de estado
 - ✅ Cubierto
@@ -44,6 +44,10 @@
 | TEN-15  | TenantDetail — botón "Editar" abre modal con datos pre-rellenados | —            | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
 | TEN-16  | TenantDetail — modal edición guarda cambios vía updateLodger y recarga | —       | —                                | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
 | TEN-17  | TenantDetail — línea gris muestra alojamiento + habitación actual (o "Sin habitación") | — | —                       | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-18  | ChangeRoomModal se cierra al confirmar cambio (no queda abierto vacío) — BUG-063      | — | —                       | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-19  | URL ?action=reassign limpiada tras cambio de habitación (no reabre modal) — BUG-063   | — | —                       | qa/e2e/specs/tenants.spec.js     | 🚧 Pendiente |
+| TEN-20  | Cambio de habitación genera entrada en audit_log → visible en "Actividad Reciente" — BUG-064 | — | —                  | qa/e2e/specs/tenants.spec.js     | ⚠️ Parcial (fix en RPC, test E2E pendiente) |
+| TEN-21  | reassign_lodger_room RPC es atómica: cierra asignación + crea nueva + escribe audit_log en 1 TX | — | —              | —                                | 🚧 Pendiente |
 
 ---
 
@@ -221,6 +225,67 @@ Cambio: CHG-2026-04-06-room-search
 
 ---
 
+---
+
+## SAL — SmartAccessLock
+
+Funcionalidad: REQ-013 (SaaS Services Catalog) + REQ-014 (SmartAccessLock)  
+Migraciones: `20260412000001..20260412000004` (diseño completado — pendientes ejecutar)
+
+### SAL-SaaS — Catálogo y Suscripciones
+
+| ID       | Funcionalidad                                                                     | Unit | E2E                                         | Estado        |
+|----------|-----------------------------------------------------------------------------------|------|---------------------------------------------|---------------|
+| SaaS-01  | Superadmin crea servicio → visible en lista saas_services                         | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-02  | Servicio en draft → no visible para client_account                                | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-03  | Plan se vincula al servicio correctamente (UNIQUE service+code)                   | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-04  | Feature flag habilitado en plan → accesible desde la API                          | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-05  | Superadmin activa suscripción para client → status = active                       | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-06  | Client sin suscripción activa no puede acceder al módulo SAL                      | —    | qa/e2e/specs/superadmin-saas.spec.js        | 🚧 Pendiente  |
+| SaaS-07  | UNIQUE (client_account_id, saas_service_id) — no duplicar suscripción             | —    | —                                           | 🚧 Pendiente  |
+
+### SAL-INT — Integración y Sincronización de Locks
+
+| ID       | Funcionalidad                                                                     | Unit | E2E                                         | Estado        |
+|----------|-----------------------------------------------------------------------------------|------|---------------------------------------------|---------------|
+| SAL-01   | Guardar integración TTLock (client_account + provider) — UNIQUE por cuenta        | —    | qa/e2e/specs/sal-integration.spec.js        | 🚧 Pendiente  |
+| SAL-02   | Sincronizar locks desde TTLock → crea/actualiza filas en `locks`                  | —    | —                                           | 🚧 Pendiente  |
+| SAL-03   | lock sincronizada no duplica si provider_lock_id ya existe (UNIQUE)               | —    | —                                           | 🚧 Pendiente  |
+| SAL-04   | Placement activo único por lock (UNIQUE partial idx_lock_placements_one_active)   | —    | —                                           | 🚧 Pendiente  |
+| SAL-05   | CHECK constraint placement_type_coherence: room → room_id NOT NULL                | —    | —                                           | 🚧 Pendiente  |
+| SAL-06   | Zona común se crea y asocia a alojamiento correctamente                           | —    | qa/e2e/specs/sal-integration.spec.js        | 🚧 Pendiente  |
+
+### SAL-ACC — Actores, Grupos y Scopes
+
+| ID       | Funcionalidad                                                                     | Unit | E2E                                         | Estado        |
+|----------|-----------------------------------------------------------------------------------|------|---------------------------------------------|---------------|
+| SAL-07   | Crear actor (tipo limpieza) y asociarlo a client_account                          | —    | qa/e2e/specs/sal-actors.spec.js             | 🚧 Pendiente  |
+| SAL-08   | Crear grupo con credential_policy jsonb correcta                                  | —    | qa/e2e/specs/sal-actors.spec.js             | 🚧 Pendiente  |
+| SAL-09   | Añadir actor a grupo (UNIQUE actor+grupo)                                         | —    | qa/e2e/specs/sal-actors.spec.js             | 🚧 Pendiente  |
+| SAL-10   | Scope all_accommodations: coherence check — accommodation_id IS NULL              | —    | —                                           | 🚧 Pendiente  |
+| SAL-11   | Scope room: coherence check — room_id NOT NULL                                    | —    | —                                           | 🚧 Pendiente  |
+
+### SAL-GRN — Grants y Credenciales
+
+| ID       | Funcionalidad                                                                     | Unit | E2E                                         | Estado        |
+|----------|-----------------------------------------------------------------------------------|------|---------------------------------------------|---------------|
+| SAL-12   | Grant auto-creado al asignar habitación a inquilino (source_type = room_assignment)| —   | —                                           | 🚧 Pendiente  |
+| SAL-13   | XOR constraint: grant type=lodger → lodger_id NOT NULL, actor_id IS NULL          | —    | —                                           | 🚧 Pendiente  |
+| SAL-14   | Revocar grant → status = revoked, revoked_at populated                            | —    | qa/e2e/specs/sal-grants.spec.js             | 🚧 Pendiente  |
+| SAL-15   | Credencial emitida (PIN) vinculada a grant y lock                                 | —    | —                                           | 🚧 Pendiente  |
+| SAL-16   | lock_records no duplica evento con mismo provider_record_id (UNIQUE)              | —    | —                                           | 🚧 Pendiente  |
+| SAL-17   | Notificación credential_issued → status = sent tras envío email                   | —    | —                                           | 🚧 Pendiente  |
+
+### SAL-SEC — Seguridad y Multi-tenancy
+
+| ID       | Funcionalidad                                                                     | Unit | E2E                                         | Estado        |
+|----------|-----------------------------------------------------------------------------------|------|---------------------------------------------|---------------|
+| SAL-18   | RLS: admin solo ve locks de su client_account                                     | —    | —                                           | 🚧 Pendiente  |
+| SAL-19   | RLS: catálogo saas_services visible para todo authenticated                       | —    | —                                           | 🚧 Pendiente  |
+| SAL-20   | RLS: lock_records — INSERT solo service_role (authenticated no puede insertar)    | —    | —                                           | 🚧 Pendiente  |
+
+---
+
 ## Resumen de cobertura
 
 | Módulo       | Total funcionalidades | Cubiertas | Parciales | Pendientes |
@@ -235,9 +300,11 @@ Cambio: CHG-2026-04-06-room-search
 | ENT          | 7                     | 0         | 0         | 7          |
 | UI           | 16                    | 0         | 0         | 16         |
 | RSE          | 16                    | 0         | 0         | 16         |
-| **TOTAL**    | **79**                | **24**    | **7**     | **48**     |
+| SaaS         | 7                     | 0         | 0         | 7          |
+| SAL          | 20                    | 0         | 0         | 20         |
+| **TOTAL**    | **117**               | **24**    | **7**     | **86**     |
 
-**Cobertura actual: 41% completa, 50% con parciales**
+**Cobertura actual: 26% completa, 33% con parciales**
 
 ---
 

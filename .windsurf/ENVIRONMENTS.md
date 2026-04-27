@@ -7,16 +7,16 @@
 ## 📊 Ambientes Configurados
 
 ### 1. Development
-- **Project ID**: `lopdwrsmkmtboeczxotj`
-- **URL**: https://lopdwrsmkmtboeczxotj.supabase.co
+- **Project ID**: `lqwyyyttjamirccdtlvl`
+- **URL**: https://lqwyyyttjamirccdtlvl.supabase.co
 - **Propósito**: Desarrollo y testing de features
 - **Riesgo**: ✅ BAJO - Datos de prueba
 - **Comando**: `npm run migrate:dev`
 
 ### 2. Staging
-- **Project ID**: `lqwyyyttjamirccdtlvl`
-- **URL**: https://lqwyyyttjamirccdtlvl.supabase.co
-- **Propósito**: Validación pre-producción
+- **Project ID**: `lopdwrsmkmtboeczxotj`
+- **URL**: https://lopdwrsmkmtboeczxotj.supabase.co
+- **Propósito**: Validación pre-producción (actualmente INACTIVE)
 - **Riesgo**: ⚠️ MEDIO - Datos importantes
 - **Comando**: `npm run migrate:staging`
 
@@ -34,12 +34,12 @@
 ### Flujo Obligatorio
 
 ```
-Development (lopdwrsmkmtboeczxotj)
+Development (lqwyyyttjamirccdtlvl)
     ↓ Aplicar y Validar
     ↓ npm run migrate:dev
     ↓ npm run validate:dev
     ↓
-Staging (lqwyyyttjamirccdtlvl)
+Staging (lopdwrsmkmtboeczxotj)
     ↓ Aplicar y Validar
     ↓ npm run migrate:staging
     ↓ npm run validate:staging
@@ -61,11 +61,11 @@ Production ([PRODUCTION_PROJECT_ID])
 ```bash
 # Development
 npm run migrate:dev
-# → Confirma: lopdwrsmkmtboeczxotj
+# → Confirma: lqwyyyttjamirccdtlvl
 
 # Staging
 npm run migrate:staging
-# → Confirma: lqwyyyttjamirccdtlvl
+# → Confirma: lopdwrsmkmtboeczxotj
 
 # Production
 npm run migrate:prod
