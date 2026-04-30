@@ -28,18 +28,20 @@ import { invokeWithAuth } from "../../../../../../services/supabaseInvoke.servic
 const { Text, Title } = Typography;
 
 const PURPOSE_LABEL = {
-  entry_door:  "Entrada principal",
-  room_door:   "Puerta habitación",
-  common_area: "Zona común",
-  safe:        "Caja fuerte",
-  other:       "Otro",
+  entry_door:        "Puerta de entrada",
+  parcel_locker:     "Taquilla / Paquetería",
+  safe_box:          "Caja fuerte",
+  common_area_entry: "Acceso zona común",
+  storage_lock:      "Almacén / Trastero",
+  custom:            "Otro",
 };
 const PURPOSE_COLOR = {
-  entry_door:  "blue",
-  room_door:   "green",
-  common_area: "orange",
-  safe:        "red",
-  other:       "default",
+  entry_door:        "blue",
+  parcel_locker:     "purple",
+  safe_box:          "red",
+  common_area_entry: "orange",
+  storage_lock:      "cyan",
+  custom:            "default",
 };
 
 const LOCK_PURPOSE_OPTIONS = Object.entries(PURPOSE_LABEL).map(([v, l]) => ({ value: v, label: l }));
