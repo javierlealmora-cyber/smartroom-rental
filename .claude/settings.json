@@ -61,7 +61,9 @@
       "WebFetch(domain:www.mvteamcctv.com)",
       "WebFetch(domain:manuals.plus)",
       "Bash(python3 -)",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\javie\\.claude\\plans"
