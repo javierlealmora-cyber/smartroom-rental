@@ -397,7 +397,7 @@ export default function SalLocksTab() {
       // Cargar cerraduras con su placement activo
       const { data: locksData } = await supabase
         .from("locks")
-        .select("id, name, provider_lock_id, battery_level, is_online, last_seen_at, model_name, firmware_version, status, quarantine_reason")
+        .select("id, name, provider_lock_id, battery_level, is_online, last_seen_at, firmware_version, status, quarantine_reason")
         .eq("client_account_id", clientAccountId)
         .order("name");
 
