@@ -34,6 +34,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return optionsResponse();
   if (req.method !== "POST") return err(ERROR_CODES.VALIDATION, "Method not allowed", 405);
 
+  try {
+    return await handleRequest(req);
+  } catch (e) {
+    console.error("[sal-place-lock] Unhandled error:", e);
+    return err(ERROR_CODES.INTERNAL, e instanceof Error ? e.message : "Unexpected server error", 500);
+  }
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   let body: {
     client_account_id:     string;
     lock_id:               string;
@@ -251,4 +260,4 @@ Deno.serve(async (req: Request) => {
       ? `Cerradura asignada y ${grantsCreated} acceso(s) concedido(s) retroactivamente`
       : "Cerradura asignada correctamente",
   });
-});
+}
