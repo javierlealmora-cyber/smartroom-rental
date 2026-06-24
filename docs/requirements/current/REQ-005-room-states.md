@@ -256,3 +256,9 @@ El campo `rooms.status` existió en versiones anteriores del sistema pero fue el
 - Era redundante con los datos de asignación
 - Era fuente de bugs por sincronización manual (BUG-036 es consecuencia de ese patrón)
 - El estado derivado automáticamente es siempre coherente con la realidad sin necesitar triggers
+
+---
+
+## Notas relacionadas
+
+- **REQ-015 — Habitaciones compartidas con acompañante**: cuando una asignación tiene `accompanist_id`, la habitación se considera ocupada por dos personas bajo un único contrato. La facturación, la energía y los estados siguen siendo por habitación (no se duplican): el acompañante NO genera renta, fianza, liquidación ni acceso web independiente. El acompañante se arrastra automáticamente en cualquier reasignación de habitación y se cierra en el check-out junto a la asignación. Ver `docs/requirements/current/REQ-015-shared-room-accompanist.md` y `.windsurf/rules/shared-rooms.md`.

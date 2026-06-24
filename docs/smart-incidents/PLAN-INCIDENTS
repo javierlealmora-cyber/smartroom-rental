@@ -1,0 +1,476 @@
+# Plan Documental — Módulo `smart-incidents`
+
+**Fecha:** 2026-06-09  
+**Estado:** Borrador — pendiente de aprobación  
+**Módulo:** `smart-incidents` (add-on independiente del core de alquiler)
+
+---
+
+## Índice
+
+1. [Estado actual del repositorio](#1-estado-actual-del-repositorio)
+2. [Inventario documental objetivo](#2-inventario-documental-objetivo)
+3. [Dependencias entre categorías](#3-dependencias-entre-categorías)
+4. [Plan por lotes](#4-plan-por-lotes)
+5. [Plan de tests](#5-plan-de-tests)
+6. [Riesgos y ambigüedades](#6-riesgos-y-ambigüedades)
+7. [Recomendación práctica final](#7-recomendación-práctica-final)
+
+---
+
+## 1. Estado actual del repositorio
+
+### `docs/smart-incidents/`
+
+No existe. El directorio completo debe crearse desde cero.
+
+### Documentos existentes con relevancia directa
+
+| Documento | Relevancia | Estado |
+|---|---|---|
+| `docs/smart-conversations/rules/rules-01-document-authoring-standard.md` | Estándar documental base reutilizable; `rules-01` de smart-incidents lo extiende solo en lo específico | Válido, reutilizable |
+| `docs/smart-conversations/rules/rules-00-scope-and-principles.md` | Patrón estructural para el documento de alcance | Válido, aplicable |
+| `docs/smart-conversations/rules/rules-60-service-incidents.md` | Define cómo smart-conversations crea incidencias vía `conv-core-create-incident`. Es un **punto de integración** con smart-incidents, no el alcance del módulo | Válido pero pertenece a otro módulo |
+| `docs/smart-conversations/skills/skill-testing-scenarios.md` | Referencia del patrón de catálogo de tests | Válido, aplicable |
+| `docs/smart-conversations/contracts/contract-case-state-machine.md` | Patrón para `contract-incident-state-machine` | Válido, aplicable |
+| `docs/architecture/audit-log-system.md` | Define la tabla `audit_log` del Core, su estructura y el patrón de escritura con service_role desde EFs | Válido; el add-on sigue este mismo patrón |
+| `docs/requirements/current/REQ-013-saas-services-catalog.md` | Puede contener definición del add-on en el catálogo SaaS | A verificar en lote 0 |
+
+### Decisiones de arquitectura cerradas (no reabrir)
+
+Las siguientes decisiones están fijadas y no deben tratarse como puntos abiertos en ningún documento del módulo:
+
+**Las incidencias viven en tablas del add-on.** El módulo es un add-on independiente; sus datos residen en el namespace `inc_*` (`inc_incidents`, `inc_attachments`, `inc_activities`). La EF `conv-core-create-incident` de smart-conversations es un punto de integración externo que crea incidencias en este add-on; no determina dónde viven los datos.
+
+**La publicación al `audit_log` del Core usa service_role directo.** Los EFs del add-on escriben al `audit_log` siguiendo el mismo patrón que los demás EFs del Core (documentado en `docs/architecture/audit-log-system.md`). No se usa EF intermediaria. El principio de "no acceso directo a tablas del Core" se aplica a tablas de negocio del Core, no al log de actividad.
+
+### Nota sobre la categoría `tests/`
+
+El módulo smart-conversations no tiene una categoría `tests/` independiente. Smart-incidents introduce `tests/` como categoría de primer nivel con orden de precedencia propio (entre `skills` y `diagrams`). El documento `rules-01` de este módulo extiende el estándar de smart-conversations únicamente en este punto.
+
+---
+
+## 2. Inventario documental objetivo
+
+Orden de precedencia: `rules` → `contracts` → `skills` → `tests` → `diagrams`
+
+### 2.1 Rules (11 documentos)
+
+| Fichero | Propósito | Por qué es necesario | Estado |
+|---|---|---|---|
+| `rules-00-scope-and-principles.md` | Alcance del módulo, add-on model, principios rectores, roles MVP, qué no está en V1, frontera con Core, frontera con n8n | Sin este documento cualquier otro puede contradecir las decisiones cerradas | Nuevo |
+| `rules-01-document-authoring-standard.md` | Addendum al estándar de smart-conversations: declara la herencia del estándar base, define la estructura obligatoria de la categoría `tests/` y fija el orden de precedencia en 5 categorías | No duplica el estándar global; solo añade lo específico del módulo; sin él los ficheros `tests-XX` pueden generarse sin estructura consistente | Nuevo (alcance reducido) |
+| `rules-05-roles-and-visibility.md` | Qué ve y qué puede hacer cada rol del MVP: `tenant`, `client_admin`, `superadmin`, `system`; restricciones de cruce entre tenants de distintos `client_account` | Prerequisito de cualquier document que defina visibilidad, acceso o actores autorizados en transiciones | Nuevo |
+| `rules-10-addon-entitlement.md` | Cómo se activa el add-on, checks obligatorios antes de cualquier operación, comportamiento cuando está inactivo: sin UI, sin operaciones API, sin automatismos n8n | La inactividad del add-on silencia todo el módulo; es una restricción operativa que debe vivir en una rule, no en un skill | Nuevo |
+| `rules-20-incident-lifecycle.md` | Estados del MVP: `new`, `notified`, `in_progress`, `waiting_tenant`, `resolved`, `closed`, `cancelled`; transiciones permitidas; actores autorizados por transición; invariantes | El ciclo de vida es la pieza central del módulo; toda implementación depende de que este documento esté cerrado | Nuevo |
+| `rules-30-incident-creation.md` | Reglas para creación por tenant y por admin: datos mínimos obligatorios, categorías válidas, adjuntos, source tracking, prioridad/urgencia | Establece quién puede crear y con qué datos; base de `contract-create-incident-request` | Nuevo |
+| `rules-40-assignment-routing.md` | Reglas de asignación simple: quién asigna, a quién (resolutor como destinatario sin portal propio en V1), modelo del resolutor en V1, qué ocurre si no hay asignado | El resolutor en V1 no tiene portal; el modelo de datos del campo `assignee` depende de esta rule; debe cerrarse antes de actualizar `contract-incident-entity` | Nuevo |
+| `rules-50-n8n-automation.md` | Qué automatiza n8n y qué no; n8n no modifica estado directamente; n8n verifica entitlement; n8n descarta eventos de clientes sin add-on activo | Cierra la frontera de lo que n8n puede hacer; sin este documento un skill puede invadir territorio de regla de negocio | Nuevo |
+| `rules-60-whatsapp-notifications.md` | WhatsApp outbound exclusivamente en V1: quién recibe, cuándo, plantillas permitidas, sin acciones bidireccionales | Cierra que V1 no tiene WhatsApp bidireccional; sin este documento un skill podría implementar recepción de mensajes | Nuevo |
+| `rules-70-activity-log.md` | Qué eventos funcionales deben publicarse al `audit_log` del Core (catálogo normativo); quién publica (EFs del add-on con service_role); restricciones PII sobre qué campos puede contener cada evento; principio fire-and-log; distinción entre timeline interno (`inc_activities`) y registro de actividad general (`audit_log`) | Cierra qué eventos existen y bajo qué restricciones normativas; los payloads técnicos viven en `contract-activity-log-event`; mecanismo de publicación ya cerrado: service_role directo | Nuevo |
+| `rules-80-security-and-tenancy.md` | Restricciones de aislamiento multi-tenant para tablas del add-on; límites de qué datos pueden salir hacia n8n; política de no exposición de PII en el activity log; frontera entre datos internos del add-on y datos publicables | Prerequisito de RLS correcto en el modelo de datos y de las restricciones PII en el activity log | Nuevo |
+
+### 2.2 Contracts (5 documentos)
+
+| Fichero | Propósito | Por qué es necesario | Estado |
+|---|---|---|---|
+| `contract-incident-entity.md` | Esquema completo de la entidad incidencia: campos obligatorios, opcionales, tipos, enums de categoría (`maintenance`, `noise`, `security`, `billing`, `other`), source tracking, referencia a adjuntos, timestamps. **El campo `assignee` no se incluye en la primera versión: se añade mediante actualización formal tras la aprobación de `rules-40` en el lote 3** | Fuente de verdad del esquema de datos central; todos los demás contratos y skills la referencian | Nuevo |
+| `contract-incident-state-machine.md` | Máquina de estados formal: los 7 estados MVP, transiciones, actores autorizados por transición, transiciones prohibidas, invariantes | Formaliza contractualmente lo que `rules-20` y `rules-05` definen; es la referencia técnica para implementación | Nuevo |
+| `contract-create-incident-request.md` | Payload de creación que cubre todas las fuentes: `web-tenant`, `web-admin`, e integración entrante desde smart-conversations como fuente `whatsapp` / `webchat` vía `conv-core-create-incident` | Sin este contrato, cada fuente puede enviar datos distintos y la EF receptora queda sin definición formal | Nuevo |
+| `contract-n8n-event-payload.md` | Lo que n8n recibe cuando se activa un workflow de incidencia: campos permitidos, PII excluida según `rules-80`, entitlement presente, estados que desencadenan triggers | Necesario para que n8n opere sin recibir datos de identidad personal del inquilino | Nuevo |
+| `contract-activity-log-event.md` | Definición técnica completa de los eventos publicados al `audit_log`: estructura base obligatoria heredada del Core, campos obligatorios y opcionales por evento, y payload específico por tipo (`incident_created`, `incident_assigned`, `incident_status_changed`, `incident_resolved`, `incident_closed`). Referencia técnica de implementación; `rules-70` establece qué eventos existen y bajo qué restricciones | Sin este contrato el consumer del activity log no puede interpretar los eventos del add-on de forma consistente | Nuevo |
+
+### 2.3 Skills (8 documentos)
+
+| Fichero | Propósito | Por qué es necesario | Estado |
+|---|---|---|---|
+| `skill-data-model-and-migrations.md` | Tablas del add-on (`inc_incidents`, `inc_attachments`, `inc_activities`), migraciones, RLS por tenant según `rules-80`, índices recomendados | Sin este skill la implementación puede fragmentarse en decisiones de BD inconsistentes | Nuevo |
+| `skill-incident-creation-web.md` | Flujo de creación web para tenant y admin: componentes frontend, guard de entitlement y rol en UI, validaciones, adjuntos, llamada a EF | Guía de implementación del camino más frecuente del MVP | Nuevo |
+| `skill-incident-tracking-web.md` | Vista de seguimiento con visibilidad diferenciada por rol: tenant ve las suyas, admin ve todas del `client_account`; estados visibles, filtros básicos | Cubre el "seguimiento web básico" del alcance MVP | Nuevo |
+| `skill-assignment-routing-impl.md` | Implementación del enrutado y asignación simple: EF responsable, lógica de asignación según `rules-40`, quién puede reasignar, modelo del resolutor en V1 | Traduce `rules-40` en guía concreta de implementación | Nuevo |
+| `skill-n8n-workflow-automation.md` | Implementación del workflow n8n de incidencias: nodos, EFs invocadas, verificación de entitlement en n8n, manejo de errores, qué no hace n8n | Guía para implementar la automatización respetando los límites de `rules-50` | Nuevo |
+| `skill-whatsapp-outbound.md` | Implementación de notificaciones WhatsApp outbound: proveedor, formato, reintentos, cuándo se envía, quién recibe | Traduce `rules-60` en guía concreta; sin ella el proveedor y el formato quedan sin definición | Nuevo |
+| `skill-activity-log-publishing.md` | Implementación de la publicación al `audit_log` del Core con service_role: qué EF, qué eventos, cómo gestionar fallos sin rollback | Traduce `rules-70` y `contract-activity-log-event` en guía de implementación | Nuevo |
+| `skill-attachment-handling.md` | Implementación de adjuntos: storage bucket, validaciones de tipo y tamaño, referencia desde la incidencia, acceso por rol | Adjuntos están en el alcance MVP y necesitan su propia guía de implementación | Nuevo |
+
+### 2.4 Tests (7 documentos — categoría nueva)
+
+| Fichero | Propósito | Por qué es necesario | Estado |
+|---|---|---|---|
+| `tests-01-entitlement.md` | (1) Entitlement del add-on: UI del módulo oculta sin add-on activo, API bloqueada, n8n descarta sin procesar, Core no afectado; (2) Visibilidad y aislamiento básico por rol y tenant: tenant solo ve sus propias incidencias, acceso a incidencias de otro tenant del mismo `client_account` denegado | Ambas invariantes son de seguridad arquitectónica: la primera protege el módulo en sí; la segunda protege los datos entre inquilinos del mismo `client_account` | Nuevo |
+| `tests-02-incident-lifecycle.md` | Transiciones de estado válidas e inválidas; actores autorizados por transición; estados terminales no reabren | La máquina de estados tiene 7 estados y múltiples actores; sin tests explícitos las transiciones inválidas pueden pasar desapercibidas | Nuevo |
+| `tests-03-creation.md` | Creación por tenant y por admin; datos mínimos; validaciones; adjuntos; fuente tracking; punto de integración con smart-conversations | El camino de creación es el más frecuente y el más propenso a regresiones | Nuevo |
+| `tests-04-assignment-routing.md` | Admin asigna a resolutor; tenant no puede asignar; incidencia válida sin asignado; reasignación. **Escenarios ejecutables tras la actualización de `contract-incident-entity` en lote 3** | Valida que el modelo de resolutor en V1 (sin portal) funciona correctamente | Nuevo |
+| `tests-05-n8n-automation.md` | Trigger correcto cuando add-on activo; descarte cuando inactivo; n8n no escribe estado directamente; PII excluida del payload; manejo de errores; backoff | Valida los límites de responsabilidad de n8n definidos en `rules-50` | Nuevo |
+| `tests-06-notifications.md` | Notificación WhatsApp enviada cuando corresponde; sin notificaciones bidireccionales procesadas; fallo de envío no bloquea la operación principal | Valida que V1 es solo outbound y que los fallos de notificación no son bloqueantes | Nuevo |
+| `tests-07-activity-log.md` | Eventos publicados solo tras éxito de operación; sin PII en payload; fallo de publicación no revierte la operación (fire-and-log); eventos obligatorios presentes | La trazabilidad es requisito del MVP y el fire-and-log es un invariante difícil de probar sin escenario explícito | Nuevo |
+
+### 2.5 Diagrams (3 documentos — al final)
+
+| Fichero | Propósito | Por qué es necesario | Estado |
+|---|---|---|---|
+| `diagram-incident-lifecycle.md` | Diagrama visual de la máquina de estados del MVP con actores por transición | Material de revisión de arquitectura; depende de que `contract-incident-state-machine` esté estable | Nuevo — al final |
+| `diagram-addon-architecture.md` | Vista general: tablas del add-on, EFs, n8n, WhatsApp, Core (`audit_log`), frontera add-on/Core | Solo útil cuando todo el conjunto documental esté estable | Nuevo — al final |
+| `diagram-n8n-automation-flow.md` | Workflow n8n: trigger, entitlement check, acciones, respuestas de error | Depende de `skill-n8n-workflow-automation` y `rules-50` | Nuevo — al final |
+
+---
+
+## 3. Dependencias entre categorías
+
+### Contracts ← Rules
+
+| Contrato | Depende de |
+|---|---|
+| `contract-incident-entity` | `rules-00`, `rules-05` (roles), `rules-20` (estados), `rules-30` (campos obligatorios, categorías) — **sin `rules-40`**; campo `assignee` diferido a post-lote 3 |
+| `contract-incident-state-machine` | `rules-20` (transiciones), `rules-05` (actores autorizados por transición) |
+| `contract-create-incident-request` | `rules-30` (datos mínimos, fuentes), `rules-10` (entitlement), `contract-incident-entity` (aprobado en lote 1) |
+| `contract-n8n-event-payload` | `rules-50` (qué recibe n8n), `rules-00` (principio de minimización de PII), `rules-80` (restricciones PII) |
+| `contract-activity-log-event` | `rules-70` (catálogo de eventos, restricciones PII y fire-and-log), `rules-80` (restricciones PII en payload) |
+
+### Skills ← Rules + Contracts
+
+| Skill | Depende de |
+|---|---|
+| `skill-data-model-and-migrations` | `rules-00`, `rules-20`, `rules-30`, `rules-80`, `contract-incident-entity` |
+| `skill-incident-creation-web` | `rules-05`, `rules-10`, `rules-30`, `contract-create-incident-request`, `contract-incident-entity` |
+| `skill-incident-tracking-web` | `rules-05` (visibilidad diferenciada por rol), `rules-20`, `contract-incident-state-machine` |
+| `skill-assignment-routing-impl` | `rules-05`, `rules-40`, `contract-incident-entity` (con campo assignee, post-lote 3) |
+| `skill-n8n-workflow-automation` | `rules-50`, `contract-n8n-event-payload`, `contract-incident-state-machine` |
+| `skill-whatsapp-outbound` | `rules-60`, `contract-n8n-event-payload` |
+| `skill-activity-log-publishing` | `rules-70`, `rules-80`, `contract-activity-log-event` |
+| `skill-attachment-handling` | `rules-30` (adjuntos), `contract-incident-entity` (referencias) |
+
+### Tests ← Rules + Contracts + Skills
+
+| Test | Valida | Traza contra |
+|---|---|---|
+| `tests-01-entitlement` | Aislamiento del add-on y visibilidad por rol | `rules-00`, `rules-05`, `rules-10`, `rules-50` |
+| `tests-02-incident-lifecycle` | Máquina de estados | `rules-05`, `rules-20`, `contract-incident-state-machine` |
+| `tests-03-creation` | Flujo de creación por rol y fuente | `rules-05`, `rules-30`, `contract-create-incident-request`, `contract-incident-entity` |
+| `tests-04-assignment-routing` | Asignación y routing (post-lote 3) | `rules-05`, `rules-40`, `contract-incident-entity` |
+| `tests-05-n8n-automation` | Límites de n8n y PII | `rules-50`, `rules-80`, `contract-n8n-event-payload`, `skill-n8n-workflow-automation` |
+| `tests-06-notifications` | WhatsApp outbound | `rules-60`, `skill-whatsapp-outbound` |
+| `tests-07-activity-log` | Publicación al log y PII | `rules-70`, `rules-80`, `contract-activity-log-event`, `skill-activity-log-publishing` |
+
+### Diagrams ← todo lo anterior
+
+Los tres diagramas se generan solo cuando el conjunto de rules, contracts y skills esté estable y aprobado.
+
+---
+
+## 4. Plan por lotes
+
+### Lote 0 — Fundación documental
+
+**Documentos:**
+- `rules-00-scope-and-principles.md`
+- `rules-01-document-authoring-standard.md` (addendum)
+- `rules-05-roles-and-visibility.md` (nuevo)
+
+**Objetivo:** Fijar el alcance y principios del módulo, el estándar documental (incluyendo la categoría `tests/`), y el modelo de roles. Los roles deben cerrarse en este lote porque son prerequisito de las transiciones de la máquina de estados (lote 1) y de múltiples skills.
+
+**Por qué primero:** Sin `rules-00` cualquier documento posterior puede contradecir las decisiones cerradas. Sin `rules-01` los ficheros `tests-XX` carecen de estructura definida. Sin `rules-05` el lote 1 no puede especificar actores autorizados en las transiciones de estado.
+
+**No hay decisiones previas que bloqueen este lote.** Las dos decisiones arquitectónicas centrales (dónde viven las incidencias, mecanismo de publicación al `audit_log`) están cerradas y se documentan en `rules-00` y `rules-70` respectivamente.
+
+**Riesgo si se salta:** Los lotes siguientes producirían documentos con definiciones de roles y alcance inconsistentes entre sí.
+
+---
+
+### Lote 1 — Ciclo de vida e identidad de la entidad
+
+**Documentos:**
+- `rules-20-incident-lifecycle.md`
+- `rules-30-incident-creation.md`
+- `contract-incident-entity.md` (sin campo `assignee`)
+- `contract-incident-state-machine.md`
+
+**Objetivo:** Definir qué es una incidencia, qué estados puede tener, quién puede crearla y con qué datos. Son la pieza central de todo el módulo.
+
+**Nota sobre el campo `assignee`:** `contract-incident-entity` en este lote no incluye el campo `assignee`. Su modelo de datos depende de `rules-40` (lote 3). La exclusión es intencional y no indica incomplitud: el contrato se actualiza formalmente en el lote 3 una vez que `rules-40` esté aprobado.
+
+**Por qué después del lote 0:** `rules-20` necesita los roles del lote 0 para especificar qué actores pueden ejecutar cada transición. Los contratos dependen de que las rules del lote 1 estén aprobadas.
+
+**Riesgo si se mezcla con lote 2:** El entitlement es ortogonal al ciclo de vida. Mezclarlos dificulta la revisión y puede provocar que `contract-create-incident-request` se escriba antes de que la entidad esté definida.
+
+---
+
+### Lote 2 — Entitlement, seguridad y contrato de creación
+
+**Documentos:**
+- `rules-10-addon-entitlement.md`
+- `rules-80-security-and-tenancy.md` (nuevo)
+- `contract-create-incident-request.md`
+
+**Objetivo:** Documentar cómo se activa/desactiva el add-on, establecer las restricciones de aislamiento multi-tenant y política PII, y formalizar el contrato de creación cubriendo las tres fuentes: `web-tenant`, `web-admin` y la integración entrante desde smart-conversations.
+
+**Por qué `rules-80` en este lote:** Depende de que los roles (lote 0) y la entidad (lote 1) estén definidos para poder especificar correctamente qué datos son internos y cuáles pueden publicarse o enviarse a n8n.
+
+**Por qué después del lote 1:** `contract-create-incident-request` referencia `contract-incident-entity` (lote 1) para definir qué campos acepta.
+
+**Riesgo si se adelanta `rules-80`:** Sin la entidad definida en lote 1, las restricciones PII de `rules-80` quedarían incompletas o abstractas.
+
+---
+
+### Lote 3 — Asignación, automatización n8n y actualización del contrato de entidad
+
+**Documentos:**
+- `rules-40-assignment-routing.md`
+- `rules-50-n8n-automation.md`
+- `contract-n8n-event-payload.md`
+- **Actualización formal de `contract-incident-entity.md`** (campo `assignee`)
+
+**Objetivo:** Cerrar cómo se asignan las incidencias (modelo del resolutor sin portal en V1), qué automatiza n8n, el payload de n8n con PII excluida, y completar el contrato de entidad con el campo `assignee`.
+
+**La actualización de `contract-incident-entity`** no es un documento nuevo: es una revisión explícita y documentada del contrato ya existente para añadir el campo `assignee` con su tipo, validaciones y el modelo del resolutor en V1.
+
+**Por qué después del lote 2:** La asignación presupone la entidad definida (lote 1) y el entitlement documentado (lote 2). El contrato de n8n presupone que los estados y la política PII ya están definidos.
+
+---
+
+### Lote 4 — Notificaciones y activity log
+
+**Documentos:**
+- `rules-60-whatsapp-notifications.md`
+- `rules-70-activity-log.md`
+- `contract-activity-log-event.md`
+
+**Objetivo:** Cerrar el canal de notificación outbound (WhatsApp solo en V1) y definir qué eventos funcionales se publican al `audit_log` del Core. El mecanismo de publicación (service_role directo) está ya cerrado; `rules-70` lo documenta y define el catálogo de eventos y la distinción entre timeline interno y registro de actividad general.
+
+**Por qué después del lote 3:** Las notificaciones WhatsApp pueden ser disparadas por n8n (lote 3). El activity log publica eventos de creación, asignación y resolución (definidos en lotes 1 y 3).
+
+---
+
+### Lote 5 — Skills del núcleo
+
+**Documentos:**
+- `skill-data-model-and-migrations.md`
+- `skill-incident-creation-web.md`
+- `skill-incident-tracking-web.md`
+- `skill-assignment-routing-impl.md`
+
+**Objetivo:** Guías de implementación para las piezas centrales del MVP.
+
+**Por qué después de los lotes 0-4:** Un skill que se escribe antes de que sus rules y contracts estén aprobados puede definir comportamiento que contradice las reglas o malinterpreta un contrato.
+
+---
+
+### Lote 6 — Skills de automatización, notificaciones y trazabilidad
+
+**Documentos:**
+- `skill-n8n-workflow-automation.md`
+- `skill-whatsapp-outbound.md`
+- `skill-activity-log-publishing.md`
+- `skill-attachment-handling.md`
+
+**Objetivo:** Guías de implementación para automatización, notificaciones, publicación al log y gestión de adjuntos.
+
+**Por qué después del lote 5:** `skill-n8n-workflow-automation` y `skill-whatsapp-outbound` referencian el modelo de datos de `skill-data-model-and-migrations`.
+
+---
+
+### Lote 7 — Tests
+
+**Documentos:** Los 7 ficheros de `tests/`
+
+**Objetivo:** Definir todos los escenarios de prueba organizados por área funcional, trazados contra rules, contracts y skills.
+
+**Por qué al final del conjunto documental (antes de diagrams):** Los tests trazan contra todo el conjunto. Si se escriben antes de que las rules, contracts o skills estén aprobadas, los escenarios pueden validar comportamientos que luego cambien.
+
+---
+
+### Lote 8 — Diagrams
+
+**Documentos:** Los 3 ficheros de `diagrams/`
+
+**Objetivo:** Material explicativo para revisión de arquitectura y onboarding.
+
+**Por qué al final de todo:** Su único valor real es ilustrar documentos ya estables.
+
+---
+
+## 5. Plan de tests
+
+### Escenarios por fichero
+
+#### `tests-01-entitlement.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| ENT-01 | UI del módulo no aparece para `client_account` sin add-on activo | `rules-10`, `rules-00`, `rules-05` | Sí |
+| ENT-02 | Llamada a API de creación sin add-on activo → error controlado | `rules-10` | Sí |
+| ENT-03 | n8n recibe evento de `client_account` sin entitlement → descarta sin error al Core | `rules-50`, `rules-10` | Sí |
+| ENT-04 | Se desactiva el add-on mientras hay incidencias abiertas → Core sigue funcionando sin afectación | `rules-00`, `rules-10` | Sí |
+| ENT-05 | Tenant autenticado solo ve sus propias incidencias; no puede acceder a incidencias de otro tenant del mismo `client_account` | `rules-05`, `rules-80` | Sí |
+| ENT-06 | Se reactiva el add-on → incidencias existentes recuperables | `rules-10` | Fase posterior |
+
+#### `tests-02-incident-lifecycle.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| LC-01 | Transición `new → notified` por actor `system` tras notificación enviada | `rules-05`, `rules-20`, `contract-incident-state-machine` | Sí |
+| LC-02 | Transición `in_progress → resolved` por `client_admin` | `rules-05`, `contract-incident-state-machine` | Sí |
+| LC-03 | Intento de `closed → new` → rechazado | `rules-20`, `contract-incident-state-machine` | Sí |
+| LC-04 | Intento de `cancelled → in_progress` → rechazado | `contract-incident-state-machine` | Sí |
+| LC-05 | `tenant` intenta mover directamente a `resolved` → rechazado | `rules-05`, `rules-20` | Sí |
+| LC-06 | EF verifica estado actual antes del UPDATE; si la transición ya fue aplicada → idempotencia | `contract-incident-state-machine` | Sí |
+
+#### `tests-03-creation.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| CR-01 | Tenant crea incidencia con datos mínimos válidos → incidencia creada con estado `new` | `rules-05`, `rules-30`, `contract-create-incident-request` | Sí |
+| CR-02 | Admin crea incidencia en nombre de tenant → estado `new`, source `web-admin` | `rules-05`, `rules-30` | Sí |
+| CR-03 | Creación con descripción ausente → rechazada | `rules-30`, `contract-create-incident-request` | Sí |
+| CR-04 | Creación con categoría no permitida → rechazada | `rules-30`, `contract-incident-entity` | Sí |
+| CR-05 | Adjunto con tipo MIME inválido → rechazado | `rules-30` | Sí |
+| CR-06 | Adjunto con tamaño superior al límite → rechazado | `rules-30` | Sí |
+| CR-07 | Creación entrante desde smart-conversations (punto de integración) → incidencia creada con source `whatsapp` | `contract-create-incident-request` | Sí |
+| CR-08 | Tenant intenta ver la incidencia de otro tenant del mismo `client_account` → acceso denegado | `rules-05`, `rules-80` | Sí |
+
+#### `tests-04-assignment-routing.md`
+
+> **Nota:** Los escenarios AS-01 y AS-04 presuponen que el campo `assignee` está presente en `contract-incident-entity`. Son ejecutables después de que lote 3 esté aprobado.
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| AS-01 | Admin asigna incidencia a resolutor → campo assignee actualizado, n8n notificado *(post-lote 3)* | `rules-05`, `rules-40`, `contract-incident-entity` | Sí |
+| AS-02 | Incidencia creada sin asignado → válida, estado `new` | `rules-40` | Sí |
+| AS-03 | Tenant intenta asignar incidencia → rechazado | `rules-05`, `rules-40` | Sí |
+| AS-04 | Reasignación de incidencia en `in_progress` → permitida *(post-lote 3)* | `rules-05`, `rules-40` | Sí |
+
+#### `tests-05-n8n-automation.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| N8-01 | EF dispara evento a n8n tras cambio de estado con add-on activo → n8n procesa | `rules-50`, `contract-n8n-event-payload` | Sí |
+| N8-02 | Evento llega a n8n para `client_account` sin entitlement activo → n8n descarta sin llamar al Core | `rules-50` | Sí |
+| N8-03 | n8n intenta UPDATE directo sobre `inc_incidents` → rechazado | `rules-50` | Sí |
+| N8-04 | n8n recibe payload con `profile_id` → campo ausente (PII excluida) | `rules-80`, `contract-n8n-event-payload` | Sí |
+| N8-05 | EF falla durante workflow de n8n → error gestionado de forma controlada; estado previo de la incidencia preservado sin corrupción | `rules-50`, `skill-n8n-workflow-automation` | Sí |
+
+#### `tests-06-notifications.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| WA-01 | Estado cambia a `notified` → notificación WhatsApp enviada al resolutor | `rules-60` | Sí |
+| WA-02 | Fallo en el envío de notificación WhatsApp → operación principal no se revierte; el fallo queda registrado | `rules-60`, `skill-whatsapp-outbound` | Sí |
+| WA-03 | Mensaje entrante desde WhatsApp para este módulo → no procesado (outbound solo en V1) | `rules-60` | Sí |
+| WA-04 | Notificación enviada a número no registrado → log de fallo, sin error al usuario | `rules-60` | Sí |
+
+#### `tests-07-activity-log.md`
+
+| ID | Escenario | Traza contra | MVP |
+|---|---|---|---|
+| AL-01 | Incidencia creada con éxito → evento `incident_created` publicado al `audit_log` | `rules-70`, `contract-activity-log-event` | Sí |
+| AL-02 | Payload del evento no contiene `profile_id`, `phone_number`, `full_name` | `rules-70`, `rules-80` | Sí |
+| AL-03 | Publicación al `audit_log` falla → operación principal no se revierte (fire-and-log) | `rules-70`, `skill-activity-log-publishing` | Sí |
+| AL-04 | Cambio de estado a `resolved` → evento `incident_resolved` publicado | `rules-70`, `contract-activity-log-event` | Sí |
+| AL-05 | Incidencia asignada → evento `incident_assigned` publicado | `contract-activity-log-event` | Sí |
+
+### Tests imprescindibles para MVP
+
+Los escenarios marcados como `Sí` constituyen la cobertura mínima aceptable. Deben estar implementados antes de que cualquier funcionalidad del módulo llegue a producción.
+
+### Tests que pueden esperar a fase posterior
+
+- Tests de volumen y concurrencia
+- Tests del portal del resolutor (no existe en V1)
+- Tests de WhatsApp bidireccional (no existe en V1)
+- Tests de SLA avanzados y escalado automático por tiempo
+- Tests de IA y clasificación automática de incidencias
+- Tests de dashboards avanzados de KPIs
+- ENT-06 (reactivación del add-on): bajo riesgo, puede esperar
+
+---
+
+## 6. Riesgos y ambigüedades
+
+### R1 — Solape entre `rules-20` y `contract-incident-state-machine` ⚠️ Baja severidad
+
+Si `rules-20` contiene demasiado detalle técnico de las transiciones, el contrato queda redundante. Si el contrato amplía el comportamiento definido por la rule, puede contradecirla.
+
+**Guía:** `rules-20` establece los 7 estados, los actores autorizados (referenciando `rules-05`) y los invariantes de negocio en tono normativo. El contrato formaliza la estructura técnica: tablas de transición, tipos de datos, ejemplos válidos/inválidos.
+
+---
+
+### R2 — La categoría `tests/` no tiene estructura definida hasta que se escriba `rules-01` ⚠️ Media severidad
+
+Sin `rules-01` aprobado, cada fichero `tests-XX` puede adoptar una estructura diferente.
+
+**Mitigado automáticamente si el lote 0 se ejecuta antes que cualquier otro.**
+
+---
+
+### R3 — Confusión entre timeline interno de incidencia y registro de actividad general ⚠️ Media severidad
+
+El módulo tiene dos sistemas de log distintos:
+- **Timeline interno** (`inc_activities`): todos los cambios/eventos específicos de la incidencia, visible para el equipo técnico y para el admin dentro del módulo.
+- **Registro de actividad general** (`audit_log` del Core): hitos funcionales visibles para el cliente/admin en el dashboard.
+
+**`rules-70` debe incluir una tabla que enumere explícitamente qué eventos van al `audit_log` y cuáles quedan solo en `inc_activities`.**
+
+---
+
+### R4 — Solape de responsabilidades de n8n con WF-20 de smart-conversations ⚠️ Baja severidad
+
+Smart-conversations tiene WF-20-INCIDENCIA para crear incidencias vía canal de conversación. Smart-incidents tiene su propio workflow n8n de automatización (notificaciones, escalado, asignación automática). Si un tenant usa ambos add-ons, los workflows pueden solaparse.
+
+**`rules-50` debe definir explícitamente qué hace el workflow n8n de smart-incidents y qué se deja a WF-20 de smart-conversations.**
+
+---
+
+### R5 — Modelo del resolutor en V1: tipo de dato del campo `assignee` ⚠️ Media severidad
+
+El resolutor recibe notificaciones WhatsApp pero no tiene portal en V1. ¿Es `assignee_id uuid` referenciando `profiles`, o un campo de texto con nombre + teléfono?
+
+Si `contract-incident-entity` recibe el campo `assignee` en lote 3 sin que `rules-40` haya cerrado este modelo, el contrato puede definir el tipo equivocado.
+
+**`rules-40` debe cerrar el modelo del resolutor antes de que `contract-incident-entity` se actualice.** Esto ya está garantizado por la secuencia de lotes.
+
+---
+
+## 7. Recomendación práctica final
+
+### No hay decisiones previas que bloqueen el inicio
+
+Las dos decisiones arquitectónicas centrales están cerradas:
+- La incidencia vive en tablas del add-on (`inc_incidents`): alineado con la naturaleza del módulo.
+- La publicación al `audit_log` usa service_role directo desde los EFs del add-on: sigue el patrón del Core.
+
+Se puede comenzar a redactar el lote 0 sin necesidad de resolver nada previamente.
+
+---
+
+### Primer lote real
+
+**Lote 0** — `rules-00-scope-and-principles.md` + `rules-01-document-authoring-standard.md` (addendum) + `rules-05-roles-and-visibility.md`
+
+Los tres documentos del lote 0 fijan el alcance, el estándar documental con la categoría `tests/` y el modelo de roles. Sin ellos, el lote 1 no puede especificar actores autorizados en las transiciones de estado ni definir visibilidad correctamente.
+
+---
+
+### Segundo lote
+
+**Lote 1** — `rules-20-incident-lifecycle.md` + `rules-30-incident-creation.md` + `contract-incident-entity.md` (sin campo `assignee`) + `contract-incident-state-machine.md`
+
+Con el alcance y los roles cerrados, estos cuatro documentos definen la entidad central. La exclusión explícita del campo `assignee` no es una incomplitud: es una decisión documentada cuya resolución se aplaza al lote 3.
+
+---
+
+### Separación normativa/contractual en el activity log
+
+En el lote 4, `rules-70` se escribe primero y cierra el "qué" (catálogo de eventos, restricciones PII, fire-and-log). `contract-activity-log-event` se escribe después y cierra el "cómo técnicamente" (estructura base, payloads por tipo de evento). No se mezclan: la rule no contiene payloads detallados y el contrato no redefine restricciones normativas.
+
+### Qué no conviene generar todavía
+
+- El campo `assignee` en `contract-incident-entity` hasta que `rules-40` esté aprobado en el lote 3.
+- `rules-80-security-and-tenancy` hasta que los roles (lote 0) y la entidad (lote 1) estén cerrados.
+- Ningún `skill` antes de que los contratos de los lotes 1 y 2 estén aprobados.
+- Ningún documento de `tests/` antes de que los skills correspondientes estén escritos.
+- Ningún `diagram` hasta que todo el conjunto de rules, contracts y skills esté estable y revisado.
+- Nombres de proveedores concretos (WhatsApp, notificaciones) en tests o rules hasta que `skill-whatsapp-outbound` los cierre en el lote 6.
+
+---
+
+*Última actualización: 2026-06-09*

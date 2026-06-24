@@ -439,3 +439,9 @@ Factura típica de electricidad (enero, 3 habitaciones, 3 inquilinos):
 - `amount_variable = 100 €`
 - Con 3 inquilinos activos 31/31 días: cada uno paga 50 € (33.33 variable + 16.67 fijo)
 - Con lector: HAB-1 = 60 kWh, HAB-2 = 30 kWh, HAB-3 = 10 kWh → variable 60/30/10 €
+
+---
+
+## Notas relacionadas
+
+- **REQ-015 — Habitaciones compartidas con acompañante**: cuando una asignación tiene `accompanist_id`, la habitación se considera ocupada por dos personas bajo un único contrato. La facturación, la energía y los estados siguen siendo por habitación (no se duplican): el acompañante NO genera renta, fianza, liquidación ni acceso web independiente. El acompañante se arrastra automáticamente en cualquier reasignación de habitación y se cierra en el check-out junto a la asignación. Ver `docs/requirements/current/REQ-015-shared-room-accompanist.md` y `.windsurf/rules/shared-rooms.md`.

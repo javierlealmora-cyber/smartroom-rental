@@ -579,3 +579,9 @@ El campo `notes` (renombrado desde `checkout_notes` en migración `2026040900000
 - REQ-005 v2 (estado "Reservada")
 - Implementación actual en producción
 - Análisis de integridad de datos
+
+---
+
+## Notas relacionadas
+
+- **REQ-015 — Habitaciones compartidas con acompañante**: cuando una asignación tiene `accompanist_id`, la habitación se considera ocupada por dos personas bajo un único contrato. La facturación, la energía y los estados siguen siendo por habitación (no se duplican): el acompañante NO genera renta, fianza, liquidación ni acceso web independiente. El acompañante se arrastra automáticamente en cualquier reasignación de habitación y se cierra en el check-out junto a la asignación. Ver `docs/requirements/current/REQ-015-shared-room-accompanist.md` y `.windsurf/rules/shared-rooms.md`.
