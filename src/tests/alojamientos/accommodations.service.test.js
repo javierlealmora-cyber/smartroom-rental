@@ -13,7 +13,7 @@
  *  - setRoomStatus()           — cambiar estado habitación directamente en BD
  *
  * Reglas de negocio verificadas:
- *  - accommodations usa address_line1 (NO address)
+ *  - accommodations usa address_street (NO address)
  *  - rooms usa number (NO floor ni type)
  *  - room.status válidos: 'free' | 'occupied' | 'maintenance' | 'reserved'
  *  - accommodation.status válidos: 'active' | 'inactive'
@@ -51,8 +51,9 @@ import {
 const MOCK_ACCOMMODATION = {
   id: 'aa515883-6b3a-4d36-ac58-9f5806f6a111',
   name: 'Residencia Test',
-  address_line1: 'Calle Mayor 1',
-  city: 'Madrid',
+  address_street: 'Calle Mayor',
+  address_number: '1',
+  address_city: 'Madrid',
   status: 'active',
   owner_entity_id: 'entity-1',
   split_electricity: true,
@@ -141,13 +142,13 @@ describe('accommodations.service.js', () => {
       await expect(getAccommodation('id-inexistente')).rejects.toThrow('No rows found')
     })
 
-    it('la respuesta usa address_line1 (no "address")', async () => {
+    it('la respuesta usa address_street (no "address")', async () => {
       const chain = buildChain({ data: MOCK_ACCOMMODATION, error: null })
       mockSupabase.from.mockReturnValueOnce(chain)
 
       const result = await getAccommodation('aa515883-6b3a-4d36-ac58-9f5806f6a111')
 
-      expect(result).toHaveProperty('address_line1')
+      expect(result).toHaveProperty('address_street')
       expect(result).not.toHaveProperty('address')
     })
   })
@@ -155,7 +156,7 @@ describe('accommodations.service.js', () => {
   // ─── createAccommodation ────────────────────────────────────────────────
   describe('createAccommodation()', () => {
     it('llama a invokeWithAuth con manage_accommodation y acción "create"', async () => {
-      const payload = { name: 'Piso Test', address_line1: 'Calle Test 1', city: 'Barcelona' }
+      const payload = { name: 'Piso Test', address_street: 'Calle Test', address_number: '1', address_city: 'Barcelona' }
       invokeWithAuth.mockResolvedValueOnce({
         ok: true,
         data: { accommodation: { id: 'new-acc', ...payload } },
@@ -170,7 +171,7 @@ describe('accommodations.service.js', () => {
     })
 
     it('incluye habitaciones cuando se proporcionan', async () => {
-      const payload = { name: 'Piso Test', address_line1: 'Calle Test 1', city: 'Madrid' }
+      const payload = { name: 'Piso Test', address_street: 'Calle Test', address_number: '1', address_city: 'Madrid' }
       const rooms = [{ number: '101', square_meters: 12 }]
       invokeWithAuth.mockResolvedValueOnce({
         ok: true,
@@ -456,9 +457,10 @@ describe('accommodations.service.js', () => {
     const PAYLOAD_ACC_COMPLETO = {
       name: 'Piso Confort',
       owner_entity_id: 'entity-1',
-      city: 'Valencia',
-      province: 'Valencia',
-      address_line1: 'Calle Colón, 10',
+      address_street: 'Calle Colón',
+      address_number: '10',
+      address_city: 'Valencia',
+      address_province: 'Valencia',
     }
 
     it('payload completo no genera errores', () => {
@@ -475,19 +477,19 @@ describe('accommodations.service.js', () => {
       expect(validateAccommodationPayload(payload)).toContain('Campo requerido: owner_entity_id')
     })
 
-    it('city es obligatorio', () => {
-      const { city: _, ...payload } = PAYLOAD_ACC_COMPLETO
-      expect(validateAccommodationPayload(payload)).toContain('Campo requerido: city')
+    it('address_city es obligatorio', () => {
+      const { address_city: _, ...payload } = PAYLOAD_ACC_COMPLETO
+      expect(validateAccommodationPayload(payload)).toContain('Campo requerido: address_city')
     })
 
-    it('province es obligatorio', () => {
-      const { province: _, ...payload } = PAYLOAD_ACC_COMPLETO
-      expect(validateAccommodationPayload(payload)).toContain('Campo requerido: province')
+    it('address_province es obligatorio', () => {
+      const { address_province: _, ...payload } = PAYLOAD_ACC_COMPLETO
+      expect(validateAccommodationPayload(payload)).toContain('Campo requerido: address_province')
     })
 
-    it('address_line1 es opcional', () => {
-      const { address_line1: _, ...payload } = PAYLOAD_ACC_COMPLETO
-      expect(validateAccommodationPayload(payload)).not.toContain('Campo requerido: address_line1')
+    it('address_street es opcional', () => {
+      const { address_street: _, ...payload } = PAYLOAD_ACC_COMPLETO
+      expect(validateAccommodationPayload(payload)).not.toContain('Campo requerido: address_street')
     })
 
     it('payload vacío genera un error por cada campo requerido', () => {

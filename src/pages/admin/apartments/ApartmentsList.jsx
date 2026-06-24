@@ -60,9 +60,10 @@ export default function ApartmentsList() {
     {
       id: 1,
       name: "Edificio Central",
-      address_line1: "Calle Mayor 15",
-      city: "Madrid",
-      postal_code: "28001",
+      address_street: "Calle Mayor",
+      address_number: "15",
+      address_city: "Madrid",
+      address_postal_code: "28001",
       rooms: 12,
       occupied: 8,
       free: 3,
@@ -72,9 +73,10 @@ export default function ApartmentsList() {
     {
       id: 2,
       name: "Residencia Norte",
-      address_line1: "Av. del Norte 42",
-      city: "Barcelona",
-      postal_code: "08001",
+      address_street: "Av. del Norte",
+      address_number: "42",
+      address_city: "Barcelona",
+      address_postal_code: "08001",
       rooms: 8,
       occupied: 6,
       free: 2,
@@ -84,9 +86,10 @@ export default function ApartmentsList() {
     {
       id: 3,
       name: "Apartamento Sur",
-      address_line1: "Plaza del Sol 8",
-      city: "Valencia",
-      postal_code: "46001",
+      address_street: "Plaza del Sol",
+      address_number: "8",
+      address_city: "Valencia",
+      address_postal_code: "46001",
       rooms: 6,
       occupied: 0,
       free: 6,
@@ -106,8 +109,8 @@ export default function ApartmentsList() {
       const search = searchTerm.toLowerCase();
       return (
         apt.name.toLowerCase().includes(search) ||
-        apt.address_line1?.toLowerCase().includes(search) ||
-        apt.city?.toLowerCase().includes(search)
+        (apt.address_street || apt.address_line1)?.toLowerCase().includes(search) ||
+        (apt.address_city || apt.city)?.toLowerCase().includes(search)
       );
     }
     return true;
@@ -191,8 +194,12 @@ export default function ApartmentsList() {
                 <td style={styles.td}>{apt.name}</td>
                 <td style={styles.td}>
                   <div>
-                    <div style={styles.addressLine}>{apt.address_line1}</div>
-                    <div style={styles.cityLine}>{apt.postal_code} {apt.city}</div>
+                    <div style={styles.addressLine}>
+                      {(apt.address_street || apt.address_line1) || ""} {apt.address_number || ""}
+                    </div>
+                    <div style={styles.cityLine}>
+                      {apt.address_postal_code || apt.postal_code || ""} {apt.address_city || apt.city || ""}
+                    </div>
                   </div>
                 </td>
                 <td style={styles.td}>{apt.rooms}</td>

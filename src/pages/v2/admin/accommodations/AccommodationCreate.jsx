@@ -99,23 +99,17 @@ export default function AccommodationCreate() {
     setSaving(true);
     setSaveError(null);
     try {
-      const street = [
-        step1Values.street,
-        step1Values.street_number,
-        step1Values.floor ? `${step1Values.floor}º` : null,
-        step1Values.door || null,
-      ].filter(Boolean).join(" ");
-
       await createAccommodation(
         {
           client_account_id: clientAccountId,
           name: step1Values.name,
-          address_line1: street || null,
-          address_line2: step1Values.address_line2 || null,
-          postal_code: step1Values.postal_code || null,
-          city: step1Values.city || null,
-          province: step1Values.province || null,
-          country: "España",
+          address_street: step1Values.street || null,
+          address_number: step1Values.street_number || null,
+          address_floor: step1Values.floor ? `${step1Values.floor}º${step1Values.door ? ` ${step1Values.door}` : ""}` : step1Values.door || null,
+          address_postal_code: step1Values.postal_code || null,
+          address_city: step1Values.city || null,
+          address_province: step1Values.province || null,
+          address_country: "España",
           owner_entity_id: step1Values.owner_entity_id,
           status: "active",
         },
@@ -271,7 +265,7 @@ export default function AccommodationCreate() {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2">
+                <Form.Item label="Bloque / Escalera (opcional)" name="address_block">
                   <Input placeholder="Bloque B, Escalera 2..." />
                 </Form.Item>
               </Col>

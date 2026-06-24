@@ -356,50 +356,42 @@ export default function V2Layout({
         .v2-brand-name { font-size: 11px; font-weight: 700; color: ${primaryColor}; line-height: 1.2; white-space: nowrap; }
         .v2-brand-tagline { font-size: 8px; color: ${primaryColor}; opacity: 0.7; line-height: 1.2; white-space: nowrap; }
         .v2-topnav {
-          display: flex; align-items: center; gap: 0;
+          display: flex; align-items: flex-end; gap: 0;
           flex: 1; justify-content: center;
+          align-self: stretch;
           overflow-x: auto; scrollbar-width: none;
         }
         .v2-topnav::-webkit-scrollbar { display: none; }
         .v2-nav-btn {
           background: none; border: none; outline: none;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
           gap: 1px;
-          padding: 4px 0; border-radius: 10px;
+          padding: 0 14px 7px; border-radius: 10px;
           cursor: pointer; white-space: nowrap;
-          transition: background 0.18s;
+          transition: none;
           font-family: inherit;
-          width: 76px;
           flex-shrink: 0;
           flex-grow: 0;
         }
         .v2-nav-btn:focus { outline: none; }
-        .v2-nav-btn:focus-visible { outline: 2px solid rgba(255,255,255,0.35); outline-offset: -2px; }
-        .v2-nav-icon-wrap {
-          width: 34px; height: 34px;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .v2-nav-icon-wrap img, .v2-nav-icon-wrap svg {
-          width: 34px; height: 34px;
-          object-fit: contain;
-          display: block;
-          transition: filter 0.18s ease, transform 0.18s ease;
-        }
+        .v2-nav-btn:focus-visible { outline: none; }
         .v2-nav-btn:hover { background: none; }
-        .v2-nav-btn:hover .v2-nav-icon-wrap img,
-        .v2-nav-btn:hover .v2-nav-icon-wrap svg {
-          filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)) drop-shadow(0 0 8px rgba(200,230,255,0.7));
-          transform: scale(1.12);
+        .v2-nav-btn:hover .v2-nav-label {
+          opacity: 1;
+          text-shadow: 0 0 0.5px currentColor, 0 0 0.5px currentColor;
         }
-        .v2-nav-btn.active { background: rgba(0,0,0,0.12); }
-        .v2-nav-btn.active .v2-nav-label { opacity: 1; }
+        .v2-nav-btn.active { background: none; }
+        .v2-nav-btn.active .v2-nav-label {
+          opacity: 1;
+          text-shadow: 0 0 0.5px currentColor, 0 0 0.5px currentColor;
+        }
         .v2-nav-label {
-          font-size: 8px; font-weight: 700; color: ${primaryColor};
+          font-size: 12px; font-weight: 500; color: ${primaryColor};
           letter-spacing: -0.01em; line-height: 1;
-          opacity: 0.6;
+          opacity: 0.55;
           display: block; text-align: center;
           width: 100%; overflow: hidden; text-overflow: ellipsis;
+          transition: opacity 0.15s, text-shadow 0.15s;
         }
         .v2-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .v2-username { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
@@ -481,19 +473,20 @@ export default function V2Layout({
             </div>
           </div>
 
-          {/* Nav centrada — desktop con iconos 3D */}
+          {/* Nav centrada — solo texto */}
           <nav className="v2-topnav">
-            {navItems.map((item, i) => {
-              const active = isNavActive(item.path, location.pathname);
-              const { Icon } = item;
-              const iconSize = 34;
-              return (
-                <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                  <div className="v2-nav-icon-wrap"><Icon size={iconSize} /></div>
+            {(() => {
+              const activeIdx = navItems.reduce((best, item, i) => {
+                if (!isNavActive(item.path, location.pathname)) return best;
+                if (best === -1 || item.path.length > navItems[best].path.length) return i;
+                return best;
+              }, -1);
+              return navItems.map((item, i) => (
+                <button key={i} className={`v2-nav-btn${i === activeIdx ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
                   <span className="v2-nav-label">{item.label}</span>
                 </button>
-              );
-            })}
+              ));
+            })()}
           </nav>
 
           {/* Derecha */}
@@ -527,16 +520,18 @@ export default function V2Layout({
 
         {/* ── Mobile drawer ── */}
         <div className={`v2-mobile-drawer${mobileOpen ? " open" : ""}`}>
-          {navItems.map((item, i) => {
-            const active = isNavActive(item.path, location.pathname);
-            const { Icon } = item;
-            return (
-              <button key={i} className={`v2-nav-btn${active ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
-                <Icon size={22} />
+          {(() => {
+            const activeIdx = navItems.reduce((best, item, i) => {
+              if (!isNavActive(item.path, location.pathname)) return best;
+              if (best === -1 || item.path.length > navItems[best].path.length) return i;
+              return best;
+            }, -1);
+            return navItems.map((item, i) => (
+              <button key={i} className={`v2-nav-btn${i === activeIdx ? " active" : ""}`} onClick={() => handleNavClick(item.path)}>
                 <span className="v2-nav-label">{item.label}</span>
               </button>
-            );
-          })}
+            ));
+          })()}
         </div>
         <div className={`v2-overlay${mobileOpen ? " open" : ""}`} onClick={() => setMobileOpen(false)} />
 

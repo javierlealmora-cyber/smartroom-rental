@@ -1,7 +1,11 @@
 // Edge Function: manage_lodger
 // Gestiona operaciones de escritura sobre inquilinos (profiles con role='lodger')
-// Acciones: create | update | set_status | invite | assign_room | reassign_room | schedule_checkout
+// Acciones:
+//   create | update | set_status | invite | assign_room | reassign_room | schedule_checkout
+//   update_accompanist (admin)            — REQ-015
+//   remove_accompanist (solo superadmin)  — REQ-015 (requiere reason ≥ 10 chars)
 // Valida: JWT + rol admin/superadmin + tenant + límites de plan
+// REQ-015: assign_room/reassign_room aceptan accompanist? para habitación compartida
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
@@ -10,6 +14,36 @@ import {
 } from "../_shared/response.ts";
 
 const SITE_URL = "https://smartroomrentalplatform.com";
+
+// ─── REQ-015: helpers de acompañante ─────────────────────────────────────
+// Whitelist de campos editables del acompañante. Cualquier otro se ignora.
+const ACCOMPANIST_EDITABLE_FIELDS = [
+  "first_name", "last_name1", "last_name2", "nickname",
+  "document_type", "document_id",
+  "gender", "birth_date", "nationality",
+  "email", "phone",
+  "address_street", "address_number", "address_floor",
+  "address_postal_code", "address_city", "address_province", "address_country",
+  "notes",
+] as const;
+
+function sanitizeAccompanistPayload(input: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of ACCOMPANIST_EDITABLE_FIELDS) {
+    if (input[k] !== undefined) out[k] = input[k];
+  }
+  return out;
+}
+
+function validateAccompanistRequired(p: Record<string, unknown>): string | null {
+  if (!p.first_name || typeof p.first_name !== "string" || !(p.first_name as string).trim()) {
+    return "accompanist.first_name is required";
+  }
+  if (!p.last_name1 || typeof p.last_name1 !== "string" || !(p.last_name1 as string).trim()) {
+    return "accompanist.last_name1 is required";
+  }
+  return null;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return optionsResponse();
@@ -56,7 +90,11 @@ serve(async (req) => {
 
     if (!action || !payload) return err(ERROR_CODES.VALIDATION, "Missing action or payload", 400);
 
-    const validActions = ["create", "update", "set_status", "invite", "assign_room", "reassign_room", "schedule_checkout"];
+    const validActions = [
+      "create", "update", "set_status", "invite",
+      "assign_room", "reassign_room", "schedule_checkout",
+      "update_accompanist", "remove_accompanist", // REQ-015
+    ];
     if (!validActions.includes(action)) {
       return err(ERROR_CODES.INVALID_ACTION, `Unknown action: ${action}`, 400);
     }
@@ -140,10 +178,22 @@ serve(async (req) => {
           role: "lodger",
           client_account_id: clientAccountId,
           onboarding_status: payload.onboarding_status || "invited",
-          phone: profileFields.phone || null,
-          nickname: profileFields.nickname || null,
-          document_id: profileFields.document_id || null,
-          gender: profileFields.gender || null,
+          // Datos personales
+          first_name:           profileFields.first_name           || null,
+          last_name1:           profileFields.last_name1           || null,
+          last_name2:           profileFields.last_name2           || null,
+          nickname:             profileFields.nickname             || null,
+          phone:                profileFields.phone                || null,
+          document_id:          profileFields.document_id          || null,
+          gender:               profileFields.gender               || null,
+          // Dirección
+          address_street:       profileFields.address_street       || null,
+          address_number:       profileFields.address_number       || null,
+          address_floor:        profileFields.address_floor        || null,
+          address_postal_code:  profileFields.address_postal_code  || null,
+          address_city:         profileFields.address_city         || null,
+          address_province:     profileFields.address_province     || null,
+          address_country:      profileFields.address_country      || null,
         })
         .select("*")
         .single();
@@ -397,6 +447,38 @@ serve(async (req) => {
         return err(ERROR_CODES.VALIDATION, "Room is not available", 400);
       }
 
+      // ─── REQ-015: crear acompañante (si payload presente) ─────────────────
+      const accompanistPayload = (payload as Record<string, unknown>).accompanist as
+        | Record<string, unknown>
+        | undefined;
+      let newAccompanistId: string | null = null;
+
+      if (accompanistPayload && typeof accompanistPayload === "object") {
+        const validationError = validateAccompanistRequired(accompanistPayload);
+        if (validationError) return err(ERROR_CODES.VALIDATION, validationError, 400);
+
+        const sanitized = sanitizeAccompanistPayload(accompanistPayload);
+
+        const { data: newAccompanist, error: accError } = await supabase
+          .from("lodger_accompanists")
+          .insert({
+            ...sanitized,
+            client_account_id: clientAccountId,
+          })
+          .select("id")
+          .single();
+
+        if (accError || !newAccompanist) {
+          return err(
+            ERROR_CODES.INTERNAL,
+            "Error creating accompanist",
+            500,
+            accError?.message,
+          );
+        }
+        newAccompanistId = newAccompanist.id;
+      }
+
       // Crear asignación
       const { data: newAssignment, error: assignError } = await supabase
         .from("lodger_room_assignments")
@@ -412,11 +494,18 @@ serve(async (req) => {
           commission_amount: commission_amount || null,
           first_month_amount: first_month_amount || null,
           services_provision_amount: services_provision_amount || null,
+          accompanist_id: newAccompanistId, // REQ-015
         })
         .select("*")
         .single();
 
       if (assignError) {
+        // Rollback del acompañante si la asignación falla
+        if (newAccompanistId) {
+          try {
+            await supabase.from("lodger_accompanists").delete().eq("id", newAccompanistId);
+          } catch { /* non-fatal */ }
+        }
         return err(ERROR_CODES.INTERNAL, "Error creating room assignment", 500, assignError.message);
       }
 
@@ -437,6 +526,24 @@ serve(async (req) => {
         action: "assign_room",
         new_values: newAssignment,
       });
+
+      // REQ-015: auditar alta de acompañante separadamente
+      if (newAccompanistId) {
+        try {
+          await supabase.from("audit_log").insert({
+            client_account_id: clientAccountId,
+            actor_user_id: user.id,
+            actor_role: profile.role,
+            entity_type: "lodger_accompanist",
+            entity_id: newAccompanistId,
+            action: "set_accompanist",
+            new_values: {
+              assignment_id: newAssignment.id,
+              ...sanitizeAccompanistPayload(accompanistPayload!),
+            },
+          });
+        } catch { /* non-fatal */ }
+      }
 
       return ok(newAssignment);
     }
@@ -498,10 +605,10 @@ serve(async (req) => {
         return err(ERROR_CODES.VALIDATION, "Room is not available", 400);
       }
 
-      // Cerrar asignación actual si existe
+      // Cerrar asignación actual si existe (incluye accompanist_id para arrastre)
       const { data: currentAssignment } = await supabase
         .from("lodger_room_assignments")
-        .select("id, room_id")
+        .select("id, room_id, accompanist_id")
         .eq("lodger_id", id)
         .is("move_out_date", null)
         .maybeSingle();
@@ -515,6 +622,8 @@ serve(async (req) => {
       }
 
       // Crear nueva asignación
+      // REQ-015: arrastrar accompanist_id por código (regla de inseparabilidad).
+      // El frontend NO debe pasarlo; siempre lo decide la Edge.
       const { data: newAssignment, error: assignError } = await supabase
         .from("lodger_room_assignments")
         .insert({
@@ -529,6 +638,7 @@ serve(async (req) => {
           commission_amount: commission_amount || null,
           first_month_amount: first_month_amount || null,
           services_provision_amount: services_provision_amount || null,
+          accompanist_id: currentAssignment?.accompanist_id ?? null, // REQ-015
         })
         .select("*")
         .single();
@@ -613,6 +723,144 @@ serve(async (req) => {
         action: "schedule_checkout",
         new_values: { checkout_date },
       });
+
+      return ok(updated);
+    }
+
+    // ── 11. REQ-015 — Acción: UPDATE_ACCOMPANIST (admin) ─────────────────────
+    if (action === "update_accompanist") {
+      const { id: accompanistId, ...rest } = payload as { id?: string; [k: string]: unknown };
+      if (!accompanistId) {
+        return err(ERROR_CODES.VALIDATION, "id (accompanist id) is required", 400);
+      }
+
+      // Verificar que el acompañante existe y pertenece al tenant (RLS + check explícito)
+      const { data: existing } = await supabase
+        .from("lodger_accompanists")
+        .select("*")
+        .eq("id", accompanistId)
+        .eq("client_account_id", clientAccountId)
+        .single();
+
+      if (!existing) return err(ERROR_CODES.NOT_FOUND, "Accompanist not found", 404);
+
+      // Solo se permiten campos personales — sanitizar.
+      // Cualquier intento de mutar client_account_id, status o id queda fuera.
+      const patch = sanitizeAccompanistPayload(rest);
+      if (Object.keys(patch).length === 0) {
+        return err(ERROR_CODES.VALIDATION, "No editable fields provided", 400);
+      }
+
+      // Validar que first_name/last_name1, si vienen, no se vacían
+      if (patch.first_name !== undefined &&
+          (typeof patch.first_name !== "string" || !(patch.first_name as string).trim())) {
+        return err(ERROR_CODES.VALIDATION, "first_name cannot be empty", 400);
+      }
+      if (patch.last_name1 !== undefined &&
+          (typeof patch.last_name1 !== "string" || !(patch.last_name1 as string).trim())) {
+        return err(ERROR_CODES.VALIDATION, "last_name1 cannot be empty", 400);
+      }
+
+      const { data: updated, error: updateError } = await supabase
+        .from("lodger_accompanists")
+        .update(patch)
+        .eq("id", accompanistId)
+        .eq("client_account_id", clientAccountId)
+        .select("*")
+        .single();
+
+      if (updateError) {
+        return err(ERROR_CODES.INTERNAL, "Error updating accompanist", 500, updateError.message);
+      }
+
+      try {
+        await supabase.from("audit_log").insert({
+          client_account_id: clientAccountId,
+          actor_user_id: user.id,
+          actor_role: profile.role,
+          entity_type: "lodger_accompanist",
+          entity_id: accompanistId,
+          action: "update_accompanist",
+          old_values: existing,
+          new_values: updated,
+        });
+      } catch { /* non-fatal */ }
+
+      return ok(updated);
+    }
+
+    // ── 12. REQ-015 — Acción: REMOVE_ACCOMPANIST (solo superadmin) ───────────
+    if (action === "remove_accompanist") {
+      if (profile.role !== "superadmin") {
+        return err(
+          ERROR_CODES.FORBIDDEN,
+          "Only superadmin can remove an accompanist",
+          403,
+        );
+      }
+
+      const { id: accompanistId, reason } = payload as {
+        id?: string;
+        reason?: string;
+      };
+
+      if (!accompanistId) {
+        return err(ERROR_CODES.VALIDATION, "id (accompanist id) is required", 400);
+      }
+      if (!reason || typeof reason !== "string" || reason.trim().length < 10) {
+        return err(
+          ERROR_CODES.VALIDATION,
+          "reason is required and must be at least 10 characters",
+          400,
+        );
+      }
+
+      const { data: existing } = await supabase
+        .from("lodger_accompanists")
+        .select("*")
+        .eq("id", accompanistId)
+        .eq("client_account_id", clientAccountId)
+        .single();
+
+      if (!existing) return err(ERROR_CODES.NOT_FOUND, "Accompanist not found", 404);
+
+      // 1. Marcar acompañante como inactivo (soft delete)
+      const { data: updated, error: updateError } = await supabase
+        .from("lodger_accompanists")
+        .update({ status: "inactive" })
+        .eq("id", accompanistId)
+        .eq("client_account_id", clientAccountId)
+        .select("*")
+        .single();
+
+      if (updateError) {
+        return err(ERROR_CODES.INTERNAL, "Error deactivating accompanist", 500, updateError.message);
+      }
+
+      // 2. Limpiar accompanist_id de la asignación activa que lo referencia
+      const { error: clearError } = await supabase
+        .from("lodger_room_assignments")
+        .update({ accompanist_id: null })
+        .eq("accompanist_id", accompanistId)
+        .is("move_out_date", null);
+
+      if (clearError) {
+        // No revertimos el soft delete; registramos el problema pero seguimos
+        console.error("Error clearing accompanist_id from active assignment:", clearError);
+      }
+
+      try {
+        await supabase.from("audit_log").insert({
+          client_account_id: clientAccountId,
+          actor_user_id: user.id,
+          actor_role: profile.role,
+          entity_type: "lodger_accompanist",
+          entity_id: accompanistId,
+          action: "remove_accompanist",
+          old_values: existing,
+          new_values: { status: "inactive", reason: reason.trim() },
+        });
+      } catch { /* non-fatal */ }
 
       return ok(updated);
     }

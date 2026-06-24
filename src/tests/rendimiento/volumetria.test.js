@@ -24,8 +24,9 @@ import { buildChain } from '../helpers/chainMock'
 const genAccommodations = (n) =>
   Array.from({ length: n }, (_, i) => ({
     id: `acc-${i}`,
-    address_line1: `Calle Test ${i}, Número ${i + 1}`,
-    city: i % 2 === 0 ? 'Madrid' : 'Barcelona',
+    address_street: `Calle Test ${i}`,
+    address_number: `${i + 1}`,
+    address_city: i % 2 === 0 ? 'Madrid' : 'Barcelona',
     status: i % 5 === 0 ? 'inactive' : 'active',
     owner_entity_id: `entity-${i % 10}`,
   }))
@@ -82,7 +83,7 @@ describe('Volumetría', () => {
     const elapsed = performance.now() - t0
 
     expect(result).toHaveLength(1000)
-    expect(result[0]).toHaveProperty('address_line1')
+    expect(result[0]).toHaveProperty('address_street')
     expect(result[0]).not.toHaveProperty('address')
     expect(result[999]).toHaveProperty('id', 'acc-999')
     expect(elapsed).toBeLessThan(50)

@@ -302,8 +302,8 @@ export default function App() {
              ============================================= */}
           <Route element={<RequireAuth loginPath="/v2/admin/auth/login" />}>
             <Route element={<RequireRole allow={["superadmin", "admin", "api", "agent", "viewer"]} />}>
-              <Route path="/v2/admin" element={<DashboardAdminV2 />} />
-              <Route path="/v2/admin/dashboard" element={<DashboardAdminV2 />} />
+              <Route path="/v2/admin" element={<DashboardAdminV3New />} />
+              <Route path="/v2/admin/dashboard" element={<DashboardAdminV3New />} />
               <Route path="/v2/admin/dashboard-v3" element={<DashboardAdminV3New />} />
               <Route path="/v2/admin/entidades" element={<EntitiesListV2 />} />
               <Route path="/v2/admin/entidades/nueva" element={<EntityCreateV2 />} />

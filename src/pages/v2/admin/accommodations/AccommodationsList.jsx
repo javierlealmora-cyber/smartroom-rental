@@ -70,8 +70,8 @@ export default function AccommodationsList() {
       result = result.filter(
         (a) =>
           a.name?.toLowerCase().includes(s) ||
-          a.address_line1?.toLowerCase().includes(s) ||
-          a.city?.toLowerCase().includes(s) ||
+          (a.address_street || a.address_line1)?.toLowerCase().includes(s) ||
+          (a.address_city || a.city)?.toLowerCase().includes(s) ||
           a.owner_entity?.legal_name?.toLowerCase().includes(s)
       );
     }

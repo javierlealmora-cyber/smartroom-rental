@@ -174,8 +174,8 @@ export default function EntityDetail() {
           const s = searchTerm.toLowerCase();
           filtered = filtered.filter((a) =>
             a.name?.toLowerCase().includes(s) ||
-            a.address_line1?.toLowerCase().includes(s) ||
-            a.city?.toLowerCase().includes(s)
+            (a.address_street || a.address_line1)?.toLowerCase().includes(s) ||
+            (a.address_city || a.city)?.toLowerCase().includes(s)
           );
         }
         if (filtered.length === 0) return (

@@ -122,6 +122,13 @@ export default function TenantCreate() {
       const moveInDate     = values.move_in_date.format("YYYY-MM-DD");
       const billingStart   = values.move_in_date.add(1, "month").startOf("month").format("YYYY-MM-DD");
 
+      // REQ-015: si el admin activó "Habitación compartida", adjuntar acompañante
+      // El RoomAssignmentForm escribe los campos anidados bajo values.accompanist.*
+      const accompanist = values.accompanist && typeof values.accompanist === "object"
+        && (values.accompanist.first_name || values.accompanist.last_name1)
+        ? values.accompanist
+        : undefined;
+
       await assignRoomToLodger(createdLodgerId, {
         roomId:                   selectedRoomId,
         accommodationId:          values.accommodation_id,
@@ -132,6 +139,7 @@ export default function TenantCreate() {
         commissionAmount:         values.commission_amount         || null,
         firstMonthAmount:         payUntilEndOfMonth ? (values.first_month_amount || null) : null,
         servicesProvisionAmount:  values.services_provision_amount || null,
+        accompanist,
       });
 
       setAssignedWithRoom(true);

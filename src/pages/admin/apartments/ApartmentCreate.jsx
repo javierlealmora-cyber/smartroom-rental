@@ -73,11 +73,11 @@ export default function ApartmentCreate() {
     const apartmentData = {
       companyId,
       name: apartmentName,
-      address_line1: addressLine1,
-      address_line2: addressLine2,
-      city,
-      postal_code: postalCode,
-      country,
+      address_street: addressLine1,
+      address_block: addressLine2,
+      address_city: city,
+      address_postal_code: postalCode,
+      address_country: country,
       numRooms,
       rooms
     };

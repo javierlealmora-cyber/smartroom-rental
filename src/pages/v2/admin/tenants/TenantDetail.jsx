@@ -18,6 +18,8 @@ import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getLodger } from "../../../../services/lodgers.service";
 import { getLodgerStatus, getLodgerStatusLabel } from "../../../../utils/lodgerStatus";
 import PayersList from "./components/PayersList";
+import AccompanistSection from "./components/AccompanistSection";
+import { useAuth } from "../../../../providers/AuthProvider";
 
 // ─── Responsive ────────────────────────────────────────────────────────────────
 function useBreakpoint() {
@@ -86,6 +88,8 @@ function Section({ title, extra, children, style }) {
 // =============================================================================
 export default function TenantDetail() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { profile } = useAuth();
+  const isSuperadmin = profile?.role === "superadmin";
   const navigate = useNavigate();
   const { id }   = useParams();
   const [searchParams] = useSearchParams();
@@ -264,11 +268,17 @@ export default function TenantDetail() {
 
   const lodgerName  = [lodger.first_name, lodger.last_name1, lodger.last_name2].filter(Boolean).join(" ") || lodger.email;
   const isFemale    = lodger.gender === "female";
-  const photoTop    = isFemale ? "/images/Inquilina agachada.png"                    : "/images/Inquilino agachado.png";
+  // REQ-015: si la asignación activa tiene acompañante, la habitación es compartida
+  const hasAccompanist = !!activeAssignment?.accompanist;
+  const photoTop    = hasAccompanist
+    ? "/images/Inquilinos_cuerpo_entero.webp"
+    : isFemale ? "/images/Inquilina agachada.webp" : "/images/Inquilino agachado.png";
   const photoBottom = !activeAssignment
     ? "/images/Habitación sin Inquilino en la cama.png"
-    : isFemale ? "/images/Habitación con Inqulina en la cama.png"
-    : "/images/Habitación con Inquilino en la cama.png";
+    : hasAccompanist
+      ? "/images/Inquilinos_cuerpo_entero.webp"
+      : isFemale ? "/images/Habitación con Inqulina en la cama.webp"
+      : "/images/Habitación con Inquilino en la cama.webp";
   const computedStatus = getLodgerStatus(lodger);
   const statusColor = STATUS_COLOR[computedStatus] || "#9CA3AF";
   const statusBg    = STATUS_BG[computedStatus]    || "#F9FAFB";
@@ -483,6 +493,21 @@ export default function TenantDetail() {
                 <span style={{fontSize:13,color:"#9CA3AF"}}>Sin habitación asignada</span>
               )}
             </Section>
+
+            {/* REQ-015 — Sección Acompañante (sólo si la asignación activa lo tiene) */}
+            {activeAssignment?.accompanist && (
+              <div style={{ marginTop: 12 }}>
+                <AccompanistSection
+                  accompanist={activeAssignment.accompanist}
+                  historical={!!activeAssignment.move_out_date}
+                  isSuperadmin={isSuperadmin}
+                  onChanged={async () => {
+                    const fresh = await getLodger(id, clientAccountId);
+                    setLodger(fresh);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* ── PAGADORES — ancho completo, al final ── */}

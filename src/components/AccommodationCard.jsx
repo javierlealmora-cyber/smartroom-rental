@@ -26,7 +26,7 @@ function getStats(acc) {
  * AccommodationCard — tarjeta compartida de alojamiento
  *
  * Props:
- *   accommodation  — objeto con { id, name, status, address_line1, street, postal_code, city, rooms[] }
+ *   accommodation  — objeto con { id, name, status, address_street, address_number, address_postal_code, address_city, rooms[] }
  *   onCardClick    — acción al hacer clic en la card / imagen
  *   onEdit         — acción botón "Editar"
  *   onServices     — acción botón "Servicios"
@@ -45,8 +45,16 @@ export default function AccommodationCard({
   const progressColor = rate > 80 ? "#059669" : rate > 50 ? "#F59E0B" : "#DC2626";
   const isActive = acc.status === "active";
 
-  const addressLine1 = [acc.address_line1 || acc.street, acc.street_number].filter(Boolean).join(" ");
-  const addressLine2 = [acc.postal_code, acc.city].filter(Boolean).join(" – ") || "";
+  // Compatibilidad con ambos esquemas de dirección:
+  // Nuevo esquema: address_street, address_number, address_city, address_postal_code
+  // Esquema antiguo (legacy): address_line1, city, postal_code
+  const addressStreet = acc.address_street || acc.address_line1 || "";
+  const addressNum = acc.address_number || "";
+  const addressCity = acc.address_city || acc.city || "";
+  const addressPostal = acc.address_postal_code || acc.postal_code || "";
+
+  const addressLine1 = [addressStreet, addressNum].filter(Boolean).join(" ") || addressStreet;
+  const addressLine2 = [addressPostal, addressCity].filter(Boolean).join(" – ") || "";
 
   return (
     <div

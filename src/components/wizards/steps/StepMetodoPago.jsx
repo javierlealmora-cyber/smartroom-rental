@@ -171,15 +171,15 @@ export default function StepMetodoPago({ formData, errors, onChange, mode, selec
               </label>
               <input
                 type="text"
-                value={formData.payer_address_line1}
-                onChange={(e) => onChange("payer_address_line1", e.target.value)}
+                value={formData.payer_address_street}
+                onChange={(e) => onChange("payer_address_street", e.target.value)}
                 style={{
                   ...styles.input,
-                  ...(errors.payer_address_line1 ? styles.inputError : {}),
+                  ...(errors.payer_address_street ? styles.inputError : {}),
                 }}
                 placeholder="Calle Gran Via"
               />
-              {errors.payer_address_line1 && <span style={styles.errorText}>{errors.payer_address_line1}</span>}
+              {errors.payer_address_street && <span style={styles.errorText}>{errors.payer_address_street}</span>}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>
@@ -199,15 +199,15 @@ export default function StepMetodoPago({ formData, errors, onChange, mode, selec
               </label>
               <input
                 type="text"
-                value={formData.payer_postal_code}
-                onChange={(e) => onChange("payer_postal_code", e.target.value)}
+                value={formData.payer_address_postal_code}
+                onChange={(e) => onChange("payer_address_postal_code", e.target.value)}
                 style={{
                   ...styles.input,
-                  ...(errors.payer_postal_code ? styles.inputError : {}),
+                  ...(errors.payer_address_postal_code ? styles.inputError : {}),
                 }}
                 placeholder="28001"
               />
-              {errors.payer_postal_code && <span style={styles.errorText}>{errors.payer_postal_code}</span>}
+              {errors.payer_address_postal_code && <span style={styles.errorText}>{errors.payer_address_postal_code}</span>}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>
@@ -215,8 +215,8 @@ export default function StepMetodoPago({ formData, errors, onChange, mode, selec
               </label>
               <input
                 type="text"
-                value={formData.payer_city}
-                onChange={(e) => onChange("payer_city", e.target.value)}
+                value={formData.payer_address_city}
+                onChange={(e) => onChange("payer_address_city", e.target.value)}
                 style={{
                   ...styles.input,
                   ...(errors.payer_city ? styles.inputError : {}),

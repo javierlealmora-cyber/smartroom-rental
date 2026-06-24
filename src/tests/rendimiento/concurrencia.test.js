@@ -45,7 +45,7 @@ describe('Concurrencia — lecturas paralelas (sin estado de módulo)', () => {
     mockSupabase.from.mockImplementation((table) => {
       expect(table).toBe('accommodations')
       return buildChain({
-        data: [{ id: `acc-parallel`, address_line1: 'Calle X', status: 'active' }],
+        data: [{ id: `acc-parallel`, address_street: 'Calle X', status: 'active' }],
         error: null,
       })
     })
@@ -56,7 +56,7 @@ describe('Concurrencia — lecturas paralelas (sin estado de módulo)', () => {
     expect(results).toHaveLength(20)
     results.forEach((result) => {
       expect(result).toHaveLength(1)
-      expect(result[0]).toHaveProperty('address_line1')
+      expect(result[0]).toHaveProperty('address_street')
       expect(result[0]).not.toHaveProperty('address')
     })
     // from() debe haber sido llamado exactamente 20 veces
@@ -110,7 +110,7 @@ describe('Concurrencia — lecturas paralelas (sin estado de módulo)', () => {
     mockSupabase.from.mockImplementation((table) => {
       if (table === 'accommodations') {
         return buildChain({
-          data: [{ id: 'acc-1', address_line1: 'Calle A', status: 'active' }],
+          data: [{ id: 'acc-1', address_street: 'Calle A', status: 'active' }],
           error: null,
         })
       }
@@ -135,7 +135,7 @@ describe('Concurrencia — lecturas paralelas (sin estado de módulo)', () => {
       listRooms('acc-1'),
     ])
 
-    expect(accommodations[0]).toHaveProperty('address_line1')
+    expect(accommodations[0]).toHaveProperty('address_street')
     expect(entities[0]).toHaveProperty('legal_name')
     expect(rooms[0]).toHaveProperty('number')
   })

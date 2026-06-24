@@ -52,8 +52,8 @@ const KITCHEN_LABEL = { shared: "Compartida", private: "Privada", none: "Sin coc
 const BATHROOM_LABEL = { shared: "Baño compartido", private: "Baño privado", ensuite: "Baño en suite" };
 
 const ROOM_IMG_FREE     = "/images/Habitación sin Inquilino en la cama.png";
-const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.png";
-const ROOM_IMG_FEMALE   = "/images/Habitación con Inqulina en la cama.png";
+const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.webp";
+const ROOM_IMG_FEMALE   = "/images/Habitación con Inqulina en la cama.webp";
 
 // ✅ REFACTOR: Funciones de formateo centralizadas en utils/formatters.js
 
@@ -157,6 +157,7 @@ export default function AccommodationDetail() {
   // Estados para modal de check-out
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [lodgerToCheckout, setLodgerToCheckout] = useState(null);
+
   const [checkoutForm] = Form.useForm();
   const [mockedConsumptions, setMockedConsumptions] = useState(null);
   const [processingCheckout, setProcessingCheckout] = useState(false);
@@ -210,13 +211,13 @@ export default function AccommodationDetail() {
         listEntities({ type: "owner" }),
         // Asignaciones ya empezadas (move_in_date <= hoy) y no terminadas
         supabase.from("lodger_room_assignments")
-          .select("id, room_id, move_in_date, move_out_date, monthly_rent, deposit_amount, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
+          .select("id, room_id, move_in_date, move_out_date, monthly_rent, deposit_amount, accompanist_id, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
           .eq("accommodation_id", accId)
           .lte("move_in_date", today)
-          .or(`move_out_date.is.null,move_out_date.gt.${today}`),
+          .or(`move_out_date.is.null,and(move_out_date.gt.${today},move_out_date.not.is.null)`),
         // Asignaciones futuras (reservas: move_in_date > hoy)
         supabase.from("lodger_room_assignments")
-          .select("id, room_id, move_in_date, move_out_date, monthly_rent, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
+          .select("id, room_id, move_in_date, move_out_date, monthly_rent, accompanist_id, lodger:profiles(id, full_name, email, phone, onboarding_status, gender)")
           .eq("accommodation_id", accId)
           .gt("move_in_date", today),
       ]);
@@ -225,11 +226,15 @@ export default function AccommodationDetail() {
       setAccommodation(acc);
 
       // Adjuntar asignaciones a cada habitación (actuales y futuras separadas)
-      const roomsWithAssignments = (roomsData || []).map(room => ({
-        ...room,
-        active_assignment: (currentAssignments || []).filter(a => a.room_id === room.id),
-        future_assignment: (futureAssignments || []).filter(a => a.room_id === room.id),
-      }));
+      const roomsWithAssignments = (roomsData || []).map(room => {
+        const active = (currentAssignments || []).filter(a => a.room_id === room.id);
+        const future = (futureAssignments || []).filter(a => a.room_id === room.id);
+        return {
+          ...room,
+          active_assignment: active,
+          future_assignment: future,
+        };
+      });
 
       // Cargar TODAS las asignaciones de cada inquilino para getLodgerStatus
       const lodgerIds = [
@@ -319,11 +324,11 @@ export default function AccommodationDetail() {
     accForm.setFieldsValue({
       name: accommodation.name,
       owner_entity_id: accommodation.owner_entity_id,
-      address_street: accommodation.address_street || "",
+      address_street: accommodation.address_street || accommodation.address_line1 || "",
       address_number: accommodation.address_number || "",
       address_floor: accommodation.address_floor || "",
-      address_postal_code: accommodation.address_postal_code || "",
-      address_city: accommodation.address_city || "",
+      address_postal_code: accommodation.address_postal_code || accommodation.postal_code || "",
+      address_city: accommodation.address_city || accommodation.city || "",
       address_province: accommodation.address_province || null,
       address_country: accommodation.address_country || "España",
       notes: accommodation.notes || "",
@@ -622,6 +627,7 @@ export default function AccommodationDetail() {
           style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
           {backLabel}
         </Button>
+
         {loading ? <Skeleton active title={{ width: 260 }} paragraph={{ rows: 1 }} /> : (
           <Row justify="space-between" align="top">
             <Col flex="auto">
@@ -629,12 +635,20 @@ export default function AccommodationDetail() {
                 {accommodation?.name}
               </Title>
               <Text style={{ fontSize: 14, color: "#6B7280" }}>
-                {[
-                  [accommodation?.address_line1 || accommodation?.street, accommodation?.street_number].filter(Boolean).join(" "),
-                  accommodation?.address_line2,
-                  accommodation?.postal_code,
-                  accommodation?.city,
-                ].filter(Boolean).join(", ") || "Sin dirección"}
+                {/* Compatibilidad con ambos esquemas de dirección */}
+                {(() => {
+                  const street = accommodation?.address_street || accommodation?.address_line1 || "";
+                  const number = accommodation?.address_number || "";
+                  const floor = accommodation?.address_floor || "";
+                  const postal = accommodation?.address_postal_code || accommodation?.postal_code || "";
+                  const city = accommodation?.address_city || accommodation?.city || "";
+                  return [
+                    [street, number].filter(Boolean).join(" "),
+                    floor,
+                    postal,
+                    city,
+                  ].filter(Boolean).join(", ") || "Sin dirección";
+                })()}
               </Text>
             </Col>
             <Col style={{ paddingTop: 4 }}>
@@ -1495,9 +1509,30 @@ export default function AccommodationDetail() {
                       {/* ── 1: Cabecera blanca — título + badge habitación + precio ── */}
                       <div style={{ padding: "12px 14px 8px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3 }}>
-                          <Text strong style={{ fontSize: 13, color: "#1D1D1F", letterSpacing: "-0.2px", lineHeight: 1.2 }}>
-                            Habitación {roomLabel}
-                          </Text>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <Text strong style={{ fontSize: 13, color: "#1D1D1F", letterSpacing: "-0.2px", lineHeight: 1.2 }}>
+                              Habitación {roomLabel}
+                            </Text>
+                            {/* REQ-015 — Badges de habitación compartida */}
+                            {room.is_shared && (
+                              <span style={{
+                                background: "#EDE9FE", color: "#6D28D9",
+                                borderRadius: 20, padding: "1px 8px",
+                                fontSize: 9, fontWeight: 700,
+                              }}>
+                                Compartida
+                              </span>
+                            )}
+                            {assignment?.accompanist_id && (
+                              <span style={{
+                                background: "#FEF3C7", color: "#92400E",
+                                borderRadius: 20, padding: "1px 8px",
+                                fontSize: 9, fontWeight: 700,
+                              }}>
+                                2 ocupantes
+                              </span>
+                            )}
+                          </div>
                           <span style={{
                             background: badge.bg, color: badge.color,
                             borderRadius: 20, padding: "2px 10px",
@@ -1768,6 +1803,12 @@ export default function AccommodationDetail() {
                   ? values.move_in_date.add(1, 'month').startOf('month').format('YYYY-MM-DD')
                   : null;
 
+                // REQ-015: habitación compartida — incluir acompañante si el admin lo activó
+                const accompanist = values.accompanist && typeof values.accompanist === "object"
+                  && (values.accompanist.first_name || values.accompanist.last_name1)
+                  ? values.accompanist
+                  : undefined;
+
                 await assignRoomToLodger(selectedLodgerForAssignment.id, {
                   roomId: assignRoom?.id,
                   accommodationId: accId,
@@ -1777,6 +1818,7 @@ export default function AccommodationDetail() {
                   depositAmount: values.deposit_amount || 0,
                   commissionAmount: values.commission_amount || null,
                   firstMonthAmount: values.first_month_amount || null,
+                  accompanist,
                 });
 
                 message.success('Inquilino asignado correctamente');

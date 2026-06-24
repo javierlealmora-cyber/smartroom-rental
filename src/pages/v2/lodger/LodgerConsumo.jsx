@@ -317,7 +317,16 @@ export default function LodgerConsumo() {
                   <Text strong>{assignment.accommodation?.name || "-"}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Dirección">
-                  {assignment.accommodation?.address || "-"}{assignment.accommodation?.city ? `, ${assignment.accommodation.city}` : ""}
+                  {/* Compatibilidad con ambos esquemas de dirección */}
+                  {(() => {
+                    const street = assignment.accommodation?.address_street || assignment.accommodation?.address_line1 || "";
+                    const number = assignment.accommodation?.address_number || "";
+                    const city = assignment.accommodation?.address_city || assignment.accommodation?.city || "";
+                    return [
+                      [street, number].filter(Boolean).join(" ") || "-",
+                      city && city !== (street || number) ? `, ${city}` : ""
+                    ].filter(Boolean).join("");
+                  })()}
                 </Descriptions.Item>
                 <Descriptions.Item label="Habitación">
                   <Tag color="geekblue">Hab. {assignment.room?.number}</Tag>

@@ -188,41 +188,64 @@ export default function DashboardAdminV3() {
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
+
+      // Fase 1: Obtener el alojamiento activo
+      const { data: acc } = await supabase
+        .from("accommodations")
+        .select("id,name,address_city,city")
+        .eq("client_account_id", clientAccountId)
+        .eq("status", "active")
+        .limit(1)
+        .single();
+
+      const accommodationId = acc?.id;
+
+      // Fase 2: Obtener datos filtrados por el alojamiento
       const [
-        {data:acc},
-        {data:rm},
-        {data:assgn},
-        {data:lodgers},
-        {data:aRent},
-        {data:buls},
-        {data:bills},
-        {data:drafts},
+        { data: rm },
+        { data: assgn },
+        { data: lodgers },
+        { data: aRent },
+        { data: buls },
+        { data: bills },
+        { data: drafts },
       ] = await Promise.all([
-        supabase.from("accommodations").select("id,name,city").eq("client_account_id",clientAccountId).eq("status","active").limit(1).single(),
-        supabase.from("rooms").select("id,is_maintenance").eq("client_account_id",clientAccountId),
-        supabase.from("lodger_room_assignments").select("room_id,move_out_date").eq("client_account_id",clientAccountId)
-          .or(`move_out_date.is.null,move_out_date.gt.${today}`),
-        supabase.from("profiles").select("id,onboarding_status").eq("role","lodger").eq("client_account_id",clientAccountId),
-        supabase.from("lodger_room_assignments").select("monthly_rent").eq("client_account_id",clientAccountId).is("move_out_date",null),
-        supabase.from("bulletins").select("id,amount_total").eq("client_account_id",clientAccountId).eq("status","published"),
-        supabase.from("energy_bills").select("id").eq("client_account_id",clientAccountId).in("status",["pending","validated"]),
-        supabase.from("bulletins").select("id").eq("client_account_id",clientAccountId).eq("status","draft"),
+        // Habitaciones del alojamiento seleccionado (o todas si no hay alojamiento)
+        accommodationId
+          ? supabase.from("rooms").select("id,is_maintenance").eq("accommodation_id", accommodationId)
+          : supabase.from("rooms").select("id,is_maintenance").eq("client_account_id", clientAccountId),
+        // Asignaciones activas del alojamiento seleccionado
+        accommodationId
+          ? supabase.from("lodger_room_assignments").select("room_id,move_out_date").eq("accommodation_id", accommodationId)
+              .or(`move_out_date.is.null,move_out_date.gt.${today}`)
+          : supabase.from("lodger_room_assignments").select("room_id,move_out_date").eq("client_account_id", clientAccountId)
+              .or(`move_out_date.is.null,move_out_date.gt.${today}`),
+        // Inquilinos del tenant (datos globales)
+        supabase.from("profiles").select("id,onboarding_status").eq("role", "lodger").eq("client_account_id", clientAccountId),
+        // Rentas activas del alojamiento seleccionado
+        accommodationId
+          ? supabase.from("lodger_room_assignments").select("monthly_rent").eq("accommodation_id", accommodationId).is("move_out_date", null)
+          : supabase.from("lodger_room_assignments").select("monthly_rent").eq("client_account_id", clientAccountId).is("move_out_date", null),
+        // Boletines, facturas, etc. (datos globales del tenant)
+        supabase.from("bulletins").select("id,amount_total").eq("client_account_id", clientAccountId).eq("status", "published"),
+        supabase.from("energy_bills").select("id").eq("client_account_id", clientAccountId).in("status", ["pending", "validated"]),
+        supabase.from("bulletins").select("id").eq("client_account_id", clientAccountId).eq("status", "draft"),
       ]);
 
-      const allRooms = rm||[];
+      const allRooms = rm || [];
       const byRoom = {};
-      (assgn||[]).forEach(a=>{ byRoom[a.room_id]=a; });
-      let free=0, occ=0, pchk=0;
-      allRooms.forEach(r=>{
-        if(r.is_maintenance) return;
+      (assgn || []).forEach(a => { byRoom[a.room_id] = a; });
+      let free = 0, occ = 0, pchk = 0;
+      allRooms.forEach(r => {
+        if (r.is_maintenance) return;
         const a = byRoom[r.id];
-        if(!a) free++; else if(!a.move_out_date) occ++; else pchk++;
+        if (!a) free++; else if (!a.move_out_date) occ++; else pchk++;
       });
 
       const monthlyIncome = (aRent||[]).reduce((s,a)=>s+Number(a.monthly_rent||0),0);
       const pendAmt = (buls||[]).reduce((s,b)=>s+Number(b.amount_total||0),0);
 
-      setAccName(acc?.name || acc?.city || "Alojamiento");
+      setAccName(acc?.name || acc?.address_city || acc?.city || "Alojamiento");
       setStats({
         totalRooms:allRooms.length, free, occ, pchk,
         activeTenants:(lodgers||[]).filter(l=>l.onboarding_status==="active").length,

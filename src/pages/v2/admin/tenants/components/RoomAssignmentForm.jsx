@@ -2,8 +2,10 @@
 // Componente reutilizable para asignación de habitación
 
 import { useState, useEffect, useCallback } from "react";
-import { Checkbox, Col, DatePicker, Form, InputNumber, Row, Select, Tag, Typography } from "antd";
+import { Checkbox, Col, DatePicker, Form, InputNumber, Row, Select, Switch, Tag, Typography } from "antd";
+import { TeamOutlined } from "@ant-design/icons";
 import { listRooms } from "../../../../../services/accommodations.service";
+import LodgerFormFields from "./LodgerFormFields"; // REQ-015: sub-form de acompañante
 
 const { Text } = Typography;
 
@@ -37,6 +39,8 @@ export default function RoomAssignmentForm({
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(preselectedRoomId);
   const [payUntilEndOfMonth, setPayUntilEndOfMonth] = useState(false);
+  // REQ-015: habitación compartida con acompañante
+  const [sharedRoom, setSharedRoom] = useState(false);
 
   // Cargar habitaciones cuando hay un alojamiento preseleccionado
   useEffect(() => {
@@ -105,6 +109,11 @@ export default function RoomAssignmentForm({
     // Auto-rellenar fianza (2 meses de renta)
     if (room.monthly_rent > 0) {
       form.setFieldValue("deposit_amount", room.monthly_rent * 2);
+    }
+
+    // REQ-015: si la habitación está marcada como compartida, sugerir activar el toggle
+    if (room.is_shared && !sharedRoom) {
+      setSharedRoom(true);
     }
   };
 
@@ -186,6 +195,59 @@ export default function RoomAssignmentForm({
             </div>
           )}
         </Form.Item>
+
+        {/* REQ-015: Toggle de habitación compartida (justo debajo del campo Habitación) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px 14px",
+            border: "1px dashed #D1D5DB",
+            borderRadius: 8,
+            backgroundColor: sharedRoom ? "#F0F9FF" : "#FAFAFA",
+            marginBottom: 20,
+          }}
+        >
+          <TeamOutlined style={{ fontSize: 18, color: sharedRoom ? "#2563EB" : "#9CA3AF" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+              Habitación compartida — añadir acompañante
+            </div>
+            <div style={{ fontSize: 12, color: "#6B7280" }}>
+              Un único contrato a nombre del titular; el acompañante queda registrado en contrato.
+            </div>
+          </div>
+          <Switch
+            checked={sharedRoom}
+            onChange={(checked) => {
+              setSharedRoom(checked);
+              if (!checked) {
+                // Limpiar subform al desactivar para no enviar basura
+                form.setFieldsValue({ accompanist: undefined });
+              }
+            }}
+          />
+        </div>
+
+        {sharedRoom && (
+          <div
+            style={{
+              border: "1px solid #E5E7EB",
+              borderRadius: 10,
+              padding: "16px 16px 4px",
+              marginBottom: 20,
+              backgroundColor: "#FAFBFC",
+            }}
+          >
+            {sectionHeader("Datos del acompañante")}
+            <LodgerFormFields
+              isAccompanist
+              namePrefix={["accompanist"]}
+              dividerText="Dirección del acompañante (opcional — si difiere del titular)"
+            />
+          </div>
+        )}
 
         <Form.Item
           label="Fecha de Check-In"

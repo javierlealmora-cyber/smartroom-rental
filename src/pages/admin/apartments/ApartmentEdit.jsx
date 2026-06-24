@@ -37,11 +37,12 @@ export default function ApartmentEdit() {
         id: 1,
         company_name: "Empresa Demo S.L.",
         name: "Edificio Central",
-        address_line1: "Calle Mayor 15",
-        address_line2: "Planta 2",
-        city: "Madrid",
-        postal_code: "28001",
-        country: "España",
+        address_street: "Calle Mayor",
+        address_number: "15",
+        address_floor: "Planta 2",
+        address_city: "Madrid",
+        address_postal_code: "28001",
+        address_country: "España",
         rooms: [
           { number: 1, price: 350, electricity: 40, area: 15, bathroomType: "Compartido", kitchenType: "Compartida", lockId: "LC-001", notes: "", status: "occupied" },
           { number: 2, price: 380, electricity: 45, area: 18, bathroomType: "Privado", kitchenType: "Compartida", lockId: "LC-002", notes: "", status: "free" },
@@ -52,11 +53,12 @@ export default function ApartmentEdit() {
         id: 2,
         company_name: "Empresa Demo S.L.",
         name: "Residencia Norte",
-        address_line1: "Av. del Norte 42",
-        address_line2: "",
-        city: "Barcelona",
-        postal_code: "08001",
-        country: "España",
+        address_street: "Av. del Norte",
+        address_number: "42",
+        address_floor: "",
+        address_city: "Barcelona",
+        address_postal_code: "08001",
+        address_country: "España",
         rooms: [
           { number: 1, price: 320, electricity: 35, area: 14, bathroomType: "Compartido", kitchenType: "Compartida", lockId: "", notes: "", status: "free" },
           { number: 2, price: 320, electricity: 35, area: 14, bathroomType: "Compartido", kitchenType: "Compartida", lockId: "", notes: "", status: "occupied" },
@@ -69,11 +71,11 @@ export default function ApartmentEdit() {
       if (apartment) {
         setCompanyName(apartment.company_name);
         setApartmentName(apartment.name);
-        setAddressLine1(apartment.address_line1);
-        setAddressLine2(apartment.address_line2);
-        setCity(apartment.city);
-        setPostalCode(apartment.postal_code);
-        setCountry(apartment.country);
+        setAddressLine1(apartment.address_street || apartment.address_line1 || "");
+        setAddressLine2(apartment.address_block || apartment.address_line2 || "");
+        setCity(apartment.address_city || apartment.city || "");
+        setPostalCode(apartment.address_postal_code || apartment.postal_code || "");
+        setCountry(apartment.address_country || apartment.country || "España");
         setNumRooms(apartment.rooms.length);
         setOriginalNumRooms(apartment.rooms.length);
         setRooms(apartment.rooms);
@@ -142,11 +144,11 @@ export default function ApartmentEdit() {
     const apartmentData = {
       id,
       name: apartmentName,
-      address_line1: addressLine1,
-      address_line2: addressLine2,
-      city,
-      postal_code: postalCode,
-      country,
+      address_street: addressLine1,
+      address_block: addressLine2,
+      address_city: city,
+      address_postal_code: postalCode,
+      address_country: country,
       rooms
     };
     console.log("Actualizar alojamiento:", apartmentData);

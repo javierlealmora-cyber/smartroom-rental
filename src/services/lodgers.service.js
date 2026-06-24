@@ -13,8 +13,13 @@ export async function listLodgers({ status, clientAccountId } = {}) {
       *,
       active_assignment:lodger_room_assignments(
         id, move_in_date, move_out_date, billing_start_date, monthly_rent,
+        accompanist_id,
         room:rooms(id, number, accommodation_id),
-        accommodation:accommodations(id, name)
+        accommodation:accommodations(id, name),
+        accompanist:lodger_accompanists(
+          id, first_name, last_name1, last_name2, nickname,
+          document_type, document_id, gender, status
+        )
       )
     `)
     .eq("role", "lodger")
@@ -62,12 +67,21 @@ export async function getLodger(id, clientAccountId = null) {
   if (!profile) throw new Error("Inquilino no encontrado");
 
   // Luego obtener las asignaciones ordenadas por created_at DESC
+  // REQ-015: incluimos el acompañante completo para la sección dedicada en TenantDetail
   let assignmentsQuery = supabase
     .from("lodger_room_assignments")
     .select(`
       *,
       room:rooms(id, number),
-      accommodation:accommodations(id, name)
+      accommodation:accommodations(id, name),
+      accompanist:lodger_accompanists(
+        id, first_name, last_name1, last_name2, nickname,
+        document_type, document_id, gender, birth_date, nationality,
+        email, phone,
+        address_street, address_number, address_floor,
+        address_postal_code, address_city, address_province, address_country,
+        notes, status, created_at, updated_at
+      )
     `)
     .eq("lodger_id", id)
     .order("created_at", { ascending: false });
@@ -153,15 +167,54 @@ export async function inviteLodger(lodgerId) {
   return result.data;
 }
 
-export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
-  // ✅ SEGURIDAD: Usar Edge Function para asignación segura con auditoría
+/**
+ * Asigna una habitación al inquilino.
+ * REQ-015: si se proporciona `accompanist` (objeto con los campos de `lodger_accompanists`),
+ * la Edge Function crea atomicamente la ficha del acompañante y rellena accompanist_id.
+ */
+export async function assignRoomToLodger(lodgerId, {
+  roomId, accommodationId, moveInDate, billingStartDate,
+  monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount,
+  accompanist, // REQ-015 (opcional)
+}) {
+  const payload = {
+    id: lodgerId,
+    room_id: roomId,
+    accommodation_id: accommodationId,
+    move_in_date: moveInDate,
+    billing_start_date: billingStartDate,
+    monthly_rent: monthlyRent,
+    deposit_amount: depositAmount,
+    commission_amount: commissionAmount,
+    first_month_amount: firstMonthAmount,
+    services_provision_amount: servicesProvisionAmount,
+  };
+  if (accompanist && typeof accompanist === "object") {
+    payload.accompanist = accompanist;
+  }
+
   const result = await invokeWithAuth("manage_lodger", {
-    body: { 
-      action: "assign_room", 
-      payload: { 
+    body: { action: "assign_room", payload },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
+}
+
+/**
+ * Reasigna al inquilino a otra habitación.
+ * REQ-015: el acompañante se arrastra automáticamente por código en la Edge
+ * (el frontend NO debe pasar accompanist_id).
+ */
+export async function reassignRoom(lodgerId, {
+  newRoomId, newAccommodationId, moveInDate, billingStartDate,
+  monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount,
+}) {
+  const result = await invokeWithAuth("manage_lodger", {
+    body: {
+      action: "reassign_room",
+      payload: {
         id: lodgerId,
-        room_id: roomId,
-        accommodation_id: accommodationId,
+        new_room_id: newRoomId,
         move_in_date: moveInDate,
         billing_start_date: billingStartDate,
         monthly_rent: monthlyRent,
@@ -176,22 +229,33 @@ export async function assignRoomToLodger(lodgerId, { roomId, accommodationId, mo
   return result.data;
 }
 
-export async function reassignRoom(lodgerId, { newRoomId, newAccommodationId, moveInDate, billingStartDate, monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount }) {
-  // ✅ SEGURIDAD: Usar Edge Function para reasignación segura con auditoría
+// ─── REQ-015: Acompañantes ─────────────────────────────────────────
+
+/**
+ * Actualiza datos personales del acompañante (REQ-015).
+ * Disponible para admin y superadmin. La Edge rechaza campos inmutables
+ * (client_account_id, status, id).
+ */
+export async function updateAccompanist(accompanistId, patch) {
   const result = await invokeWithAuth("manage_lodger", {
-    body: { 
-      action: "reassign_room", 
-      payload: { 
-        id: lodgerId,
-        new_room_id: newRoomId,
-        move_in_date: moveInDate,
-        billing_start_date: billingStartDate,
-        monthly_rent: monthlyRent,
-        deposit_amount: depositAmount,
-        commission_amount: commissionAmount,
-        first_month_amount: firstMonthAmount,
-        services_provision_amount: servicesProvisionAmount,
-      }
+    body: {
+      action: "update_accompanist",
+      payload: { id: accompanistId, ...(patch || {}) },
+    },
+  });
+  if (!result?.ok) throw new Error(extractEdgeError(result));
+  return result.data;
+}
+
+/**
+ * Elimina al acompañante (soft delete) — SOLO superadmin con motivo ≥ 10 caracteres.
+ * Limpia accompanist_id de la asignación activa.
+ */
+export async function removeAccompanist(accompanistId, reason) {
+  const result = await invokeWithAuth("manage_lodger", {
+    body: {
+      action: "remove_accompanist",
+      payload: { id: accompanistId, reason },
     },
   });
   if (!result?.ok) throw new Error(extractEdgeError(result));

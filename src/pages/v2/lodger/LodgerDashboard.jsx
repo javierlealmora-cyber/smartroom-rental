@@ -63,7 +63,7 @@ export default function LodgerDashboard() {
       const [{ data: asgn }, { data: bulls }, { data: svcs }] = await Promise.all([
         supabase
           .from("lodger_room_assignments")
-          .select("id, move_in_date, billing_start_date, monthly_rent, room:rooms(id,number,square_meters,bathroom_type,kitchen_type), accommodation:accommodations(id,name,address_street,address_city)")
+          .select("id, move_in_date, billing_start_date, monthly_rent, room:rooms(id,number,square_meters,bathroom_type,kitchen_type,is_shared), accommodation:accommodations(id,name,address_street,address_city), accompanist:lodger_accompanists(id, first_name, last_name1, last_name2, nickname)")
           .eq("lodger_id", lodgerData.id)
           .is("move_out_date", null)
           .maybeSingle(),
@@ -126,6 +126,12 @@ export default function LodgerDashboard() {
                 <Title level={4} style={{ color: "#fff", margin: 0, lineHeight: 1.3 }}>
                   Hola, {fullName} 👋
                 </Title>
+                {/* REQ-015 — si hay acompañante, mostrarlo bajo el saludo */}
+                {assignment?.accompanist && (
+                  <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, display: "block", marginTop: 2 }}>
+                    Junto a {[assignment.accompanist.first_name, assignment.accompanist.last_name1].filter(Boolean).join(" ")}
+                  </Text>
+                )}
                 <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>
                   {assignment
                     ? `${assignment.accommodation?.name} · Hab. ${assignment.room?.number}`
@@ -167,6 +173,14 @@ export default function LodgerDashboard() {
                 </Descriptions.Item>
                 {assignment.room?.square_meters && (
                   <Descriptions.Item label="Superficie">{assignment.room.square_meters} m²</Descriptions.Item>
+                )}
+                {/* REQ-015 — Acompañante en habitación compartida */}
+                {assignment.accompanist && (
+                  <Descriptions.Item label="Acompañante">
+                    <Tag color="purple" style={{ fontSize: 12 }}>
+                      {[assignment.accompanist.first_name, assignment.accompanist.last_name1, assignment.accompanist.last_name2].filter(Boolean).join(" ")}
+                    </Tag>
+                  </Descriptions.Item>
                 )}
                 <Descriptions.Item label={<Space size={4}><CalendarOutlined />Entrada</Space>}>
                   {fDate(assignment.move_in_date)}

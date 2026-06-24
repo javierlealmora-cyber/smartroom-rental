@@ -16,16 +16,21 @@ export default function AddressFormFields({
       <Row gutter={16}>
         <Col xs={24} sm={12}>
           <Form.Item
-            label="Dirección (línea 1)"
-            name="address_line1"
-            rules={isRequired('address_line1') ? [{ required: true, message: "La dirección es obligatoria" }] : []}
+            label="Calle"
+            name="address_street"
+            rules={isRequired('address_street') ? [{ required: true, message: "La calle es obligatoria" }] : []}
           >
-            <Input placeholder="Calle Principal 123" />
+            <Input placeholder="Calle Principal" />
           </Form.Item>
         </Col>
-        <Col xs={24} sm={12}>
-          <Form.Item label="Dirección (línea 2)" name="address_line2">
-            <Input placeholder="Piso 2, Puerta A" />
+        <Col xs={24} sm={6}>
+          <Form.Item label="Número" name="address_number">
+            <Input placeholder="123" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={6}>
+          <Form.Item label="Piso / Puerta" name="address_floor">
+            <Input placeholder="2A" />
           </Form.Item>
         </Col>
       </Row>
@@ -34,8 +39,8 @@ export default function AddressFormFields({
         <Col xs={24} sm={8}>
           <Form.Item
             label="Código postal"
-            name="postal_code"
-            rules={isRequired('postal_code') ? [{ required: true, message: "El código postal es obligatorio" }] : []}
+            name="address_postal_code"
+            rules={isRequired('address_postal_code') ? [{ required: true, message: "El código postal es obligatorio" }] : []}
           >
             <Input placeholder="28001" />
           </Form.Item>
@@ -43,14 +48,14 @@ export default function AddressFormFields({
         <Col xs={24} sm={8}>
           <Form.Item
             label="Ciudad"
-            name="city"
-            rules={isRequired('city') ? [{ required: true, message: "La ciudad es obligatoria" }] : []}
+            name="address_city"
+            rules={isRequired('address_city') ? [{ required: true, message: "La ciudad es obligatoria" }] : []}
           >
             <Input placeholder="Madrid" />
           </Form.Item>
         </Col>
         <Col xs={24} sm={8}>
-          <Form.Item label="Provincia" name="province">
+          <Form.Item label="Provincia" name="address_province">
             <Select
               showSearch
               placeholder="Seleccionar provincia..."
@@ -65,7 +70,7 @@ export default function AddressFormFields({
       {showCountry && (
         <Row gutter={16}>
           <Col xs={24} sm={12}>
-            <Form.Item label="País" name="country">
+            <Form.Item label="País" name="address_country">
               <Input placeholder="España" />
             </Form.Item>
           </Col>

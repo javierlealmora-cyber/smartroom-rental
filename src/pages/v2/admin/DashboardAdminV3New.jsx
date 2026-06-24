@@ -6,8 +6,6 @@ import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
 import { useAuth } from "../../../providers/AuthProvider";
 import { supabase } from "../../../services/supabaseClient";
-import GraficoGenero3D from "../../../components/charts/GraficoGenero3D";
-import GraficoHorizontal3D from "../../../components/charts/GraficoHorizontal3D";
 
 // ── Fallback dummy data ───────────────────────────────────────────────────────
 const DUMMY_STATS = {
@@ -33,13 +31,8 @@ const DUMMY_ACTIVIDAD = [
 ];
 
 const CHECKIN_DATA = [
-  { name: "Lun", value: 2 },
-  { name: "Mar", value: 1 },
-  { name: "Mié", value: 3 },
-  { name: "Jue", value: 1 },
-  { name: "Vie", value: 2 },
-  { name: "Sáb", value: 0 },
-  { name: "Dom", value: 1 },
+  { name: "Check-In",  value: 47, color: "#0096D6" },
+  { name: "Check-Out", value: 43, color: "#F59E0B" },
 ];
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
@@ -72,8 +65,8 @@ function KPICard({ label, value, subtitle, color = "#374151", loading }) {
       onMouseLeave={() => setHov(false)}
       style={{
         background: "#FFFFFF",
-        borderRadius: 14,
-        padding: "14px 10px",
+        borderRadius: 12,
+        padding: "10px 6px",
         border: "1px solid #E5E7EB",
         boxShadow: hov ? "0 6px 16px rgba(0,0,0,0.10)" : "0 1px 4px rgba(0,0,0,0.04)",
         transform: hov ? "translateY(-2px)" : "translateY(0)",
@@ -81,21 +74,21 @@ function KPICard({ label, value, subtitle, color = "#374151", loading }) {
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, lineHeight: 1.3 }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, lineHeight: 1.3 }}>
         {label}
       </div>
       <div style={{
-        fontSize: 38,
+        fontSize: 28,
         fontWeight: 900,
         color: loading ? "#D1D5DB" : color,
         letterSpacing: "-1px",
         lineHeight: 1,
-        marginBottom: 6,
-        textShadow: "4px 4px 12px rgba(30,30,30,0.55)",
+        marginBottom: 4,
+        textShadow: "3px 3px 8px rgba(30,30,30,0.45)",
       }}>
         {loading ? "—" : value}
       </div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>
+      <div style={{ fontSize: 10, fontWeight: 500, color: "#9CA3AF" }}>
         {subtitle}
       </div>
     </div>
@@ -141,6 +134,106 @@ function OcupacionDonut({ percent, title, loading }) {
         <text x={65} y={78} textAnchor="middle" style={{ fontSize: "11px", fill: "#9CA3AF" }}>ocupación</text>
       </svg>
       <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>del total de habitaciones</div>
+    </div>
+  );
+}
+
+// ── GeneroDonut ───────────────────────────────────────────────────────────────
+function GeneroDonut({ data, loading }) {
+  const total   = loading ? 0 : (data || []).reduce((s, d) => s + (d.value || 0), 0);
+  const male    = (data || []).find(d => d.gender === "male")?.value   || 0;
+  const female  = (data || []).find(d => d.gender === "female")?.value || 0;
+  const other   = total - male - female;
+  const dominant = male >= female && male >= other ? "male" : female >= other ? "female" : "other";
+  const domVal  = dominant === "male" ? male : dominant === "female" ? female : other;
+  const pct     = total > 0 ? Math.round((domVal / total) * 100) : 0;
+  const col     = dominant === "male" ? "#4F46E5" : dominant === "female" ? "#EC4899" : "#10B981";
+  const label   = dominant === "male" ? "Hombres" : dominant === "female" ? "Mujeres" : "Otro";
+  const r       = 52;
+  const circ    = 2 * Math.PI * r;
+  const off     = circ - (pct / 100) * circ;
+
+  return (
+    <div style={{
+      background: "#FFFFFF",
+      borderRadius: 16,
+      padding: "20px 16px",
+      border: "1px solid #E5E7EB",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      height: "100%",
+      boxSizing: "border-box",
+    }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 16, alignSelf: "flex-start" }}>
+        Género
+      </div>
+      <svg width={130} height={130} viewBox="0 0 130 130">
+        <circle cx={65} cy={65} r={r} fill="none" stroke="#E5E7EB" strokeWidth={13} />
+        <circle
+          cx={65} cy={65} r={r} fill="none"
+          stroke={col} strokeWidth={13}
+          strokeDasharray={circ}
+          strokeDashoffset={loading ? circ : off}
+          strokeLinecap="round"
+          transform="rotate(-90 65 65)"
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+        <text x={65} y={60} textAnchor="middle" style={{ fontSize: "22px", fontWeight: "900", fill: loading ? "#D1D5DB" : col }}>{loading ? "—" : `${pct}%`}</text>
+        <text x={65} y={78} textAnchor="middle" style={{ fontSize: "11px", fill: "#9CA3AF" }}>{loading ? "" : label}</text>
+      </svg>
+      <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>{total} inquilino{total !== 1 ? "s" : ""} total</div>
+    </div>
+  );
+}
+
+// ── CheckInBarChart ───────────────────────────────────────────────────────────
+function CheckInBarChart({ data, loading }) {
+  const items  = data || [];
+  const maxVal = Math.max(...items.map(d => d.value), 1);
+
+  return (
+    <div style={{
+      background: "#FFFFFF",
+      borderRadius: 16,
+      padding: "20px 16px",
+      border: "1px solid #E5E7EB",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      boxSizing: "border-box",
+    }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 16 }}>
+        Check-In / Check-Out
+      </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 20, minHeight: 80 }}>
+        {items.map((d, i) => {
+          const heightPct = loading ? 0 : (d.value / maxVal) * 100;
+          return (
+            <div key={i} style={{ width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: d.color }}>
+                {loading ? "" : d.value}
+              </div>
+              <div style={{
+                width: "100%",
+                height: loading ? 8 : `${Math.max(heightPct * 0.8, 8)}px`,
+                maxHeight: 80,
+                background: d.color,
+                borderRadius: "4px 4px 0 0",
+                transition: "height 0.4s ease",
+              }} />
+              <div style={{ fontSize: 10, color: "#6B7280", fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
+                {d.name}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center", marginTop: 8 }}>
+        Total anual
+      </div>
     </div>
   );
 }
@@ -214,6 +307,7 @@ export default function DashboardAdminV3New() {
   const [generoData,   setGeneroData]   = useState([]);
   const [ingresosData, setIngresosData] = useState([]);
   const [actividadData, setActividadData] = useState([]);
+  const [checkinData,  setCheckinData]  = useState(CHECKIN_DATA);
 
   const loadDashboardData = useCallback(async () => {
     if (!clientAccountId) return;
@@ -233,7 +327,12 @@ export default function DashboardAdminV3New() {
       ] = await Promise.all([
         supabase.from("accommodations").select("id,name").eq("client_account_id", clientAccountId).eq("status", "active"),
         supabase.from("rooms").select("id,is_maintenance").eq("client_account_id", clientAccountId),
-        supabase.from("lodger_room_assignments").select("room_id,move_out_date,monthly_rent,billing_start_date").eq("client_account_id", clientAccountId),
+        // Solo asignaciones activas: move_in_date <= hoy y no terminadas
+        supabase.from("lodger_room_assignments")
+          .select("room_id,move_in_date,move_out_date,monthly_rent,billing_start_date,created_at")
+          .eq("client_account_id", clientAccountId)
+          .lte("move_in_date", today)
+          .or(`move_out_date.is.null,move_out_date.gt.${today}`),
         supabase.from("profiles").select("id,gender").eq("role", "lodger").eq("client_account_id", clientAccountId),
         supabase.from("energy_bills").select("issue_date,amount_total,utility_type").eq("client_account_id", clientAccountId).eq("utility_type", "electricity").gte("issue_date", twelveMonthsAgo.toISOString().split("T")[0]),
         supabase.from("audit_log").select("id,entity_type,action,actor_role,actor_user_id,created_at").eq("client_account_id", clientAccountId).order("created_at", { ascending: false }).limit(8),
@@ -248,7 +347,8 @@ export default function DashboardAdminV3New() {
         if (r.is_maintenance) return;
         const a = byRoom[r.id];
         if (!a) free++;
-        else if (!a.move_out_date || a.move_out_date > today) occupied++;
+        else if (!a.move_out_date) occupied++;
+        else if (a.move_out_date > today) occupied++;
         else pending++;
       });
 
@@ -291,6 +391,21 @@ export default function DashboardAdminV3New() {
       const avgElectricity = Object.values(gastosPorMes).length > 0
         ? Object.values(gastosPorMes).reduce((a, b) => a + b, 0) / Object.values(gastosPorMes).length : 0;
 
+      const currentYearStr = String(new Date().getFullYear());
+      const yearStart = `${currentYearStr}-01-01`;
+      const yearEnd   = `${currentYearStr}-12-31`;
+      const checkInsYear  = (assignments || []).filter(a => {
+        const fecha = a.billing_start_date || a.created_at?.slice(0, 10);
+        return fecha >= yearStart && fecha <= yearEnd;
+      }).length;
+      const checkOutsYear = (assignments || []).filter(a =>
+        a.move_out_date && a.move_out_date >= yearStart && a.move_out_date <= yearEnd
+      ).length;
+      setCheckinData([
+        { name: "Check-In",  value: checkInsYear,  color: "#0096D6" },
+        { name: "Check-Out", value: checkOutsYear, color: "#F59E0B" },
+      ]);
+
       setStats({ totalAccommodations: (accommodations || []).length, totalRooms, occupied, free, pending, occRate, activeTenants: (lodgers || []).length, avgElectricity });
       setGeneroData(generoChartData);
       setIngresosData(ingresosChartData);
@@ -306,134 +421,130 @@ export default function DashboardAdminV3New() {
 
   const isMobile      = breakpoint === "mobile";
   const isTabletSmall = breakpoint === "tablet-small";
+  const isTablet      = breakpoint === "tablet";
   const isDesktop     = breakpoint === "desktop";
   const isSmall       = isMobile || isTabletSmall;
 
   const s     = stats || DUMMY_STATS;
-  const gData = generoData.length   > 0 ? generoData   : DUMMY_GENERO;
+  const gData = generoData.length    > 0 ? generoData    : DUMMY_GENERO;
   const aData = actividadData.length > 0 ? actividadData : DUMMY_ACTIVIDAD;
 
-  // KPI grid columns: 5 on desktop/tablet, 3 on tablet-small, 2 on mobile
-  const kpiGridCols = isMobile ? "repeat(2, 1fr)" : isTabletSmall ? "repeat(3, 1fr)" : "repeat(5, 1fr)";
+  // KPI grid: 5 cols desktop, 3 cols tablet/tablet-small, 2 cols mobile
+  const kpiGridCols = isMobile ? "repeat(2, 1fr)" : (isTabletSmall || isTablet) ? "repeat(3, 1fr)" : "repeat(5, 1fr)";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: isSmall ? "16px 12px" : "28px 24px", background: "#FFFFFF", minHeight: "100vh" }}>
+      {/* ── Media queries reales (más fiables que window.innerWidth) ── */}
+      <style>{`
+        .v3-outer       { padding: 5px 10%; }
+        .v3-title       { font-size: 30px; }
+        .v3-main-grid   { display: grid; grid-template-columns: minmax(300px,400px) 1fr; gap: 20px; align-items: start; }
+        .v3-left-col    { display: flex; flex-direction: column; gap: 16px; min-width: 0; order: 0; }
+        .v3-right-col   { display: flex; flex-direction: column; gap: 16px; padding-left: 80px; padding-right: 16px; order: 0; }
+        .v3-hero        { display: flex; align-items: center; justify-content: flex-start; overflow: visible; min-height: 190px; margin-top: -76px; }
+        .v3-hero img    { width: 507px; max-width: none; }
+        .v3-charts      { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .v3-kpi-cols    { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+
+        @media (max-width: 1199px) {
+          .v3-outer      { padding: 5px 4%; }
+          .v3-right-col  { padding-left: 20px; padding-right: 0; }
+          .v3-kpi-cols   { grid-template-columns: repeat(3,1fr); }
+        }
+        @media (max-width: 767px) {
+          .v3-outer      { padding: 5px 4%; }
+          .v3-main-grid  { display: flex; flex-direction: column; gap: 14px; }
+          .v3-left-col   { order: 2; }
+          .v3-right-col  { order: 1; padding-left: 0; padding-right: 0; }
+          .v3-hero       { display: none; }
+          .v3-charts     { gap: 8px; }
+          .v3-kpi-cols   { grid-template-columns: repeat(2,1fr); gap: 6px; }
+          .v3-title      { font-size: 22px; }
+        }
+      `}</style>
+
+      <div className="v3-outer" style={{ maxWidth: 1400, margin: "0 auto", background: "#FFFFFF", minHeight: "100vh", overflowX: "hidden" }}>
 
         {/* ── Header ── */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: isSmall ? 22 : 30, fontWeight: 900, color: "#1F2937", margin: 0, letterSpacing: "-0.5px" }}>
-            Dashboard V3
+          <h1 className="v3-title" style={{ fontWeight: 900, color: "#1F2937", margin: 0, letterSpacing: "-0.5px" }}>
+            Panel de Control
           </h1>
           <p style={{ fontSize: 14, color: "#6B7280", margin: "4px 0 0" }}>
             Buenas tardes, {userName || "Admin"}
           </p>
         </div>
 
-        {/* ── Sección superior: Imagen | KPIs | Actividad ── */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isDesktop ? "260px 1fr 280px" : isTabletSmall ? "1fr" : "1fr 1fr",
-          gap: 20,
-          marginBottom: 24,
-          alignItems: "start",
-        }}>
+        {/* ── Layout: 2 columnas desktop | columna única mobile ── */}
+        <div className="v3-main-grid">
 
-          {/* Imagen 3D */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
-            <img
-              src="/images/Alojamiento Dashboard.png"
-              alt="Plano 3D del alojamiento"
-              style={{
-                width: isSmall ? "100%" : "145%",
-                maxWidth: isSmall ? "100%" : "none",
-                height: "auto",
-                maxHeight: isSmall ? 220 : 480,
-                objectFit: "contain",
-                filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15)) drop-shadow(0 20px 40px rgba(0,0,0,0.20))",
-                transform: "perspective(1000px) rotateX(2deg)",
-                display: "block",
-              }}
-            />
-          </div>
+          {/* ── COLUMNA IZQUIERDA: Imagen + 3 gráficos ── */}
+          <div className="v3-left-col">
 
-          {/* KPI Grid 2 filas × 5 columnas */}
-          <div>
-            {/* Fila 1 — Individuales */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
-                Individuales
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: kpiGridCols, gap: 8 }}>
-                <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos" color="#374151" loading={loading} />
-                <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"    color="#374151" loading={loading} />
-                <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas" color="#DC2626" loading={loading} />
-                <KPICard label="Hab. Libres"   value={s.free}                subtitle="libres"   color="#16A34A" loading={loading} />
-                <KPICard label="Ocupación"     value={`${s.occRate}%`}       subtitle="del total" color="#F59E0B" loading={loading} />
-              </div>
+            {/* Imagen 3D (oculta en mobile vía CSS) */}
+            <div className="v3-hero">
+              <img
+                src="/images/Alojamiento Dashboard.png"
+                alt="Plano 3D del alojamiento"
+                style={{
+                  height: "auto",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15)) drop-shadow(0 20px 40px rgba(0,0,0,0.20))",
+                  transform: "perspective(1000px) rotateX(2deg)",
+                  display: "block",
+                  marginLeft: "-5%",
+                }}
+              />
             </div>
 
-            {/* Fila 2 — Compartida */}
+            {/* 3 gráficos en fila horizontal */}
+            <div className="v3-charts">
+              <OcupacionDonut percent={s.occRate} title="Ocupación Acumulada" loading={loading} />
+              <GeneroDonut data={gData} loading={loading} />
+              <CheckInBarChart data={checkinData} loading={loading} />
+            </div>
+
+          </div>
+
+          {/* ── COLUMNA DERECHA: KPIs + Actividad Reciente ── */}
+          <div className="v3-right-col">
+
+            {/* KPI Grid 2 filas */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
-                Compartida
+              {/* Fila 1 — Individuales */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+                  Individuales
+                </div>
+                <div className="v3-kpi-cols">
+                  <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos"   color="#374151" loading={loading} />
+                  <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"     color="#374151" loading={loading} />
+                  <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas"  color="#DC2626" loading={loading} />
+                  <KPICard label="Hab. Libres"   value={s.free}                subtitle="libres"    color="#16A34A" loading={loading} />
+                  <KPICard label="Ocupación"     value={`${s.occRate}%`}       subtitle="del total" color="#F59E0B" loading={loading} />
+                </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: kpiGridCols, gap: 8 }}>
-                <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos" color="#374151" loading={loading} />
-                <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"    color="#374151" loading={loading} />
-                <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas" color="#DC2626" loading={loading} />
-                <KPICard label="Hab. Libres"   value={s.free}                subtitle="libres"   color="#16A34A" loading={loading} />
-                <KPICard label="Ocupación"     value={`${s.occRate}%`}       subtitle="del total" color="#F59E0B" loading={loading} />
+
+              {/* Fila 2 — Compartida */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+                  Compartida
+                </div>
+                <div className="v3-kpi-cols">
+                  <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos"   color="#374151" loading={loading} />
+                  <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"     color="#374151" loading={loading} />
+                  <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas"  color="#DC2626" loading={loading} />
+                  <KPICard label="Hab. Libres"   value={s.free}                subtitle="libres"    color="#16A34A" loading={loading} />
+                  <KPICard label="Ocupación"     value={`${s.occRate}%`}       subtitle="del total" color="#F59E0B" loading={loading} />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Actividad Reciente */}
-          {!isTabletSmall && (
-            <div style={{ gridColumn: isDesktop ? "auto" : "1 / -1" }}>
-              <ActividadReciente items={aData} loading={loading} />
-            </div>
-          )}
-        </div>
-
-        {/* Actividad en tablet-small (debajo del grid) */}
-        {isTabletSmall && (
-          <div style={{ marginBottom: 24 }}>
+            {/* Actividad Reciente */}
             <ActividadReciente items={aData} loading={loading} />
-          </div>
-        )}
 
-        {/* ── Sección inferior: 3 Gráficos ── */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isSmall ? "1fr" : "repeat(3, 1fr)",
-          gap: 20,
-        }}>
-          {/* Ocupación Acumulada */}
-          <OcupacionDonut
-            percent={s.occRate}
-            title="Ocupación Acumulada"
-            loading={loading}
-          />
-
-          {/* Ocupación por Género */}
-          <div style={{ background: "#FFFFFF", borderRadius: 16, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-            <div style={{ padding: "20px 16px 0", fontSize: 14, fontWeight: 700, color: "#374151" }}>
-              Ocupación por Género
-            </div>
-            <GraficoGenero3D data={gData} loading={loading} />
           </div>
 
-          {/* Check In / Check-Out */}
-          <div style={{ background: "#FFFFFF", borderRadius: 16, border: "1px solid #E5E7EB", padding: "20px 16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-            <GraficoHorizontal3D
-              title="Check In / Check-Out"
-              data={CHECKIN_DATA}
-              color="#0096D6"
-              unit=" mov."
-              loading={loading}
-            />
-          </div>
         </div>
 
       </div>

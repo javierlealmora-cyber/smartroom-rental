@@ -35,8 +35,8 @@ const FILTERS_KEY = "smartrent_rooms_filters";
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
 const ROOM_IMG_FREE     = "/images/Habitación sin Inquilino en la cama.png";
-const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.png";
-const ROOM_IMG_FEMALE   = "/images/Habitación con Inqulina en la cama.png";
+const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.webp";
+const ROOM_IMG_FEMALE   = "/images/Habitación con Inqulina en la cama.webp";
 
 const ROOM_STATUS_LABEL = {
   free:             "Libre",

@@ -36,6 +36,16 @@ const STATUS_COLOR = {
 
 // ✅ REFACTOR: Funciones de formateo y estado centralizadas en utils/
 
+// Imagen de la card: si la asignación activa tiene acompañante,
+// usar el dibujo de pareja; si no, la imagen individual por género.
+function getTenantImage(t) {
+  const hasAccompanist = Boolean(t?.active_assignment?.accompanist_id);
+  if (hasAccompanist) return "/images/Inquilinos_cuerpo_entero.webp";
+  return t?.gender === "female"
+    ? "/images/inquilina-card-model.webp"
+    : "/images/inquilino-card-model.webp";
+}
+
 // Función para generar consumos moqueados basados en días de estancia
 function generateMockedConsumptions(moveInDate, checkOutDate) {
   if (!moveInDate || !checkOutDate) return { water: 0, electricity: 0, gas: 0 };
@@ -127,12 +137,19 @@ export default function TenantsList() {
     }
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      result = result.filter(
-        (t) =>
+      result = result.filter((t) => {
+        // REQ-015: incluimos al acompañante en la búsqueda
+        const acc = t.active_assignment?.[0]?.accompanist;
+        const accName = acc
+          ? [acc.first_name, acc.last_name1, acc.last_name2, acc.nickname].filter(Boolean).join(" ").toLowerCase()
+          : "";
+        return (
           t.full_name.toLowerCase().includes(s) ||
           t.email.toLowerCase().includes(s) ||
-          t.phone?.includes(s)
-      );
+          (t.phone && t.phone.includes(s)) ||
+          (accName && accName.includes(s))
+        );
+      });
     }
     return result;
   }, [allLodgers, searchTerm, filterStatus, filterAccommodation, showInactive]);
@@ -286,16 +303,26 @@ export default function TenantsList() {
               title: "Nombre",
               dataIndex: "full_name",
               key: "full_name",
-              render: (name, record) => (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <img
-                    src={record.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
-                    alt="Inquilino"
-                    style={{ width: 41, height: 41, objectFit: "contain", borderRadius: 8 }}
-                  />
-                  <div style={{ fontWeight: 600, color: "#111827" }}>{name}</div>
-                </div>
-              ),
+              render: (name, record) => {
+                const acc = record.active_assignment?.[0]?.accompanist;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <img
+                      src={getTenantImage(record)}
+                      alt="Inquilino"
+                      style={{ width: 41, height: 41, objectFit: "contain", borderRadius: 8 }}
+                    />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div style={{ fontWeight: 600, color: "#111827" }}>{name}</div>
+                      {acc && (
+                        <Tag color="purple" style={{ margin: 0, fontWeight: 600, fontSize: 10, alignSelf: "flex-start" }}>
+                          Compartida
+                        </Tag>
+                      )}
+                    </div>
+                  </div>
+                );
+              },
             },
             {
               title: "Email",
@@ -442,13 +469,29 @@ export default function TenantsList() {
                     onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)}
                   >
                     <img
-                      src={t.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
+                      src={getTenantImage(t)}
                       alt="Inquilino"
                       style={{ width: 120, height: 120, objectFit: "contain", flexShrink: 0, borderRadius: 12 }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 6 }}>
-                        {t.full_name}
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span>{t.full_name}</span>
+                        {asgn?.accompanist && (
+                          <Tag color="purple" style={{ margin: 0, fontWeight: 600, fontSize: 10 }}>
+                            Compartida
+                          </Tag>
+                        )}
+                        {searchTerm && asgn?.accompanist && (() => {
+                          const s = searchTerm.toLowerCase();
+                          const accName = [asgn.accompanist.first_name, asgn.accompanist.last_name1, asgn.accompanist.last_name2, asgn.accompanist.nickname].filter(Boolean).join(" ").toLowerCase();
+                          if (!accName.includes(s)) return null;
+                          if (t.full_name.toLowerCase().includes(s)) return null;
+                          return (
+                            <Tag color="gold" style={{ margin: 0, fontWeight: 600, fontSize: 10 }}>
+                              Match acompañante
+                            </Tag>
+                          );
+                        })()}
                       </div>
                       <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
                         <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>

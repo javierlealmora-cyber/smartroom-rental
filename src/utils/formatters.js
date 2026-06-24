@@ -75,22 +75,41 @@ export function formatAddress(address) {
   
   const parts = [];
   
-  if (address.street) {
-    let street = address.street;
-    if (address.number) street += ` ${address.number}`;
-    if (address.floor) street += `, ${address.floor}`;
-    parts.push(street);
+  // Compatibilidad con múltiples esquemas de dirección:
+  // - address_street / street / address_line1
+  // - address_number / number
+  // - address_floor / floor / address_line2 (bloque/escalera)
+  // - address_postal_code / postal_code
+  // - address_city / city
+  // - address_province / province
+  // - address_country / country
+  
+  const street = address.address_street || address.street || address.address_line1 || "";
+  const number = address.address_number || address.number || "";
+  const floor = address.address_floor || address.floor || address.address_line2 || "";
+  
+  if (street) {
+    let streetLine = street;
+    if (number) streetLine += ` ${number}`;
+    if (floor) streetLine += `, ${floor}`;
+    parts.push(streetLine);
   }
   
-  if (address.postal_code || address.city) {
+  const postalCode = address.address_postal_code || address.postal_code || "";
+  const city = address.address_city || address.city || "";
+  
+  if (postalCode || city) {
     let cityLine = '';
-    if (address.postal_code) cityLine += address.postal_code;
-    if (address.city) cityLine += (cityLine ? ' ' : '') + address.city;
+    if (postalCode) cityLine += postalCode;
+    if (city) cityLine += (cityLine ? ' ' : '') + city;
     parts.push(cityLine);
   }
   
-  if (address.province) parts.push(address.province);
-  if (address.country) parts.push(address.country);
+  const province = address.address_province || address.province || "";
+  const country = address.address_country || address.country || "";
+  
+  if (province) parts.push(province);
+  if (country) parts.push(country);
   
   return parts.length > 0 ? parts.join(', ') : "-";
 }

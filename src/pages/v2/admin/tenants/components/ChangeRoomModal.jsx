@@ -4,9 +4,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Button, Col, DatePicker, Divider, Form, InputNumber, Modal, Row, Select, Space, Typography,
+  Alert, Button, Col, DatePicker, Divider, Form, InputNumber, Modal, Row, Select, Space, Typography,
 } from "antd";
-import { SwapOutlined } from "@ant-design/icons";
+import { SwapOutlined, TeamOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { supabase } from "../../../../../services/supabaseClient";
 import { listAccommodations } from "../../../../../services/accommodations.service";
@@ -147,6 +147,28 @@ export default function ChangeRoomModal({ open, onClose, onSuccess, lodger, acti
       styles={{ body: { paddingTop: 4, paddingBottom: 8 } }}
     >
       <Form form={form} layout="vertical" size="small" onFinish={onFinish}>
+        {/* REQ-015: banner si la asignación activa incluye acompañante */}
+        {activeAssignment?.accompanist_id && activeAssignment?.accompanist && (
+          <Alert
+            type="info"
+            showIcon
+            icon={<TeamOutlined />}
+            style={{ marginBottom: 10 }}
+            message="Esta asignación incluye un acompañante"
+            description={
+              <Text style={{ fontSize: 12 }}>
+                <strong>
+                  {[
+                    activeAssignment.accompanist.first_name,
+                    activeAssignment.accompanist.last_name1,
+                    activeAssignment.accompanist.last_name2,
+                  ].filter(Boolean).join(" ")}
+                </strong>
+                {" "}se mantiene en el contrato. Al cambiar de habitación, el acompañante acompaña al titular automáticamente.
+              </Text>
+            }
+          />
+        )}
         {/* ── CHECK-OUT ── */}
         <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>
           Check-Out

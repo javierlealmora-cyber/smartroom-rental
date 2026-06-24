@@ -27,8 +27,8 @@ export default function AccommodationSelectorModal({ open, onCancel }) {
     if (search) {
       const filtered = accommodations.filter((acc) =>
         acc.name.toLowerCase().includes(search.toLowerCase()) ||
-        acc.street?.toLowerCase().includes(search.toLowerCase()) ||
-        acc.city?.toLowerCase().includes(search.toLowerCase())
+        (acc.address_street || acc.address_line1)?.toLowerCase().includes(search.toLowerCase()) ||
+        (acc.address_city || acc.city)?.toLowerCase().includes(search.toLowerCase())
       );
       setFilteredAccommodations(filtered);
     } else {
@@ -160,7 +160,11 @@ export default function AccommodationSelectorModal({ open, onCancel }) {
                   description={
                     <div style={{ fontSize: 12 }}>
                       <Text type="secondary">
-                        {acc.street} {acc.street_number}, {acc.city}
+                        {/* Compatibilidad con ambos esquemas de dirección */}
+                        {(acc.address_street || acc.address_line1) || ""} {acc.address_number || ""}
+                        {((acc.address_street || acc.address_line1) || acc.address_number) && 
+                         ((acc.address_city || acc.city) || acc.address_postal_code || acc.postal_code) ? ", " : ""}
+                        {acc.address_postal_code || acc.postal_code || ""} {acc.address_city || acc.city || ""}
                       </Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 11 }}>
