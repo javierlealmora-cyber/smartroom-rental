@@ -63,7 +63,12 @@
       "Bash(python3 -)",
       "Bash(python -)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\src\\\\pages\\\\v2\\\\admin\" -File -Recurse | Select-Object -ExpandProperty FullName | Sort-Object | % { $_ -replace [regex]::Escape\\('c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\'\\), '' })",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\docs\\\\smart-conversations\" -Recurse -Filter \"*.md\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-List)"
     ],
     "additionalDirectories": [
       "c:\\Users\\javie\\.claude\\plans"

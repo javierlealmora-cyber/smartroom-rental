@@ -178,7 +178,7 @@ jobs:
         run: |
           echo "🗄️ Applying database migrations to staging..."
           
-          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
+          if [ -d "supabase/migrations" ] && [ "$(find supabase/migrations/ -name '*.sql' 2>/dev/null | head -1)" ]; then
             echo "Found migration files, applying to staging..."
             npx supabase db push --project-ref $SUPABASE_PROJECT_REF
             echo "✅ Migrations applied successfully"
@@ -231,8 +231,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [comprehensive-tests, security-performance, database-operations]
     if: |
-      needs.comprehensive-tests.outputs.tests-success == 'success' && 
-      needs.security-performance.result == 'success' || 
+      (needs.comprehensive-tests.outputs.tests-success == 'success' && 
+      needs.security-performance.result == 'success') || 
       github.event.inputs.force_deploy == 'true'
     
     environment:

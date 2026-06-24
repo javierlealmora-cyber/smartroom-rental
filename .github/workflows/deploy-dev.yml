@@ -75,7 +75,7 @@ jobs:
     
     environment:
       name: development
-      url: https://dev.smartroom-rental.vercel.app
+      url: ${{ steps.deploy.outputs.preview-url || 'https://smartroomrentalplatform.com' }}
     
     steps:
       - name: Checkout code
@@ -130,7 +130,7 @@ jobs:
         run: |
           echo "🗄️ Applying database migrations to dev..."
           
-          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
+          if [ -d "supabase/migrations" ] && [ "$(find supabase/migrations/ -name '*.sql' 2>/dev/null | head -1)" ]; then
             echo "Found migration files, applying to dev..."
             npx supabase db push --project-ref $SUPABASE_PROJECT_REF
             echo "✅ Migrations applied successfully"

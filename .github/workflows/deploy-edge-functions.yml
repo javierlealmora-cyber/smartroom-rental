@@ -4,6 +4,7 @@ on:
   push:
     branches: 
       - develop
+      - staging
       - main
     paths:
       - 'supabase/functions/**'
@@ -47,6 +48,8 @@ jobs:
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "environment=production" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
           else
             echo "environment=staging" >> $GITHUB_OUTPUT
           fi
@@ -114,8 +117,7 @@ jobs:
               echo "📦 Deploying function: $func"
               
               supabase functions deploy "$func" \
-                --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_REF }} \
-                --no-verify-jwt false
+                --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
               
               if [ $? -eq 0 ]; then
                 echo "✅ Successfully deployed: $func"
@@ -206,8 +208,7 @@ jobs:
               echo "📦 Deploying function: $func"
               
               supabase functions deploy "$func" \
-                --project-ref ${{ secrets.PRODUCTION_SUPABASE_PROJECT_REF }} \
-                --no-verify-jwt false
+                --project-ref ${{ secrets.PRODUCTION_SUPABASE_PROJECT_REF }}
               
               if [ $? -eq 0 ]; then
                 echo "✅ Successfully deployed: $func"

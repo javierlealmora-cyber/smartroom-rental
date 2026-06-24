@@ -211,7 +211,7 @@ jobs:
           echo "🔍 Checking migration files..."
           if [ -d "supabase/migrations" ]; then
             echo "✅ Migration directory exists"
-            ls -la supabase/migrations/
+            find supabase/migrations/ -name "*.sql" | head -20
           else
             echo "❌ No migration directory found"
             exit 1
@@ -219,7 +219,7 @@ jobs:
 
       - name: Validate migration syntax
         run: |
-          for file in supabase/migrations/*.sql; do
+          find supabase/migrations/ -name "*.sql" | while read file; do
             if [ -f "$file" ]; then
               echo "🔍 Validating $file"
               # Basic SQL syntax check

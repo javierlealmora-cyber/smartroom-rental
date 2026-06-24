@@ -80,7 +80,7 @@ Checklist antes de implementar CUALQUIER operación nueva:
 | Tipo | Ejemplos | Acceso |
 |------|----------|--------|
 | **Catálogo global** | `plans_catalog`, plantillas globales | Lectura pública o superadmin |
-| **Datos tenant** | `client_accounts`, `entities`, `accommodations`, `rooms`, `lodgers`, `lodger_room_assignments`, `services_catalog`, `accommodation_services`, `lodger_services`, `energy_bills`, `energy_readings`, `energy_settlements`, `bulletins`, `locks`, `lock_integrations` | RLS por `client_account_id` |
+| **Datos tenant** | `client_accounts`, `entities`, `accommodations`, `rooms`, `lodgers`, `lodger_accompanists`, `lodger_room_assignments`, `services_catalog`, `accommodation_services`, `lodger_services`, `energy_bills`, `energy_readings`, `energy_settlements`, `bulletins`, `locks`, `lock_integrations` | RLS por `client_account_id` |
 
 ---
 
@@ -98,11 +98,15 @@ client_accounts (tenant SaaS)
               │     └── bulletins (por room + lodger)
               ├── accommodation_services
               ├── locks + lock_integrations (SmartAccessLock)
-              └── rooms
+              └── rooms (is_shared boolean)
                     └── lodger_room_assignments
-                          └── lodgers (client_account_id)
-                                └── lodger_services
+                          ├── lodger_id        → lodgers (client_account_id)
+                          │     └── lodger_services
+                          └── accompanist_id?  → lodger_accompanists (REQ-015)
 ```
+
+### Habitación compartida (REQ-015)
+`lodger_accompanists` modela al **acompañante** — ficha de persona en contrato compartido sin acceso web ni perfil en `profiles`. Vinculado a la asignación via `lodger_room_assignments.accompanist_id` (FK nullable). Ver regla `@.windsurf/rules/shared-rooms.md` y `@docs/requirements/current/REQ-015-shared-room-accompanist.md`.
 
 ### Regla crítica de FK
 **Ningún alojamiento sin entidad propietaria.** `accommodations.owner_entity_id` es `NOT NULL` y FK a `entities(id)` con `type='owner'`.
@@ -273,7 +277,7 @@ CREATE TRIGGER set_updated_at
 ### Soft delete vs suspend
 - `inactive` = baja lógica (fuera de listados activos).
 - `suspended` = bloqueo temporal reversible (impago, moderación).
-- **Prohibido borrar físicamente** `lodgers`, `lodger_room_assignments`, `energy_bills`, facturas y liquidaciones.
+- **Prohibido borrar físicamente** `lodgers`, `lodger_accompanists`, `lodger_room_assignments`, `energy_bills`, facturas y liquidaciones.
 
 ---
 
@@ -454,7 +458,7 @@ hotfix/*    ← correcciones urgentes (desde main)
 - ❌ `supabase.from(<tabla_tenant>).insert/update/delete()` desde componentes React.
 - ❌ Usar `.catch()` encadenado sobre un PostgrestBuilder (no existe; usar `try/catch` async).
 - ❌ Edge Function que devuelva status 4xx/5xx con `throw` sin try/catch global: provoca CORS errors en el frontend.
-- ❌ Borrar físicamente `lodger_room_assignments` u otros registros históricos.
+- ❌ Borrar físicamente `lodger_room_assignments`, `lodger_accompanists` u otros registros históricos.
 - ❌ Desactivar RLS "temporalmente" en tablas operativas.
 - ❌ Hardcodear Project ID, URLs, keys o tokens en código fuente.
 - ❌ Subir archivos privados al bucket `company-assets`.

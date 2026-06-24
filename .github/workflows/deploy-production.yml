@@ -271,10 +271,10 @@ jobs:
           
           if [ -d "supabase/migrations" ]; then
             echo "Found migration files"
-            ls -la supabase/migrations/
+            find supabase/migrations/ -name "*.sql" | head -20
             
             # Apply each migration file with validation
-            for file in supabase/migrations/*.sql; do
+            for file in $(find supabase/migrations/ -name "*.sql" | sort); do
               if [ -f "$file" ]; then
                 echo "🔍 Applying migration: $(basename $file)"
                 
