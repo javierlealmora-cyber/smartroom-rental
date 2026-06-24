@@ -1,0 +1,19 @@
+-- =============================================================================
+-- BASELINE v2 — SmartRoom Rental
+-- Generado: 2026-06-24
+-- Estado: Refleja el schema completo de DEV (lqwyyyttjamirccdtlvl)
+-- Aplicado en STAGING (lopdwrsmkmtboeczxotj) vía MCP el 2026-06-24
+-- A partir de aquí: cada issue genera su migración incremental
+-- =============================================================================
+-- Este fichero es REFERENCIA DOCUMENTAL del estado inicial.
+-- NO se aplica automáticamente via deploy-staging.yml (ya está aplicado).
+-- Las nuevas migraciones van en supabase/migrations/schema/ con timestamp.
+-- =============================================================================
+
+-- Ver migraciones aplicadas en Supabase MCP:
+-- baseline_v2_01_core_tables
+-- baseline_v2_02_more_tables
+-- baseline_v2_03_lock_tables
+-- baseline_v2_04_functions_triggers
+-- baseline_v2_05_indexes_rls
+-- baseline_v2_06_rls_policies
