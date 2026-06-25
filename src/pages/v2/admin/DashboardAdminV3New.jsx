@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback } from "react";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
-import { useAuth } from "../../../providers/AuthProvider";
 import { supabase } from "../../../services/supabaseClient";
 
 // ── Fallback dummy data ───────────────────────────────────────────────────────
@@ -299,7 +298,7 @@ function ActividadReciente({ items, loading }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function DashboardAdminV3New() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const breakpoint = useBreakpoint();
+  const _breakpoint = useBreakpoint();
 
   const [loading,      setLoading]      = useState(true);
   const [stats,        setStats]        = useState(null);
@@ -418,9 +417,6 @@ export default function DashboardAdminV3New() {
 
   useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
 
-  const isMobile      = breakpoint === "mobile";
-  const isTabletSmall = breakpoint === "tablet-small";
-  const isTablet      = breakpoint === "tablet";
   const s     = stats || DUMMY_STATS;
   const gData = generoData.length    > 0 ? generoData    : DUMMY_GENERO;
   const aData = actividadData.length > 0 ? actividadData : DUMMY_ACTIVIDAD;

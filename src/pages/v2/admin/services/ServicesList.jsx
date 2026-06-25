@@ -241,6 +241,7 @@ function CatalogTab() {
     }
   }, []);
 
+   
   useEffect(() => { load(); }, [load]);
 
   const services = useMemo(() => {

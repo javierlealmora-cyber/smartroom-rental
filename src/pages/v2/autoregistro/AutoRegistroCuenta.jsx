@@ -37,7 +37,7 @@ export default function AutoRegistroCuenta() {
   // Determinar vista segun estado de auth y onboarding
   useEffect(() => {
     if (authLoading) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setView(VIEW.LOADING);
       return;
     }
@@ -91,6 +91,7 @@ export default function AutoRegistroCuenta() {
 
     // Fallback
     setView(VIEW.WIZARD);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, isAuthenticated, onboardingStatus, clientAccountId, searchParams]);
 
   // Handler del wizard al finalizar

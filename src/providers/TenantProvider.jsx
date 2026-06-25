@@ -110,6 +110,7 @@ export function TenantProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTenant() {
   const ctx = useContext(TenantContext);
   if (!ctx) throw new Error("useTenant must be used within TenantProvider");

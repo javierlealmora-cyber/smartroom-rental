@@ -60,9 +60,10 @@ export default function ManagerLogin() {
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile) {
       console.log("[ManagerLogin] Already authenticated, resolving...");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       resolvePostLogin(auth);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.loading, auth.user, auth.profile, auth.tenantState]);
 
   // Timeout: if profile never arrives after login, stop waiting
@@ -78,6 +79,7 @@ export default function ManagerLogin() {
     }, 8000);
 
     return () => clearTimeout(timerRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postLogin, auth.loading, auth.user, auth.profile]);
 
   // Resolve when we have enough data (profile loaded OR timed out)
@@ -97,8 +99,9 @@ export default function ManagerLogin() {
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     resolvePostLogin(auth);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postLogin, auth.loading, auth.user, auth.profile, auth.tenantState, profileTimedOut]);
 
   const onSubmit = (e) => {

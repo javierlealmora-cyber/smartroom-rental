@@ -74,7 +74,7 @@ test.describe('Admin Plan BASIC — Operativa completa @regression-basic', () =>
 
       // Plan Basic: branding_enabled: false → el header muestra el nombre genérico
       // No debe haber logo personalizado del cliente en el sidebar/header
-      const logo = page.locator('img[alt*="logo"], img[alt*="brand"]');
+      const _logo = page.locator('img[alt*="logo"], img[alt*="brand"]');
       // Si existe logo, debe ser el logo genérico de SmartRent (no personalizado)
       // Verificamos que el plan Basic no rompe el layout
       await expect(page.locator('body')).toBeVisible();
@@ -773,7 +773,7 @@ test.describe('Admin Plan BASIC — Operativa completa @regression-basic', () =>
       await waitForLoadingDone(page);
 
       // La entidad NO debe aparecer en la lista por defecto (oculta cuando inactive)
-      const defaultList = page.locator('.ant-card').filter({ hasText: state.ownerEntityName || '' });
+      const _defaultList = page.locator('.ant-card').filter({ hasText: state.ownerEntityName || '' });
       // Verificar que el checkbox "Mostrar desactivados" existe
       await expect(
         page.locator('text=/Mostrar desactivados/i').first()

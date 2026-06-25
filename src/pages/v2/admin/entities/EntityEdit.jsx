@@ -99,6 +99,7 @@ export default function EntityEdit() {
     };
 
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const onFinish = async (values) => {

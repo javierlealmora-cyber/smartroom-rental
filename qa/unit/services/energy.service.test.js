@@ -14,7 +14,7 @@ vi.mock('../../../src/services/supabaseClient.js', () => ({
 
 const {
   listEnergyBills,
-  getEnergyBill,
+  getEnergyBill: _getEnergyBill,
   settleEnergyBill,
   unsettleEnergyBill,
 } = await import('../../../src/services/energy.service.js');

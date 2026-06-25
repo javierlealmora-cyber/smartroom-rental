@@ -61,6 +61,7 @@ export default function LodgerServiceCreate() {
       setAccServices(svcData || []);
       form.setFieldsValue({ room_id: undefined, accommodation_service_id: undefined });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccommodation]);
 
   const selectedSvc = accServices.find((s) => s.id === selectedAccService);

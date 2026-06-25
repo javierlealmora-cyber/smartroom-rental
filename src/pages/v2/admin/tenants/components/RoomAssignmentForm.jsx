@@ -50,6 +50,7 @@ export default function RoomAssignmentForm({
         setSelectedRoomId(preselectedRoomId);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedAccId, preselectedRoomId]);
 
   const loadRoomsForAccommodation = useCallback(async (accId) => {

@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 // Réplica exacta de calcCorrectionAmount() en AccommodationDetail.jsx
 // Se usa dayjs en el componente; aquí usamos un mock mínimo con la misma interfaz.
 function makeDayjsMock(year, month, day) {
-  const date = new Date(year, month - 1, day);
+  const _date = new Date(year, month - 1, day);
   const daysInMonthVal = new Date(year, month, 0).getDate();
   return {
     date: () => day,

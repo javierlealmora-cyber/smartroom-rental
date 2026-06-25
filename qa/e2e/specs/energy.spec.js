@@ -35,7 +35,7 @@ test.describe('Subir factura manual (ENE-08) @regression', () => {
     // Rellenar importe mínimo
     await page.locator('#amount_total, input[name="amount_total"]').first().fill('100');
 
-    const ts = Date.now();
+    const _ts = Date.now();
     const submitBtn = page.getByRole('button', { name: /guardar|crear|aceptar/i });
     await submitBtn.click();
 

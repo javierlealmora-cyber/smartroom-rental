@@ -77,7 +77,7 @@ test.describe('Habitación compartida — Acompañante (REQ-015) @regression', (
   });
 
   // ── Setup B · Alojamiento con 2 habitaciones (una compartida) ─────────────
-  test.fixme('00b - setup: alojamiento con 2 habitaciones, marcar la 1 como compartida', async ({ page }) => {
+  test.fixme('00b - setup: alojamiento con 2 habitaciones, marcar la 1 como compartida', async ({ page: _page }) => {
     expect(state.entityId).toBeTruthy();
     // Crear alojamiento, añadir 2 habitaciones, y editar la 1ª para activar
     // el toggle "Habitación compartida" (rooms.is_shared = true).

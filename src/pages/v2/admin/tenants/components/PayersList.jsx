@@ -16,6 +16,7 @@ export default function PayersList({ lodgerId, clientAccountId, hasRoomAssignmen
 
   useEffect(() => {
     if (lodgerId && hasRoomAssignment) loadPayers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lodgerId, hasRoomAssignment]);
 
   const loadPayers = async () => {

@@ -35,8 +35,9 @@ export default function ServicesList() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     loadServices();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const handleArchive = (service) => {

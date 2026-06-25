@@ -245,7 +245,7 @@ export default function LodgerDetail() {
         .lte("reading_date", end)
         .order("reading_date");
       setReadings(data || []);
-    } catch (_err) { setReadings([]); }
+    } catch { setReadings([]); }
     finally { setLoadingReadings(false); }
   }, [filterMode, filterYear, filterMonth]);
 

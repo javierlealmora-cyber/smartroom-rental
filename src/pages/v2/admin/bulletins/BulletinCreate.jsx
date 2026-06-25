@@ -61,6 +61,7 @@ export default function BulletinCreate() {
       setEnergyBills(bills || []);
       form.setFieldsValue({ room_id: undefined, energy_bill_id: undefined });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccommodation]);
 
   const recalcTotal = () => {

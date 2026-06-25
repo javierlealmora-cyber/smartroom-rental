@@ -124,6 +124,7 @@ export default function ClientSalActivation() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [clientAccountId]);
 
   const handleActivate = async () => {

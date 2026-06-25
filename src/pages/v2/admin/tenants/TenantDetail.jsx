@@ -116,6 +116,7 @@ export default function TenantDetail() {
   // Modal cambio de habitación
   const [reassignOpen, setReassignOpen] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (clientAccountId) loadLodger(); }, [id, clientAccountId]);
 
   useEffect(() => {

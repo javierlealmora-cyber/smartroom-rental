@@ -163,7 +163,7 @@ function CargarFacturas({ accId, clientAccountId }) {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           setCameraAvailable(true);
         }
-      } catch (_e) {
+      } catch {
         setCameraAvailable(false);
       }
     };
@@ -436,7 +436,7 @@ function ListaFacturas({ accId, clientAccountId }) {
           .from("energy-bills")
           .createSignedUrl(bill.storage_path, 300);
         if (!urlErr && data?.signedUrl) setViewFileUrl(data.signedUrl);
-      } catch (_err) { /* ignore */ }
+      } catch { /* ignore */ }
       finally { setLoadingFile(false); }
     }
   };

@@ -158,6 +158,7 @@ export default function EntitiesList() {
       } finally { setLoading(false); }
     };
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planCode]);
 
   const _onToggleStatus = async (entity) => {

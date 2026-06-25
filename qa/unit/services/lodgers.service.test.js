@@ -18,7 +18,7 @@ vi.mock('../../../src/services/supabaseInvoke.services.js', () => ({
 }));
 
 // Importar DESPUÉS de los mocks
-const { listLodgers, getLodger, updateLodger, scheduleCheckout } =
+const { listLodgers, getLodger: _getLodger, updateLodger, scheduleCheckout } =
   await import('../../../src/services/lodgers.service.js');
 
 // ── TEN-08 — listLodgers filtra por client_account_id ────────────────────────

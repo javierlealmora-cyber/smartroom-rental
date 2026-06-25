@@ -124,6 +124,7 @@ export default function CompanySelector({
 }
 
 // Hook para usar en formularios que necesitan client_account_id
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCompanyId() {
   const { profile } = useAuth();
   const role = profile?.role;

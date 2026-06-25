@@ -40,11 +40,12 @@ export default function TenantsList() {
   // Cargar lista de empresas para superadmin
   useEffect(() => {
     if (isSuperadmin) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       loadCompanies();
     } else if (userCompanyId) {
       setSelectedCompanyId(userCompanyId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperadmin, userCompanyId]);
 
   const sidebarItems = [

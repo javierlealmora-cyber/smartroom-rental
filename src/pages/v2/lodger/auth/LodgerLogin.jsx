@@ -58,9 +58,10 @@ export default function LodgerLogin() {
   // If already authenticated on mount, resolve immediately
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       resolvePostLogin(auth);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.loading, auth.user, auth.profile, auth.tenantState]);
 
   // Timeout: if profile never arrives after login, stop waiting
@@ -87,12 +88,13 @@ export default function LodgerLogin() {
 
     if (!auth.profile) {
       console.warn("[LodgerLogin] No profile loaded, showing no_tenant");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setPostLogin("no_tenant");
       return;
     }
 
     resolvePostLogin(auth);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postLogin, auth.loading, auth.user, auth.profile, auth.tenantState, profileTimedOut]);
 
   const onSubmit = (e) => {
