@@ -1,0 +1,127 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: M
+        - generic [ref=e7]:
+          - generic [ref=e8]: Marcos Lopez Martinez
+          - generic [ref=e9]: Plan Basic
+      - navigation [ref=e10]:
+        - button "Dashboard" [ref=e11] [cursor=pointer]:
+          - generic [ref=e12]: Dashboard
+        - button "Entidades" [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: Entidades
+        - button "Alojamientos" [ref=e15] [cursor=pointer]:
+          - generic [ref=e16]: Alojamientos
+        - button "Habitaciones" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: Habitaciones
+        - button "Inquilinos" [ref=e19] [cursor=pointer]:
+          - generic [ref=e20]: Inquilinos
+        - button "Servicios" [ref=e21] [cursor=pointer]:
+          - generic [ref=e22]: Servicios
+        - button "Catálogo" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: Catálogo
+        - button "Acceso" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: Acceso
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: Marcos Lopez Martinez
+          - generic [ref=e30]: admin.basic1@housingspacesolutions.com
+        - button "⚙️" [ref=e31] [cursor=pointer]
+        - button "Salir" [ref=e32] [cursor=pointer]
+    - generic [ref=e33]:
+      - generic [ref=e34]: Dashboard/
+      - generic [ref=e35]: Alojamientos/
+      - generic [ref=e36]: Nuevo Alojamiento
+    - main [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - heading "Nuevo Alojamiento" [level=2] [ref=e40]
+          - text: "Paso 1 de 2: Datos del alojamiento"
+        - button "arrow-left Volver" [ref=e42] [cursor=pointer]:
+          - img "arrow-left" [ref=e44]:
+            - img [ref=e45]
+          - generic [ref=e47]: Volver
+      - generic [ref=e48]:
+        - generic [ref=e50]:
+          - generic [ref=e52]: "1"
+          - generic [ref=e55]: Datos básicos
+        - generic [ref=e58]:
+          - generic [ref=e60]: "2"
+          - generic [ref=e63]: Habitaciones
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e70]:
+            - generic "Entidad Propietaria" [ref=e72]: "* Entidad Propietaria"
+            - generic [ref=e73]:
+              - generic [ref=e76]:
+                - generic [ref=e77]:
+                  - generic: Seleccionar entidad propietaria...
+                  - combobox "* Entidad Propietaria" [expanded] [active] [ref=e78]:
+                    - listbox:
+                      - option "Axpe Inversores": 04814be3-b82b-45c4-927b-48dc069d3595
+                - img "search" [ref=e204]:
+                  - img [ref=e205]
+              - generic [ref=e84]: El alojamiento queda vinculado a esta entidad propietaria
+          - generic [ref=e87]:
+            - generic "Nombre del alojamiento" [ref=e89]: "* Nombre del alojamiento"
+            - textbox "* Nombre del alojamiento" [ref=e93]:
+              - /placeholder: "Ej: Residencia Central, Piso Chamberí..."
+          - generic [ref=e96]:
+            - generic "Número de habitaciones" [ref=e98]: "* Número de habitaciones"
+            - generic [ref=e99]:
+              - generic [ref=e102]:
+                - spinbutton "* Número de habitaciones" [ref=e103]
+                - generic:
+                  - button "Increase Value" [ref=e104] [cursor=pointer]:
+                    - img "up" [ref=e105]:
+                      - img [ref=e106]
+                  - button "Decrease Value" [ref=e108] [cursor=pointer]:
+                    - img "down" [ref=e109]:
+                      - img [ref=e110]
+              - generic [ref=e113]: Se generarán automáticamente en el siguiente paso
+          - generic [ref=e116]:
+            - generic "Calle" [ref=e118]
+            - textbox "Calle" [ref=e122]:
+              - /placeholder: Calle Gran Vía, Av. de la Constitución...
+          - generic [ref=e125]:
+            - generic "Número" [ref=e127]
+            - textbox "Número" [ref=e131]:
+              - /placeholder: "12"
+          - generic [ref=e134]:
+            - generic "Piso" [ref=e136]
+            - textbox "Piso" [ref=e140]:
+              - /placeholder: "3"
+          - generic [ref=e143]:
+            - generic "Puerta" [ref=e145]
+            - textbox "Puerta" [ref=e149]:
+              - /placeholder: A
+          - generic [ref=e152]:
+            - generic "Bloque / Escalera (opcional)" [ref=e154]
+            - textbox "Bloque / Escalera (opcional)" [ref=e158]:
+              - /placeholder: Bloque B, Escalera 2...
+          - generic [ref=e161]:
+            - generic "Código Postal" [ref=e163]
+            - textbox "Código Postal" [ref=e167]:
+              - /placeholder: "28001"
+          - generic [ref=e170]:
+            - generic "Ciudad" [ref=e172]
+            - textbox "Ciudad" [ref=e176]:
+              - /placeholder: Madrid
+          - generic [ref=e179]:
+            - generic "Provincia" [ref=e181]
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - generic: Seleccionar provincia...
+                - combobox "Provincia" [ref=e187]
+              - img "down" [ref=e189]:
+                - img [ref=e190]
+        - generic [ref=e193]:
+          - button "Cancelar" [ref=e195] [cursor=pointer]:
+            - generic [ref=e196]: Cancelar
+          - button "arrow-right Continuar" [ref=e198] [cursor=pointer]:
+            - img "arrow-right" [ref=e200]:
+              - img [ref=e201]
+            - generic [ref=e203]: Continuar
+  - generic "Axpe Inversores" [ref=e213] [cursor=pointer]:
+    - generic [ref=e214]: Axpe Inversores

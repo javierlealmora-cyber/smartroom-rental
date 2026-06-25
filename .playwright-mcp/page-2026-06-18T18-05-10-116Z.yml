@@ -1,0 +1,425 @@
+- generic [ref=e183]:
+  - banner [ref=e184]:
+    - generic [ref=e185]:
+      - generic [ref=e186]: M
+      - generic [ref=e187]:
+        - generic [ref=e188]: Marcos Lopez Martinez
+        - generic [ref=e189]: Plan Basic
+    - navigation [ref=e190]:
+      - button "Dashboard" [ref=e191] [cursor=pointer]:
+        - generic [ref=e192]: Dashboard
+      - button "Entidades" [ref=e193] [cursor=pointer]:
+        - generic [ref=e194]: Entidades
+      - button "Alojamientos" [ref=e195] [cursor=pointer]:
+        - generic [ref=e196]: Alojamientos
+      - button "Habitaciones" [ref=e197] [cursor=pointer]:
+        - generic [ref=e198]: Habitaciones
+      - button "Inquilinos" [ref=e199] [cursor=pointer]:
+        - generic [ref=e200]: Inquilinos
+      - button "Servicios" [ref=e201] [cursor=pointer]:
+        - generic [ref=e202]: Servicios
+      - button "Catálogo" [ref=e203] [cursor=pointer]:
+        - generic [ref=e204]: Catálogo
+      - button "Acceso" [ref=e205] [cursor=pointer]:
+        - generic [ref=e206]: Acceso
+    - generic [ref=e207]:
+      - generic [ref=e208]:
+        - generic [ref=e209]: Marcos Lopez Martinez
+        - generic [ref=e210]: admin.basic1@housingspacesolutions.com
+      - button "⚙️" [ref=e211] [cursor=pointer]
+      - button "Salir" [ref=e212] [cursor=pointer]
+  - generic [ref=e213]:
+    - generic [ref=e214]: Dashboard/
+    - generic [ref=e215]: Alojamientos/
+    - generic [ref=e216]: Nuevo Alojamiento
+  - main [ref=e217]:
+    - generic [ref=e218]:
+      - generic [ref=e219]:
+        - heading "Nuevo Alojamiento" [level=2] [ref=e220]
+        - text: "Paso 2 de 2: Configurar habitaciones"
+      - button "arrow-left Volver" [ref=e222] [cursor=pointer]:
+        - img "arrow-left" [ref=e224]:
+          - img [ref=e225]
+        - generic [ref=e227]: Volver
+    - generic [ref=e228]:
+      - generic [ref=e230]:
+        - img "check" [ref=e434]:
+          - img [ref=e435]
+        - generic [ref=e235]: Datos básicos
+      - generic [ref=e238]:
+        - generic [ref=e240]: "2"
+        - generic [ref=e243]: Habitaciones
+    - generic [ref=e437]:
+      - generic [ref=e439]:
+        - generic [ref=e441]:
+          - strong [ref=e444]: Apartamento Residencia Ciudad Jardin
+          - generic [ref=e446]: · 8 habitaciones
+        - button "arrow-left Volver" [ref=e448] [cursor=pointer]:
+          - img "arrow-left" [ref=e450]:
+            - img [ref=e451]
+          - generic [ref=e453]: Volver
+      - generic [ref=e454]:
+        - generic [ref=e459]:
+          - table [ref=e461]:
+            - rowgroup [ref=e470]:
+              - row "Nº Precio/mes m² Baño Cocina Notas" [ref=e471]:
+                - columnheader "Nº" [ref=e472]
+                - columnheader "Precio/mes" [ref=e473]
+                - columnheader "m²" [ref=e474]
+                - columnheader "Baño" [ref=e475]
+                - columnheader "Cocina" [ref=e476]
+                - columnheader "Notas" [ref=e477]
+                - columnheader [ref=e478]
+          - table [ref=e480]:
+            - rowgroup [ref=e487]:
+              - row "01 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e488]:
+                - cell "01" [ref=e489]:
+                  - textbox [ref=e490]: "01"
+                - cell "450 Increase Value Decrease Value €" [ref=e491]:
+                  - generic [ref=e492]:
+                    - generic [ref=e493]:
+                      - spinbutton [ref=e494]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e495] [cursor=pointer]:
+                          - img "up" [ref=e496]:
+                            - img [ref=e497]
+                        - button "Decrease Value" [ref=e499] [cursor=pointer]:
+                          - img "down" [ref=e500]:
+                            - img [ref=e501]
+                    - generic [ref=e503]: €
+                - cell "Increase Value Decrease Value m²" [ref=e504]:
+                  - generic [ref=e505]:
+                    - generic [ref=e506]:
+                      - spinbutton [ref=e507]
+                      - generic:
+                        - button "Increase Value" [ref=e508] [cursor=pointer]:
+                          - img "up" [ref=e509]:
+                            - img [ref=e510]
+                        - button "Decrease Value" [ref=e512] [cursor=pointer]:
+                          - img "down" [ref=e513]:
+                            - img [ref=e514]
+                    - generic [ref=e516]: m²
+                - cell "Compartido down" [ref=e517]:
+                  - generic [ref=e518] [cursor=pointer]:
+                    - generic "Compartido" [ref=e519]:
+                      - text: Compartido
+                      - combobox [ref=e520]
+                    - img "down" [ref=e522]:
+                      - img [ref=e523]
+                - cell "Compartida down" [ref=e525]:
+                  - generic [ref=e526] [cursor=pointer]:
+                    - generic "Compartida" [ref=e527]:
+                      - text: Compartida
+                      - combobox [ref=e528]
+                    - img "down" [ref=e530]:
+                      - img [ref=e531]
+                - cell [ref=e533]:
+                  - textbox "Opcional..." [ref=e534]
+              - row "02 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e535]:
+                - cell "02" [ref=e536]:
+                  - textbox [ref=e537]: "02"
+                - cell "450 Increase Value Decrease Value €" [ref=e538]:
+                  - generic [ref=e539]:
+                    - generic [ref=e540]:
+                      - spinbutton [ref=e541]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e542] [cursor=pointer]:
+                          - img "up" [ref=e543]:
+                            - img [ref=e544]
+                        - button "Decrease Value" [ref=e546] [cursor=pointer]:
+                          - img "down" [ref=e547]:
+                            - img [ref=e548]
+                    - generic [ref=e550]: €
+                - cell "Increase Value Decrease Value m²" [ref=e551]:
+                  - generic [ref=e552]:
+                    - generic [ref=e553]:
+                      - spinbutton [ref=e554]
+                      - generic:
+                        - button "Increase Value" [ref=e555] [cursor=pointer]:
+                          - img "up" [ref=e556]:
+                            - img [ref=e557]
+                        - button "Decrease Value" [ref=e559] [cursor=pointer]:
+                          - img "down" [ref=e560]:
+                            - img [ref=e561]
+                    - generic [ref=e563]: m²
+                - cell "Compartido down" [ref=e564]:
+                  - generic [ref=e565] [cursor=pointer]:
+                    - generic "Compartido" [ref=e566]:
+                      - text: Compartido
+                      - combobox [ref=e567]
+                    - img "down" [ref=e569]:
+                      - img [ref=e570]
+                - cell "Compartida down" [ref=e572]:
+                  - generic [ref=e573] [cursor=pointer]:
+                    - generic "Compartida" [ref=e574]:
+                      - text: Compartida
+                      - combobox [ref=e575]
+                    - img "down" [ref=e577]:
+                      - img [ref=e578]
+                - cell [ref=e580]:
+                  - textbox "Opcional..." [ref=e581]
+              - row "03 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e582]:
+                - cell "03" [ref=e583]:
+                  - textbox [ref=e584]: "03"
+                - cell "450 Increase Value Decrease Value €" [ref=e585]:
+                  - generic [ref=e586]:
+                    - generic [ref=e587]:
+                      - spinbutton [ref=e588]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e589] [cursor=pointer]:
+                          - img "up" [ref=e590]:
+                            - img [ref=e591]
+                        - button "Decrease Value" [ref=e593] [cursor=pointer]:
+                          - img "down" [ref=e594]:
+                            - img [ref=e595]
+                    - generic [ref=e597]: €
+                - cell "Increase Value Decrease Value m²" [ref=e598]:
+                  - generic [ref=e599]:
+                    - generic [ref=e600]:
+                      - spinbutton [ref=e601]
+                      - generic:
+                        - button "Increase Value" [ref=e602] [cursor=pointer]:
+                          - img "up" [ref=e603]:
+                            - img [ref=e604]
+                        - button "Decrease Value" [ref=e606] [cursor=pointer]:
+                          - img "down" [ref=e607]:
+                            - img [ref=e608]
+                    - generic [ref=e610]: m²
+                - cell "Compartido down" [ref=e611]:
+                  - generic [ref=e612] [cursor=pointer]:
+                    - generic "Compartido" [ref=e613]:
+                      - text: Compartido
+                      - combobox [ref=e614]
+                    - img "down" [ref=e616]:
+                      - img [ref=e617]
+                - cell "Compartida down" [ref=e619]:
+                  - generic [ref=e620] [cursor=pointer]:
+                    - generic "Compartida" [ref=e621]:
+                      - text: Compartida
+                      - combobox [ref=e622]
+                    - img "down" [ref=e624]:
+                      - img [ref=e625]
+                - cell [ref=e627]:
+                  - textbox "Opcional..." [ref=e628]
+              - row "04 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e629]:
+                - cell "04" [ref=e630]:
+                  - textbox [ref=e631]: "04"
+                - cell "450 Increase Value Decrease Value €" [ref=e632]:
+                  - generic [ref=e633]:
+                    - generic [ref=e634]:
+                      - spinbutton [ref=e635]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e636] [cursor=pointer]:
+                          - img "up" [ref=e637]:
+                            - img [ref=e638]
+                        - button "Decrease Value" [ref=e640] [cursor=pointer]:
+                          - img "down" [ref=e641]:
+                            - img [ref=e642]
+                    - generic [ref=e644]: €
+                - cell "Increase Value Decrease Value m²" [ref=e645]:
+                  - generic [ref=e646]:
+                    - generic [ref=e647]:
+                      - spinbutton [ref=e648]
+                      - generic:
+                        - button "Increase Value" [ref=e649] [cursor=pointer]:
+                          - img "up" [ref=e650]:
+                            - img [ref=e651]
+                        - button "Decrease Value" [ref=e653] [cursor=pointer]:
+                          - img "down" [ref=e654]:
+                            - img [ref=e655]
+                    - generic [ref=e657]: m²
+                - cell "Compartido down" [ref=e658]:
+                  - generic [ref=e659] [cursor=pointer]:
+                    - generic "Compartido" [ref=e660]:
+                      - text: Compartido
+                      - combobox [ref=e661]
+                    - img "down" [ref=e663]:
+                      - img [ref=e664]
+                - cell "Compartida down" [ref=e666]:
+                  - generic [ref=e667] [cursor=pointer]:
+                    - generic "Compartida" [ref=e668]:
+                      - text: Compartida
+                      - combobox [ref=e669]
+                    - img "down" [ref=e671]:
+                      - img [ref=e672]
+                - cell [ref=e674]:
+                  - textbox "Opcional..." [ref=e675]
+              - row "05 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e676]:
+                - cell "05" [ref=e677]:
+                  - textbox [ref=e678]: "05"
+                - cell "450 Increase Value Decrease Value €" [ref=e679]:
+                  - generic [ref=e680]:
+                    - generic [ref=e681]:
+                      - spinbutton [ref=e682]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e683] [cursor=pointer]:
+                          - img "up" [ref=e684]:
+                            - img [ref=e685]
+                        - button "Decrease Value" [ref=e687] [cursor=pointer]:
+                          - img "down" [ref=e688]:
+                            - img [ref=e689]
+                    - generic [ref=e691]: €
+                - cell "Increase Value Decrease Value m²" [ref=e692]:
+                  - generic [ref=e693]:
+                    - generic [ref=e694]:
+                      - spinbutton [ref=e695]
+                      - generic:
+                        - button "Increase Value" [ref=e696] [cursor=pointer]:
+                          - img "up" [ref=e697]:
+                            - img [ref=e698]
+                        - button "Decrease Value" [ref=e700] [cursor=pointer]:
+                          - img "down" [ref=e701]:
+                            - img [ref=e702]
+                    - generic [ref=e704]: m²
+                - cell "Compartido down" [ref=e705]:
+                  - generic [ref=e706] [cursor=pointer]:
+                    - generic "Compartido" [ref=e707]:
+                      - text: Compartido
+                      - combobox [ref=e708]
+                    - img "down" [ref=e710]:
+                      - img [ref=e711]
+                - cell "Compartida down" [ref=e713]:
+                  - generic [ref=e714] [cursor=pointer]:
+                    - generic "Compartida" [ref=e715]:
+                      - text: Compartida
+                      - combobox [ref=e716]
+                    - img "down" [ref=e718]:
+                      - img [ref=e719]
+                - cell [ref=e721]:
+                  - textbox "Opcional..." [ref=e722]
+              - row "06 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e723]:
+                - cell "06" [ref=e724]:
+                  - textbox [ref=e725]: "06"
+                - cell "450 Increase Value Decrease Value €" [ref=e726]:
+                  - generic [ref=e727]:
+                    - generic [ref=e728]:
+                      - spinbutton [ref=e729]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e730] [cursor=pointer]:
+                          - img "up" [ref=e731]:
+                            - img [ref=e732]
+                        - button "Decrease Value" [ref=e734] [cursor=pointer]:
+                          - img "down" [ref=e735]:
+                            - img [ref=e736]
+                    - generic [ref=e738]: €
+                - cell "Increase Value Decrease Value m²" [ref=e739]:
+                  - generic [ref=e740]:
+                    - generic [ref=e741]:
+                      - spinbutton [ref=e742]
+                      - generic:
+                        - button "Increase Value" [ref=e743] [cursor=pointer]:
+                          - img "up" [ref=e744]:
+                            - img [ref=e745]
+                        - button "Decrease Value" [ref=e747] [cursor=pointer]:
+                          - img "down" [ref=e748]:
+                            - img [ref=e749]
+                    - generic [ref=e751]: m²
+                - cell "Compartido down" [ref=e752]:
+                  - generic [ref=e753] [cursor=pointer]:
+                    - generic "Compartido" [ref=e754]:
+                      - text: Compartido
+                      - combobox [ref=e755]
+                    - img "down" [ref=e757]:
+                      - img [ref=e758]
+                - cell "Compartida down" [ref=e760]:
+                  - generic [ref=e761] [cursor=pointer]:
+                    - generic "Compartida" [ref=e762]:
+                      - text: Compartida
+                      - combobox [ref=e763]
+                    - img "down" [ref=e765]:
+                      - img [ref=e766]
+                - cell [ref=e768]:
+                  - textbox "Opcional..." [ref=e769]
+              - row "07 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e770]:
+                - cell "07" [ref=e771]:
+                  - textbox [ref=e772]: "07"
+                - cell "450 Increase Value Decrease Value €" [ref=e773]:
+                  - generic [ref=e774]:
+                    - generic [ref=e775]:
+                      - spinbutton [ref=e776]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e777] [cursor=pointer]:
+                          - img "up" [ref=e778]:
+                            - img [ref=e779]
+                        - button "Decrease Value" [ref=e781] [cursor=pointer]:
+                          - img "down" [ref=e782]:
+                            - img [ref=e783]
+                    - generic [ref=e785]: €
+                - cell "Increase Value Decrease Value m²" [ref=e786]:
+                  - generic [ref=e787]:
+                    - generic [ref=e788]:
+                      - spinbutton [ref=e789]
+                      - generic:
+                        - button "Increase Value" [ref=e790] [cursor=pointer]:
+                          - img "up" [ref=e791]:
+                            - img [ref=e792]
+                        - button "Decrease Value" [ref=e794] [cursor=pointer]:
+                          - img "down" [ref=e795]:
+                            - img [ref=e796]
+                    - generic [ref=e798]: m²
+                - cell "Compartido down" [ref=e799]:
+                  - generic [ref=e800] [cursor=pointer]:
+                    - generic "Compartido" [ref=e801]:
+                      - text: Compartido
+                      - combobox [ref=e802]
+                    - img "down" [ref=e804]:
+                      - img [ref=e805]
+                - cell "Compartida down" [ref=e807]:
+                  - generic [ref=e808] [cursor=pointer]:
+                    - generic "Compartida" [ref=e809]:
+                      - text: Compartida
+                      - combobox [ref=e810]
+                    - img "down" [ref=e812]:
+                      - img [ref=e813]
+                - cell [ref=e815]:
+                  - textbox "Opcional..." [ref=e816]
+              - row "08 450 Increase Value Decrease Value € Increase Value Decrease Value m² Compartido down Compartida down" [ref=e817]:
+                - cell "08" [ref=e818]:
+                  - textbox [ref=e819]: "08"
+                - cell "450 Increase Value Decrease Value €" [ref=e820]:
+                  - generic [ref=e821]:
+                    - generic [ref=e822]:
+                      - spinbutton [ref=e823]: "450"
+                      - generic:
+                        - button "Increase Value" [ref=e824] [cursor=pointer]:
+                          - img "up" [ref=e825]:
+                            - img [ref=e826]
+                        - button "Decrease Value" [ref=e828] [cursor=pointer]:
+                          - img "down" [ref=e829]:
+                            - img [ref=e830]
+                    - generic [ref=e832]: €
+                - cell "Increase Value Decrease Value m²" [ref=e833]:
+                  - generic [ref=e834]:
+                    - generic [ref=e835]:
+                      - spinbutton [ref=e836]
+                      - generic:
+                        - button "Increase Value" [ref=e837] [cursor=pointer]:
+                          - img "up" [ref=e838]:
+                            - img [ref=e839]
+                        - button "Decrease Value" [ref=e841] [cursor=pointer]:
+                          - img "down" [ref=e842]:
+                            - img [ref=e843]
+                    - generic [ref=e845]: m²
+                - cell "Compartido down" [ref=e846]:
+                  - generic [ref=e847] [cursor=pointer]:
+                    - generic "Compartido" [ref=e848]:
+                      - text: Compartido
+                      - combobox [ref=e849]
+                    - img "down" [ref=e851]:
+                      - img [ref=e852]
+                - cell "Compartida down" [ref=e854]:
+                  - generic [ref=e855] [cursor=pointer]:
+                    - generic "Compartida" [ref=e856]:
+                      - text: Compartida
+                      - combobox [ref=e857]
+                    - img "down" [ref=e859]:
+                      - img [ref=e860]
+                - cell [ref=e862]:
+                  - textbox "Opcional..." [ref=e863]
+        - generic [ref=e865]:
+          - button "Cancelar" [ref=e867] [cursor=pointer]:
+            - generic [ref=e868]: Cancelar
+          - button "save Crear Alojamiento" [ref=e870] [cursor=pointer]:
+            - img "save" [ref=e872]:
+              - img [ref=e873]
+            - generic [ref=e875]: Crear Alojamiento

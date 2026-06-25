@@ -1,0 +1,122 @@
+- generic [ref=e183]:
+  - banner [ref=e184]:
+    - generic [ref=e185]:
+      - generic [ref=e186]: M
+      - generic [ref=e187]:
+        - generic [ref=e188]: Marcos Lopez Martinez
+        - generic [ref=e189]: Plan Basic
+    - navigation [ref=e190]:
+      - button "Dashboard" [ref=e191] [cursor=pointer]:
+        - generic [ref=e192]: Dashboard
+      - button "Entidades" [ref=e193] [cursor=pointer]:
+        - generic [ref=e194]: Entidades
+      - button "Alojamientos" [ref=e195] [cursor=pointer]:
+        - generic [ref=e196]: Alojamientos
+      - button "Habitaciones" [ref=e197] [cursor=pointer]:
+        - generic [ref=e198]: Habitaciones
+      - button "Inquilinos" [ref=e199] [cursor=pointer]:
+        - generic [ref=e200]: Inquilinos
+      - button "Servicios" [ref=e201] [cursor=pointer]:
+        - generic [ref=e202]: Servicios
+      - button "Catálogo" [ref=e203] [cursor=pointer]:
+        - generic [ref=e204]: Catálogo
+      - button "Acceso" [ref=e205] [cursor=pointer]:
+        - generic [ref=e206]: Acceso
+    - generic [ref=e207]:
+      - generic [ref=e208]:
+        - generic [ref=e209]: Marcos Lopez Martinez
+        - generic [ref=e210]: admin.basic1@housingspacesolutions.com
+      - button "⚙️" [ref=e211] [cursor=pointer]
+      - button "Salir" [ref=e212] [cursor=pointer]
+  - generic [ref=e213]:
+    - generic [ref=e214]: Dashboard/
+    - generic [ref=e215]: Alojamientos/
+    - generic [ref=e216]: Nuevo Alojamiento
+  - main [ref=e217]:
+    - generic [ref=e218]:
+      - generic [ref=e219]:
+        - heading "Nuevo Alojamiento" [level=2] [ref=e220]
+        - text: "Paso 1 de 2: Datos del alojamiento"
+      - button "arrow-left Volver" [ref=e222] [cursor=pointer]:
+        - img "arrow-left" [ref=e224]:
+          - img [ref=e225]
+        - generic [ref=e227]: Volver
+    - generic [ref=e228]:
+      - generic [ref=e230]:
+        - generic [ref=e232]: "1"
+        - generic [ref=e235]: Datos básicos
+      - generic [ref=e238]:
+        - generic [ref=e240]: "2"
+        - generic [ref=e243]: Habitaciones
+    - generic [ref=e246]:
+      - generic [ref=e247]:
+        - generic [ref=e250]:
+          - generic "Entidad Propietaria" [ref=e252]: "* Entidad Propietaria"
+          - generic [ref=e253]:
+            - generic [ref=e256]:
+              - generic [ref=e257]:
+                - generic: Seleccionar entidad propietaria...
+                - combobox "* Entidad Propietaria" [ref=e258]
+              - img "down" [ref=e260]:
+                - img [ref=e261]
+            - generic [ref=e264]: El alojamiento queda vinculado a esta entidad propietaria
+        - generic [ref=e267]:
+          - generic "Nombre del alojamiento" [ref=e269]: "* Nombre del alojamiento"
+          - textbox "* Nombre del alojamiento" [ref=e273]:
+            - /placeholder: "Ej: Residencia Central, Piso Chamberí..."
+        - generic [ref=e276]:
+          - generic "Número de habitaciones" [ref=e278]: "* Número de habitaciones"
+          - generic [ref=e279]:
+            - generic [ref=e282]:
+              - spinbutton "* Número de habitaciones" [ref=e283]
+              - generic:
+                - button "Increase Value" [ref=e284] [cursor=pointer]:
+                  - img "up" [ref=e285]:
+                    - img [ref=e286]
+                - button "Decrease Value" [ref=e288] [cursor=pointer]:
+                  - img "down" [ref=e289]:
+                    - img [ref=e290]
+            - generic [ref=e293]: Se generarán automáticamente en el siguiente paso
+        - generic [ref=e296]:
+          - generic "Calle" [ref=e298]
+          - textbox "Calle" [ref=e302]:
+            - /placeholder: Calle Gran Vía, Av. de la Constitución...
+        - generic [ref=e305]:
+          - generic "Número" [ref=e307]
+          - textbox "Número" [ref=e311]:
+            - /placeholder: "12"
+        - generic [ref=e314]:
+          - generic "Piso" [ref=e316]
+          - textbox "Piso" [ref=e320]:
+            - /placeholder: "3"
+        - generic [ref=e323]:
+          - generic "Puerta" [ref=e325]
+          - textbox "Puerta" [ref=e329]:
+            - /placeholder: A
+        - generic [ref=e332]:
+          - generic "Bloque / Escalera (opcional)" [ref=e334]
+          - textbox "Bloque / Escalera (opcional)" [ref=e338]:
+            - /placeholder: Bloque B, Escalera 2...
+        - generic [ref=e341]:
+          - generic "Código Postal" [ref=e343]
+          - textbox "Código Postal" [ref=e347]:
+            - /placeholder: "28001"
+        - generic [ref=e350]:
+          - generic "Ciudad" [ref=e352]
+          - textbox "Ciudad" [ref=e356]:
+            - /placeholder: Madrid
+        - generic [ref=e359]:
+          - generic "Provincia" [ref=e361]
+          - generic [ref=e365]:
+            - generic [ref=e366]:
+              - generic: Seleccionar provincia...
+              - combobox "Provincia" [ref=e367]
+            - img "down" [ref=e369]:
+              - img [ref=e370]
+      - generic [ref=e373]:
+        - button "Cancelar" [ref=e375] [cursor=pointer]:
+          - generic [ref=e376]: Cancelar
+        - button "arrow-right Continuar" [ref=e378] [cursor=pointer]:
+          - img "arrow-right" [ref=e380]:
+            - img [ref=e381]
+          - generic [ref=e383]: Continuar
