@@ -163,7 +163,7 @@ export default function ClientAccountDetail() {
         } catch {
           setSalSubscription(null);
         }
-      } catch (e) {
+      } catch (_e) {
         setAccount(null);
       } finally {
         setLoading(false);

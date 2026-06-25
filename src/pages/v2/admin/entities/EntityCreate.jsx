@@ -22,8 +22,6 @@ export default function EntityCreate() {
   const [error, setError] = useState(null);
 
   const legalType = Form.useWatch("legal_type", form) || "persona_juridica";
-  const isCompany = legalType === "persona_juridica";
-  const isPhysical = legalType === "persona_fisica";
 
   const canSubmit = useMemo(() => !!clientAccountId, [clientAccountId]);
 

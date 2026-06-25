@@ -49,6 +49,7 @@ function ActorDetailDrawer({ actor, open, onClose }) {
   const [grants, setGrants]     = useState([]);
   const [loadingG, setLoadingG] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open || !actor?.id) return;
     setLoadingG(true);
@@ -66,6 +67,7 @@ function ActorDetailDrawer({ actor, open, onClose }) {
         setLoadingG(false);
       });
   }, [open, actor?.id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!actor) return null;
 

@@ -23,7 +23,6 @@ import { formatCurrency, formatDate } from "../../../../utils/formatters";
 import {
   getLodgerStatus,
   getLodgerStatusLabel,
-  getLodgerStatusColor,
 } from "../../../../utils/lodgerStatus";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";

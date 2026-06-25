@@ -82,7 +82,7 @@ export default function AdminSettings() {
   const [accountData, setAccountData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingBranding, setSavingBranding] = useState(false);
-  const [savingContact, setSavingContact] = useState(false);
+  const [, setSavingContact] = useState(false);
   const [error, setError] = useState(null);
 
   const [brandingForm] = Form.useForm();
@@ -96,6 +96,7 @@ export default function AdminSettings() {
 
   const [ownerData, setOwnerData] = useState(null);
   const [savingOwner, setSavingOwner] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [ownerLegalType, setOwnerLegalType] = useState("persona_juridica");
 
   const [userEmail, setUserEmail] = useState("");
@@ -202,6 +203,7 @@ export default function AdminSettings() {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleSaveContact = async (values) => {
     setSavingContact(true);
     try {

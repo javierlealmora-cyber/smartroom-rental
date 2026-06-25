@@ -14,7 +14,7 @@ export default function EntityEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { role } = useAuth();
-  const { userName, companyBranding, clientAccountId } = useAdminLayout();
+  const { userName, companyBranding } = useAdminLayout();
 
   const canWrite = role !== "viewer";
 
@@ -139,8 +139,6 @@ export default function EntityEdit() {
   };
 
   const legalType = Form.useWatch("legal_type", formAntd) || entity?.legal_type;
-  const isCompanyAntd = legalType === "persona_juridica";
-  const isPhysicalAntd = legalType === "persona_fisica";
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>

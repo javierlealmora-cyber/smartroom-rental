@@ -29,6 +29,7 @@ const ROOM_STATUS_BADGE = {
 };
 const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", maintenance: "Mantenimiento", inactive: "Inactiva" };
 
+// eslint-disable-next-line no-unused-vars
 function extractEdgeError(result) {
   if (result?.error?.message) return result.error.message;
   if (result?.error) return JSON.stringify(result.error);

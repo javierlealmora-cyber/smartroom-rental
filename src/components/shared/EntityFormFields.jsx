@@ -10,7 +10,6 @@ export default function EntityFormFields({
   showLegalTypeSelector = true 
 }) {
   const isCompany = legalType === "persona_juridica";
-  const isPhysical = legalType === "persona_fisica" || legalType === "autonomo";
 
   return (
     <>

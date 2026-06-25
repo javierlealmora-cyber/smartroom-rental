@@ -17,7 +17,7 @@ const PLAN_LABELS = {
 
 export function useAdminLayout() {
   const { user, profile, clientAccountId } = useAuth();
-  const { branding: tenantBranding, planCode, accountName } = useTenant();
+  const { branding: tenantBranding, planCode } = useTenant();
 
   const userName =
     user?.user_metadata?.full_name ||

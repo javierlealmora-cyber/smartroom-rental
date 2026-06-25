@@ -504,7 +504,7 @@ export default function DashboardAdminV3() {
             ) : activity.length===0 ? (
               <div style={{fontSize:12,color:C.muted}}>Sin actividad</div>
             ) : (
-              activity.slice(0,9).map((item,i)=>(
+              activity.slice(0,9).map((item,_i)=>(
                 <ActivityItem key={item.id} item={item} isLast={true}/>
               ))
             )}

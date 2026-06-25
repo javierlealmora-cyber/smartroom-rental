@@ -74,6 +74,7 @@ function useSalStructure(clientAccountId) {
     setLoading(false);
   }, [clientAccountId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { reload(); }, [reload]);
   return { accommodations, rooms, commonAreas, locks, placements, loading, reload };
 }
@@ -103,7 +104,7 @@ function LockBadge({ lock, purpose, onRemove }) {
 }
 
 // ── Drawer de asignación ─────────────────────────────────────────────────────
-function AssignDrawer({ open, onClose, onSave, clientAccountId, accommodationId, placementType, entityId, availableLocks }) {
+function AssignDrawer({ open, onClose, onSave, clientAccountId: _clientAccountId, accommodationId, placementType, entityId, availableLocks }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [purpose, setPurpose] = useState(null);

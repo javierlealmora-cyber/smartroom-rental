@@ -17,7 +17,7 @@
  * Estrategia: funciones puras que replican la lógica de construcción del payload
  * en TenantCreate.jsx y lodgers.service.js — sin renderizar UI ni llamar a Supabase.
  */
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 
 // ─── Réplica del payload builder de TenantCreate.jsx ─────────────────────────
 

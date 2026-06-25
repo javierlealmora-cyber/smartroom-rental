@@ -75,7 +75,7 @@ export default function SaasServiceDetail() {
   // Feature modal
   const [featModal, setFeatModal]   = useState(false);
   const [featPlan, setFeatPlan]     = useState(null);
-  const [featData, setFeatData]     = useState([]);
+  const [, setFeatData]     = useState([]);
   const [savingFeat, setSavingFeat] = useState(false);
   const [featForm]                  = Form.useForm();
 

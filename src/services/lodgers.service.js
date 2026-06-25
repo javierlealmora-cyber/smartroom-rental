@@ -206,7 +206,7 @@ export async function assignRoomToLodger(lodgerId, {
  * (el frontend NO debe pasar accompanist_id).
  */
 export async function reassignRoom(lodgerId, {
-  newRoomId, newAccommodationId, moveInDate, billingStartDate,
+  newRoomId, newAccommodationId: _newAccommodationId, moveInDate, billingStartDate,
   monthlyRent, depositAmount, commissionAmount, firstMonthAmount, servicesProvisionAmount,
 }) {
   const result = await invokeWithAuth("manage_lodger", {

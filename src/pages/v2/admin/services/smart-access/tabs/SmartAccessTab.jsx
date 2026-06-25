@@ -168,6 +168,7 @@ export default function SmartAccessTab() {
   const alreadyConnected = integration?.status === "connected";
 
   // Estado "pending_shard" puede venir de la respuesta de connect o de la BD
+  // eslint-disable-next-line no-unused-vars
   const isPendingShard =
     connectResult?.status === "pending_shard" ||
     (!alreadyConnected && !integration);

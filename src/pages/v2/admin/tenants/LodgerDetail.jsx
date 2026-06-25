@@ -18,7 +18,7 @@ import {
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { getLodger } from "../../../../services/lodgers.service";
+
 import { supabase } from "../../../../services/supabaseClient";
 import PayersList from "./components/PayersList";
 
@@ -117,6 +117,7 @@ function ConsumptionChart({ data, unit, color }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function buildChartData(bulletins, utilityType) {
   const now = dayjs();
   const byMonth = {};
@@ -244,7 +245,7 @@ export default function LodgerDetail() {
         .lte("reading_date", end)
         .order("reading_date");
       setReadings(data || []);
-    } catch (_) { setReadings([]); }
+    } catch (_err) { setReadings([]); }
     finally { setLoadingReadings(false); }
   }, [filterMode, filterYear, filterMonth]);
 
@@ -324,7 +325,7 @@ export default function LodgerDetail() {
   const waterChart = resolveChart("water", "m³");
   const gasChart   = resolveChart("gas", "kWh");
 
-  const chartTitle = (ut) => {
+  const chartTitle = (_ut) => {
     const base =
       filterMode === "last12" ? "Últimos 12 meses" :
       filterMode === "year"   ? `Año ${filterYear}` :

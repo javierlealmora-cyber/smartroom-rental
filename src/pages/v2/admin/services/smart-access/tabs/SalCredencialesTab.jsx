@@ -230,7 +230,7 @@ export default function SalCredencialesTab() {
     {
       title: "Expira",
       dataIndex: "expires_at",
-      render: (v, r) => {
+      render: (v, _r) => {
         if (!v) return <Text type="secondary" style={{ fontSize: 12 }}>Indefinido</Text>;
         const expiresIn = dayjs(v).diff(dayjs(), "day");
         const color = expiresIn < 0 ? "error" : expiresIn < 3 ? "warning" : "default";

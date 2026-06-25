@@ -1,21 +1,21 @@
 // Tests de seguridad multi-tenant
 // Verifican que las correcciones de los hallazgos críticos C.1, C.2, C.3 funcionan correctamente
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 describe('Multi-tenant Security - Aislamiento de Datos', () => {
-  let tenant1Client;
-  let tenant2Client;
-  let tenant1User;
-  let tenant2User;
-  let tenant1AccountId;
-  let tenant2AccountId;
-  let tenant1Lodger;
-  let tenant2Lodger;
+  let _tenant1Client;
+  let _tenant2Client;
+  let _tenant1User;
+  let _tenant2User;
+  let _tenant1AccountId;
+  let _tenant2AccountId;
+  let _tenant1Lodger;
+  let _tenant2Lodger;
 
   beforeAll(async () => {
     // Nota: Este test requiere tener dos usuarios de prueba configurados
@@ -128,7 +128,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       // No podemos testearlo directamente sin autenticación válida,
       // pero podemos verificar que la función existe
       
-      const { listLodgers, createLodger } = await import('../../services/lodgers.service.js');
+      const { createLodger } = await import('../../services/lodgers.service.js');
       
       expect(createLodger).toBeDefined();
       expect(typeof createLodger).toBe('function');
@@ -159,7 +159,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Intentar insertar sin autenticación
-      const { data, error } = await client
+      const { data: _data1, error } = await client
         .from('lodger_room_assignments')
         .insert({
           lodger_id: 'fake-id',
@@ -178,7 +178,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Intentar insertar perfil sin autenticación
-      const { data, error } = await client
+      const { data: _data2, error } = await client
         .from('profiles')
         .insert({
           id: 'fake-id',
@@ -195,7 +195,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Intentar insertar factura sin autenticación
-      const { data, error } = await client
+      const { data: _data3, error } = await client
         .from('energy_bills')
         .insert({
           client_account_id: 'fake-id',
@@ -215,7 +215,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Intentar insertar liquidación sin autenticación
-      const { data, error } = await client
+      const { data: _data4, error } = await client
         .from('energy_settlements')
         .insert({
           client_account_id: 'fake-id',
@@ -233,7 +233,7 @@ describe('Multi-tenant Security - Aislamiento de Datos', () => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Intentar insertar boletín sin autenticación
-      const { data, error } = await client
+      const { data: _data5, error } = await client
         .from('bulletins')
         .insert({
           client_account_id: 'fake-id',

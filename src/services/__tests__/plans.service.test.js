@@ -5,19 +5,15 @@
 // Framework: Vitest
 // =============================================================================
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   getPlans,
   getPlanById,
   getPlanByCode,
   createPlan,
   updatePlan,
-  deletePlan,
-  toggleVisibility,
-  setEndDate,
   deactivatePlan,
   duplicatePlan,
-  canModifyPlan,
   validatePlanData,
   calculateFinalPrice,
   calculateMonthlyFinalPrice,

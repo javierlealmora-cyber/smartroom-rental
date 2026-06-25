@@ -42,7 +42,7 @@ export default function AccommodationSelectorModal({ open, onCancel }) {
       const accs = await listAccommodations({ status: "active" });
       setAccommodations(accs);
       setFilteredAccommodations(accs);
-    } catch (error) {
+    } catch (_error) {
       setAccommodations([]);
       setFilteredAccommodations([]);
     } finally {

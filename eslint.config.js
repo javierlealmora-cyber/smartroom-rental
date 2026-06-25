@@ -80,6 +80,64 @@ export default [
     },
   },
   
+  // QA directory — JS files (e2e specs, helpers, unit tests)
+  {
+    files: ['qa/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.jest,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+      },
+      sourceType: 'module',
+    },
+    rules: {
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      'no-undef': 'off',
+    },
+  },
+
+  // QA directory — JSX files (unit component tests)
+  {
+    files: ['qa/**/*.jsx'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.jest,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+        React: 'readonly',
+      },
+      sourceType: 'module',
+    },
+    rules: {
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      'no-undef': 'off',
+    },
+  },
+
   // Playwright test files
   {
     files: ['tests/e2e/**/*.{js,jsx}', 'playwright.config.js'],

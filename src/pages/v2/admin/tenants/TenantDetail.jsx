@@ -9,13 +9,11 @@ import { ArrowLeftOutlined, EditOutlined, SaveOutlined, SwapOutlined, UserAddOut
 import LodgerFormFields from "./components/LodgerFormFields";
 import RoomAssignmentForm from "./components/RoomAssignmentForm";
 import ChangeRoomModal from "./components/ChangeRoomModal";
-import { updateLodger, assignRoomToLodger } from "../../../../services/lodgers.service";
+import { getLodger, updateLodger, assignRoomToLodger } from "../../../../services/lodgers.service";
 import { listAccommodations } from "../../../../services/accommodations.service";
-import { supabase } from "../../../../services/supabaseClient";
 import dayjs from "dayjs";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
-import { getLodger } from "../../../../services/lodgers.service";
 import { getLodgerStatus, getLodgerStatusLabel } from "../../../../utils/lodgerStatus";
 import PayersList from "./components/PayersList";
 import AccompanistSection from "./components/AccompanistSection";
@@ -111,7 +109,7 @@ export default function TenantDetail() {
   const [savingNewAssign,   setSavingNewAssign]   = useState(false);
   const [accommodations,    setAccommodations]    = useState([]);
   const [selectedRoomId,    setSelectedRoomId]    = useState(null);
-  const [availableRooms,    setAvailableRooms]    = useState([]);
+  const [,    setAvailableRooms]    = useState([]);
   const [payUntilEndOfMonth,setPayUntilEndOfMonth]= useState(false);
   const [newAssignForm] = Form.useForm();
 

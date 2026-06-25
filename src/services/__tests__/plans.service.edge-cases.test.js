@@ -122,7 +122,7 @@ describe('Feature: Edge Cases de updatePlan', () => {
 
   describe('Scenario: updatePlan cambia code a uno ya existente (UNIQUE violation)', () => {
     it('Given existe plan_A con code=BASIC y plan_B con code=PREMIUM', async () => {
-      const planA = await createTestPlan({ code: 'BASIC_A' });
+      const _planA = await createTestPlan({ code: 'BASIC_A' });
       const planB = await createTestPlan({ code: 'PREMIUM_B' });
 
       await expect(updatePlan(planB.id, { code: 'BASIC_A' })).rejects.toThrow();

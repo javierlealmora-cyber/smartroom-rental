@@ -50,7 +50,7 @@ export function useLodger(id, clientAccountId) {
 export function useCreateLodger() {
   return useMutation({
     mutationFn: createLodger,
-    onSuccess: (data, variables) => {
+    onSuccess: (data, _variables) => {
       // Invalidar lista de inquilinos
       if (data?.client_account_id) {
         invalidateQueries.lodgers(data.client_account_id);

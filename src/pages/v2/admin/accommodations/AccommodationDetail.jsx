@@ -21,7 +21,7 @@ import { supabase } from "../../../../services/supabaseClient";
 import { listAccommodations } from "../../../../services/accommodations.service";
 import { IllustrationRoom } from "../../../../components/icons3d/Illustrations3D";
 import { listEntities } from "../../../../services/entities.service";
-import { updateAccommodation, setAccommodationStatus } from "../../../../services/accommodations.service";
+import { updateAccommodation } from "../../../../services/accommodations.service";
 import { assignRoomToLodger } from "../../../../services/lodgers.service";
 import { PROVINCIAS_ES } from "../../../../constants/formOptions";
 import ConsumoTab from "./tabs/ConsumoTab";
@@ -1380,7 +1380,6 @@ export default function AccommodationDetail() {
                   render: (_, r) => {
                     const st = getRoomStatus(r);
                     const badge = ROOM_STATUS_BADGE_BG[st] || { bg: "#F3F4F6", color: "#4B5563" };
-                    const up = getRoomUpcoming(r);
                     return (
                       <span style={{ background: badge.bg, color: badge.color, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>
                         {ROOM_STATUS_LABEL[st] || st}
@@ -2312,7 +2311,7 @@ export default function AccommodationDetail() {
                   name="checkout_date"
                   rules={[
                     { required: true, message: "La fecha es obligatoria" },
-                    ({ getFieldValue }) => ({
+                    () => ({
                       validator(_, value) {
                         const moveInDate = assignment?.move_in_date;
                         if (!value || !moveInDate) return Promise.resolve();

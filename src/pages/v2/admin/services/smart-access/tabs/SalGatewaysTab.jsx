@@ -75,11 +75,13 @@ function GatewayDetailDrawer({ gateway, open, onClose }) {
       .eq("is_active", true);
     setLinkedLocks(data ?? []);
     setLoadingLocks(false);
-  }, [gateway?.id]);
+  }, [gateway]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && gateway) loadLinkedLocks();
   }, [open, gateway, loadLinkedLocks]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!gateway) return null;
 

@@ -199,7 +199,7 @@ export default function SaasServicesList() {
             loading={loading}
             pagination={{ pageSize: 20, showSizeChanger: false }}
             size="middle"
-            onRow={(row) => ({ style: { cursor: "pointer" } })}
+            onRow={(_row) => ({ style: { cursor: "pointer" } })}
           />
         </div>
       </div>

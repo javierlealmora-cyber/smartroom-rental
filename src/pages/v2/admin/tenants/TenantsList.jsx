@@ -154,6 +154,7 @@ export default function TenantsList() {
     return result;
   }, [allLodgers, searchTerm, filterStatus, filterAccommodation, showInactive]);
 
+  // eslint-disable-next-line no-unused-vars
   const onScheduleCheckout = async (tenant) => {
     const date = prompt("Fecha de baja (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
     if (!date) return;
@@ -665,7 +666,7 @@ export default function TenantsList() {
                   name="checkout_date"
                   rules={[
                     { required: true, message: "La fecha es obligatoria" },
-                    ({ getFieldValue }) => ({
+                    () => ({
                       validator(_, value) {
                         const moveInDate = assignment?.move_in_date;
                         if (!value || !moveInDate) return Promise.resolve();

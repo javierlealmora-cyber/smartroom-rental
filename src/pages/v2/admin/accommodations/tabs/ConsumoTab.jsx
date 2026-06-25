@@ -380,6 +380,7 @@ function VisorConsumo({ accId, rooms }) {
 
   const utilLabel = UTILITY_LABELS[activeType];
 
+  // eslint-disable-next-line no-unused-vars
   const title =
     filterMode === "last12" ? `Visor de Consumo — ${utilLabel} — Últimos 12 meses` :
     filterMode === "year"   ? `Visor de Consumo — ${utilLabel} — ${filterYear}` :

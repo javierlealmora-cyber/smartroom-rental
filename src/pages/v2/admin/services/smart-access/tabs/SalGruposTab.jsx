@@ -89,6 +89,7 @@ function MembersPanel({ groupId, clientAccountId, onChanged }) {
       .then(({ data }) => setActors(data ?? []));
   }, [clientAccountId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMembers(); }, [loadMembers]);
 
   const handleAdd = async () => {

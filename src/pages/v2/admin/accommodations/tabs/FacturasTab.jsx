@@ -72,7 +72,7 @@ function CargarFacturas({ accId, clientAccountId }) {
       });
       
       if (!res.ok) {
-        const errorText = await res.text();
+        await res.text();
         throw new Error(`Error ${res.status}: La función de escaneo con IA no está disponible. Por favor, usa la entrada manual de datos.`);
       }
       
@@ -163,7 +163,7 @@ function CargarFacturas({ accId, clientAccountId }) {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           setCameraAvailable(true);
         }
-      } catch (e) {
+      } catch (_e) {
         setCameraAvailable(false);
       }
     };
@@ -436,7 +436,7 @@ function ListaFacturas({ accId, clientAccountId }) {
           .from("energy-bills")
           .createSignedUrl(bill.storage_path, 300);
         if (!urlErr && data?.signedUrl) setViewFileUrl(data.signedUrl);
-      } catch (_) {}
+      } catch (_err) { /* ignore */ }
       finally { setLoadingFile(false); }
     }
   };

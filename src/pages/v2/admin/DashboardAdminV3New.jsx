@@ -299,13 +299,12 @@ function ActividadReciente({ items, loading }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function DashboardAdminV3New() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const { role } = useAuth();
   const breakpoint = useBreakpoint();
 
   const [loading,      setLoading]      = useState(true);
   const [stats,        setStats]        = useState(null);
   const [generoData,   setGeneroData]   = useState([]);
-  const [ingresosData, setIngresosData] = useState([]);
+  const [, setIngresosData] = useState([]);
   const [actividadData, setActividadData] = useState([]);
   const [checkinData,  setCheckinData]  = useState(CHECKIN_DATA);
 
@@ -422,16 +421,11 @@ export default function DashboardAdminV3New() {
   const isMobile      = breakpoint === "mobile";
   const isTabletSmall = breakpoint === "tablet-small";
   const isTablet      = breakpoint === "tablet";
-  const isDesktop     = breakpoint === "desktop";
-  const isSmall       = isMobile || isTabletSmall;
-
   const s     = stats || DUMMY_STATS;
   const gData = generoData.length    > 0 ? generoData    : DUMMY_GENERO;
   const aData = actividadData.length > 0 ? actividadData : DUMMY_ACTIVIDAD;
 
   // KPI grid: 5 cols desktop, 3 cols tablet/tablet-small, 2 cols mobile
-  const kpiGridCols = isMobile ? "repeat(2, 1fr)" : (isTabletSmall || isTablet) ? "repeat(3, 1fr)" : "repeat(5, 1fr)";
-
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
       {/* ── Media queries reales (más fiables que window.innerWidth) ── */}

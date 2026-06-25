@@ -468,7 +468,7 @@ export const setEndDate = async (id, endDate) => {
  * @param {string} reason - Motivo de desactivación
  * @returns {Promise<Object>} Plan desactivado
  */
-export const deactivatePlan = async (id, reason = '') => {
+export const deactivatePlan = async (id, _reason = '') => {
   try {
     const updateData = {
       status: PLAN_STATUS.DISABLED,

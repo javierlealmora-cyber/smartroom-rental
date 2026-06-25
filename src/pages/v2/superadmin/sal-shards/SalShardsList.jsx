@@ -66,6 +66,7 @@ function ShardClientsDrawer({ shard, open, onClose, onReassign }) {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  /* eslint-disable react-hooks/preserve-manual-memoization */
   const load = useCallback(async () => {
     if (!shard?.id) return;
     setLoading(true);
@@ -80,10 +81,13 @@ function ShardClientsDrawer({ shard, open, onClose, onReassign }) {
     setAssignments(data ?? []);
     setLoading(false);
   }, [shard?.id]);
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) load();
   }, [open, load]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!shard) return null;
 

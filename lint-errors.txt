@@ -1,0 +1,416 @@
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\fixtures\auth.fixture.js[24m[0m
+[0m   [2m4:22[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m5:27[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m14:14[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m15:17[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m25:7[22m   [31merror[39m  'localStorage' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\global-setup.js[24m[0m
+[0m   [2m11:3[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m13:25[22m  [31merror[39m  'fetch' is not defined         [2mno-undef[22m[0m
+[0m   [2m23:3[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m35:5[22m   [31merror[39m  'localStorage' is not defined  [2mno-undef[22m[0m
+[0m   [2m44:5[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m51:3[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m56:23[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m57:23[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m58:23[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m63:7[22m   [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m63:41[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m65:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m66:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m72:5[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m76:7[22m   [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m76:47[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m78:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m79:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m85:5[22m   [31merror[39m  'console' is not defined       [2mno-undef[22m[0m
+[0m   [2m89:7[22m   [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m89:50[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m91:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m   [2m92:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m100:7[22m   [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m100:50[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m102:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m103:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m111:7[22m   [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m111:48[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m113:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m  [2m114:20[22m  [31merror[39m  'process' is not defined       [2mno-undef[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\helpers\antd.js[24m[0m
+[0m  [2m17:12[22m  [31merror[39m  'document' is not defined   [2mno-undef[22m[0m
+[0m  [2m82:11[22m  [31merror[39m  'antSelect' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\accommodations.spec.js[24m[0m
+[0m  [2m54:67[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\admin-basic.spec.js[24m[0m
+[0m  [2m62:67[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\auth.spec.js[24m[0m
+[0m  [2m16:63[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\energy.spec.js[24m[0m
+[0m  [2m28:50[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\entities.spec.js[24m[0m
+[0m  [2m70:65[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\room-status-and-checkout.spec.js[24m[0m
+[0m  [2m65:65[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\shared-rooms.spec.js[24m[0m
+[0m  [2m66:65[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\tenant-address-fields.spec.js[24m[0m
+[0m  [2m111:65[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\e2e\specs\tenants.spec.js[24m[0m
+[0m  [2m59:65[22m  [31merror[39m  Parsing error: Identifier directly after number[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\components\guards\RequireAuth.test.jsx[24m[0m
+[0m  [2m33:5[22m  [31merror[39m  Parsing error: Unexpected token <[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\components\guards\RequireRole.test.jsx[24m[0m
+[0m  [2m32:5[22m  [31merror[39m  Parsing error: Unexpected token <[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\helpers\setup.js[24m[0m
+[0m  [2m13:23[22m  [31merror[39m  'window' is not defined   [2mno-undef[22m[0m
+[0m  [2m28:1[22m   [31merror[39m  'global' is not defined   [2mno-undef[22m[0m
+[0m  [2m35:1[22m   [31merror[39m  'global' is not defined   [2mno-undef[22m[0m
+[0m  [2m36:6[22m   [31merror[39m  'console' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\logic\correctionAmount.test.js[24m[0m
+[0m  [2m15:9[22m  [33mwarning[39m  'date' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\services\accommodations.service.test.js[24m[0m
+[0m  [2m18:3[22m  [31merror[39m  Parsing error: Cannot use keyword 'await' outside an async function[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\services\energy.service.test.js[24m[0m
+[0m  [2m20:5[22m  [31merror[39m  Parsing error: Cannot use keyword 'await' outside an async function[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\qa\unit\services\lodgers.service.test.js[24m[0m
+[0m  [2m22:3[22m  [31merror[39m  Parsing error: Cannot use keyword 'await' outside an async function[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\components\CompanySelector.jsx[24m[0m
+[0m  [2m127:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\components\auth\SessionResolver.jsx[24m[0m
+[0m  [2m56:6[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'auth', 'navigate', and 'resolveDestination'. Either include them or remove the dependency array. If 'resolveDestination' changes too often, find the parent component that defines it and wrap that definition in useCallback  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\components\modals\AccommodationSelectorModal.jsx[24m[0m
+[0m  [2m45:14[22m  [33mwarning[39m  'error' is defined but never used  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\components\shared\EntityFormFields.jsx[24m[0m
+[0m  [2m13:9[22m  [33mwarning[39m  'isPhysical' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\hooks\useAdminLayout.js[24m[0m
+[0m  [2m20:47[22m  [33mwarning[39m  'accountName' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\hooks\useLodgers.js[24m[0m
+[0m  [2m53:23[22m  [33mwarning[39m  'variables' is defined but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\admin\apartments\ApartmentsList.jsx[24m[0m
+[0m  [2m45:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadCompanies'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\admin\occupancy\OccupancyHistory.jsx[24m[0m
+[0m  [2m42:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadCompanies'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\admin\tenants\TenantsList.jsx[24m[0m
+[0m  [2m48:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadCompanies'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\clientes\planes\PlansList.jsx[24m[0m
+[0m  [2m44:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadPlans'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\DashboardAdminV3.jsx[24m[0m
+[0m  [2m507:45[22m  [33mwarning[39m  'i' is defined but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\DashboardAdminV3New.jsx[24m[0m
+[0m  [2m302:11[22m  [33mwarning[39m  'role' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          [2mno-unused-vars[22m[0m
+[0m  [2m308:10[22m  [33mwarning[39m  'ingresosData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m425:9[22m   [33mwarning[39m  'isDesktop' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     [2mno-unused-vars[22m[0m
+[0m  [2m426:9[22m   [33mwarning[39m  'isSmall' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       [2mno-unused-vars[22m[0m
+[0m  [2m433:9[22m   [33mwarning[39m  'kpiGridCols' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\accommodations\AccommodationDetail.jsx[24m[0m
+[0m    [2m24:31[22m  [33mwarning[39m  'setAccommodationStatus' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m1383:27[22m  [33mwarning[39m  'up' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             [2mno-unused-vars[22m[0m
+[0m  [2m2315:24[22m  [33mwarning[39m  'getFieldValue' is defined but never used. Allowed unused args must match /^_/u                [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\accommodations\AccommodationEdit.jsx[24m[0m
+[0m  [2m32:10[22m  [33mwarning[39m  'extractEdgeError' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    [2mno-unused-vars[22m[0m
+[0m  [2m85:6[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'form'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\accommodations\tabs\ConsumoTab.jsx[24m[0m
+[0m  [2m383:9[22m  [33mwarning[39m  'title' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\accommodations\tabs\FacturasTab.jsx[24m[0m
+[0m   [2m75:15[22m  [33mwarning[39m  'errorText' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m166:16[22m  [33mwarning[39m  'e' is defined but never used                                                              [2mno-unused-vars[22m[0m
+[0m  [2m439:16[22m  [33mwarning[39m  '_' is defined but never used                                                              [2mno-unused-vars[22m[0m
+[0m  [2m439:19[22m  [31merror[39m    Empty block statement                                                                      [2mno-empty[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\bulletins\BulletinCreate.jsx[24m[0m
+[0m  [2m64:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\entities\EntitiesList.jsx[24m[0m
+[0m  [2m161:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'clientAccountId'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\entities\EntityCreate.jsx[24m[0m
+[0m  [2m25:9[22m  [33mwarning[39m  'isCompany' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   [2mno-unused-vars[22m[0m
+[0m  [2m26:9[22m  [33mwarning[39m  'isPhysical' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\entities\EntityEdit.jsx[24m[0m
+[0m   [2m17:38[22m  [33mwarning[39m  'clientAccountId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              [2mno-unused-vars[22m[0m
+[0m  [2m102:6[22m   [33mwarning[39m  React Hook useEffect has a missing dependency: 'formAntd'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m142:9[22m   [33mwarning[39m  'isCompanyAntd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                [2mno-unused-vars[22m[0m
+[0m  [2m143:9[22m   [33mwarning[39m  'isPhysicalAntd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u               [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\rooms\RoomsSearch.jsx[24m[0m
+[0m  [2m26:3[22m  [33mwarning[39m  'getLodgerStatusColor' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\ServiceEdit.jsx[24m[0m
+[0m  [2m62:6[22m  [33mwarning[39m  React Hook useCallback has a missing dependency: 'form'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SalActoresTab.jsx[24m[0m
+[0m  [2m54:5[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  52 |   useEffect(() => {[0m
+[0m  53 |     if (!open || !actor?.id) return;[0m
+[0m> 54 |     setLoadingG(true);[0m
+[0m     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  55 |     supabase[0m
+[0m  56 |       .from("lock_access_grants")[0m
+[0m  57 |       .select(`  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SalCredencialesTab.jsx[24m[0m
+[0m  [2m233:19[22m  [33mwarning[39m  'r' is defined but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SalEstructuraTab.jsx[24m[0m
+[0m   [2m77:21[22m  [31merror[39m    Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  75 |   }, [clientAccountId]);[0m
+[0m  76 |[0m
+[0m> 77 |   useEffect(() => { reload(); }, [reload]);[0m
+[0m     |                     ^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  78 |   return { accommodations, rooms, commonAreas, locks, placements, loading, reload };[0m
+[0m  79 | }[0m
+[0m  80 |  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m  [2m106:48[22m  [33mwarning[39m  'clientAccountId' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SalGatewaysTab.jsx[24m[0m
+[0m  [2m65:39[22m  [31merror[39m  Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `gateway`, but the source dependencies were [gateway?.id]. Inferred less specific property than source.[0m
+[0m[0m
+[0m  63 |   const [loadingLocks, setLoadingLocks] = useState(false);[0m
+[0m  64 |[0m
+[0m> 65 |   const loadLinkedLocks = useCallback(async () => {[0m
+[0m     |                                       ^^^^^^^^^^^^^[0m
+[0m> 66 |     if (!gateway?.id) return;[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 67 |     setLoadingLocks(true);[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 77 |     setLoadingLocks(false);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 78 |   }, [gateway?.id]);[0m
+[0m     | ^^^^ Could not preserve existing manual memoization[0m
+[0m  79 |[0m
+[0m  80 |   useEffect(() => {[0m
+[0m  81 |     if (open && gateway) loadLinkedLocks();  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m81:26[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  79 |[0m
+[0m  80 |   useEffect(() => {[0m
+[0m> 81 |     if (open && gateway) loadLinkedLocks();[0m
+[0m     |                          ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  82 |   }, [open, gateway, loadLinkedLocks]);[0m
+[0m  83 |[0m
+[0m  84 |   if (!gateway) return null;                                                                                              [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SalGruposTab.jsx[24m[0m
+[0m  [2m92:21[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  90 |   }, [clientAccountId]);[0m
+[0m  91 |[0m
+[0m> 92 |   useEffect(() => { loadMembers(); }, [loadMembers]);[0m
+[0m     |                     ^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  93 |[0m
+[0m  94 |   const handleAdd = async () => {[0m
+[0m  95 |     if (!selectedActor) return;  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\services\smart-access\tabs\SmartAccessTab.jsx[24m[0m
+[0m  [2m171:9[22m  [33mwarning[39m  'isPendingShard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\settings\AdminSettings.jsx[24m[0m
+[0m   [2m85:10[22m  [33mwarning[39m  'savingContact' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      [2mno-unused-vars[22m[0m
+[0m   [2m99:10[22m  [33mwarning[39m  'ownerLegalType' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     [2mno-unused-vars[22m[0m
+[0m   [2m99:26[22m  [33mwarning[39m  'setOwnerLegalType' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m205:9[22m   [33mwarning[39m  'handleSaveContact' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\LodgerDetail.jsx[24m[0m
+[0m   [2m21:10[22m  [33mwarning[39m  'getLodger' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       [2mno-unused-vars[22m[0m
+[0m  [2m120:10[22m  [33mwarning[39m  'buildChartData' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m247:14[22m  [33mwarning[39m  '_' is defined but never used                                                          [2mno-unused-vars[22m[0m
+[0m  [2m327:23[22m  [33mwarning[39m  'ut' is defined but never used. Allowed unused args must match /^_/u                   [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\LodgerServiceCreate.jsx[24m[0m
+[0m  [2m64:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'form'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\TenantDetail.jsx[24m[0m
+[0m   [2m14:10[22m  [33mwarning[39m  'supabase' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                [2mno-unused-vars[22m[0m
+[0m  [2m114:10[22m  [33mwarning[39m  'availableRooms' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 [2mno-unused-vars[22m[0m
+[0m  [2m121:59[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadLodger'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\TenantsList.jsx[24m[0m
+[0m  [2m157:9[22m   [33mwarning[39m  'onScheduleCheckout' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m668:24[22m  [33mwarning[39m  'getFieldValue' is defined but never used. Allowed unused args must match /^_/u                     [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\components\PayersList.jsx[24m[0m
+[0m  [2m19:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadPayers'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\admin\tenants\components\RoomAssignmentForm.jsx[24m[0m
+[0m  [2m53:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadRoomsForAccommodation'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\autoregistro\AutoRegistroCuenta.jsx[24m[0m
+[0m  [2m94:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\lodger\auth\LodgerLogin.jsx[24m[0m
+[0m  [2m64:6[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'auth' and 'resolvePostLogin'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m96:6[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'auth' and 'resolvePostLogin'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\manager\auth\ManagerLogin.jsx[24m[0m
+[0m   [2m66:6[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'auth' and 'resolvePostLogin'. Either include them or remove the dependency array               [2mreact-hooks/exhaustive-deps[22m[0m
+[0m   [2m81:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'auth.role'. Either include it or remove the dependency array                                   [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m102:6[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'auth', 'navigate', and 'resolvePostLogin'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\ClientAccountDetail.jsx[24m[0m
+[0m  [2m166:16[22m  [33mwarning[39m  'e' is defined but never used  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\client-sal\ClientSalActivation.jsx[24m[0m
+[0m  [2m127:32[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\saas-services\SaasServiceDetail.jsx[24m[0m
+[0m   [2m78:10[22m  [33mwarning[39m  'featData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 [2mno-unused-vars[22m[0m
+[0m  [2m100:32[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\saas-services\SaasServicesList.jsx[24m[0m
+[0m  [2m202:21[22m  [33mwarning[39m  'row' is defined but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\sal-shards\SalShardsList.jsx[24m[0m
+[0m  [2m69:28[22m  [31merror[39m  Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `shard`, but the source dependencies were [shard?.id]. Inferred less specific property than source.[0m
+[0m[0m
+[0m  67 |   const [loading, setLoading] = useState(false);[0m
+[0m  68 |[0m
+[0m> 69 |   const load = useCallback(async () => {[0m
+[0m     |                            ^^^^^^^^^^^^^[0m
+[0m> 70 |     if (!shard?.id) return;[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 71 |     setLoading(true);[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 81 |     setLoading(false);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 82 |   }, [shard?.id]);[0m
+[0m     | ^^^^ Could not preserve existing manual memoization[0m
+[0m  83 |[0m
+[0m  84 |   useEffect(() => {[0m
+[0m  85 |     if (open) load();  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m85:15[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  83 |[0m
+[0m  84 |   useEffect(() => {[0m
+[0m> 85 |     if (open) load();[0m
+[0m     |               ^^^^ Avoid calling setState() directly within an effect[0m
+[0m  86 |   }, [open, load]);[0m
+[0m  87 |[0m
+[0m  88 |   if (!shard) return null;                                                                                  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\pages\v2\superadmin\services\ServicesList.jsx[24m[0m
+[0m  [2m40:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadServices'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\providers\AuthProvider.jsx[24m[0m
+[0m  [2m285:6[22m   [33mwarning[39m  React Hook useMemo has a missing dependency: 'refreshProfile'. Either include it or remove the dependency array                 [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m290:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\providers\TenantProvider.jsx[24m[0m
+[0m  [2m113:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\providers\ThemeProvider.jsx[24m[0m
+[0m  [2m142:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\services\__tests__\plans.service.edge-cases.test.js[24m[0m
+[0m  [2m125:13[22m  [33mwarning[39m  'planA' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\services\__tests__\plans.service.test.js[24m[0m
+[0m   [2m8:32[22m  [33mwarning[39m  'beforeEach' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        [2mno-unused-vars[22m[0m
+[0m  [2m11:3[22m   [33mwarning[39m  'getPlanById' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       [2mno-unused-vars[22m[0m
+[0m  [2m15:3[22m   [33mwarning[39m  'deletePlan' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        [2mno-unused-vars[22m[0m
+[0m  [2m16:3[22m   [33mwarning[39m  'toggleVisibility' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m17:3[22m   [33mwarning[39m  'setEndDate' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        [2mno-unused-vars[22m[0m
+[0m  [2m20:3[22m   [33mwarning[39m  'canModifyPlan' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\services\lodgers.service.js[24m[0m
+[0m  [2m209:14[22m  [33mwarning[39m  'newAccommodationId' is defined but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\services\plans.service.js[24m[0m
+[0m  [2m471:42[22m  [33mwarning[39m  'reason' is assigned a value but never used. Allowed unused args must match /^_/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\tests\inquilinos\lodger-creation.test.js[24m[0m
+[0m  [2m20:10[22m  [33mwarning[39m  'vi' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\javie\SmartRoom-Rental\Proyecto\smartroom-rental\src\tests\security\multi-tenant-isolation.test.js[24m[0m
+[0m    [2m4:43[22m  [33mwarning[39m  'afterAll' is defined but never used. Allowed unused vars must match /^[A-Z_]/u              [2mno-unused-vars[22m[0m
+[0m    [2m4:53[22m  [33mwarning[39m  'beforeEach' is defined but never used. Allowed unused vars must match /^[A-Z_]/u            [2mno-unused-vars[22m[0m
+[0m   [2m11:7[22m   [33mwarning[39m  'tenant1Client' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m   [2m12:7[22m   [33mwarning[39m  'tenant2Client' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m   [2m13:7[22m   [33mwarning[39m  'tenant1User' is defined but never used. Allowed unused vars must match /^[A-Z_]/u           [2mno-unused-vars[22m[0m
+[0m   [2m14:7[22m   [33mwarning[39m  'tenant2User' is defined but never used. Allowed unused vars must match /^[A-Z_]/u           [2mno-unused-vars[22m[0m
+[0m   [2m15:7[22m   [33mwarning[39m  'tenant1AccountId' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      [2mno-unused-vars[22m[0m
+[0m   [2m16:7[22m   [33mwarning[39m  'tenant2AccountId' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      [2mno-unused-vars[22m[0m
+[0m   [2m17:7[22m   [33mwarning[39m  'tenant1Lodger' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m   [2m18:7[22m   [33mwarning[39m  'tenant2Lodger' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m  [2m131:15[22m  [33mwarning[39m  'listLodgers' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m162:15[22m  [33mwarning[39m  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m  [2m181:15[22m  [33mwarning[39m  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m  [2m198:15[22m  [33mwarning[39m  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m  [2m218:15[22m  [33mwarning[39m  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m  [2m236:15[22m  [33mwarning[39m  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[31m[1m✖ 161 problems (64 errors, 97 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
