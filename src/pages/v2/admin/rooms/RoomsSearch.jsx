@@ -114,6 +114,7 @@ export default function RoomsSearch() {
     () => localStorage.getItem("smartrent_rooms_viewMode") || "cards"
   );
   const [cardPage, setCardPage] = useState(1);
+  const [hoveredRoomId, setHoveredRoomId] = useState(null);
   const PAGE_SIZE = 24;
 
   // Guardar filtros en localStorage cuando cambian
@@ -143,7 +144,7 @@ export default function RoomsSearch() {
         // Alojamientos con entidad propietaria (sin filtrar rooms aquí)
         supabase
           .from("accommodations")
-          .select("id, name, address_street, address_postal_code, address_city, status, owner_entity_id, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
+          .select("id, name, address_street, address_postal_code, address_city, status, owner_entity_id, owner_entity:entities!left(id, legal_name, first_name, last_name1, legal_type)")
           .order("name"),
         // TODAS las habitaciones (sin filtro de asignaciones para no excluir las libres)
         supabase
@@ -404,7 +405,7 @@ export default function RoomsSearch() {
 
   // ─── Vista cards ──────────────────────────────────────────────────────────
 
-  function RoomCard({ room }) {
+  function RoomCard({ room, hoveredRoomId, setHoveredRoomId }) {
     const roomStatus = getRoomStatus(room);
     const isOccupied = roomStatus === "occupied" || roomStatus === "pending_checkout";
     const asgn = room.active_assignment?.[0];
@@ -420,16 +421,31 @@ export default function RoomsSearch() {
 
     const rent = asgn?.monthly_rent ?? room.monthly_rent;
     const entityName = getEntityName(room.entity);
+    const isHovered = hoveredRoomId === room.id;
 
     return (
-      <Card
+      <div
+        onMouseEnter={() => setHoveredRoomId(room.id)}
+        onMouseLeave={() => setHoveredRoomId(null)}
         style={{
           borderRadius: 12,
           border: "1px solid #E5E7EB",
           background: "#FFFFFF",
           height: "100%",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          boxShadow: isHovered ? "0 12px 32px rgba(0,0,0,0.13)" : "0 2px 8px rgba(0,0,0,0.06)",
           overflow: "hidden",
+          transform: isHovered ? "translateY(-4px)" : "translateY(0)",
+          transition: "transform 0.18s ease, box-shadow 0.18s ease",
+          cursor: "pointer",
+        }}
+      >
+      <Card
+        style={{
+          borderRadius: 12,
+          border: "none",
+          background: "transparent",
+          height: "100%",
+          boxShadow: "none",
         }}
         styles={{ body: { padding: 0, background: "#fff" } }}
       >
@@ -596,6 +612,7 @@ export default function RoomsSearch() {
           )}
         </div>
       </Card>
+      </div>
     );
   }
 
@@ -738,7 +755,7 @@ export default function RoomsSearch() {
                 .slice((cardPage - 1) * PAGE_SIZE, cardPage * PAGE_SIZE)
                 .map(room => (
                   <Col key={room.id} xs={24} sm={12} md={8} xl={6}>
-                    <RoomCard room={room} />
+                    <RoomCard room={room} hoveredRoomId={hoveredRoomId} setHoveredRoomId={setHoveredRoomId} />
                   </Col>
                 ))}
             </Row>

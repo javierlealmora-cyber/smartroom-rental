@@ -9,7 +9,7 @@ import {
 } from "antd";
 import {
   ArrowLeftOutlined, BulbOutlined, EditOutlined,
-  FireOutlined, ReloadOutlined, SwapOutlined, ThunderboltOutlined,
+  FireOutlined, LineChartOutlined, ReloadOutlined, SwapOutlined, ThunderboltOutlined,
 } from "@ant-design/icons";
 import {
   CartesianGrid, Legend, Line, LineChart,
@@ -492,97 +492,107 @@ export default function LodgerDetail() {
     },
   ];
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col flex="auto">
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}
-            style={{ marginBottom: 8, paddingLeft: 0, color: "#6B7280" }}>
-            Inquilinos
-          </Button>
-          <Title level={2} style={{ margin: 0 }}>Detalles de Consumo</Title>
-        </Col>
-        <Col>
-          <Button type="primary" icon={<EditOutlined />}
-            onClick={() => navigate(`/v2/admin/inquilinos/${id}/detalle-inquilino`)}>
-            Editar
-          </Button>
-        </Col>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        {/* Header */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <LineChartOutlined style={{ marginRight: 10 }} />
+              Detalles de Consumo
+            </Title>
+            <Text type="secondary">
+              {lodger ? `${lodger.first_name} ${lodger.last_name1} ${lodger.last_name2 || ""}` : "Cargando inquilino..."}
+            </Text>
+          </Col>
+          <Col>
+            <Space>
+              <Button type="primary" icon={<EditOutlined />}
+                onClick={() => navigate(`/v2/admin/inquilinos/${id}/detalle-inquilino`)}>
+                Editar
+              </Button>
+              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos")}>
+                Volver
+              </Button>
+            </Space>
+          </Col>
+        </Row>
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+        {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 
-      {/* Sección de datos del inquilino */}
-      {!loading && lodger && (
+        {/* Sección de datos del inquilino */}
+        {!loading && lodger && (
+          <Card
+            size="small"
+            title={<span style={cardTitleStyle}>Información del inquilino</span>}
+            extra={
+              activeAssignment && (
+                <Space>
+                  <Text type="secondary" style={{ fontSize: 11 }}>Alojamiento:</Text>
+                  <Text strong style={{ fontSize: 13 }}>{activeAssignment.accommodation?.name}</Text>
+                  <Tag color="geekblue">Hab. {activeAssignment.room?.number}</Tag>
+                </Space>
+              )
+            }
+            style={{ marginBottom: 20, borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            bodyStyle={{ padding: 16 }}
+          >
+            <Row gutter={[24, 16]} align="middle">
+              <Col>
+                <img
+                  src={lodger?.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
+                  alt="Inquilino"
+                  style={{ width: 64, height: 64, objectFit: "contain" }}
+                />
+              </Col>
+              <Col flex="auto">
+                <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
+                  {lodger.first_name} {lodger.last_name1} {lodger.last_name2 || ""}
+                </Title>
+                <Space direction="vertical" size={2}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    {lodger.email}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    {lodger.phone || "Sin teléfono"}
+                  </Text>
+                  {activeAssignment?.move_in_date && (
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      Check-in: {formatDate(activeAssignment.move_in_date)}
+                    </Text>
+                  )}
+                  {activeAssignment?.move_out_date && (
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      Check-Out: {formatDate(activeAssignment.move_out_date)}
+                    </Text>
+                  )}
+                </Space>
+              </Col>
+            </Row>
+          </Card>
+        )}
+
+        {/* Sección de consumos */}
         <Card
           size="small"
-          style={{ marginBottom: 20, borderRadius: 12 }}
-          bodyStyle={{ padding: 16 }}
+          title={<span style={cardTitleStyle}>Hucha Energética y Consumos</span>}
+          extra={
+            <Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={load}>Actualizar</Button>
+          }
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          bodyStyle={{ padding: "16px 20px" }}
         >
-          <Row gutter={[24, 16]} align="middle">
-            <Col>
-              <img
-                src={lodger?.gender === "female" ? "/images/inquilina-card-model.webp" : "/images/inquilino-card-model.webp"}
-                alt="Inquilino"
-                style={{ width: 64, height: 64, objectFit: "contain" }}
-              />
-            </Col>
-            <Col flex="auto">
-              <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                {lodger.first_name} {lodger.last_name1} {lodger.last_name2 || ""}
-              </Title>
-              <Space direction="vertical" size={2}>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  {lodger.email}
-                </Text>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  {lodger.phone || "Sin teléfono"}
-                </Text>
-                {activeAssignment?.move_in_date && (
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Check-in: {formatDate(activeAssignment.move_in_date)}
-                  </Text>
-                )}
-                {activeAssignment?.move_out_date && (
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Check-Out: {formatDate(activeAssignment.move_out_date)}
-                  </Text>
-                )}
-              </Space>
-            </Col>
-            <Col>
-              <Space direction="vertical" size={8} align="end">
-                {activeAssignment && (
-                  <>
-                    <div style={{ textAlign: "right" }}>
-                      <Text type="secondary" style={{ fontSize: 11, display: "block" }}>Alojamiento</Text>
-                      <Text strong>{activeAssignment.accommodation?.name}</Text>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Text type="secondary" style={{ fontSize: 11, display: "block" }}>Habitación</Text>
-                      <Tag color="geekblue">Hab. {activeAssignment.room?.number}</Tag>
-                    </div>
-                  </>
-                )}
-              </Space>
-            </Col>
-          </Row>
-        </Card>
-      )}
-
-      {/* Sección de consumos */}
-      <Col xs={24}>
-          <Card
-            title={
-              <Row align="middle" gutter={8}>
-                <Col><BulbOutlined style={{ color: "#F59E0B" }} /></Col>
-                <Col><Text strong>Hucha Energética y Consumos</Text></Col>
-              </Row>
-            }
-            style={{ borderRadius: 12 }}
-            bodyStyle={{ padding: "16px 20px" }}
-          >
             {/* Resumen consumo total por tipo */}
             <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
               <Col xs={24} sm={8}>
@@ -620,7 +630,7 @@ export default function LodgerDetail() {
             {/* Tabs por servicio */}
             <Tabs items={tabItems} defaultActiveKey="electricity" size="small" />
           </Card>
-      </Col>
+      </div>
     </V2Layout>
   );
 }

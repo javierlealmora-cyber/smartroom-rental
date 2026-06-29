@@ -129,23 +129,41 @@ export default function SalGestion() {
   }, []);
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={setActiveTab}
-      type="line"
-      size="small"
-      style={{ paddingTop: 4 }}
-      tabBarStyle={{ marginBottom: 20 }}
-      items={SAL_TABS.map(({ key, label, icon, children }) => ({
-        key,
-        label: (
-          <span>
-            {icon}
-            <span style={{ marginLeft: 6 }}>{label}</span>
-          </span>
-        ),
-        children,
-      }))}
-    />
+    <>
+      <style>{`
+        .sal-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #0071E3 !important;
+          font-weight: 700 !important;
+        }
+        .sal-tabs .ant-tabs-ink-bar {
+          background: #0071E3 !important;
+        }
+        .sal-tabs .ant-tabs-tab-btn {
+          color: #374151 !important;
+        }
+        .sal-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+          color: #0071E3 !important;
+        }
+      `}</style>
+      <Tabs
+        className="sal-tabs"
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        type="line"
+        size="small"
+        style={{ paddingTop: 4 }}
+        tabBarStyle={{ marginBottom: 20 }}
+        items={SAL_TABS.map(({ key, label, icon, children }) => ({
+          key,
+          label: (
+            <span>
+              {icon}
+              <span style={{ marginLeft: 6 }}>{label}</span>
+            </span>
+          ),
+          children,
+        }))}
+      />
+    </>
   );
 }

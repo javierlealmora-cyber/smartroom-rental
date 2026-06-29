@@ -220,7 +220,7 @@ export default function SalZonasTab() {
   ];
 
   return (
-    <div style={{ maxWidth: 860 }}>
+    <div>
       {/* Selector de alojamiento */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>

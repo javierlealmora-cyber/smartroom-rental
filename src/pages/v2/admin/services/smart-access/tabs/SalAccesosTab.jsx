@@ -259,7 +259,7 @@ export default function SalAccesosTab() {
   ];
 
   return (
-    <div style={{ maxWidth: 1060 }}>
+    <div>
       {/* Filtros */}
       <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
         <Col xs={24} sm={12} md={6}>

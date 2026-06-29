@@ -9,7 +9,7 @@ export async function listAccommodations({ status, clientAccountId } = {}) {
     .from("accommodations")
     .select(`
       *,
-      owner_entity:entities(id, legal_name, first_name, last_name1, legal_type),
+      owner_entity:entities!left(id, legal_name, first_name, last_name1, legal_type),
       rooms(id, is_maintenance, 
         current_assignments:lodger_room_assignments(room_id, move_out_date)
       )
@@ -51,7 +51,7 @@ export async function getAccommodation(id, clientAccountId = null) {
     .from("accommodations")
     .select(`
       *,
-      owner_entity:entities(id, legal_name, first_name, last_name1, legal_type),
+      owner_entity:entities!left(id, legal_name, first_name, last_name1, legal_type),
       rooms(*)
     `)
     .eq("id", id);

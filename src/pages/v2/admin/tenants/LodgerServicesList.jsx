@@ -4,10 +4,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Button, Col, Input, Row,
+  Alert, Button, Card, Col, Input, Row,
   Select, Space, Table, Tag, Typography,
 } from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, TagOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -163,86 +163,108 @@ export default function LodgerServicesList() {
     },
   ];
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
-        <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Servicios de Inquilinos</Title>
-          <Text type="secondary">
-            {loading ? "Cargando..." : `${rows.length} servicio${rows.length !== 1 ? "s" : ""} asignado${rows.length !== 1 ? "s" : ""}`}
-          </Text>
-        </Col>
-        <Col>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/v2/admin/inquilinos/servicios/nuevo")}>
-              Asignar Servicio
-            </Button>
-          </Space>
-        </Col>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
-        <Col xs={24} sm={12} md={8}>
-          <Search
-            placeholder="Buscar por inquilino o servicio..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            allowClear
-          />
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Estado"
-            value={filterStatus || undefined}
-            onChange={(v) => setFilterStatus(v || "")}
-            allowClear
-            options={[
-              { value: "active", label: "Activo" },
-              { value: "inactive", label: "Inactivo" },
-              { value: "cancelled", label: "Cancelado" },
-            ]}
-          />
-        </Col>
-        <Col xs={12} sm={8} md={6}>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Alojamiento"
-            value={filterAccommodation || undefined}
-            onChange={(v) => setFilterAccommodation(v || "")}
-            allowClear
-            options={accommodations.map((a) => ({ value: a.id, label: a.name }))}
-          />
-        </Col>
-        {(search || filterStatus || filterAccommodation) && (
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
-            <Button onClick={() => { setSearch(""); setFilterStatus(""); setFilterAccommodation(""); }}>
-              Limpiar
-            </Button>
+            <Title level={2} style={{ margin: 0 }}>
+              <TagOutlined style={{ marginRight: 10 }} />
+              Servicios de Inquilinos
+            </Title>
+            <Text type="secondary">
+              {loading ? "Cargando..." : `${rows.length} servicio${rows.length !== 1 ? "s" : ""} asignado${rows.length !== 1 ? "s" : ""}`}
+            </Text>
           </Col>
+          <Col>
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/v2/admin/inquilinos/servicios/nuevo")}>
+                Asignar Servicio
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+
+        {error && (
+          <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
+            action={<Button size="small" onClick={load}>Reintentar</Button>}
+          />
         )}
-      </Row>
 
-      {error && (
-        <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
-          action={<Button size="small" onClick={load}>Reintentar</Button>}
-        />
-      )}
+        <Card
+          title={<span style={cardTitleStyle}>Servicios asignados</span>}
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+        >
+          <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
+            <Col xs={24} sm={12} md={8}>
+              <Search
+                placeholder="Buscar por inquilino o servicio..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                allowClear
+              />
+            </Col>
+            <Col xs={12} sm={6} md={4}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Estado"
+                value={filterStatus || undefined}
+                onChange={(v) => setFilterStatus(v || "")}
+                allowClear
+                options={[
+                  { value: "active", label: "Activo" },
+                  { value: "inactive", label: "Inactivo" },
+                  { value: "cancelled", label: "Cancelado" },
+                ]}
+              />
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Alojamiento"
+                value={filterAccommodation || undefined}
+                onChange={(v) => setFilterAccommodation(v || "")}
+                allowClear
+                options={accommodations.map((a) => ({ value: a.id, label: a.name }))}
+              />
+            </Col>
+            {(search || filterStatus || filterAccommodation) && (
+              <Col>
+                <Button onClick={() => { setSearch(""); setFilterStatus(""); setFilterAccommodation(""); }}>
+                  Limpiar
+                </Button>
+              </Col>
+            )}
+          </Row>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={rows}
-        loading={loading}
-        scroll={{ x: true }}
-        size="small"
-        pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
-        locale={{ emptyText: search || filterStatus || filterAccommodation
-          ? <EmptyState icon="🔍" title="Sin resultados" description="No hay servicios que coincidan con los filtros aplicados" />
-          : <EmptyState icon="🔖" title="No hay servicios asignados" description="Asigna el primer servicio a un inquilino" actionLabel="Asignar Servicio" onAction={() => navigate("/v2/admin/inquilinos/servicios/nuevo")} />
-        }}
-      />
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={rows}
+            loading={loading}
+            scroll={{ x: true }}
+            size="small"
+            pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
+            locale={{ emptyText: search || filterStatus || filterAccommodation
+              ? <EmptyState icon="🔍" title="Sin resultados" description="No hay servicios que coincidan con los filtros aplicados" />
+              : <EmptyState icon="🔖" title="No hay servicios asignados" description="Asigna el primer servicio a un inquilino" actionLabel="Asignar Servicio" onAction={() => navigate("/v2/admin/inquilinos/servicios/nuevo")} />
+            }}
+          />
+        </Card>
+
+      </div>
     </V2Layout>
   );
 }

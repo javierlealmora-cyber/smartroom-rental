@@ -188,7 +188,7 @@ export default function SalRegistrosTab() {
   const eventTypeOptions = Object.entries(EVENT_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }));
 
   return (
-    <div style={{ maxWidth: 960 }}>
+    <div>
       {/* Filtros */}
       <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>

@@ -358,7 +358,7 @@ export default function SalActoresTab() {
   ];
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Text type="secondary" style={{ fontSize: 13 }}>

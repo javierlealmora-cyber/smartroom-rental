@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Alert, Button, Card, Col, Divider, Form, Input, Modal,
-  Row, Select, Skeleton, Space, Tag, Tabs, Typography, message,
+  Row, Select, Skeleton, Space, Tag, Typography, message,
 } from "antd";
 import {
   SaveOutlined, ReloadOutlined, UserOutlined,
@@ -79,6 +79,7 @@ export default function AdminSettings() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
   const { tenant: _tenant, planCode, billingCycle, accountStatus, branding: _branding } = useTenant();
 
+  const [activeTab, setActiveTab] = useState("cuenta");
   const [accountData, setAccountData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingBranding, setSavingBranding] = useState(false);
@@ -305,6 +306,13 @@ export default function AdminSettings() {
 
   const fDate = (d) => d ? new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
+  const TABS_CONFIG = [
+    { key: "cuenta",   label: "Mi Cuenta",             icon: <InfoCircleOutlined /> },
+    { key: "plan",     label: "Plan y suscripción",     icon: <CrownOutlined /> },
+    { key: "branding", label: "Branding",               icon: <BgColorsOutlined /> },
+    { key: "factura",  label: "Entidad de Facturación", icon: <BankOutlined /> },
+  ];
+
   const tabItems = [
     {
       key: "cuenta",
@@ -316,8 +324,8 @@ export default function AdminSettings() {
               {/* Información de la Cuenta */}
               <Card
                 size="small"
-                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de la Cuenta</span>}
-                style={{ marginBottom: 20 }}
+                title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Información de la Cuenta</span>}
+                style={{ marginBottom: 20, borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
                 extra={<Button size="small" icon={<ReloadOutlined />} onClick={load}>Actualizar</Button>}
               >
                 <SectionBlock title="Cuenta">
@@ -343,8 +351,8 @@ export default function AdminSettings() {
               {/* Información de Usuario */}
               <Card
                 size="small"
-                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de Usuario</span>}
-                style={{ marginBottom: 20 }}
+                title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Información de Usuario</span>}
+                style={{ marginBottom: 20, borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
                 extra={
                   <Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => setEditUserModalVisible(true)}>
                     Editar
@@ -372,7 +380,7 @@ export default function AdminSettings() {
               {/* Cambio de Contraseña */}
               <Card
                 size="small"
-                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Cambio de contraseña</span>}
+                title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Cambio de contraseña</span>}
               >
                 <Alert
                   type="info"
@@ -397,8 +405,8 @@ export default function AdminSettings() {
             <>
               <Card
                 size="small"
-                title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Plan contratado</span>}
-                style={{ marginBottom: 20 }}
+                title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Plan contratado</span>}
+                style={{ marginBottom: 20, borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
               >
                 <Row gutter={[24, 16]} align="middle">
                   {/* Tarjeta visual del plan */}
@@ -461,7 +469,7 @@ export default function AdminSettings() {
       children: (
         <div>
           {loading ? <Skeleton active paragraph={{ rows: 5 }} /> : (
-            <Card size="small" title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Personalización visual</span>}>
+            <Card size="small" style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }} title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Personalización visual</span>}>
               <Alert
                 type="info"
                 showIcon
@@ -583,7 +591,8 @@ export default function AdminSettings() {
           {loading ? <Skeleton active paragraph={{ rows: 8 }} /> : (
             <Card
               size="small"
-              title={<span style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Información de la Entidad de Facturación</span>}
+              style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+              title={<span style={{ fontSize: 12, fontWeight: 700, color: "#374151", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid #0071E3", paddingLeft: 8 }}>Información de la Entidad de Facturación</span>}
               extra={
                 <Button
                   size="small"
@@ -829,7 +838,41 @@ export default function AdminSettings() {
           <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />
         )}
 
-        <Tabs items={tabItems} defaultActiveKey="cuenta" />
+        {/* ── Tabs estilo SmartRoom ─────────────────────────────────────── */}
+        <div style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #E5E7EB" }}>
+            {TABS_CONFIG.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "10px 20px",
+                  fontSize: 14,
+                  fontWeight: activeTab === tab.key ? 700 : 500,
+                  color: activeTab === tab.key ? "#0071E3" : "#374151",
+                  borderBottom: activeTab === tab.key ? "2px solid #0071E3" : "2px solid transparent",
+                  marginBottom: "-2px",
+                  transition: "all 0.15s",
+                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Contenido del tab activo ──────────────────────────────────── */}
+        <div style={{ marginTop: 24 }}>
+          {tabItems.find((t) => t.key === activeTab)?.children}
+        </div>
       </div>
     </V2Layout>
   );

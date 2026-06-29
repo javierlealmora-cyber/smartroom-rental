@@ -7,7 +7,7 @@ import {
   Alert, Button, Card, Col, DatePicker, Form, InputNumber,
   Row, Select, Space, Typography,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { SaveOutlined, TagOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers } from "../../../../services/lodgers.service";
@@ -91,23 +91,33 @@ export default function LodgerServiceCreate() {
     }
   };
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Asignar Servicio a Inquilino</Title>
-          <Text type="secondary">Vincula un servicio del catálogo a un inquilino</Text>
-        </Col>
-        <Col>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/inquilinos/servicios")}>
-            Volver
-          </Button>
-        </Col>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <TagOutlined style={{ marginRight: 10 }} />
+              Asignar Servicio a Inquilino
+            </Title>
+            <Text type="secondary">Vincula un servicio del catálogo a un inquilino</Text>
+          </Col>
+        </Row>
 
-      <Card size="small">
+        {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+
+        <Card title={<span style={cardTitleStyle}>Datos de la asignación</span>} style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
         <Form form={form} layout="vertical" onFinish={onFinish}
           initialValues={{ quantity: 1 }}>
           <Row gutter={[16, 0]}>
@@ -206,6 +216,8 @@ export default function LodgerServiceCreate() {
           </Row>
         </Form>
       </Card>
+
+      </div>
     </V2Layout>
   );
 }

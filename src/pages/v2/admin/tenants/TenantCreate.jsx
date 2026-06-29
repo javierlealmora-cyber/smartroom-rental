@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import {
-  Alert, Button, Card, Checkbox, Col, Form, Row, Space, Steps, Typography,
+  Alert, Button, Card, Checkbox, Col, Divider, Form, Row, Space, Steps, Typography,
 } from "antd";
 import { ArrowLeftOutlined, CheckOutlined, InfoCircleOutlined, SaveOutlined, UserAddOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
@@ -155,202 +155,219 @@ export default function TenantCreate() {
     navigate(`/v2/admin/inquilinos/${createdLodgerId}/detalle`);
   };
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   // ── Pantalla final tras asignar habitación ────────────────────────────────────
   if (assignedWithRoom) {
     return (
       <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-        <div style={{ marginBottom: 28 }}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
-            style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
-            {preselectedAccId ? "Volver al alojamiento" : "Inquilinos"}
-          </Button>
-          <Title level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px" }}>
-            <CheckOutlined style={{ color: "#52c41a", marginRight: 12 }} />
-            Inquilino Registrado Exitosamente
-          </Title>
-          <Text type="secondary" style={{ fontSize: 15 }}>
-            {createdLodgerName} ha sido creado y tiene habitación asignada. Ahora puedes añadir los pagadores.
-          </Text>
-        </div>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+            <Col>
+              <Title level={2} style={{ margin: 0 }}>
+                <CheckOutlined style={{ color: "#52c41a", marginRight: 10 }} />
+                Inquilino Registrado Exitosamente
+              </Title>
+              <Text type="secondary">
+                {createdLodgerName} ha sido creado y tiene habitación asignada. Ahora puedes añadir los pagadores.
+              </Text>
+            </Col>
+          </Row>
 
-        <Alert
-          message="Gestión de Pagadores"
-          description="Añade las personas o entidades que pagarán el alquiler de este inquilino (padre, madre, empresa, etc.). Puedes hacerlo ahora o más tarde desde el detalle del inquilino."
-          type="info"
-          showIcon
-          icon={<InfoCircleOutlined />}
-          style={{ marginBottom: 24 }}
-        />
-
-        <Card title="Pagadores" style={{ marginBottom: 24 }}>
-          <PayersList
-            lodgerId={createdLodgerId}
-            clientAccountId={clientAccountId}
-            hasRoomAssignment={true}
+          <Alert
+            message="Gestión de Pagadores"
+            description="Añade las personas o entidades que pagarán el alquiler de este inquilino (padre, madre, empresa, etc.). Puedes hacerlo ahora o más tarde desde el detalle del inquilino."
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+            style={{ marginBottom: 24 }}
           />
-        </Card>
 
-        <Space>
-          <Button onClick={() => navigate(backPath)}>Finalizar</Button>
-          <Button type="primary" onClick={() => navigate(`/v2/admin/inquilinos/${createdLodgerId}/detalle`)}>
-            Ver detalle del inquilino
-          </Button>
-        </Space>
+          <Card
+            title={<span style={cardTitleStyle}>Pagadores</span>}
+            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 24 }}
+          >
+            <PayersList
+              lodgerId={createdLodgerId}
+              clientAccountId={clientAccountId}
+              hasRoomAssignment={true}
+            />
+          </Card>
+
+          <Row justify="end" style={{ marginTop: 16 }}>
+            <Space>
+              <Button onClick={() => navigate(backPath)}>Finalizar</Button>
+              <Button type="primary" onClick={() => navigate(`/v2/admin/inquilinos/${createdLodgerId}/detalle`)}>
+                Ver detalle del inquilino
+              </Button>
+            </Space>
+          </Row>
+        </div>
       </V2Layout>
     );
   }
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 0 48px" }}>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
-          style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
-          {preselectedAccId ? "Volver al alojamiento" : "Inquilinos"}
-        </Button>
-        <Title level={2} style={{ margin: 0, fontWeight: 700, letterSpacing: "-0.5px" }}>
-          {currentStep === 0 ? "Registro nuevo Inquilino" : "Asignación de habitación"}
-        </Title>
-        <Text type="secondary" style={{ fontSize: 15 }}>
-          {currentStep === 0
-            ? "Complete los datos del nuevo inquilino"
-            : `${createdLodgerName} — selecciona la habitación (puedes saltar este paso)`}
-        </Text>
-      </div>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      {/* Stepper — centrado */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <UserAddOutlined style={{ marginRight: 10 }} />
+              {currentStep === 0 ? "Registro nuevo Inquilino" : "Asignación de habitación"}
+            </Title>
+            <Text type="secondary">
+              {currentStep === 0
+                ? "Complete los datos del nuevo inquilino"
+                : `${createdLodgerName} — selecciona la habitación (puedes saltar este paso)`}
+            </Text>
+          </Col>
+        </Row>
+
+        {/* ── Steps ────────────────────────────────────────────────────── */}
         <Steps
           current={currentStep}
-          style={{ maxWidth: 440 }}
-          items={[
-            { title: "Datos del Inquilino" },
-            { title: "Asignar Habitación" },
-          ]}
+          style={{ margin: "24px 0" }}
+          items={[{ title: "Datos del Inquilino" }, { title: "Asignar Habitación" }]}
         />
-      </div>
 
-      {/* ── PASO 0: datos personales ── */}
-      {currentStep === 0 && (
-        <Form
-          form={personalForm}
-          layout="vertical"
-          onFinish={handlePersonalSubmit}
-          initialValues={{ send_onboarding: true }}
-        >
-          {personalError && (
-            <Alert type="error" message={personalError} showIcon style={{ marginBottom: 16 }} />
-          )}
+        {/* ── PASO 0: datos personales ── */}
+        {currentStep === 0 && (
+          <Card title={<span style={cardTitleStyle}>Datos del inquilino</span>} style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <Form
+              form={personalForm}
+              layout="vertical"
+              onFinish={handlePersonalSubmit}
+              initialValues={{ send_onboarding: true }}
+            >
+              {personalError && (
+                <Alert type="error" message={personalError} showIcon style={{ marginBottom: 16 }} />
+              )}
 
-          {/* Sección superior: imagen + campos personales */}
-          <Row gutter={[48, 0]} align="top">
-            {/* Imagen — oculta en móvil (xs/sm), visible desde md */}
-            <Col xs={0} md={5} style={{ paddingTop: "8%" }}>
-              <img
-                src="/images/inquilino-en-registro.webp"
-                alt="Nuevo inquilino"
-                style={{ width: "100%", objectFit: "contain",
-                  filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.12))" }}
-              />
-            </Col>
+              {/* Sección superior: campos personales + imagen derecha */}
+              <Row gutter={[48, 0]} align="top">
+                {/* Campos personales */}
+                <Col xs={24} md={18}>
+                  <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>
+                    Información personal
+                  </Divider>
+                  <LodgerFormFields section="personal" />
+                </Col>
 
-            {/* Campos personales */}
-            <Col xs={24} md={19}>
-              <div style={{ paddingBottom: 8, marginBottom: 16, borderBottom: "2px solid #F3F4F6" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                  Datos Personales
-                </span>
-              </div>
-              <LodgerFormFields section="personal" />
-            </Col>
-          </Row>
+                {/* Imagen — oculta en móvil, visible desde md */}
+                <Col xs={0} md={6} style={{ paddingTop: "8%" }}>
+                  <img
+                    src="/images/inquilino-en-registro.webp"
+                    alt="Nuevo inquilino"
+                    style={{ width: "100%", objectFit: "contain", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.12))" }}
+                  />
+                </Col>
+              </Row>
 
-          {/* Sección dirección — full width */}
-          <LodgerFormFields section="address" />
+              {/* Sección dirección */}
+              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>
+                Dirección
+              </Divider>
+              <LodgerFormFields section="address" />
 
-          {/* Checkbox + alert + botones — full width */}
-          <Form.Item name="send_onboarding" valuePropName="checked" style={{ marginTop: 4 }}>
-            <Checkbox>Enviar email de onboarding al crear el inquilino</Checkbox>
-          </Form.Item>
+              {/* Checkbox + alert */}
+              <Form.Item name="send_onboarding" valuePropName="checked" style={{ marginTop: 4 }}>
+                <Checkbox>Enviar email de onboarding al crear el inquilino</Checkbox>
+              </Form.Item>
 
-          <Alert
-            message="Gestión de Pagadores"
-            description="Después de registrar el inquilino, podrás añadir los pagadores (padre, madre, empresa, etc.) en la misma pantalla."
-            type="info"
-            showIcon
-            icon={<InfoCircleOutlined />}
-            style={{ marginTop: 12, marginBottom: 24 }}
-          />
-
-          <Space>
-            <Button onClick={() => navigate(backPath)}>Cancelar</Button>
-            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingPersonal}>
-              Registrar Inquilino →
-            </Button>
-          </Space>
-        </Form>
-      )}
-
-      {/* ── PASO 1: asignación de habitación ── */}
-      {currentStep === 1 && (
-        <Form
-          form={assignForm}
-          layout="vertical"
-          onFinish={handleAssignSubmit}
-          initialValues={{ move_in_date: dayjs() }}
-        >
-          {assignError && (
-            <Alert type="error" message={assignError} showIcon style={{ marginBottom: 16 }} />
-          )}
-
-          <Row gutter={[40, 0]} align="top">
-            {/* Imagen — oculta en móvil, visible desde md */}
-            <Col xs={0} md={6} style={{ display: "flex", justifyContent: "center" }}>
-              <img
-                src="/images/Habitación sin Inquilino en la cama.png"
-                alt="Habitación disponible"
-                style={{ width: "130%", objectFit: "contain",
-                  filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.12))" }}
-              />
-            </Col>
-
-            {/* Formulario */}
-            <Col xs={24} md={18}>
-              {/* Banner: inquilino + nota opcional */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "10px 16px", marginBottom: 20 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{createdLodgerName}</span>
-                <span style={{ fontSize: 12, color: "#9CA3AF" }}>Opcional — puedes saltar este paso</span>
-              </div>
-
-              <RoomAssignmentForm
-                form={assignForm}
-                accommodations={accommodations}
-                preselectedAccId={preselectedAccId}
-                preselectedRoomId={preselectedRoomId}
-                required={false}
-                allowAccommodationChange={true}
-                onRoomSelect={(roomId) => setSelectedRoomId(roomId)}
-                onRoomsChange={(rooms) => setAvailableRooms(rooms)}
-                onPayUntilEndOfMonthChange={(checked) => setPayUntilEndOfMonth(checked)}
+              <Alert
+                message="Gestión de Pagadores"
+                description="Después de registrar el inquilino, podrás añadir los pagadores (padre, madre, empresa, etc.) en la misma pantalla."
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                style={{ marginTop: 12, marginBottom: 24 }}
               />
 
-              <Space style={{ marginTop: 8 }}>
-                <Button onClick={handleSkip}>Saltar — sin habitación</Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  icon={<UserAddOutlined />}
-                  loading={savingAssign}
-                  disabled={!selectedRoomId}
-                >
-                  Asignar Habitación →
-                </Button>
-              </Space>
-            </Col>
-          </Row>
-        </Form>
-      )}
+              <Row justify="end" style={{ marginTop: 16 }}>
+                <Space>
+                  <Button onClick={() => navigate(backPath)}>Volver</Button>
+                  <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingPersonal}>
+                    Registrar Inquilino →
+                  </Button>
+                </Space>
+              </Row>
+            </Form>
+          </Card>
+        )}
+
+        {/* ── PASO 1: asignación de habitación ── */}
+        {currentStep === 1 && (
+          <Card title={<span style={cardTitleStyle}>Asignar habitación</span>} style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <Form
+              form={assignForm}
+              layout="vertical"
+              onFinish={handleAssignSubmit}
+              initialValues={{ move_in_date: dayjs() }}
+            >
+              {assignError && (
+                <Alert type="error" message={assignError} showIcon style={{ marginBottom: 16 }} />
+              )}
+
+              <Row gutter={[40, 0]} align="top">
+                {/* Formulario */}
+                <Col xs={24} md={18}>
+                  {/* Banner: inquilino + nota opcional */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: "10px 16px", marginBottom: 20 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{createdLodgerName}</span>
+                    <span style={{ fontSize: 12, color: "#9CA3AF" }}>Opcional — puedes saltar este paso</span>
+                  </div>
+
+                  <RoomAssignmentForm
+                    form={assignForm}
+                    accommodations={accommodations}
+                    preselectedAccId={preselectedAccId}
+                    preselectedRoomId={preselectedRoomId}
+                    required={false}
+                    allowAccommodationChange={true}
+                    onRoomSelect={(roomId) => setSelectedRoomId(roomId)}
+                    onRoomsChange={(rooms) => setAvailableRooms(rooms)}
+                    onPayUntilEndOfMonthChange={(checked) => setPayUntilEndOfMonth(checked)}
+                  />
+                </Col>
+
+                {/* Imagen — oculta en móvil, visible desde md */}
+                <Col xs={0} md={6} style={{ display: "flex", justifyContent: "center" }}>
+                  <img
+                    src="/images/Habitación sin Inquilino en la cama.png"
+                    alt="Habitación disponible"
+                    style={{ width: "130%", objectFit: "contain", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.12))" }}
+                  />
+                </Col>
+              </Row>
+
+              <Row justify="end" style={{ marginTop: 16 }}>
+                <Space>
+                  <Button onClick={handleSkip}>Saltar — sin habitación</Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<UserAddOutlined />}
+                    loading={savingAssign}
+                    disabled={!selectedRoomId}
+                  >
+                    Asignar Habitación →
+                  </Button>
+                </Space>
+              </Row>
+            </Form>
+          </Card>
+        )}
+
       </div>
     </V2Layout>
   );

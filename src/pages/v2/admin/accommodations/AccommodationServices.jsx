@@ -7,7 +7,7 @@ import {
   Alert, Button, Card, Col, Form, InputNumber,
   Popconfirm, Row, Select, Space, Table, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, PlusOutlined, StopOutlined, CheckOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, StopOutlined, CheckOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -167,78 +167,106 @@ export default function AccommodationServices() {
     },
   ];
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Servicios del Alojamiento</Title>
-          {accommodation && <Text type="secondary">{accommodation.name}</Text>}
-        </Col>
-        <Col>
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setShowAddForm((v) => !v)}
-              disabled={availableCatalog.length === 0}
-            >
-              Añadir Servicio
-            </Button>
-            <Button icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/v2/admin/alojamientos/${id}/habitaciones`)}>
-              Volver
-            </Button>
-          </Space>
-        </Col>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <HomeOutlined style={{ marginRight: 10 }} />
+              Servicios del Alojamiento
+            </Title>
+            <Text type="secondary">
+              {accommodation ? accommodation.name : "Cargando alojamiento..."}
+            </Text>
+          </Col>
+          <Col>
+            <Space>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setShowAddForm((v) => !v)}
+                disabled={availableCatalog.length === 0}
+              >
+                Añadir Servicio
+              </Button>
+              <Button icon={<ArrowLeftOutlined />}
+                onClick={() => navigate(`/v2/admin/alojamientos/${id}/habitaciones`)}>
+                Volver
+              </Button>
+            </Space>
+          </Col>
+        </Row>
 
-      {error && (
-        <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
-          closable onClose={() => setError(null)} />
-      )}
+        {error && (
+          <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
+            closable onClose={() => setError(null)} />
+        )}
 
-      {/* Formulario añadir servicio */}
-      {showAddForm && (
-        <Card size="small" style={{ marginBottom: 16, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
-          <Text strong style={{ display: "block", marginBottom: 12 }}>Añadir Servicio al Alojamiento</Text>
-          <Form form={addForm} layout="inline" onFinish={onAdd}>
-            <Form.Item name="service_id" rules={[{ required: true, message: "Selecciona un servicio" }]}>
-              <Select
-                style={{ width: 260 }}
-                placeholder="Seleccionar servicio del catálogo..."
-                options={availableCatalog.map((c) => ({
-                  value: c.id,
-                  label: `${c.name} (${fEur(c.unit_price)}/${c.unit})`,
-                }))}
-              />
-            </Form.Item>
-            <Form.Item name="custom_price" label="Precio personalizado">
-              <InputNumber min={0} precision={2} addonAfter="€" style={{ width: 140 }}
-                placeholder="Opcional" />
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Button type="primary" htmlType="submit" loading={adding}>Añadir</Button>
-                <Button onClick={() => { setShowAddForm(false); addForm.resetFields(); }}>Cancelar</Button>
-              </Space>
-            </Form.Item>
-          </Form>
-          {availableCatalog.length === 0 && (
-            <Text type="secondary">Todos los servicios del catálogo ya están añadidos a este alojamiento.</Text>
+        <Card
+          size="small"
+          title={<span style={cardTitleStyle}>Servicios configurados</span>}
+          extra={
+            <Button size="small" onClick={load} loading={loading}>
+              Actualizar
+            </Button>
+          }
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+        >
+          {/* Formulario añadir servicio */}
+          {showAddForm && (
+            <div style={{ marginBottom: 16, padding: 16, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8 }}>
+              <Text strong style={{ display: "block", marginBottom: 12 }}>Añadir Servicio al Alojamiento</Text>
+              <Form form={addForm} layout="inline" onFinish={onAdd}>
+                <Form.Item name="service_id" rules={[{ required: true, message: "Selecciona un servicio" }]}>
+                  <Select
+                    style={{ width: 260 }}
+                    placeholder="Seleccionar servicio del catálogo..."
+                    options={availableCatalog.map((c) => ({
+                      value: c.id,
+                      label: `${c.name} (${fEur(c.unit_price)}/${c.unit})`,
+                    }))}
+                  />
+                </Form.Item>
+                <Form.Item name="custom_price" label="Precio personalizado">
+                  <InputNumber min={0} precision={2} addonAfter="€" style={{ width: 140 }}
+                    placeholder="Opcional" />
+                </Form.Item>
+                <Form.Item>
+                  <Space>
+                    <Button type="primary" htmlType="submit" loading={adding}>Añadir</Button>
+                    <Button onClick={() => { setShowAddForm(false); addForm.resetFields(); }}>Cancelar</Button>
+                  </Space>
+                </Form.Item>
+              </Form>
+              {availableCatalog.length === 0 && (
+                <Text type="secondary">Todos los servicios del catálogo ya están añadidos a este alojamiento.</Text>
+              )}
+            </div>
           )}
-        </Card>
-      )}
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={accServices}
-        loading={loading}
-        scroll={{ x: true }}
-        size="small"
-        pagination={false}
-        locale={{ emptyText: <EmptyState icon="🔧" title="Sin servicios configurados" description="Añade servicios del catálogo a este alojamiento para asignarlos a inquilinos" /> }}
-      />
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={accServices}
+            loading={loading}
+            scroll={{ x: true }}
+            size="small"
+            pagination={false}
+            locale={{ emptyText: <EmptyState icon="🔧" title="Sin servicios configurados" description="Añade servicios del catálogo a este alojamiento para asignarlos a inquilinos" /> }}
+          />
+        </Card>
+      </div>
     </V2Layout>
   );
 }

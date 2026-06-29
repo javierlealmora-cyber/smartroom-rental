@@ -261,7 +261,7 @@ export default function SalEstructuraTab() {
   }
 
   return (
-    <div style={{ maxWidth: 920 }}>
+    <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <Button icon={<ReloadOutlined />} onClick={reload}>Actualizar</Button>
       </div>

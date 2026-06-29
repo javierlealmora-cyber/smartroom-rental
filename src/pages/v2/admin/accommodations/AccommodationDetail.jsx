@@ -49,7 +49,7 @@ const ROOM_STATUS_BADGE_BG = {
 const LODGER_STATUS_COLOR = { active: "#059669", invited: "#3B82F6", pending_checkout: "#F59E0B", inactive: "#9CA3AF" };
 const LODGER_STATUS_LABEL = { active: "Activo", invited: "Invitado", pending_checkout: "Pendiente baja", inactive: "Inactivo" };
 const KITCHEN_LABEL = { shared: "Compartida", private: "Privada", none: "Sin cocina" };
-const BATHROOM_LABEL = { shared: "Baño compartido", private: "Baño privado", ensuite: "Baño en suite" };
+const BATHROOM_LABEL = { shared: "Compartido", private: "Privado", ensuite: "En suite" };
 
 const ROOM_IMG_FREE     = "/images/Habitación sin Inquilino en la cama.png";
 const ROOM_IMG_OCCUPIED = "/images/Habitación con Inquilino en la cama.webp";
@@ -185,7 +185,7 @@ export default function AccommodationDetail() {
   const initialSubTab = searchParams.get("subtab");
   const [activeTab, setActiveTab] = useState(initialTab);
   const [activeSubTab, setActiveSubTab] = useState(
-    initialSubTab || (initialTab === "datos" ? "informacion" : null)
+    initialSubTab || (initialTab === "datos" ? "datos-alojamiento" : null)
   );
 
   // ── Filtros en pestaña Habitaciones (se limpian en cada entrada) ─────────
@@ -195,6 +195,7 @@ export default function AccommodationDetail() {
   const [roomViewMode,       setRoomViewMode]       = useState(
     () => localStorage.getItem("smartrent_accdetail_viewMode") || "cards"
   );
+  const [hoveredRoomId, setHoveredRoomId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -202,7 +203,7 @@ export default function AccommodationDetail() {
       const today = new Date().toISOString().split("T")[0];
       const [{ data: acc, error: accErr }, { data: roomsData, error: roomsErr }, entities, { data: currentAssignments }, { data: futureAssignments }] = await Promise.all([
         supabase.from("accommodations")
-          .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, legal_type)")
+          .select("*, owner_entity:entities!left(id, legal_name, first_name, last_name1, legal_type)")
           .eq("id", accId).single(),
         supabase.from("rooms")
           .select("*")
@@ -352,7 +353,7 @@ export default function AccommodationDetail() {
   }, [accommodation, activeTab, accForm]);
 
   useEffect(() => {
-    if (activeTab !== "datos" || activeSubTab !== "ocupacion") return;
+    if (activeTab !== "ocupacion") return;
     if (!clientAccountId) return;
     setLoadingGantt(true);
     
@@ -565,12 +566,14 @@ export default function AccommodationDetail() {
 
   const TABS = [
     {
-      key: "datos", label: "Datos del Alojamiento",
+      key: "datos", label: "Edición de Datos",
       subTabs: [
-        { key: "info", label: "Información" },
-        { key: "ocupacion", label: "Ocupación" },
+        { key: "datos-alojamiento", label: "Datos de Alojamiento" },
+        { key: "configurar-consumo", label: "Configurar Consumo" },
+        { key: "configurar-habitaciones", label: "Configurar Habitaciones" },
       ],
     },
+    { key: "ocupacion", label: "Ocupación", subTabs: null },
     { key: "habitaciones", label: "Habitaciones", subTabs: null },
     {
       key: "consumos", label: "Consumos",
@@ -621,8 +624,9 @@ export default function AccommodationDetail() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <div style={{ marginBottom: 10 }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 10 }}>
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
           style={{ paddingLeft: 0, color: "#6B7280", marginBottom: 10, fontSize: 14 }}>
           {backLabel}
@@ -707,8 +711,8 @@ export default function AccommodationDetail() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, marginTop: 16 }} />}
 
-      {/* ── Tab: Datos del Alojamiento ───────────────────────────────────── */}
-      {activeTab === "datos" && activeSubTab !== "ocupacion" && (
+      {/* ── Tab: Edición de Datos — Sub-tabs con formulario compartido ─── */}
+      {activeTab === "datos" && (activeSubTab === "datos-alojamiento" || activeSubTab === "configurar-consumo") && (
         <div style={{ marginTop: 24 }}>
           {saveError && <Alert type="error" message={saveError} showIcon closable onClose={() => setSaveError(null)} style={{ marginBottom: 16 }} />}
           {saveOk && <Alert type="success" message="Alojamiento guardado correctamente" showIcon style={{ marginBottom: 16 }} />}
@@ -716,10 +720,11 @@ export default function AccommodationDetail() {
           {loading ? <Skeleton active paragraph={{ rows: 6 }} /> : (
             <Form form={accForm} layout="vertical" onFinish={onSaveAccommodation}>
 
-              {/* Datos básicos */}
-              <Card title="Datos del Alojamiento" size="small" style={{ marginBottom: 16 }}>
-                <Row gutter={[16, 0]}>
-                  <Col xs={24} sm={12} md={8}>
+              {/* Sub-tab: Datos de Alojamiento */}
+              <div style={{ display: activeSubTab === "datos-alojamiento" ? "block" : "none" }}>
+                <Card title="Datos de Alojamiento" size="small" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 0]}>
+                    <Col xs={24} sm={12} md={8}>
                     <Form.Item label="Nombre" name="name" rules={[{ required: true, message: "El nombre es obligatorio" }]}>
                       <Input />
                     </Form.Item>
@@ -789,8 +794,10 @@ export default function AccommodationDetail() {
                   </Col>
                 </Row>
               </Card>
+              </div>
 
-              {/* Configuración de consumo */}
+              {/* Sub-tab: Configurar Consumo */}
+              <div style={{ display: activeSubTab === "configurar-consumo" ? "block" : "none" }}>
               <Card title="Configuración de Consumo" size="small" style={{ marginBottom: 16 }}>
                 {/* Helper local: bloque por suministro */}
                 <Form.Item noStyle shouldUpdate>
@@ -942,6 +949,7 @@ export default function AccommodationDetail() {
                   </Button>
                 </div>
               </Card>
+              </div>
 
               <Row justify="end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} size="large">
@@ -954,8 +962,8 @@ export default function AccommodationDetail() {
         </div>
       )}
 
-      {/* ── Habitaciones (dentro del tab Datos, pero fuera del Form principal) ─── */}
-      {activeTab === "datos" && activeSubTab !== "ocupacion" && !loading && (
+      {/* ── Sub-tab: Configurar Habitaciones ─── */}
+      {activeTab === "datos" && activeSubTab === "configurar-habitaciones" && !loading && (
         <div style={{ marginTop: 16 }}>
           <Card
             title={<Space><span>Habitaciones</span><Tag>{rooms.length}</Tag></Space>}
@@ -1099,8 +1107,8 @@ export default function AccommodationDetail() {
         </div>
       )}
 
-      {/* ── Gantt Ocupación (sub-tab de Datos) ──────────────────────── */}
-      {activeTab === "datos" && activeSubTab === "ocupacion" && (() => {
+      {/* ── Tab principal: Ocupación — Gantt ──────────────────────── */}
+      {activeTab === "ocupacion" && (() => {
         const CELL_W = 6;   // ancho: 6px + 1px gap → 181 días (6 meses) ≈ 1260px
         const CELL_H = 18;  // alto mayor que ancho → rectángulo vertical
         const PALETTE = [
@@ -1274,8 +1282,8 @@ export default function AccommodationDetail() {
         <Card style={{ textAlign: "center", padding: "40px 0", borderStyle: "dashed" }}>
           <HomeOutlined style={{ fontSize: 40, color: "#D1D5DB", marginBottom: 12 }} />
           <div><Text type="secondary">Este alojamiento no tiene habitaciones configuradas</Text></div>
-          <Button type="link" onClick={() => { setActiveTab("datos"); setActiveSubTab("informacion"); }} style={{ marginTop: 8 }}>
-            Ir a Datos del Alojamiento para añadir habitaciones
+          <Button type="link" onClick={() => { setActiveTab("datos"); setActiveSubTab("configurar-habitaciones"); }} style={{ marginTop: 8 }}>
+            Ir a Edición de Datos para añadir habitaciones
           </Button>
         </Card>
       ) : activeTab === "habitaciones" ? (
@@ -1419,9 +1427,9 @@ export default function AccommodationDetail() {
                 {
                   title: "Baño",
                   key: "bathroom",
-                  width: 120,
+                  width: 140,
                   render: (_, r) => r.bathroom_type ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
                       <img src="/images/baño-icono.webp" alt="Baño" style={{ width: 18, height: 18, objectFit: "contain" }} />
                       <span style={{ fontSize: 12 }}>{BATHROOM_LABEL[r.bathroom_type] || r.bathroom_type}</span>
                     </div>
@@ -1493,15 +1501,30 @@ export default function AccommodationDetail() {
                         ? accommodation.owner_entity.legal_name
                         : [accommodation.owner_entity.first_name, accommodation.owner_entity.last_name1].filter(Boolean).join(" ") || "—")
                     : null;
+                  const isHovered = hoveredRoomId === room.id;
                   return (
-                    <Card
+                    <div
+                      onMouseEnter={() => setHoveredRoomId(room.id)}
+                      onMouseLeave={() => setHoveredRoomId(null)}
                       style={{
                         borderRadius: 12,
                         border: "1px solid #E5E7EB",
                         background: "#FFFFFF",
                         height: "100%",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                        boxShadow: isHovered ? "0 12px 32px rgba(0,0,0,0.13)" : "0 2px 8px rgba(0,0,0,0.06)",
                         overflow: "hidden",
+                        transform: isHovered ? "translateY(-4px)" : "translateY(0)",
+                        transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                        cursor: "pointer",
+                      }}
+                    >
+                    <Card
+                      style={{
+                        borderRadius: 12,
+                        border: "none",
+                        background: "transparent",
+                        height: "100%",
+                        boxShadow: "none",
                       }}
                       styles={{ body: { padding: 0, background: "#fff" } }}
                     >
@@ -1692,6 +1715,7 @@ export default function AccommodationDetail() {
                         )}
                       </div>
                     </Card>
+                    </div>
                   );
                 })()}
               </Col>
@@ -2450,6 +2474,7 @@ export default function AccommodationDetail() {
           );
         })()}
       </Modal>
+      </div>
     </V2Layout>
   );
 }

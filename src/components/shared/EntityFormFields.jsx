@@ -46,7 +46,7 @@ export default function EntityFormFields({
       ) : (
         <>
           <Row gutter={16}>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 label="Nombre"
                 name="first_name"
@@ -60,7 +60,7 @@ export default function EntityFormFields({
                 <Input placeholder="Nombre" />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 label="Apellido 1"
                 name="last_name1"
@@ -74,6 +74,9 @@ export default function EntityFormFields({
                 <Input placeholder="Garrido" />
               </Form.Item>
             </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col xs={24} sm={8}>
               <Form.Item 
                 label="Apellido 2" 
@@ -86,10 +89,7 @@ export default function EntityFormFields({
                 <Input placeholder="Montes" />
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item 
                 label="Nombre preferido" 
                 name="nickname"
@@ -100,7 +100,7 @@ export default function EntityFormFields({
                 <Input placeholder="Palo" />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Género" name="gender">
                 <Select options={GENDER_OPTIONS} placeholder="Seleccionar" allowClear />
               </Form.Item>

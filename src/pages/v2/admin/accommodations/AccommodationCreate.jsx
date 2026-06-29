@@ -4,10 +4,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Button, Card, Col, Form, Input, InputNumber,
+  Alert, Button, Card, Col, Divider, Form, Input, InputNumber,
   Row, Select, Space, Steps, Table, Typography,
 } from "antd";
-import { ArrowLeftOutlined, ArrowRightOutlined, SaveOutlined } from "@ant-design/icons";
+import { HomeOutlined } from "@ant-design/icons";
 
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -168,171 +168,200 @@ export default function AccommodationCreate() {
     },
   ];
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ margin: 0 }}>Nuevo Alojamiento</Title>
-          <Text type="secondary">
-            {currentStep === 0 ? "Paso 1 de 2: Datos del alojamiento" : "Paso 2 de 2: Configurar habitaciones"}
-          </Text>
-        </Col>
-        <Col>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/admin/alojamientos")}>Volver</Button>
-        </Col>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      <Steps
-        current={currentStep}
-        style={{ marginBottom: 32, maxWidth: 400 }}
-        items={[{ title: "Datos básicos" }, { title: "Habitaciones" }]}
-      />
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <HomeOutlined style={{ marginRight: 10 }} />
+              Nuevo Alojamiento
+            </Title>
+            <Text type="secondary">
+              {currentStep === 0 ? "Paso 1 de 2: Datos del alojamiento" : "Paso 2 de 2: Configurar habitaciones"}
+            </Text>
+          </Col>
+        </Row>
 
-      {/* Paso 1: Datos básicos */}
-      {currentStep === 0 && (
-        <Card>
-          {!loadingEntities && ownerEntities.length === 0 && (
-            <Alert
-              type="warning"
-              showIcon
-              message="No hay entidades propietarias activas"
-              description={
-                <span>
-                  Debes crear al menos una <strong>Entidad Propietaria</strong> antes de añadir un alojamiento.{" "}
-                  <a href="/v2/admin/entidades/nueva">Crear entidad →</a>
-                </span>
-              }
+        {/* ── Steps ────────────────────────────────────────────────────── */}
+        <Steps
+          current={currentStep}
+          style={{ margin: "24px 0" }}
+          items={[{ title: "Datos básicos" }, { title: "Habitaciones" }]}
+        />
+
+        {/* ── Paso 1: Datos básicos ────────────────────────────────────── */}
+        {currentStep === 0 && (
+          <Card
+            loading={loadingEntities}
+            title={<span style={cardTitleStyle}>Datos del alojamiento</span>}
+            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          >
+            {!loadingEntities && ownerEntities.length === 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                message="No hay entidades propietarias activas"
+                description={
+                  <span>
+                    Debes crear al menos una <strong>Entidad Propietaria</strong> antes de añadir un alojamiento.{" "}
+                    <a href="/v2/admin/entidades/nueva">Crear entidad →</a>
+                  </span>
+                }
+                style={{ marginBottom: 24 }}
+              />
+            )}
+            <Form form={form} layout="vertical" onFinish={onStep1Finish}>
+              {/* Información general */}
+              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>
+                Información general
+              </Divider>
+              <Row gutter={[16, 0]}>
+                <Col xs={24}>
+                  <Form.Item
+                    label="Entidad Propietaria"
+                    name="owner_entity_id"
+                    rules={[{ required: true, message: "La entidad propietaria es obligatoria" }]}
+                    extra="El alojamiento queda vinculado a esta entidad propietaria"
+                  >
+                    <Select
+                      showSearch
+                      placeholder="Seleccionar entidad propietaria..."
+                      loading={loadingEntities}
+                      disabled={ownerEntities.length === 0}
+                      optionFilterProp="label"
+                      options={ownerEntities.map((e) => {
+                        const displayName = e.legal_name ||
+                          [e.first_name, e.last_name1, e.last_name2].filter(Boolean).join(" ") ||
+                          e.tax_id || "Entidad sin nombre";
+                        return { value: e.id, label: displayName };
+                      })}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Nombre del alojamiento" name="name" rules={[{ required: true, message: "El nombre es obligatorio" }]}>
+                    <Input placeholder="Ej: Residencia Central, Piso Chamberí..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Número de habitaciones" name="numRooms"
+                    rules={[{ required: true, message: "Indica al menos 1 habitación" }, { type: "number", min: 1, max: 100, message: "Entre 1 y 100 habitaciones" }]}
+                    extra="Se generarán automáticamente en el siguiente paso"
+                  >
+                    <InputNumber style={{ width: "100%" }} min={1} max={100} placeholder="8" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Dirección */}
+              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>
+                Dirección
+              </Divider>
+              <Row gutter={[16, 0]}>
+                <Col xs={24} sm={14}>
+                  <Form.Item label="Calle" name="street">
+                    <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={4}>
+                  <Form.Item label="Número" name="street_number">
+                    <Input placeholder="12" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={3}>
+                  <Form.Item label="Piso" name="floor">
+                    <Input placeholder="3" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={3}>
+                  <Form.Item label="Puerta" name="door">
+                    <Input placeholder="A" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Bloque / Escalera" name="address_block">
+                    <Input placeholder="Bloque B, Escalera 2..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={4}>
+                  <Form.Item label="Código Postal" name="postal_code">
+                    <Input placeholder="28001" maxLength={5} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Ciudad" name="city">
+                    <Input placeholder="Madrid" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Provincia" name="province">
+                    <Select
+                      showSearch
+                      placeholder="Seleccionar provincia..."
+                      optionFilterProp="label"
+                      options={PROVINCIAS_ES}
+                      filterOption={(input, option) =>
+                        option.label.toLowerCase().includes(input.toLowerCase())
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row justify="end" style={{ marginTop: 16 }}>
+                <Space>
+                  <Button onClick={() => navigate("/v2/admin/alojamientos")}>Volver</Button>
+                  <Button type="primary" htmlType="submit">Continuar</Button>
+                </Space>
+              </Row>
+            </Form>
+          </Card>
+        )}
+
+        {/* ── Paso 2: Habitaciones ─────────────────────────────────────── */}
+        {currentStep === 1 && (
+          <Card
+            title={
+              <span style={cardTitleStyle}>
+                {step1Values?.name} · {rooms.length} habitaciones
+              </span>
+            }
+            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          >
+            {saveError && <Alert type="error" message={saveError} showIcon style={{ marginBottom: 16 }} />}
+
+            <Table
+              dataSource={rooms}
+              columns={roomColumns}
+              pagination={false}
+              scroll={{ x: true, y: 400 }}
+              size="small"
               style={{ marginBottom: 24 }}
             />
-          )}
-          <Form form={form} layout="vertical" onFinish={onStep1Finish}>
-            <Row gutter={[16, 0]}>
-              {/* Entidad Propietaria — PRIMER CAMPO OBLIGATORIO según jerarquía del sistema */}
-              <Col xs={24}>
-                <Form.Item
-                  label="Entidad Propietaria"
-                  name="owner_entity_id"
-                  rules={[{ required: true, message: "La entidad propietaria es obligatoria" }]}
-                  extra="El alojamiento queda vinculado a esta entidad propietaria"
-                >
-                  <Select
-                    showSearch
-                    placeholder="Seleccionar entidad propietaria..."
-                    loading={loadingEntities}
-                    disabled={ownerEntities.length === 0}
-                    optionFilterProp="label"
-                    options={ownerEntities.map((e) => {
-                      const displayName = e.legal_name ||
-                        [e.first_name, e.last_name1, e.last_name2].filter(Boolean).join(" ") ||
-                        e.tax_id || "Entidad sin nombre";
-                      return { value: e.id, label: displayName };
-                    })}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Nombre del alojamiento" name="name" rules={[{ required: true, message: "El nombre es obligatorio" }]}>
-                  <Input placeholder="Ej: Residencia Central, Piso Chamberí..." />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Número de habitaciones" name="numRooms"
-                  rules={[{ required: true, message: "Indica al menos 1 habitación" }, { type: "number", min: 1, max: 100, message: "Entre 1 y 100 habitaciones" }]}
-                  extra="Se generarán automáticamente en el siguiente paso"
-                >
-                  <InputNumber style={{ width: "100%" }} min={1} max={100} placeholder="8" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={14}>
-                <Form.Item label="Calle" name="street">
-                  <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item label="Número" name="street_number">
-                  <Input placeholder="12" />
-                </Form.Item>
-              </Col>
-              <Col xs={12} sm={3}>
-                <Form.Item label="Piso" name="floor">
-                  <Input placeholder="3" />
-                </Form.Item>
-              </Col>
-              <Col xs={12} sm={3}>
-                <Form.Item label="Puerta" name="door">
-                  <Input placeholder="A" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Bloque / Escalera (opcional)" name="address_block">
-                  <Input placeholder="Bloque B, Escalera 2..." />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item label="Código Postal" name="postal_code">
-                  <Input placeholder="28001" maxLength={5} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item label="Ciudad" name="city">
-                  <Input placeholder="Madrid" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Provincia" name="province">
-                  <Select
-                    showSearch
-                    placeholder="Seleccionar provincia..."
-                    optionFilterProp="label"
-                    options={PROVINCIAS_ES}
-                    filterOption={(input, option) =>
-                      option.label.toLowerCase().includes(input.toLowerCase())
-                    }
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row justify="end" style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
+            <Row justify="end" style={{ marginTop: 16 }}>
               <Space>
-                <Button onClick={() => navigate("/v2/admin/alojamientos")}>Cancelar</Button>
-                <Button type="primary" htmlType="submit" icon={<ArrowRightOutlined />}>Continuar</Button>
+                <Button onClick={() => setCurrentStep(0)}>Volver</Button>
+                <Button type="primary" loading={saving} onClick={handleSubmit}>
+                  Crear Alojamiento
+                </Button>
               </Space>
             </Row>
-          </Form>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {/* Paso 2: Habitaciones */}
-      {currentStep === 1 && (
-        <Card
-          title={
-            <Space>
-              <Text strong>{step1Values?.name}</Text>
-              <Text type="secondary">· {rooms.length} habitaciones</Text>
-            </Space>
-          }
-          extra={<Button icon={<ArrowLeftOutlined />} onClick={() => setCurrentStep(0)}>Volver</Button>}
-        >
-          {saveError && <Alert type="error" message={saveError} showIcon style={{ marginBottom: 16 }} />}
-          <Table
-            dataSource={rooms}
-            columns={roomColumns}
-            pagination={false}
-            scroll={{ x: true, y: 400 }}
-            size="small"
-            style={{ marginBottom: 24 }}
-          />
-          <Row justify="end">
-            <Space>
-              <Button onClick={() => navigate("/v2/admin/alojamientos")}>Cancelar</Button>
-              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSubmit}>
-                Crear Alojamiento
-              </Button>
-            </Space>
-          </Row>
-        </Card>
-      )}
+      </div>
     </V2Layout>
   );
 }

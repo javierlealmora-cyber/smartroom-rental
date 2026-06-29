@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Button, DatePicker, Form, InputNumber, message, Modal, Row, Col, Space, Skeleton, Alert,
+  Button, Card, DatePicker, Divider, Form, InputNumber, message, Modal, Row, Col, Space, Skeleton, Alert, Typography,
 } from "antd";
-import { ArrowLeftOutlined, EditOutlined, SaveOutlined, SwapOutlined, UserAddOutlined } from "@ant-design/icons";
+import { EditOutlined, SaveOutlined, SwapOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import LodgerFormFields from "./components/LodgerFormFields";
 import RoomAssignmentForm from "./components/RoomAssignmentForm";
 import ChangeRoomModal from "./components/ChangeRoomModal";
@@ -19,16 +19,7 @@ import PayersList from "./components/PayersList";
 import AccompanistSection from "./components/AccompanistSection";
 import { useAuth } from "../../../../providers/AuthProvider";
 
-// ─── Responsive ────────────────────────────────────────────────────────────────
-function useBreakpoint() {
-  const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
-  useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
-  return w;
-}
+const { Title, Text } = Typography;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function fDate(iso) {
@@ -52,11 +43,13 @@ function DataRow({ label, value, valueStyle }) {
       borderBottom:"1px solid #F3F4F6",
     }}>
       <span style={{
-        width:120, flexShrink:0,
+        width:130, flexShrink:0,
         fontSize:12, color:"#9CA3AF", fontWeight:500,
+        textAlign:"right", paddingRight:20,
       }}>{label}</span>
       <span style={{
         fontSize:13, color:"#1F2937", fontWeight:500,
+        paddingLeft:50,
         ...valueStyle,
       }}>{value || "-"}</span>
     </div>
@@ -132,9 +125,6 @@ export default function TenantDetail() {
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
-
-  const vw = useBreakpoint();
-  const isMobile = vw < 768;
 
   const activeAssignment = lodger?.assignments?.find(a => !a.move_out_date);
 
@@ -283,188 +273,162 @@ export default function TenantDetail() {
   const statusBg    = STATUS_BG[computedStatus]    || "#F9FAFB";
   const statusLabel = getLodgerStatusLabel(computedStatus);
 
+  const cardTitleStyle = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#374151",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    borderLeft: "3px solid #0071E3",
+    paddingLeft: 8,
+  };
+
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{background:"#FFFFFF", minHeight:"100%", padding:"0 0 48px"}}>
-        <div style={{maxWidth:1000, margin:"0 auto", padding: isMobile ? "0 16px" : "0"}}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-          {/* ── HEADER ───────────────────────────────────────── */}
-          <div style={{
-            display:"flex", alignItems:"flex-start",
-            justifyContent:"space-between",
-            marginBottom:8, gap:16, flexWrap:"wrap",
-            paddingTop:8,
-          }}>
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-                <span style={{fontSize:22,fontWeight:800,color:"#111827",letterSpacing:"-0.3px"}}>
-                  {lodgerName}
-                </span>
-                <span style={{
-                  fontSize:11,fontWeight:700,
-                  color:statusColor, background:statusBg,
-                  borderRadius:20, padding:"2px 10px",
-                  border:`1px solid ${statusColor}30`,
+        {/* ── HEADER ───────────────────────────────────────── */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <UserOutlined style={{ marginRight: 10 }} />
+              {lodgerName}
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: statusColor,
+                background: statusBg,
+                borderRadius: 20,
+                padding: "2px 10px",
+                border: `1px solid ${statusColor}30`,
+                marginLeft: 10,
+                verticalAlign: "middle",
+              }}>
+                {statusLabel}
+              </span>
+            </Title>
+            <Text type="secondary">
+              {activeAssignment
+                ? <>{activeAssignment.accommodation?.name} · <span style={{ color: "#6366F1", fontWeight: 600 }}>Hab. {activeAssignment.room?.number}</span></>
+                : <span style={{ fontStyle: "italic" }}>Sin habitación asignada</span>}
+              {lodger.phone && <> · Teléfono: {lodger.phone}</>}
+            </Text>
+          </Col>
+          <Col>
+            <Button type="primary" icon={<EditOutlined />} onClick={openEditLodger}>
+              Editar
+            </Button>
+          </Col>
+        </Row>
+
+        {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+
+        {/* ── INFORMACIÓN GENERAL ──────────────────────────── */}
+        <Card
+          title={<span style={cardTitleStyle}>Información general</span>}
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 24 }}
+        >
+          <Row gutter={[40, 24]} align="top">
+            <Col xs={24} md={16}>
+              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>
+                Datos personales
+              </Divider>
+              <DataRow label="Nombre"           value={lodger.first_name}/>
+              <DataRow label="Primer apellido" value={lodger.last_name1}/>
+              <DataRow label="Segundo apellido" value={lodger.last_name2}/>
+              <DataRow label="Alias"            value={lodger.nickname}/>
+              <DataRow label="Email"            value={lodger.email}/>
+              <DataRow label="Teléfono"         value={lodger.phone}/>
+              <DataRow label="Documento"        value={lodger.document_type
+                ? `${lodger.document_type.toUpperCase()}: ${lodger.document_id || "-"}`
+                : lodger.document_id}/>
+              <DataRow label="Género"           value={lodger.gender}/>
+            </Col>
+
+            <Col xs={0} md={8} style={{ display: "flex", justifyContent: "center", paddingTop: "4%" }}>
+              <img
+                src={photoTop}
+                alt={lodgerName}
+                style={{ width: "80%", objectFit: "contain", filter: "drop-shadow(0 24px 50px rgba(0,0,0,0.45))" }}
+              />
+            </Col>
+          </Row>
+
+          <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>
+            Dirección
+          </Divider>
+          <DataRow label="Calle"                    value={lodger.address_street}/>
+          <DataRow label="Número"                   value={lodger.address_number}/>
+          <DataRow label="Piso / Puerta / Escalera" value={lodger.address_floor}/>
+          <DataRow label="Código Postal"            value={lodger.address_postal_code}/>
+          <DataRow label="Localidad"                value={lodger.address_city}/>
+          <DataRow label="Provincia"                value={lodger.address_province}/>
+          <DataRow label="País"                     value={lodger.address_country}/>
+        </Card>
+
+        {/* ── HISTORIAL DE ASIGNACIONES ───────────────────── */}
+        <Card
+          title={<span style={cardTitleStyle}>Historial de asignaciones</span>}
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 24 }}
+        >
+          {(lodger.assignments || []).length === 0 ? (
+            <span style={{ fontSize: 13, color: "#9CA3AF" }}>Sin historial</span>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {lodger.assignments.map(asgn => (
+                <div key={asgn.id} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "8px 12px",
+                  background: "#F9FAFB", borderRadius: 8,
+                  border: "1px solid #F3F4F6",
                 }}>
-                  {statusLabel}
-                </span>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <Button icon={<ArrowLeftOutlined/>} onClick={()=>navigate(-1)}>Volver</Button>
-            </div>
-          </div>
-
-          {/* Línea estética gris bajo el nombre - ancho completo */}
-          <div style={{borderBottom:"2px solid #E5E7EB",marginBottom:8}}></div>
-
-          <div style={{maxWidth:1000, margin:"0 auto", padding: isMobile ? "0 16px" : "0"}}>
-            <div>
-              {/* Alojamiento y habitación actual */}
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
-                <span style={{fontSize:12,color:"#9CA3AF"}}>
-                  {activeAssignment
-                    ? <>{activeAssignment.accommodation?.name} · <span style={{color:"#6366F1",fontWeight:600}}>Hab. {activeAssignment.room?.number}</span></>
-                    : <span style={{fontStyle:"italic"}}>Sin habitación asignada</span>}
-                </span>
-              </div>
-              {/* Teléfono */}
-              <div style={{display:"flex",gap:6,alignItems:"baseline"}}>
-                {lodger.phone && (
-                  <>
-                    <span style={{fontSize:12,color:"#9CA3AF"}}>Teléfono:</span>
-                    <span style={{fontSize:13,color:"#6B7280"}}>{lodger.phone}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ── CUERPO — izq foto | der datos ───────────────── */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:isMobile?"1fr":"336px 1fr",
-            gap:isMobile?24:40,
-            alignItems:"start",
-            border:"2px solid #E5E7EB",
-            borderRadius:12,
-            padding:isMobile?16:24,
-            background:"#FFFFFF"
-          }}>
-
-            {/* COLUMNA IZQUIERDA — foto persona + dirección */}
-            <div>
-              <img src={photoTop} alt={lodgerName}
-                style={{width:"80%", display:"block", objectFit:"contain", marginBottom:24, margin:"0 auto 24px",
-                  filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.12))"}}/>
-
-              <Section title="Dirección">
-                <DataRow label="Calle"                    value={lodger.address_street}/>
-                <DataRow label="Número"                   value={lodger.address_number}/>
-                <DataRow label="Piso / Puerta / Escalera" value={lodger.address_floor}/>
-                <DataRow label="Código Postal"            value={lodger.address_postal_code}/>
-                <DataRow label="Localidad"                value={lodger.address_city}/>
-                <DataRow label="Provincia"                value={lodger.address_province}/>
-                <DataRow label="País"                     value={lodger.address_country}/>
-              </Section>
-            </div>
-
-            {/* COLUMNA DERECHA — datos personales + historial + pagadores */}
-            <div>
-              <Section title="Datos personales" extra={
-                <button onClick={openEditLodger} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#6366F1",padding:0,display:"flex",alignItems:"center",gap:4}}>
-                  <EditOutlined style={{fontSize:11}}/> Editar
-                </button>
-              }>
-                <DataRow label="Nombre"          value={lodger.first_name}/>
-                <DataRow label="Primer apellido" value={lodger.last_name1}/>
-                <DataRow label="Segundo apellido"value={lodger.last_name2}/>
-                <DataRow label="Alias"           value={lodger.nickname}/>
-                <DataRow label="Email"           value={lodger.email}/>
-                <DataRow label="Teléfono"        value={lodger.phone}/>
-                <DataRow label="Documento"       value={lodger.document_type
-                  ? `${lodger.document_type.toUpperCase()}: ${lodger.document_id||"-"}`
-                  : lodger.document_id}/>
-                <DataRow label="Género"          value={lodger.gender}/>
-              </Section>
-
-              {/* Historial */}
-              <Section title="Historial de asignaciones">
-                {(lodger.assignments||[]).length===0 ? (
-                  <span style={{fontSize:13,color:"#9CA3AF"}}>Sin historial</span>
-                ) : (
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {lodger.assignments.map(asgn=>(
-                      <div key={asgn.id} style={{
-                        display:"flex",justifyContent:"space-between",alignItems:"center",
-                        padding:"8px 12px",
-                        background:"#F9FAFB",borderRadius:8,
-                        border:"1px solid #F3F4F6",
-                      }}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>
-                            {asgn.accommodation?.name}
-                          </span>
-                          <span style={{
-                            fontSize:11,fontWeight:700,color:"#6366F1",
-                            background:"#EEF2FF",borderRadius:6,padding:"1px 7px",
-                          }}>
-                            Hab. {asgn.room?.number}
-                          </span>
-                        </div>
-                        <span style={{fontSize:11,color:"#9CA3AF"}}>
-                          {fDate(asgn.move_in_date)} → {asgn.move_out_date ? fDate(asgn.move_out_date) : "Actual"}
-                        </span>
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+                      {asgn.accommodation?.name}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: "#6366F1",
+                      background: "#EEF2FF", borderRadius: 6, padding: "1px 7px",
+                    }}>
+                      Hab. {asgn.room?.number}
+                    </span>
                   </div>
-                )}
-              </Section>
-
+                  <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                    {fDate(asgn.move_in_date)} → {asgn.move_out_date ? fDate(asgn.move_out_date) : "Actual"}
+                  </span>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
+        </Card>
 
-          {/* ── PARTE INFERIOR — foto cama (izq) + habitación actual (der) ── */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:isMobile?"1fr":"340px 1fr",
-            gap:isMobile?24:48,
-            alignItems:"start",
-            marginTop:8,
-            border:"2px solid #E5E7EB",
-            borderRadius:12,
-            padding:isMobile?16:24,
-            background:"#FFFFFF"
-          }}>
-            {/* Foto cama */}
-            <div style={{overflow:"hidden"}}>
-              <img src={photoBottom} alt="Habitación"
-                style={{width: isMobile ? "100%" : "139%", display:"block", objectFit:"contain",
-                  filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.12))"}}/>
-            </div>
-
-            {/* Habitación actual */}
-            <Section
-              title="Habitación actual"
-              extra={
-                <Space size={8}>
-                  {activeAssignment ? (
-                    <>
-                      <button onClick={openEditAssignment} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#6366F1",padding:0,display:"flex",alignItems:"center",gap:4}}>
-                        <EditOutlined style={{fontSize:11}}/> Editar
-                      </button>
-                      <button onClick={() => setReassignOpen(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#D97706",padding:0,display:"flex",alignItems:"center",gap:4}}>
-                        <SwapOutlined style={{fontSize:11}}/> Cambiar
-                      </button>
-                    </>
-                  ) : (
-                    <button onClick={openNewAssign} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#059669",padding:0,display:"flex",alignItems:"center",gap:4}}>
-                      <UserAddOutlined style={{fontSize:11}}/> Asignar habitación
+        {/* ── HABITACIÓN ACTUAL ───────────────────────────── */}
+        <Card
+          title={
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={cardTitleStyle}>Habitación actual</span>
+              <Space size={8}>
+                {activeAssignment ? (
+                  <>
+                    <button onClick={openEditAssignment} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                      <EditOutlined style={{ fontSize: 11 }} /> Editar
                     </button>
-                  )}
-                </Space>
-              }
-            >
+                    <button onClick={() => setReassignOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#D97706", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                      <SwapOutlined style={{ fontSize: 11 }} /> Cambiar
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={openNewAssign} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#059669", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                    <UserAddOutlined style={{ fontSize: 11 }} /> Asignar habitación
+                  </button>
+                )}
+              </Space>
+            </div>
+          }
+          style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 24 }}
+        >
+          <Row gutter={[40, 24]} align="top">
+            <Col xs={24} md={16}>
               {activeAssignment ? (<>
                 <DataRow label="Alojamiento"  value={activeAssignment.accommodation?.name}/>
                 <DataRow label="Habitación"   value={`Hab. ${activeAssignment.room?.number}`}/>
@@ -472,62 +436,66 @@ export default function TenantDetail() {
                 <DataRow label="Primer pago"  value={fDate(activeAssignment.billing_start_date)}/>
                 <DataRow label="Renta"
                   value={`${fCurrency(activeAssignment.monthly_rent)} / mes`}
-                  valueStyle={{color:"#059669",fontWeight:700}}/>
+                  valueStyle={{ color: "#059669", fontWeight: 700 }}/>
                 {activeAssignment.amount_until_end_of_month != null && (
                   <DataRow label="Hasta fin de mes"
                     value={fCurrency(activeAssignment.amount_until_end_of_month)}
-                    valueStyle={{color:"#059669",fontWeight:600}}/>
+                    valueStyle={{ color: "#059669", fontWeight: 600 }}/>
                 )}
                 {activeAssignment.deposit_amount != null && (
                   <DataRow label="Fianza"
                     value={fCurrency(activeAssignment.deposit_amount)}
-                    valueStyle={{color:"#D97706",fontWeight:600}}/>
+                    valueStyle={{ color: "#D97706", fontWeight: 600 }}/>
                 )}
                 {activeAssignment.commission_amount != null && (
                   <DataRow label="Comisión"
                     value={fCurrency(activeAssignment.commission_amount)}
-                    valueStyle={{color:"#7C3AED",fontWeight:600}}/>
+                    valueStyle={{ color: "#7C3AED", fontWeight: 600 }}/>
                 )}
               </>) : (
-                <span style={{fontSize:13,color:"#9CA3AF"}}>Sin habitación asignada</span>
+                <span style={{ fontSize: 13, color: "#9CA3AF" }}>Sin habitación asignada</span>
               )}
-            </Section>
+            </Col>
 
-            {/* REQ-015 — Sección Acompañante (sólo si la asignación activa lo tiene) */}
-            {activeAssignment?.accompanist && (
-              <div style={{ marginTop: 12 }}>
-                <AccompanistSection
-                  accompanist={activeAssignment.accompanist}
-                  historical={!!activeAssignment.move_out_date}
-                  isSuperadmin={isSuperadmin}
-                  onChanged={async () => {
-                    const fresh = await getLodger(id, clientAccountId);
-                    setLodger(fresh);
-                  }}
-                />
-              </div>
-            )}
-          </div>
+            <Col xs={0} md={8} style={{ display: "flex", justifyContent: "center" }}>
+              <img
+                src={photoBottom}
+                alt="Habitación"
+                style={{ width: "100%", objectFit: "contain", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.12))" }}
+              />
+            </Col>
+          </Row>
 
-          {/* ── PAGADORES — ancho completo, al final ── */}
-          {clientAccountId && (
-            <div style={{
-              marginTop:12,
-              border:"2px solid #E5E7EB",
-              borderRadius:12,
-              padding:isMobile?16:24,
-              background:"#FFFFFF"
-            }}>
-              <Section title="Gestión de pagadores">
-                <PayersList
-                  lodgerId={id}
-                  clientAccountId={clientAccountId}
-                  hasRoomAssignment={!!activeAssignment}
-                />
-              </Section>
+          {/* REQ-015 — Sección Acompañante (sólo si la asignación activa lo tiene) */}
+          {activeAssignment?.accompanist && (
+            <div style={{ marginTop: 12 }}>
+              <AccompanistSection
+                accompanist={activeAssignment.accompanist}
+                historical={!!activeAssignment.move_out_date}
+                isSuperadmin={isSuperadmin}
+                onChanged={async () => {
+                  const fresh = await getLodger(id, clientAccountId);
+                  setLodger(fresh);
+                }}
+              />
             </div>
           )}
-        </div>
+        </Card>
+
+        {/* ── PAGADORES ───────────────────────────────────── */}
+        {clientAccountId && (
+          <Card
+            title={<span style={cardTitleStyle}>Gestión de pagadores</span>}
+            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          >
+            <PayersList
+              lodgerId={id}
+              clientAccountId={clientAccountId}
+              hasRoomAssignment={!!activeAssignment}
+            />
+          </Card>
+        )}
+
       </div>
 
       {/* ── MODAL NUEVA ASIGNACIÓN DE HABITACIÓN ─────────── */}

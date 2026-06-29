@@ -325,7 +325,7 @@ export default function SalGatewaysTab() {
   ];
 
   return (
-    <div style={{ maxWidth: 960 }}>
+    <div>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Text type="secondary" style={{ fontSize: 13 }}>

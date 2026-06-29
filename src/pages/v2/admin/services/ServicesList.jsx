@@ -17,7 +17,7 @@ import {
 import {
   PlusOutlined, ReloadOutlined, EditOutlined, StopOutlined, CheckOutlined,
   AppstoreOutlined, ExperimentOutlined, LockOutlined,
-  ExclamationCircleOutlined, FormOutlined, ToolOutlined,
+  ExclamationCircleOutlined, FormOutlined, ToolOutlined, SettingOutlined,
 } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
@@ -468,26 +468,49 @@ export default function ServicesList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* Header */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>Gestión de Servicios</Title>
-          <Text type="secondary">
-            Configura y gestiona los servicios disponibles para tus alojamientos
-          </Text>
-        </div>
-      </Row>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
-      {/* Tabs con estilo line (homogéneo con el resto de la app) */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setSearchParams({ tab: key }, { replace: true })}
-        type="line"
-        size="middle"
-        items={MAIN_TABS}
-        style={{ marginTop: 4 }}
-        tabBarStyle={{ marginBottom: 20, borderBottom: "1px solid #E5E7EB" }}
-      />
+        {/* Header */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <SettingOutlined style={{ marginRight: 10 }} />
+              Gestión de Servicios
+            </Title>
+            <Text type="secondary">
+              Configura y gestiona los servicios disponibles para tus alojamientos
+            </Text>
+          </Col>
+        </Row>
+
+        {/* Tabs estilo SmartRoom con dropdown de Ant Design */}
+        <style>{`
+          .services-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+            color: #0071E3 !important;
+            font-weight: 700 !important;
+          }
+          .services-tabs .ant-tabs-ink-bar {
+            background: #0071E3 !important;
+          }
+          .services-tabs .ant-tabs-tab-btn {
+            color: #374151 !important;
+          }
+          .services-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+            color: #0071E3 !important;
+          }
+        `}</style>
+        <Tabs
+          className="services-tabs"
+          activeKey={activeTab}
+          onChange={(key) => setSearchParams({ tab: key }, { replace: true })}
+          type="line"
+          size="middle"
+          items={MAIN_TABS}
+          style={{ marginTop: 4 }}
+          tabBarStyle={{ marginBottom: 20, borderBottom: "1px solid #E5E7EB" }}
+        />
+
+      </div>
     </V2Layout>
   );
 }
