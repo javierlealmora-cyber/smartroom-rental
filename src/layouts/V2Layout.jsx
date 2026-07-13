@@ -7,7 +7,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
-import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import { useTenant } from "../providers/TenantProvider";
+import { MenuOutlined, CloseOutlined, SettingOutlined } from "@ant-design/icons";
 import {
   Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
   Icon3DServicios, Icon3DCatalogo, Icon3DFacturas, Icon3DLiquidaciones,
@@ -23,8 +24,9 @@ const ADMIN_NAV = [
   { label: "Alojamientos",  path: "/v2/admin/alojamientos",          Icon: Icon3DAlojamientos },
   { label: "Habitaciones",  path: "/v2/admin/habitaciones",          Icon: Icon3DHabitaciones },
   { label: "Inquilinos",    path: "/v2/admin/inquilinos",            Icon: Icon3DInquilinos },
-  { label: "Servicios",     path: "/v2/admin/inquilinos/servicios",  Icon: Icon3DServicios },
-  { label: "Catálogo",      path: "/v2/admin/servicios",             Icon: Icon3DCatalogo },
+  { label: "Prestaciones",  path: "/v2/admin/servicios",             Icon: Icon3DServicios },
+  { label: "Servicios",     path: "/v2/admin/gestion-servicios",      Icon: Icon3DServicios },
+  { label: "Catálogo",      path: "/v2/admin/catalogo",               Icon: Icon3DCatalogo },
   { label: "Acceso",        path: "/v2/admin/smart-access",          Icon: Icon3DSmartAccess },
 ];
 
@@ -33,8 +35,7 @@ const SUPERADMIN_NAV = [
   { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas",        Icon: Icon3DCuentas },
   { label: "Planes",          path: "/v2/superadmin/planes",         Icon: Icon3DPlanes },
   { label: "Servicios",       path: "/v2/superadmin/servicios",      Icon: Icon3DServicios },
-  { label: "Add-ons SaaS",    path: "/v2/superadmin/saas-servicios", Icon: Icon3DCatalogo },
-  { label: "SAL Shards",      path: "/v2/superadmin/sal-shards",     Icon: Icon3DSmartAccess },
+  { label: "Catálogo",         path: "/v2/superadmin/saas-servicios", Icon: Icon3DCatalogo },
 ];
 
 const LODGER_NAV = [
@@ -79,11 +80,11 @@ const BREADCRUMB_ROUTES = {
   ],
   "/v2/superadmin/saas-servicios": [
     { label: "Dashboard", path: "/v2/superadmin" },
-    { label: "Add-ons SaaS", path: "/v2/superadmin/saas-servicios" },
+    { label: "Catálogo", path: "/v2/superadmin/saas-servicios" },
   ],
   "/v2/superadmin/saas-servicios/:id": [
     { label: "Dashboard", path: "/v2/superadmin" },
-    { label: "Add-ons SaaS", path: "/v2/superadmin/saas-servicios" },
+    { label: "Catálogo", path: "/v2/superadmin/saas-servicios" },
     { label: "Detalle", path: null },
   ],
   "/v2/superadmin/cuentas/:id/smart-access": [
@@ -91,10 +92,6 @@ const BREADCRUMB_ROUTES = {
     { label: "Cuentas Cliente", path: "/v2/superadmin/cuentas" },
     { label: "Detalle", path: null },
     { label: "SmartAccessLock", path: null },
-  ],
-  "/v2/superadmin/sal-shards": [
-    { label: "Dashboard", path: "/v2/superadmin" },
-    { label: "SAL Shards", path: "/v2/superadmin/sal-shards" },
   ],
   // Admin
   "/v2/admin": [{ label: "Dashboard", path: "/v2/admin" }],
@@ -168,17 +165,40 @@ const BREADCRUMB_ROUTES = {
   ],
   "/v2/admin/servicios": [
     { label: "Dashboard", path: "/v2/admin" },
-    { label: "Servicios", path: "/v2/admin/servicios" },
+    { label: "Gestión de Prestaciones", path: "/v2/admin/servicios" },
   ],
   "/v2/admin/servicios/nuevo": [
     { label: "Dashboard", path: "/v2/admin" },
-    { label: "Servicios", path: "/v2/admin/servicios" },
-    { label: "Nuevo Servicio", path: null },
+    { label: "Gestión de Prestaciones", path: "/v2/admin/servicios" },
+    { label: "Nueva Prestación", path: null },
   ],
   "/v2/admin/servicios/:id/editar": [
     { label: "Dashboard", path: "/v2/admin" },
-    { label: "Servicios", path: "/v2/admin/servicios" },
+    { label: "Gestión de Prestaciones", path: "/v2/admin/servicios" },
     { label: "Editar", path: null },
+  ],
+  "/v2/admin/inquilinos/servicios": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Gestión de Prestaciones", path: "/v2/admin/servicios?tab=inquilinos" },
+    { label: "Prestaciones de Inquilinos", path: null },
+  ],
+  "/v2/admin/inquilinos/servicios/nuevo": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Gestión de Prestaciones", path: "/v2/admin/servicios?tab=inquilinos" },
+    { label: "Asignar Prestación", path: null },
+  ],
+  "/v2/admin/gestion-servicios": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Gestión de Servicios", path: "/v2/admin/gestion-servicios" },
+  ],
+  "/v2/admin/gestion-servicios/:id": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Gestión de Servicios", path: "/v2/admin/gestion-servicios" },
+    { label: "Configuración", path: null },
+  ],
+  "/v2/admin/catalogo": [
+    { label: "Dashboard", path: "/v2/admin" },
+    { label: "Catálogo de Servicios", path: "/v2/admin/catalogo" },
   ],
   "/v2/admin/energia/facturas": [
     { label: "Dashboard", path: "/v2/admin" },
@@ -229,17 +249,6 @@ const BREADCRUMB_ROUTES = {
     { label: "Dashboard", path: "/v2/admin" },
     { label: "Smart Access", path: "/v2/admin/smart-access" },
   ],
-  "/v2/admin/inquilinos/servicios": [
-    { label: "Dashboard", path: "/v2/admin" },
-    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
-    { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
-  ],
-  "/v2/admin/inquilinos/servicios/nuevo": [
-    { label: "Dashboard", path: "/v2/admin" },
-    { label: "Inquilinos", path: "/v2/admin/inquilinos" },
-    { label: "Servicios", path: "/v2/admin/inquilinos/servicios" },
-    { label: "Asignar Servicio", path: null },
-  ],
   // Lodger
   "/v2/lodger": [{ label: "Inicio", path: "/v2/lodger" }],
   "/v2/lodger/dashboard": [{ label: "Mi Panel", path: "/v2/lodger/dashboard" }],
@@ -289,18 +298,27 @@ export default function V2Layout({
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { branding: tenantBranding } = useTenant();
   const userEmail = user?.email || null;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = getNavItems(role);
 
-  const primaryColor   = companyBranding?.primaryColor   || "#0071E3";
-  const secondaryColor = companyBranding?.secondaryColor || "#3B82F6";
+  // Para superadmin: usa el branding del TenantProvider (cargado desde platform_settings)
+  // Para otros roles: usa companyBranding pasado por props (del tenant)
+  const effectiveBranding = role === "superadmin" ? tenantBranding : companyBranding;
+
+  const primaryColor   = effectiveBranding?.primaryColor   || effectiveBranding?.primary_color   || "#0071E3";
+  const secondaryColor = effectiveBranding?.secondaryColor || effectiveBranding?.secondary_color  || "#3B82F6";
   const branding = {
-    name: companyBranding?.name || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
-    logoText: companyBranding?.logoText || (companyBranding?.name || "S").charAt(0),
-    logoUrl: companyBranding?.logoUrl || null,
-    tagline: role === "superadmin" ? "Superadmin" : role === "lodger" ? "Portal Inquilino" : (companyBranding?.planLabel || "Panel de Gestión"),
+    name:     effectiveBranding?.name     || (role === "superadmin" ? "SmartRoom Platform" : "SmartRoom"),
+    logoText: effectiveBranding?.logoText || (effectiveBranding?.name || "S").charAt(0),
+    logoUrl:  effectiveBranding?.logoUrl  || effectiveBranding?.logo_url || null,
+    tagline:  role === "superadmin"
+      ? (effectiveBranding?.tagline || "Superadmin")
+      : role === "lodger"
+      ? "Portal Inquilino"
+      : (effectiveBranding?.planLabel || "Panel de Gestión"),
   };
 
   // Breadcrumbs
@@ -338,23 +356,23 @@ export default function V2Layout({
         .v2-topbar {
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 16px; height: 48px;
-          background: ${secondaryColor};
-          border-bottom: 1px solid rgba(0,0,0,0.12);
+          background: linear-gradient(135deg, ${secondaryColor} 0%, color-mix(in srgb, ${secondaryColor}, white 30%) 100%);
+          border-bottom: 1px solid rgba(0,0,0,0.18);
           position: sticky; top: 0; z-index: 300;
           gap: 8px;
         }
         .v2-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .v2-logo-img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .v2-logo-img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
         .v2-logo-placeholder {
           width: 28px; height: 28px; border-radius: 8px;
-          background: ${primaryColor};
+          background: rgba(255,255,255,0.2);
           display: flex; align-items: center; justify-content: center;
           font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         .v2-brand-text { display: flex; flex-direction: column; }
-        .v2-brand-name { font-size: 11px; font-weight: 700; color: ${primaryColor}; line-height: 1.2; white-space: nowrap; }
-        .v2-brand-tagline { font-size: 8px; color: ${primaryColor}; opacity: 0.7; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-name { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; }
+        .v2-brand-tagline { font-size: 8px; color: rgba(255,255,255,0.7); line-height: 1.2; white-space: nowrap; }
         .v2-topnav {
           display: flex; align-items: flex-end; gap: 0;
           flex: 1; justify-content: center;
@@ -375,32 +393,32 @@ export default function V2Layout({
         }
         .v2-nav-btn:focus { outline: none; }
         .v2-nav-btn:focus-visible { outline: none; }
-        .v2-nav-btn:hover { background: none; }
+        .v2-nav-btn:hover { background: rgba(255,255,255,0.08); border-radius: 8px; }
         .v2-nav-btn:hover .v2-nav-label {
-          opacity: 1;
-          text-shadow: 0 0 0.5px currentColor, 0 0 0.5px currentColor;
+          color: #fff;
         }
-        .v2-nav-btn.active { background: none; }
+        .v2-nav-btn.active { background: rgba(255,255,255,0.15); border-radius: 8px; }
         .v2-nav-btn.active .v2-nav-label {
-          opacity: 1;
-          text-shadow: 0 0 0.5px currentColor, 0 0 0.5px currentColor;
+          color: #fff; font-weight: 700;
         }
         .v2-nav-label {
-          font-size: 12px; font-weight: 500; color: ${primaryColor};
+          font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.75);
           letter-spacing: -0.01em; line-height: 1;
-          opacity: 0.55;
           display: block; text-align: center;
           width: 100%; overflow: hidden; text-overflow: ellipsis;
-          transition: opacity 0.15s, text-shadow 0.15s;
+          transition: opacity 0.15s, color 0.15s, text-shadow 0.15s;
         }
         .v2-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .v2-username { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
-        .v2-username-name { font-size: 11px; font-weight: 600; color: ${primaryColor}; line-height: 1.3; }
-        .v2-username-email { font-size: 9px; font-weight: 400; color: ${primaryColor}; opacity: 0.65; line-height: 1.2; }
+        .v2-username-name { font-size: 11px; font-weight: 600; color: #fff; line-height: 1.3; }
+        .v2-username-email { font-size: 9px; font-weight: 400; color: rgba(255,255,255,0.65); line-height: 1.2; }
         .v2-logout-btn {
-          padding: 4px 12px;
+          padding: 5px 10px;
           border: 1px solid transparent;
-          border-radius: 16px;
+          border-radius: 6px;
+          height: 30px;
+          min-width: 30px;
+          display: flex; align-items: center; justify-content: center;
           font-size: 10px; font-weight: 600;
           cursor: pointer; font-family: inherit;
           transition: opacity 0.18s; white-space: nowrap;
@@ -408,11 +426,11 @@ export default function V2Layout({
         .v2-logout-btn:hover { opacity: 0.82; }
         .v2-hamburger {
           display: none; background: none; border: none;
-          color: #374151; font-size: 20px; cursor: pointer;
+          color: rgba(255,255,255,0.85); font-size: 20px; cursor: pointer;
           padding: 4px 6px; border-radius: 8px; align-items: center;
           transition: background 0.15s;
         }
-        .v2-hamburger:hover { background: rgba(0,0,0,0.06); }
+        .v2-hamburger:hover { background: rgba(255,255,255,0.12); }
         .v2-mobile-drawer {
           display: none;
           position: fixed; top: 48px; left: 0; right: 0;
@@ -500,15 +518,25 @@ export default function V2Layout({
                 className="v2-logout-btn"
                 onClick={() => navigate("/v2/admin/settings")}
                 title="Configuración"
-                style={{ padding: "5px 12px", background: "rgba(0,0,0,0.10)", borderColor: "transparent", color: "#4B5563" }}
+                style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600 }}
               >
-                ⚙️
+                <SettingOutlined style={{ fontSize: 16 }} />
+              </button>
+            )}
+            {role === "superadmin" && (
+              <button
+                className="v2-logout-btn"
+                onClick={() => navigate("/v2/superadmin/settings")}
+                title="Configuración"
+                style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600 }}
+              >
+                <SettingOutlined style={{ fontSize: 16 }} />
               </button>
             )}
             <button
               className="v2-logout-btn"
               onClick={handleLogout}
-              style={{ background: "rgba(0,0,0,0.10)", borderColor: "transparent", color: "#4B5563" }}
+              style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontWeight: 600, fontSize: 13 }}
             >
               Salir
             </button>

@@ -37,12 +37,11 @@ export default function ApartmentsList() {
   // Cargar lista de empresas para superadmin
   useEffect(() => {
     if (isSuperadmin) {
-       
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadCompanies();
     } else if (userCompanyId) {
       setSelectedCompanyId(userCompanyId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperadmin, userCompanyId]);
 
   const sidebarItems = [
@@ -110,8 +109,8 @@ export default function ApartmentsList() {
       const search = searchTerm.toLowerCase();
       return (
         apt.name.toLowerCase().includes(search) ||
-        (apt.address_street || apt.address_line1)?.toLowerCase().includes(search) ||
-        (apt.address_city || apt.city)?.toLowerCase().includes(search)
+        apt.address_street?.toLowerCase().includes(search) ||
+        apt.address_city?.toLowerCase().includes(search)
       );
     }
     return true;
@@ -195,12 +194,8 @@ export default function ApartmentsList() {
                 <td style={styles.td}>{apt.name}</td>
                 <td style={styles.td}>
                   <div>
-                    <div style={styles.addressLine}>
-                      {(apt.address_street || apt.address_line1) || ""} {apt.address_number || ""}
-                    </div>
-                    <div style={styles.cityLine}>
-                      {apt.address_postal_code || apt.postal_code || ""} {apt.address_city || apt.city || ""}
-                    </div>
+                    <div style={styles.addressLine}>{apt.address_line1}</div>
+                    <div style={styles.cityLine}>{apt.postal_code} {apt.city}</div>
                   </div>
                 </td>
                 <td style={styles.td}>{apt.rooms}</td>

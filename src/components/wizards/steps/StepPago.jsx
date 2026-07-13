@@ -6,7 +6,7 @@
 // En superadmin_create: no se muestra / opcional
 // =============================================================================
 
-import { formatCurrency } from "../../../mocks/clientAccountsData";
+import { formatCurrency } from "../../../utils/formatters";
 
 export default function StepPago({ formData, mode, selectedPlan, submitting, submitError }) {
   const isAnnual = formData.billing_cycle === "annual";

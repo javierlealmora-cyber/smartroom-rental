@@ -273,6 +273,7 @@ export default function DashboardAdmin() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={S.root}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -421,6 +422,7 @@ export default function DashboardAdmin() {
         open={showAccommodationModal} 
         onCancel={() => setShowAccommodationModal(false)} 
       />
+      </div>
     </V2Layout>
   );
 }

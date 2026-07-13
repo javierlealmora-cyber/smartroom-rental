@@ -253,6 +253,21 @@ const handleSubTabClick = (sub) => {
 
 ---
 
+## Ancho de página estándar
+
+Todas las páginas admin y superadmin usan **`maxWidth: 1300`** con `margin: "0 auto"` y `padding: "0 4px"`.
+
+```jsx
+// ✅ Wrapper estándar — OBLIGATORIO en todas las páginas
+<div style={{ maxWidth: 1300, margin: "0 auto", padding: "0 4px" }}>
+  {/* tabs + contenido */}
+</div>
+```
+
+**No usar** `1000`, `1100`, `1200`, `1400` ni ningún otro valor. Si la página es un wizard o formulario estrecho (modal-style), la excepción debe justificarse.
+
+---
+
 ## Páginas ya migradas (referencia)
 
 | Página | Niveles | Estado |
@@ -272,5 +287,5 @@ Al aplicar este patrón en una página existente, verificar:
 - [ ] Añadir handlers `handleTabClick` y `handleSubTabClick` si hay sub-tabs
 - [ ] El primer tab activo coincide con el `defaultActiveKey` anterior
 - [ ] El contenido de cada tab se renderiza condicionalmente con `activeTab === "key"`
-- [ ] El layout exterior (maxWidth, padding, título) NO se toca
+- [ ] El wrapper exterior usa `maxWidth: 1300, margin: "0 auto", padding: "0 4px"`
 - [ ] No se introduce CSS de Tailwind ni inline styles ajenos a los del patrón

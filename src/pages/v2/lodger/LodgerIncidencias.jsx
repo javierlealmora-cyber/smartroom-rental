@@ -145,13 +145,16 @@ export default function LodgerIncidencias() {
   if (loading) {
     return (
       <V2Layout role="lodger" companyBranding={companyBranding}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Skeleton active paragraph={{ rows: 8 }} />
+        </div>
       </V2Layout>
     );
   }
 
   return (
     <V2Layout role="lodger" companyBranding={companyBranding} userName={lodger?.full_name || user?.email}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
       {error && (
         <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
@@ -368,6 +371,7 @@ export default function LodgerIncidencias() {
         </Form>
       </Drawer>
 
+      </div>
     </V2Layout>
   );
 }

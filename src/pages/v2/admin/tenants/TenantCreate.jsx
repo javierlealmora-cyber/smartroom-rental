@@ -18,6 +18,8 @@ import RoomAssignmentForm from "./components/RoomAssignmentForm";
 
 const { Title, Text } = Typography;
 
+const cardTitleStyle = { fontWeight: 600, fontSize: 14, color: "#1A2438" };
+
 export default function TenantCreate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -155,21 +157,11 @@ export default function TenantCreate() {
     navigate(`/v2/admin/inquilinos/${createdLodgerId}/detalle`);
   };
 
-  const cardTitleStyle = {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#374151",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    borderLeft: "3px solid #0071E3",
-    paddingLeft: 8,
-  };
-
   // ── Pantalla final tras asignar habitación ────────────────────────────────────
   if (assignedWithRoom) {
     return (
       <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
             <Col>
               <Title level={2} style={{ margin: 0 }}>
@@ -217,7 +209,7 @@ export default function TenantCreate() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>

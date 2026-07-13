@@ -292,11 +292,9 @@ serve(async (req) => {
 
     if (ownerError) {
       console.error("Error creating owner entity:", ownerError);
-      // Rollback
-      await supabaseAdmin
-        .from("client_accounts")
-        .delete()
-        .eq("id", clientAccountId);
+      // Rollback completo: borrar entidades del tenant y la cuenta
+      await supabaseAdmin.from("entities").delete().eq("client_account_id", clientAccountId);
+      await supabaseAdmin.from("client_accounts").delete().eq("id", clientAccountId);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -320,10 +318,8 @@ serve(async (req) => {
         const isPrimary = !!admin.is_primary;
 
         // Buscar si el usuario ya existe en auth.users
-        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = existingUsers?.users?.find(
-          (u) => u.email?.toLowerCase() === admin.email.toLowerCase()
-        );
+        const { data: existingUserData } = await supabaseAdmin.auth.admin.getUserByEmail(admin.email);
+        const existingUser = existingUserData?.user ?? null;
 
         if (existingUser) {
           // Usuario ya existe en Auth — vincular a esta cuenta

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import V2Layout from "../../../layouts/V2Layout";
 import { supabase } from "../../../services/supabaseClient";
+import { formatDate } from "../../../utils/formatters";
 
 // Helpers locales — sustituyen el mock que usaba IDs ficticios
 const STATUS = { ACTIVE: "active", SUSPENDED: "suspended", CANCELLED: "cancelled" };
@@ -13,7 +14,6 @@ const getPlanLabel = (p) => p ?? "—";
 const getPlanColor = () => "#6B7280";
 const getStatusLabel = (s) => ({ active: "Activo", suspended: "Suspendido", cancelled: "Cancelado" }[s] ?? s ?? "—");
 const getStatusColor = (s) => ({ active: "#059669", suspended: "#D97706", cancelled: "#DC2626" }[s] ?? "#6B7280");
-const formatDate = (d) => d ? new Date(d).toLocaleDateString("es-ES") : "—";
 
 /** Devuelve el nombre de visualización:
  *  - persona_fisica / autonomo → "Nombre Apellido1 Apellido2"
@@ -176,8 +176,10 @@ export default function ClientAccountDetail() {
   if (loading) {
     return (
       <V2Layout role="superadmin" userName="Administrador">
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={styles.loadingContainer}>
           <div style={styles.spinner}>Cargando...</div>
+        </div>
         </div>
       </V2Layout>
     );
@@ -186,6 +188,7 @@ export default function ClientAccountDetail() {
   if (!account) {
     return (
       <V2Layout role="superadmin" userName="Administrador">
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={styles.errorCard}>
           <h2>Cuenta no encontrada</h2>
           <p>No se encontró ninguna cuenta con el ID especificado.</p>
@@ -195,6 +198,7 @@ export default function ClientAccountDetail() {
           >
             Volver al listado
           </button>
+        </div>
         </div>
       </V2Layout>
     );
@@ -233,6 +237,7 @@ export default function ClientAccountDetail() {
         { label: account.ownerFullName, path: null },
       ]}
     >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header con info de la cuenta */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
@@ -736,6 +741,7 @@ export default function ClientAccountDetail() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </V2Layout>
   );

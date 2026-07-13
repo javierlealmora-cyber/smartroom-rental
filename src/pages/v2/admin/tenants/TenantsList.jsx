@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Button, Input, message, Row, Col, Select, Space,
+  Alert, Button, Card, Input, message, Row, Col, Select, Space,
   Tag, Typography, Tooltip, Skeleton, Modal, Form, DatePicker, Divider, Table,
 } from "antd";
 import { PlusOutlined, ReloadOutlined, LogoutOutlined, EditOutlined, SwapOutlined, MailOutlined, HomeOutlined, UserOutlined, FileTextOutlined, LineChartOutlined, AppstoreOutlined, UnorderedListOutlined } from "@ant-design/icons";
@@ -188,10 +188,20 @@ export default function TenantsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <style>{`
+        .tenant-card {
+          transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        }
+        .tenant-card:hover {
+          transform: translateY(-3px) !important;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.10) !important;
+        }
+      `}</style>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Búsqueda de Inquilinos</Title>
+          <Title level={2} style={{ margin: 0 }}><UserOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Inquilinos</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${tenants.length} inquilino${tenants.length !== 1 ? "s" : ""}`}
           </Text>
@@ -200,6 +210,7 @@ export default function TenantsList() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
+            style={{ background: "#2563EB", borderColor: "#2563EB" }}
             onClick={() => navigate("/v2/admin/inquilinos/nuevo")}
           >
             Nuevo Inquilino
@@ -258,12 +269,14 @@ export default function TenantsList() {
               size="small"
               icon={<AppstoreOutlined />}
               type={viewMode === "cards" ? "primary" : "default"}
+              style={viewMode === "cards" ? { background: "color-mix(in srgb, #BFDBFE, black 30%)", borderColor: "color-mix(in srgb, #BFDBFE, black 30%)", color: "#1E3A5F" } : {}}
               onClick={() => { setViewMode("cards"); localStorage.setItem("smartrent_tenants_viewMode", "cards"); }}
             />
             <Button
               size="small"
               icon={<UnorderedListOutlined />}
               type={viewMode === "list" ? "primary" : "default"}
+              style={viewMode === "list" ? { background: "color-mix(in srgb, #BFDBFE, black 30%)", borderColor: "color-mix(in srgb, #BFDBFE, black 30%)", color: "#1E3A5F" } : {}}
               onClick={() => { setViewMode("list"); localStorage.setItem("smartrent_tenants_viewMode", "list"); }}
             />
           </Space>
@@ -449,130 +462,149 @@ export default function TenantsList() {
             const asgn = t.active_assignment?.[0];
             const accName = asgn?.accommodation?.name;
             const roomNum = asgn?.room?.number;
+            const status = getLodgerStatus(t);
+            const STATUS_BG = { active: "#DCFCE7", invited: "#DBEAFE", pending_checkout: "#FEF3C7", inactive: "#F3F4F6" };
+            const STATUS_TC = { active: "#15803D", invited: "#1D4ED8", pending_checkout: "#B45309",  inactive: "#6B7280" };
             return (
-              <Col key={t.id} xs={24} sm={12} md={8} lg={6}>
-                <div
-                  onMouseEnter={() => setHoveredId(t.id)}
-                  onMouseLeave={() => setHoveredId(null)}
+              <Col key={t.id} xs={24} sm={12} md={8} lg={6} style={{ display: "flex" }}>
+                <Card
+                  hoverable
+                  className="tenant-card"
+                  bodyStyle={{ padding: 0, display: "flex", flexDirection: "column", height: "100%" }}
                   style={{
-                    background: "#fff", borderRadius: 12, padding: 16,
-                    boxShadow: hoveredId === t.id ? "0 8px 20px rgba(11,46,109,0.1)" : "0 2px 8px rgba(0,0,0,0.06)",
-                    border: "1px solid #F3F4F6",
-                    display: "flex", flexDirection: "column", gap: 12,
-                    height: "100%",
-                    transform: hoveredId === t.id ? "translateY(-3px)" : "translateY(0)",
-                    transition: "transform 0.18s ease, box-shadow 0.18s ease",
-                    cursor: "pointer",
-                }}>
-                  {/* Avatar + nombre + contacto */}
-                  <div 
-                    style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}
-                    onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle`)}
-                  >
-                    <img
-                      src={getTenantImage(t)}
-                      alt="Inquilino"
-                      style={{ width: 120, height: 120, objectFit: "contain", flexShrink: 0, borderRadius: 12 }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span>{t.full_name}</span>
+                    borderRadius: 14, overflow: "hidden",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    border: "none", width: "100%", cursor: "pointer",
+                  }}
+                  onClick={() => navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino`)}
+                >
+                  {/* ── Header degradado ──────────────────────────────── */}
+                  <div style={{
+                    background: "linear-gradient(135deg, color-mix(in srgb, #EFF6FF, black 30%) 0%, color-mix(in srgb, #BFDBFE, black 30%) 100%)",
+                    padding: "14px 14px 16px",
+                    position: "relative",
+                  }}>
+                    {/* Badge estado */}
+                    <div style={{ position: "absolute", top: 10, right: 12 }}>
+                      <span style={{
+                        background: STATUS_BG[status] ?? "#F3F4F6",
+                        color: STATUS_TC[status] ?? "#6B7280",
+                        fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "2px 10px",
+                      }}>
+                        {getLodgerStatusLabel(status)}
+                      </span>
+                    </div>
+
+                    {/* Foto + nombre */}
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+                      <img
+                        src={getTenantImage(t)}
+                        alt="Inquilino"
+                        style={{ width: 90, height: 90, objectFit: "contain", flexShrink: 0, borderRadius: 10 }}
+                      />
+                      <div style={{ minWidth: 0, paddingRight: 50 }}>
+                        <div style={{ color: "#1E3A5F", fontWeight: 700, fontSize: 15, lineHeight: 1.3, marginBottom: 4 }}>
+                          {t.full_name}
+                        </div>
                         {asgn?.accompanist && (
-                          <Tag color="purple" style={{ margin: 0, fontWeight: 600, fontSize: 10 }}>
+                          <span style={{
+                            background: "rgba(37,99,235,0.12)", color: "#1D4ED8",
+                            fontSize: 10, fontWeight: 700, borderRadius: 20,
+                            padding: "2px 8px", display: "inline-block",
+                          }}>
                             Compartida
-                          </Tag>
+                          </span>
                         )}
                         {searchTerm && asgn?.accompanist && (() => {
                           const s = searchTerm.toLowerCase();
-                          const accName = [asgn.accompanist.first_name, asgn.accompanist.last_name1, asgn.accompanist.last_name2, asgn.accompanist.nickname].filter(Boolean).join(" ").toLowerCase();
-                          if (!accName.includes(s)) return null;
-                          if (t.full_name.toLowerCase().includes(s)) return null;
+                          const accFullName = [asgn.accompanist.first_name, asgn.accompanist.last_name1, asgn.accompanist.last_name2, asgn.accompanist.nickname].filter(Boolean).join(" ").toLowerCase();
+                          if (!accFullName.includes(s) || t.full_name.toLowerCase().includes(s)) return null;
                           return (
-                            <Tag color="gold" style={{ margin: 0, fontWeight: 600, fontSize: 10 }}>
+                            <span style={{
+                              background: "rgba(234,179,8,0.2)", color: "#92400E",
+                              fontSize: 10, fontWeight: 700, borderRadius: 20,
+                              padding: "2px 8px", display: "inline-block", marginLeft: 4,
+                            }}>
                               Match acompañante
-                            </Tag>
+                            </span>
                           );
                         })()}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
-                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>
-                        {t.phone && <div>{t.phone}</div>}
-                        {asgn?.move_in_date && (
-                          <div style={{ fontSize: 11, color: "#9CA3AF" }}>
-                            Check-in: {new Date(asgn.move_in_date).toLocaleDateString('es-ES')}
-                          </div>
-                        )}
-                        {asgn?.move_out_date && (
-                          <div style={{ fontSize: 11, color: "#F59E0B", fontWeight: 600 }}>
-                            Check-out: {new Date(asgn.move_out_date).toLocaleDateString('es-ES')}
-                          </div>
-                        )}
-                        {/* Badge de estado debajo del check-in */}
-                        <div style={{ marginTop: 4 }}>
-                          <Tag 
-                            color={getLodgerStatusColor(getLodgerStatus(t))} 
-                            style={{ margin: 0, fontWeight: 600, fontSize: 13 }}
-                          >
-                            {getLodgerStatusLabel(getLodgerStatus(t))}
-                          </Tag>
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Alojamiento y habitación */}
-                  <div style={{
-                    background: asgn ? "#F0F9FF" : "#F9FAFB",
-                    borderRadius: 8, padding: "8px 10px",
-                    display: "flex", alignItems: "center", gap: 8,
-                  }}>
-                    <HomeOutlined style={{ color: asgn ? "#0071E3" : "#9CA3AF", fontSize: 14, flexShrink: 0 }} />
-                    {asgn ? (
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#0071E3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {accName || "—"}
+                  {/* ── Cuerpo blanco ────────────────────────────────── */}
+                  <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", flex: 1, gap: 8 }}>
+                    {/* Email + teléfono */}
+                    <div style={{ fontSize: 12, color: "#6B7280", display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.email}</div>
+                      {t.phone && <div>{t.phone}</div>}
+                      {asgn?.move_in_date && (
+                        <div style={{ fontSize: 11, color: "#9CA3AF" }}>
+                          Check-in: {new Date(asgn.move_in_date).toLocaleDateString("es-ES")}
                         </div>
-                        <div style={{ fontSize: 11, color: "#374151" }}>Habitación {roomNum || "—"}</div>
-                      </div>
-                    ) : (
-                      <Text style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>Sin habitación asignada</Text>
-                    )}
-                  </div>
+                      )}
+                      {asgn?.move_out_date && (
+                        <div style={{ fontSize: 11, color: "#F59E0B", fontWeight: 600 }}>
+                          Check-out: {new Date(asgn.move_out_date).toLocaleDateString("es-ES")}
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Acciones */}
-                  <div style={{ display: "flex", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
-                    <Tooltip title="Detalle del Inquilino">
-                      <Button size="small" icon={<FileTextOutlined />}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino`); }} />
-                    </Tooltip>
-                    <Tooltip title={getLodgerStatus(t) === "invited" ? "Sin consumos (inquilino invitado)" : "Ver Consumos"}>
-                      <Button size="small" icon={<LineChartOutlined />}
-                        disabled={getLodgerStatus(t) === "invited"}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
-                    </Tooltip>
-                    {getLodgerStatus(t) === "active" && (
-                      <Tooltip title="Cambiar habitación">
-                        <Button size="small" icon={<SwapOutlined />}
-                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino?action=reassign`); }} />
+                    {/* Alojamiento y habitación */}
+                    <div style={{
+                      background: asgn ? "#F0F9FF" : "#F9FAFB",
+                      borderRadius: 8, padding: "7px 10px",
+                      display: "flex", alignItems: "center", gap: 8,
+                    }}>
+                      <HomeOutlined style={{ color: asgn ? "#0071E3" : "#9CA3AF", fontSize: 14, flexShrink: 0 }} />
+                      {asgn ? (
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#0071E3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {accName || "—"}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#374151" }}>Habitación {roomNum || "—"}</div>
+                        </div>
+                      ) : (
+                        <Text style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>Sin habitación asignada</Text>
+                      )}
+                    </div>
+
+                    {/* Acciones */}
+                    <div style={{ display: "flex", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
+                      <Tooltip title="Detalle del Inquilino">
+                        <Button size="small" icon={<FileTextOutlined />}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino`); }} />
                       </Tooltip>
-                    )}
-                    {getLodgerStatus(t) === "active" && (
-                      <Tooltip title="Hacer Check-Out">
-                        <Button size="small" danger icon={<LogoutOutlined />}
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            setLodgerToCheckout(t);
-                            setShowCheckoutModal(true);
-                          }} />
+                      <Tooltip title={status === "invited" ? "Sin consumos (inquilino invitado)" : "Ver Consumos"}>
+                        <Button size="small" icon={<LineChartOutlined />}
+                          disabled={status === "invited"}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle`); }} />
                       </Tooltip>
-                    )}
-                    <Tooltip title="Enviar email de acceso">
-                      <Button size="small" icon={<MailOutlined />}
-                        loading={!!sendingInvite[t.id]}
-                        onClick={(e) => { e.stopPropagation(); onSendInvite(t); }} />
-                    </Tooltip>
+                      {status === "active" && (
+                        <Tooltip title="Cambiar habitación">
+                          <Button size="small" icon={<SwapOutlined />}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/v2/admin/inquilinos/${t.id}/detalle-inquilino?action=reassign`); }} />
+                        </Tooltip>
+                      )}
+                      {status === "active" && (
+                        <Tooltip title="Hacer Check-Out">
+                          <Button size="small" danger icon={<LogoutOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLodgerToCheckout(t);
+                              setShowCheckoutModal(true);
+                            }} />
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Enviar email de acceso">
+                        <Button size="small" icon={<MailOutlined />}
+                          loading={!!sendingInvite[t.id]}
+                          onClick={(e) => { e.stopPropagation(); onSendInvite(t); }} />
+                      </Tooltip>
+                    </div>
                   </div>
-                </div>
+                </Card>
               </Col>
             );
           })}
@@ -805,6 +837,7 @@ export default function TenantsList() {
           );
         })()}
       </Modal>
+      </div>
     </V2Layout>
   );
 }

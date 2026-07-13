@@ -1,5 +1,5 @@
 // src/pages/v2/admin/accommodations/AccommodationServices.jsx
-// Admin — Servicios disponibles por Alojamiento (accommodation_services)
+// Admin — Prestaciones disponibles por Alojamiento (benefits_accommodation)
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -44,10 +44,10 @@ export default function AccommodationServices() {
       const [acc, { data: svcData, error: svcErr }, catalogData] = await Promise.all([
         getAccommodation(id),
         supabase
-          .from("accommodation_services")
+          .from("benefits_accommodation")
           .select(`
             id, service_id, custom_price, status, created_at,
-            service:services_catalog(id, name, unit, unit_price, is_recurring)
+            service:benefits_catalog(id, name, unit, unit_price, is_recurring)
           `)
           .eq("accommodation_id", id)
           .order("created_at", { ascending: true }),
@@ -70,7 +70,7 @@ export default function AccommodationServices() {
     setAdding(true);
     setError(null);
     try {
-      const { error: insErr } = await supabase.from("accommodation_services").insert({
+      const { error: insErr } = await supabase.from("benefits_accommodation").insert({
         client_account_id: clientAccountId,
         accommodation_id: id,
         service_id: values.service_id,
@@ -93,7 +93,7 @@ export default function AccommodationServices() {
     setTogglingId(accSvc.id);
     try {
       const { error: upErr } = await supabase
-        .from("accommodation_services")
+        .from("benefits_accommodation")
         .update({ status: next })
         .eq("id", accSvc.id);
       if (upErr) throw new Error(upErr.message);
@@ -179,7 +179,7 @@ export default function AccommodationServices() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
             <Title level={2} style={{ margin: 0 }}>

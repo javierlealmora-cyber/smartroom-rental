@@ -104,6 +104,7 @@ export default function LodgerBoletines() {
 
   return (
     <V2Layout role="lodger" companyBranding={companyBranding} userName={user?.email || "Inquilino"}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Space align="center">
@@ -202,6 +203,7 @@ export default function LodgerBoletines() {
           ))}
         </Space>
       )}
+      </div>
     </V2Layout>
   );
 }

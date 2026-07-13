@@ -153,9 +153,9 @@ await invokeWithAuth("manage_accommodation", {
 
 | Tabla | Descripción |
 |-------|-------------|
-| `services_catalog` | Catálogo de servicios definidos por entidad propietaria |
-| `accommodation_services` | Servicios activos en cada alojamiento (precio personalizable) |
-| `lodger_services` | Contratación/consumo de servicios por inquilino |
+| `benefits_catalog` | Catálogo de prestaciones definidas por entidad propietaria |
+| `benefits_accommodation` | Prestaciones activas en cada alojamiento (precio personalizable) |
+| `benefits_lodger` | Contratación/consumo de prestaciones por inquilino |
 
 ### Energía y Boletines
 

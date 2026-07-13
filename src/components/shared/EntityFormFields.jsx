@@ -14,7 +14,7 @@ export default function EntityFormFields({
   return (
     <>
       {showLegalTypeSelector && (
-        <Row gutter={16}>
+        <Row gutter={32}>
           <Col xs={24} md={8}>
             <Form.Item
               label="Tipo legal"
@@ -28,7 +28,7 @@ export default function EntityFormFields({
       )}
 
       {isCompany ? (
-        <Row gutter={16}>
+        <Row gutter={32}>
           <Col xs={24}>
             <Form.Item
               label="Nombre"
@@ -45,7 +45,7 @@ export default function EntityFormFields({
         </Row>
       ) : (
         <>
-          <Row gutter={16}>
+          <Row gutter={32}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="Nombre"
@@ -76,7 +76,7 @@ export default function EntityFormFields({
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={32}>
             <Col xs={24} sm={8}>
               <Form.Item 
                 label="Apellido 2" 
@@ -109,7 +109,7 @@ export default function EntityFormFields({
         </>
       )}
 
-      <Row gutter={16}>
+      <Row gutter={32}>
         <Col xs={24} sm={12} md={8}>
           <Form.Item
             label={isCompany ? "CIF/NIF" : "DNI/NIE"}

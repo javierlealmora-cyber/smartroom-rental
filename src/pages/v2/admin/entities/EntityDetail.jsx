@@ -87,6 +87,7 @@ export default function EntityDetail() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col flex="auto">
@@ -102,7 +103,7 @@ export default function EntityDetail() {
             <Skeleton active title={{ width: 200 }} paragraph={false} />
           ) : (
             <>
-              <Title level={2} style={{ margin: 0 }}>{formatEntityName(entity)}</Title>
+              <Title level={2} style={{ margin: 0 }}><BankOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />{formatEntityName(entity)}</Title>
               <Text type="secondary">
                 {LEGAL_TYPE_LABEL[entity?.legal_type] || entity?.legal_type}
                 {entity?.tax_id ? ` · ${entity.tax_id}` : ""}
@@ -210,6 +211,7 @@ export default function EntityDetail() {
         </Row>
         );
       })()}
+      </div>
     </V2Layout>
   );
 }

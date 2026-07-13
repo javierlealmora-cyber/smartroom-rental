@@ -7,7 +7,7 @@ import {
   Alert, Button, Card, Col, DatePicker, Form, Input,
   InputNumber, Row, Select, Space, Typography,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, SaveOutlined, NotificationOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listLodgers } from "../../../../services/lodgers.service";
@@ -103,9 +103,10 @@ export default function BulletinCreate() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Nuevo Boletín</Title>
+          <Title level={2} style={{ margin: 0 }}><NotificationOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Nuevo Boletín</Title>
           <Text type="secondary">Crea un boletín de liquidación para un inquilino</Text>
         </Col>
         <Col>
@@ -232,6 +233,7 @@ export default function BulletinCreate() {
         </Row>
         <Form.Item name="publish" hidden><Input /></Form.Item>
       </Form>
+      </div>
     </V2Layout>
   );
 }

@@ -7,7 +7,7 @@ import {
   Alert, Button, Col, Input, Popconfirm, Row,
   Select, Space, Table, Tag, Tooltip, Typography,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, SendOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, SendOutlined, NotificationOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -179,9 +179,10 @@ export default function BulletinsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Boletines</Title>
+          <Title level={2} style={{ margin: 0 }}><NotificationOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Boletines</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${rows.length} boletín${rows.length !== 1 ? "es" : ""}`}
             {draftCount > 0 && ` · ${draftCount} pendiente${draftCount > 1 ? "s" : ""} de publicar`}
@@ -246,6 +247,7 @@ export default function BulletinsList() {
           : <EmptyState icon="🔔" title="No hay boletines" description="Crea el primer boletin de liquidación para tus inquilinos" actionLabel="Nuevo Boletin" onAction={() => navigate("/v2/admin/boletines/nuevo")} />
         }}
       />
+      </div>
     </V2Layout>
   );
 }

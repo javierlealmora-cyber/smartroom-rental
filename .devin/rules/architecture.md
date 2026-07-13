@@ -80,7 +80,7 @@ Checklist antes de implementar CUALQUIER operación nueva:
 | Tipo | Ejemplos | Acceso |
 |------|----------|--------|
 | **Catálogo global** | `plans_catalog`, plantillas globales | Lectura pública o superadmin |
-| **Datos tenant** | `client_accounts`, `entities`, `accommodations`, `rooms`, `lodgers`, `lodger_accompanists`, `lodger_room_assignments`, `services_catalog`, `accommodation_services`, `lodger_services`, `energy_bills`, `energy_readings`, `energy_settlements`, `bulletins`, `locks`, `lock_integrations` | RLS por `client_account_id` |
+| **Datos tenant** | `client_accounts`, `entities`, `accommodations`, `rooms`, `lodgers`, `lodger_accompanists`, `lodger_room_assignments`, `benefits_catalog`, `benefits_accommodation`, `benefits_lodger`, `energy_bills`, `energy_readings`, `energy_settlements`, `bulletins`, `locks`, `lock_integrations` | RLS por `client_account_id` |
 
 ---
 

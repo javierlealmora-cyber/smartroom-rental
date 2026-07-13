@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Col, Form, Input, Row, Select, Space, Typography } from "antd";
+import { BankOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -64,8 +65,9 @@ export default function EntityCreate() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Typography.Title level={2} style={{ marginTop: 0 }}>
-        Nueva entidad
+        <BankOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Nueva entidad
       </Typography.Title>
       <Typography.Text type="secondary">
         Se crea dentro de tu Cuenta Cliente
@@ -119,6 +121,7 @@ export default function EntityCreate() {
           </Row>
         </Form>
       </Card>
+      </div>
     </V2Layout>
   );
 }

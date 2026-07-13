@@ -1,11 +1,11 @@
 // src/services/services.service.js
-// Lecturas directas con RLS para services_catalog y accommodation_services
+// Lecturas directas con RLS para benefits_catalog y benefits_accommodation
 
 import { supabase } from "./supabaseClient";
 
 export async function listServicesCatalog({ status } = {}) {
   let q = supabase
-    .from("services_catalog")
+    .from("benefits_catalog")
     .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, last_name2, legal_type)")
     .order("name", { ascending: true });
   if (status) q = q.eq("status", status);
@@ -16,7 +16,7 @@ export async function listServicesCatalog({ status } = {}) {
 
 export async function getService(id) {
   const { data, error } = await supabase
-    .from("services_catalog")
+    .from("benefits_catalog")
     .select("*, owner_entity:entities(id, legal_name, first_name, last_name1, last_name2, legal_type)")
     .eq("id", id)
     .single();
@@ -26,8 +26,8 @@ export async function getService(id) {
 
 export async function listAccommodationServices(accommodationId) {
   const { data, error } = await supabase
-    .from("accommodation_services")
-    .select("*, service:services_catalog(id, name, unit, unit_price, is_recurring)")
+    .from("benefits_accommodation")
+    .select("*, service:benefits_catalog(id, name, unit, unit_price, is_recurring)")
     .eq("accommodation_id", accommodationId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);

@@ -15,7 +15,7 @@ import {
 import {
   AppstoreOutlined, UnorderedListOutlined,
   UserOutlined, EditOutlined, SwapOutlined,
-  LogoutOutlined, UserAddOutlined, ClearOutlined,
+  LogoutOutlined, UserAddOutlined, ClearOutlined, KeyOutlined,
 } from "@ant-design/icons";
 import { supabase } from "../../../../services/supabaseClient";
 import { listEntities } from "../../../../services/entities.service";
@@ -620,10 +620,11 @@ export default function RoomsSearch() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 12 }}>
           <Col flex="auto">
-            <Title level={2} style={{ margin: 0 }}>Búsqueda de Habitaciones</Title>
+            <Title level={2} style={{ margin: 0 }}><KeyOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Habitaciones</Title>
             <Text type="secondary">
               {loading ? "Cargando..." : `${filteredRooms.length} habitación${filteredRooms.length !== 1 ? "es" : ""}`}
             </Text>
@@ -783,6 +784,7 @@ export default function RoomsSearch() {
             scroll={{ x: 900 }}
           />
         )}
+      </div>
     </V2Layout>
   );
 }

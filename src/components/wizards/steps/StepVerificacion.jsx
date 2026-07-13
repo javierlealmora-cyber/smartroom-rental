@@ -5,6 +5,8 @@
 // A-Contrato, B-Branding, C-Entidad Pagadora, D-Admins
 // =============================================================================
 
+import { Card } from "antd";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import {
   getPlanLabel,
   getPlanColor,
@@ -63,12 +65,16 @@ export default function StepVerificacion({
   };
 
   return (
-    <div>
-      <h2 style={styles.sectionTitle}>Verificacion y Resumen</h2>
-      <p style={styles.sectionDescription}>
-        Revisa toda la informacion antes de {mode === "self_signup" ? "finalizar y pagar" : "crear la cuenta"}.
-        Pulsa "Editar" para modificar cualquier seccion.
-      </p>
+    <Card
+      style={{ borderRadius: 10 }}
+      title={
+        <span style={{ fontWeight: 700 }}>
+          <CheckCircleOutlined style={{ marginRight: 8, color: "#3B82F6" }} />
+          Verificación y Resumen
+        </span>
+      }
+      extra={<span style={{ fontSize: 13, color: "#6B7280" }}>Revisa todo antes de {mode === "self_signup" ? "pagar" : "crear la cuenta"}</span>}
+    >
 
       {hasErrors && (
         <div style={styles.errorBanner}>
@@ -238,7 +244,7 @@ export default function StepVerificacion({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

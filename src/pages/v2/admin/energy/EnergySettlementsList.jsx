@@ -6,7 +6,7 @@ import {
   Alert, Button, Col, Input, Row,
   Select, Space, Table, Tag, Typography,
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { ReloadOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -155,9 +155,10 @@ export default function EnergySettlementsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Liquidaciones de Energía</Title>
+          <Title level={2} style={{ margin: 0 }}><ThunderboltOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Liquidaciones de Energía</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${rows.length} liquidación${rows.length !== 1 ? "es" : ""}`}
             {!loading && rows.length > 0 && ` · Total: ${fEur(totalAmount)}`}
@@ -213,6 +214,7 @@ export default function EnergySettlementsList() {
           : <EmptyState icon="📑" title="No hay liquidaciones" description="Las liquidaciones se generan al procesar facturas de energía" />
         }}
       />
+      </div>
     </V2Layout>
   );
 }

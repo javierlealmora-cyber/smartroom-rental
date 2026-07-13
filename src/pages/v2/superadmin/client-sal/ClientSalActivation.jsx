@@ -14,7 +14,7 @@ import {
   Space, Tag, Typography, message, Popconfirm,
 } from "antd";
 import {
-  ApiOutlined, ArrowLeftOutlined, CheckCircleOutlined, StopOutlined,
+  ApiOutlined, ArrowLeftOutlined, CheckCircleOutlined, LockOutlined, StopOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -206,7 +206,9 @@ export default function ClientSalActivation() {
   if (loading) {
     return (
       <V2Layout role="superadmin" userName={userName}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ padding: 32 }}><Skeleton active paragraph={{ rows: 6 }} /></div>
+        </div>
       </V2Layout>
     );
   }
@@ -214,11 +216,13 @@ export default function ClientSalActivation() {
   if (!account) {
     return (
       <V2Layout role="superadmin" userName={userName}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ padding: 32 }}>
           <Alert type="error" message="Cuenta no encontrada" />
           <Button onClick={() => navigate("/v2/superadmin/cuentas")} style={{ marginTop: 16 }}>
             Volver
           </Button>
+        </div>
         </div>
       </V2Layout>
     );
@@ -227,6 +231,7 @@ export default function ClientSalActivation() {
   if (!salServiceId) {
     return (
       <V2Layout role="superadmin" userName={userName}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ padding: 32 }}>
           <Alert
             type="warning"
@@ -239,6 +244,7 @@ export default function ClientSalActivation() {
             }
           />
         </div>
+        </div>
       </V2Layout>
     );
   }
@@ -249,6 +255,7 @@ export default function ClientSalActivation() {
 
   return (
     <V2Layout role="superadmin" userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ padding: "24px 32px", maxWidth: 800, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
@@ -260,7 +267,7 @@ export default function ClientSalActivation() {
           >
             {account.ownerFullName}
           </Button>
-          <Title level={4} style={{ margin: 0 }}>SmartAccessLock — Activación</Title>
+          <Title level={4} style={{ margin: 0 }}><LockOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />SmartAccessLock — Activación</Title>
         </div>
 
         {/* Datos de la cuenta */}
@@ -495,6 +502,7 @@ export default function ClientSalActivation() {
           message="Fase 1 — Activación manual"
           description="La integración con Stripe no está activa. El cobro se gestiona fuera del sistema. Tras activar y asignar el shard, el cliente puede conectar su integración desde Configuración → Smart Access Lock."
         />
+      </div>
       </div>
     </V2Layout>
   );

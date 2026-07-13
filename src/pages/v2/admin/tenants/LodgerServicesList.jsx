@@ -1,8 +1,11 @@
 // src/pages/v2/admin/tenants/LodgerServicesList.jsx
 // Admin — Servicios asignados a Inquilinos
+//
+// Exporta dos variantes:
+//   default  → página completa con V2Layout (ruta /v2/admin/inquilinos/servicios)
+//   LodgerServicesTab → solo el contenido, para embeber en ServicesList como tab
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Alert, Button, Card, Col, Input, Row,
   Select, Space, Table, Tag, Typography,
@@ -13,6 +16,7 @@ import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listAccommodations } from "../../../../services/accommodations.service";
 import { supabase } from "../../../../services/supabaseClient";
+import { LodgerServiceModal } from "./LodgerServiceCreate";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -29,10 +33,8 @@ function fEur(n) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 }
 
-export default function LodgerServicesList() {
-  const navigate = useNavigate();
-  const { userName, companyBranding } = useAdminLayout();
-
+// ── Contenido reutilizable (sin layout) ──────────────────────────────────────
+export function LodgerServicesTab() {
   const [all, setAll] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,7 @@ export default function LodgerServicesList() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAccommodation, setFilterAccommodation] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,15 +50,15 @@ export default function LodgerServicesList() {
     try {
       const [{ data, error: qErr }, accs] = await Promise.all([
         supabase
-          .from("lodger_services")
+          .from("benefits_lodger")
           .select(`
             *,
             lodger:profiles(id, full_name, email),
             room:rooms(id, number, accommodation_id),
-            accommodation_service:accommodation_services(
+            accommodation_service:benefits_accommodation(
               id,
               accommodation_id,
-              service:services_catalog(id, name, unit, unit_price)
+              service:benefits_catalog(id, name, unit, unit_price)
             )
           `)
           .order("created_at", { ascending: false })
@@ -106,7 +109,7 @@ export default function LodgerServicesList() {
       ),
     },
     {
-      title: "Servicio",
+      title: "Prestación",
       key: "service",
       render: (_, r) => {
         const svc = r.accommodation_service?.service;
@@ -174,24 +177,25 @@ export default function LodgerServicesList() {
   };
 
   return (
-    <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div>
+      {/* Modal de asignación */}
+      <LodgerServiceModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => { setModalOpen(false); load(); }}
+      />
 
-        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              <TagOutlined style={{ marginRight: 10 }} />
-              Servicios de Inquilinos
-            </Title>
             <Text type="secondary">
-              {loading ? "Cargando..." : `${rows.length} servicio${rows.length !== 1 ? "s" : ""} asignado${rows.length !== 1 ? "s" : ""}`}
+              {loading ? "Cargando..." : `${rows.length} prestación${rows.length !== 1 ? "es" : ""} asignada${rows.length !== 1 ? "s" : ""}`}
             </Text>
           </Col>
           <Col>
             <Space>
               <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Actualizar</Button>
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/v2/admin/inquilinos/servicios/nuevo")}>
-                Asignar Servicio
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+                + Asignar Prestación
               </Button>
             </Space>
           </Col>
@@ -204,13 +208,13 @@ export default function LodgerServicesList() {
         )}
 
         <Card
-          title={<span style={cardTitleStyle}>Servicios asignados</span>}
+          title={<span style={cardTitleStyle}>Prestaciones asignadas</span>}
           style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
         >
           <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
             <Col xs={24} sm={12} md={8}>
               <Search
-                placeholder="Buscar por inquilino o servicio..."
+                placeholder="Buscar por inquilino o prestación..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 allowClear
@@ -258,12 +262,30 @@ export default function LodgerServicesList() {
             size="small"
             pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
             locale={{ emptyText: search || filterStatus || filterAccommodation
-              ? <EmptyState icon="🔍" title="Sin resultados" description="No hay servicios que coincidan con los filtros aplicados" />
-              : <EmptyState icon="🔖" title="No hay servicios asignados" description="Asigna el primer servicio a un inquilino" actionLabel="Asignar Servicio" onAction={() => navigate("/v2/admin/inquilinos/servicios/nuevo")} />
+              ? <EmptyState icon="🔍" title="Sin resultados" description="No hay prestaciones que coincidan con los filtros aplicados" />
+              : <EmptyState icon="🔖" title="No hay prestaciones asignadas" description="Asigna la primera prestación a un inquilino" actionLabel="Asignar Prestación" onAction={() => setModalOpen(true)} />
             }}
           />
         </Card>
+    </div>
+  );
+}
 
+// ── Página completa con layout (ruta directa) ─────────────────────────────────
+export default function LodgerServicesList() {
+  const { userName, companyBranding } = useAdminLayout();
+  return (
+    <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <TagOutlined style={{ marginRight: 10 }} />
+              Prestaciones a Inquilinos
+            </Title>
+          </Col>
+        </Row>
+        <LodgerServicesTab />
       </div>
     </V2Layout>
   );

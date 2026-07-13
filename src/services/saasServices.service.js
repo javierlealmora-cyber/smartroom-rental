@@ -11,6 +11,19 @@ export async function listSaasServices() {
   return data ?? [];
 }
 
+// Para el catálogo admin: solo servicios marcados como visibles en catálogo
+// y en estado activo o deprecado. El superadmin sigue usando listSaasServices().
+export async function listCatalogSaasServices() {
+  const { data, error } = await supabase
+    .from("saas_services")
+    .select("*")
+    .eq("visible_in_catalog", true)
+    .in("status", ["active", "deprecated"])
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getSaasService(id) {
   const { data, error } = await supabase
     .from("saas_services")
@@ -93,6 +106,14 @@ export async function upsertFeature(values) {
   return data;
 }
 
+export async function deleteFeature(featureId) {
+  const { error } = await supabase
+    .from("saas_service_features")
+    .delete()
+    .eq("id", featureId);
+  if (error) throw new Error(error.message);
+}
+
 // ─── saas_service_subscriptions ───────────────────────────────────────────────
 
 /**
@@ -127,6 +148,24 @@ export async function getClientSalSubscription(clientAccountId) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ?? null;
+}
+
+/**
+ * Lista todas las suscripciones activas/inactivas de un client_account,
+ * con el servicio y plan asociados.
+ */
+export async function listClientSaasSubscriptions(clientAccountId) {
+  const { data, error } = await supabase
+    .from("saas_service_subscriptions")
+    .select(`
+      *,
+      saas_services (*),
+      saas_service_plans (*)
+    `)
+    .eq("client_account_id", clientAccountId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 /**

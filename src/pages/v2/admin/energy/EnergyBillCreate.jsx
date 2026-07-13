@@ -8,7 +8,7 @@ import {
   Alert, Button, Card, Col, DatePicker, Form,
   Input, InputNumber, Row, Select, Space, Typography,
 } from "antd";
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, SaveOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { createEnergyBill } from "../../../../services/energy.service";
@@ -85,9 +85,10 @@ export default function EnergyBillCreate() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col>
-          <Title level={2} style={{ margin: 0 }}>Nueva Factura de Energía</Title>
+          <Title level={2} style={{ margin: 0 }}><ThunderboltOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Nueva Factura de Energía</Title>
           <Text type="secondary">Registra una factura del proveedor eléctrico</Text>
         </Col>
         <Col>
@@ -220,6 +221,7 @@ export default function EnergyBillCreate() {
           </Col>
         </Row>
       </Form>
+      </div>
     </V2Layout>
   );
 }

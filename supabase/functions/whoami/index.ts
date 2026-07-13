@@ -28,11 +28,8 @@ serve(async (req) => {
       req.headers.get("Authorization") || req.headers.get("authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "Missing authorization header" } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -44,11 +41,8 @@ serve(async (req) => {
 
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Authentication failed" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "Authentication failed" } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -63,11 +57,8 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Profile not found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ ok: false, error: { code: "NOT_FOUND", message: "Profile not found" } }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -116,11 +107,8 @@ serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error("whoami error:", message);
     return new Response(
-      JSON.stringify({ ok: false, error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ ok: false, error: { code: "INTERNAL", message: "Internal server error" } }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

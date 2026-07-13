@@ -537,7 +537,7 @@ export default function ClientAccountWizard({
 
 const styles = {
   wizardContainer: {
-    maxWidth: 900,
+    maxWidth: "100%",
     margin: "0 auto",
   },
   stepContent: {

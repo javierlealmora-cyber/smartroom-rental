@@ -8,7 +8,7 @@ import {
   Alert, Button, Card, Col, DatePicker, Descriptions,
   Form, Input, InputNumber, Row, Select, Space, Tag, Typography,
 } from "antd";
-import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, EditOutlined, SaveOutlined, CloseOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { getEnergyBill, updateEnergyBill } from "../../../../services/energy.service";
@@ -124,9 +124,10 @@ export default function EnergyBillDetail() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Factura de Energía</Title>
+          <Title level={2} style={{ margin: 0 }}><ThunderboltOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Factura de Energía</Title>
           {bill && (
             <Space>
               <Text type="secondary">{bill.accommodation?.name}</Text>
@@ -298,6 +299,7 @@ export default function EnergyBillDetail() {
           </Row>
         </Form>
       )}
+      </div>
     </V2Layout>
   );
 }

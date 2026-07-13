@@ -5,15 +5,23 @@
 // Nombre de marca, colores primario/secundario, logo
 // =============================================================================
 
+import { Card } from "antd";
+import { BgColorsOutlined } from "@ant-design/icons";
+
 export default function StepBranding({ formData, errors, onChange, selectedPlan }) {
   const brandingEnabled = selectedPlan?.branding_enabled !== false;
 
   return (
-    <div>
-      <h2 style={styles.sectionTitle}>Branding y Personalizacion</h2>
-      <p style={styles.sectionDescription}>
-        Configura la identidad visual de tu cuenta. Los colores y logo se aplicaran en toda la plataforma.
-      </p>
+    <Card
+      style={{ borderRadius: 10 }}
+      title={
+        <span style={{ fontWeight: 700 }}>
+          <BgColorsOutlined style={{ marginRight: 8, color: "#3B82F6" }} />
+          Branding y Personalización
+        </span>
+      }
+      extra={<span style={{ fontSize: 13, color: "#6B7280" }}>Identidad visual de la cuenta</span>}
+    >
 
       {!brandingEnabled && (
         <div style={styles.warningBox}>
@@ -151,22 +159,11 @@ export default function StepBranding({ formData, errors, onChange, selectedPlan 
           </span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
 const styles = {
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
-  },
   warningBox: {
     display: "flex",
     alignItems: "flex-start",

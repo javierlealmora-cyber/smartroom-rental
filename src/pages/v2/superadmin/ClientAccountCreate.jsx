@@ -8,9 +8,19 @@
 
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button, Col, Row, Space, Typography } from "antd";
+import { ArrowLeftOutlined, UserAddOutlined } from "@ant-design/icons";
 import V2Layout from "../../../layouts/V2Layout";
 import ClientAccountWizard from "../../../components/wizards/ClientAccountWizard";
 import { callProvisionSuperadmin } from "../../../services/clientAccounts.service";
+
+const { Title, Text } = Typography;
+
+const crumbs = [
+  { label: "Dashboard",         path: "/v2/superadmin" },
+  { label: "Cuentas Cliente",   path: "/v2/superadmin/cuentas" },
+  { label: "Nueva Cuenta",      path: null },
+];
 
 export default function ClientAccountCreate() {
   const navigate = useNavigate();
@@ -33,44 +43,45 @@ export default function ClientAccountCreate() {
   }, [navigate]);
 
   const handleCancel = useCallback(() => {
-    if (confirm("¿Desea cancelar? Se perderan los datos no guardados.")) {
+    if (confirm("¿Desea cancelar? Se perderán los datos no guardados.")) {
       navigate("/v2/superadmin/cuentas");
     }
   }, [navigate]);
 
   return (
-    <V2Layout role="superadmin" userName="Administrador">
-      <div style={styles.header}>
-        <h1 style={styles.title}>Nueva Cuenta Cliente</h1>
-        <p style={styles.subtitle}>
-          Complete el wizard para crear una nueva cuenta en el sistema
-        </p>
-      </div>
+    <V2Layout role="superadmin" userName="Administrador" customBreadcrumbs={crumbs}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 4px" }}>
 
-      <ClientAccountWizard
-        mode="superadmin_create"
-        onFinalize={handleFinalize}
-        onCancel={handleCancel}
-        submitting={submitting}
-        submitError={submitError}
-      />
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 28 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0 }}>
+              <UserAddOutlined style={{ marginRight: 10, color: "#3B82F6" }} />
+              Nueva Cuenta Cliente
+            </Title>
+            <Text type="secondary">
+              Complete el asistente para crear una nueva cuenta en el sistema
+            </Text>
+          </Col>
+          <Col>
+            <Space>
+              <Button icon={<ArrowLeftOutlined />} onClick={handleCancel}>
+                Cancelar
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+
+        {/* ── Wizard ─────────────────────────────────────────────────────── */}
+        <ClientAccountWizard
+          mode="superadmin_create"
+          onFinalize={handleFinalize}
+          onCancel={handleCancel}
+          submitting={submitting}
+          submitError={submitError}
+        />
+
+      </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-};

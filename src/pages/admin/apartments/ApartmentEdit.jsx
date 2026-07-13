@@ -71,11 +71,11 @@ export default function ApartmentEdit() {
       if (apartment) {
         setCompanyName(apartment.company_name);
         setApartmentName(apartment.name);
-        setAddressLine1(apartment.address_street || apartment.address_line1 || "");
-        setAddressLine2(apartment.address_block || apartment.address_line2 || "");
-        setCity(apartment.address_city || apartment.city || "");
-        setPostalCode(apartment.address_postal_code || apartment.postal_code || "");
-        setCountry(apartment.address_country || apartment.country || "España");
+        setAddressLine1(apartment.address_street);
+        setAddressLine2(apartment.address_block);
+        setCity(apartment.address_city);
+        setPostalCode(apartment.address_postal_code);
+        setCountry(apartment.address_country);
         setNumRooms(apartment.rooms.length);
         setOriginalNumRooms(apartment.rooms.length);
         setRooms(apartment.rooms);

@@ -10,12 +10,9 @@ import { SwapOutlined, TeamOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { supabase } from "../../../../../services/supabaseClient";
 import { listAccommodations } from "../../../../../services/accommodations.service";
+import { formatCurrency } from "../../../../../utils/formatters";
 
 const { Text } = Typography;
-
-function formatCurrency(v) {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(v);
-}
 
 function calcCorrectionAmount(changeDate, currentRent, newRent) {
   if (!changeDate || currentRent == null || newRent == null) return null;

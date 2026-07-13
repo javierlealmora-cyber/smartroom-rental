@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Button, Card, Checkbox, Col, Input, Row, Select, Skeleton, Tooltip, Typography } from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, BankOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import { IllustrationEntity, IllustrationTenant } from "../../../../components/icons3d/Illustrations3D";
 import V2Layout from "../../../../layouts/V2Layout";
@@ -174,11 +174,12 @@ export default function EntitiesList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* ── Header ── */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
           <Typography.Title level={2} style={{ margin: 0 }}>
-            Entidades
+            <BankOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Entidades
           </Typography.Title>
           <Typography.Text type="secondary">
             {loading ? "Cargando..." : `${filteredOwners.length} entidad${filteredOwners.length !== 1 ? "es" : ""}`}
@@ -375,6 +376,7 @@ export default function EntitiesList() {
           })}
         </Row>
       )}
+      </div>
     </V2Layout>
   );
 }

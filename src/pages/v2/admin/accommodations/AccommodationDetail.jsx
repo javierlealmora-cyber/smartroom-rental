@@ -624,7 +624,7 @@ export default function AccommodationDetail() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 10 }}>
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}
@@ -636,7 +636,7 @@ export default function AccommodationDetail() {
           <Row justify="space-between" align="top">
             <Col flex="auto">
               <Title level={2} style={{ margin: 0, fontWeight: 700, fontSize: 28, letterSpacing: "-0.5px", color: "#1D1D1F", marginBottom: 4 }}>
-                {accommodation?.name}
+                <HomeOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />{accommodation?.name}
               </Title>
               <Text style={{ fontSize: 14, color: "#6B7280" }}>
                 {/* Compatibilidad con ambos esquemas de dirección */}

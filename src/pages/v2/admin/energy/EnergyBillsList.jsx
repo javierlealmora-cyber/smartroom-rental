@@ -7,7 +7,7 @@ import {
   Alert, Button, Col, Input, Row, Select,
   Space, Table, Tag, Tooltip, Typography,
 } from "antd";
-import { PlusOutlined, ReloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, EyeOutlined, EditOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -153,9 +153,10 @@ export default function EnergyBillsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>Facturas de Energía</Title>
+          <Title level={2} style={{ margin: 0 }}><ThunderboltOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Facturas de Energía</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${bills.length} factura${bills.length !== 1 ? "s" : ""} · Total: ${fEur(totalAmount)}`}
           </Text>
@@ -222,6 +223,7 @@ export default function EnergyBillsList() {
         open={showAccommodationModal} 
         onCancel={() => setShowAccommodationModal(false)} 
       />
+      </div>
     </V2Layout>
   );
 }

@@ -16,15 +16,14 @@ import {
 } from "antd";
 import {
   PlusOutlined, ReloadOutlined, EditOutlined, StopOutlined, CheckOutlined,
-  AppstoreOutlined, ExperimentOutlined, LockOutlined,
-  ExclamationCircleOutlined, FormOutlined, ToolOutlined, SettingOutlined,
+  AppstoreOutlined, ToolOutlined, SettingOutlined, TagOutlined,
 } from "@ant-design/icons";
 import EmptyState from "../../../../components/EmptyState";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
 import { listServicesCatalog } from "../../../../services/services.service";
 import { setEntityStatus } from "../../../../services/entities.service";
-import SalGestion from "./smart-access/SalGestion";
+import { LodgerServicesTab } from "../tenants/LodgerServicesList";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -280,7 +279,7 @@ function CatalogTab() {
         <Text type="secondary">
           {loading
             ? "Cargando..."
-            : `${services.length} servicio${services.length !== 1 ? "s" : ""}`}
+            : `${services.length} prestación${services.length !== 1 ? "es" : ""}`}
         </Text>
         <Button
           type="primary"
@@ -288,7 +287,7 @@ function CatalogTab() {
           onClick={() => navigate("/v2/admin/servicios/nuevo")}
           style={{ borderRadius: 20, fontWeight: 600, height: 36 }}
         >
-          Nuevo Servicio
+          Nueva Prestación
         </Button>
       </Row>
 
@@ -354,12 +353,12 @@ function CatalogTab() {
         <Card style={{ borderRadius: 14, textAlign: "center", padding: "32px 0" }}>
           <ToolOutlined style={{ fontSize: 48, color: "#D1D5DB", marginBottom: 16 }} />
           <Title level={4} style={{ color: "#6B7280", marginBottom: 8 }}>
-            {hasFilters ? "Sin resultados" : "No hay servicios"}
+            {hasFilters ? "Sin resultados" : "No hay prestaciones"}
           </Title>
           <Text type="secondary">
             {hasFilters
-              ? "No hay servicios que coincidan con los filtros aplicados"
-              : "Crea el primer servicio del catálogo"}
+              ? "No hay prestaciones que coincidan con los filtros aplicados"
+              : "Crea la primera prestación del catálogo"}
           </Text>
           {!hasFilters && (
             <div style={{ marginTop: 24 }}>
@@ -369,7 +368,7 @@ function CatalogTab() {
                 style={{ borderRadius: 20 }}
                 onClick={() => navigate("/v2/admin/servicios/nuevo")}
               >
-                Nuevo Servicio
+                Nueva Prestación
               </Button>
             </div>
           )}
@@ -395,68 +394,17 @@ function CatalogTab() {
   );
 }
 
-// ── Tab placeholder ───────────────────────────────────────────────────────────
-function PlaceholderServiceTab({ title, description }) {
-  return (
-    <div style={{ paddingTop: 24 }}>
-      <Card style={{
-        borderRadius: 14,
-        maxWidth: 520,
-        border: "1px dashed #D1D5DB",
-        background: "#FAFAFA",
-        textAlign: "center",
-        padding: "8px 0",
-      }}>
-        <Text style={{ fontSize: 15, fontWeight: 600, display: "block", marginBottom: 8 }}>
-          {title}
-        </Text>
-        <Text type="secondary" style={{ fontSize: 14 }}>{description}</Text>
-      </Card>
-    </div>
-  );
-}
-
 // ── Tabs principales ──────────────────────────────────────────────────────────
 const MAIN_TABS = [
   {
     key: "catalogo",
-    label: <span><AppstoreOutlined style={{ marginRight: 6 }} />Catálogo</span>,
+    label: <span><AppstoreOutlined style={{ marginRight: 6 }} />Catálogo de Prestaciones</span>,
     children: <CatalogTab />,
   },
   {
-    key: "lavanderia",
-    label: <span><ExperimentOutlined style={{ marginRight: 6 }} />Lavandería</span>,
-    children: (
-      <PlaceholderServiceTab
-        title="Gestión de Lavandería"
-        description="Configuración de tarifas, turnos y registro de uso de lavandería. Disponible en próximas fases."
-      />
-    ),
-  },
-  {
-    key: "smart-access",
-    label: <span><LockOutlined style={{ marginRight: 6 }} />Smart Access Lock</span>,
-    children: <SalGestion />,
-  },
-  {
-    key: "incidencias",
-    label: <span><ExclamationCircleOutlined style={{ marginRight: 6 }} />Incidencias</span>,
-    children: (
-      <PlaceholderServiceTab
-        title="Gestión de Incidencias"
-        description="Sistema de tickets para reportar y resolver incidencias de los alojamientos. Disponible en próximas fases."
-      />
-    ),
-  },
-  {
-    key: "encuestas",
-    label: <span><FormOutlined style={{ marginRight: 6 }} />Encuestas</span>,
-    children: (
-      <PlaceholderServiceTab
-        title="Encuestas de Satisfacción"
-        description="Envía encuestas automáticas al check-in y check-out para medir la satisfacción de los inquilinos. Disponible en próximas fases."
-      />
-    ),
+    key: "inquilinos",
+    label: <span><TagOutlined style={{ marginRight: 6 }} />Prestaciones a Inquilinos</span>,
+    children: <LodgerServicesTab />,
   },
 ];
 
@@ -468,17 +416,17 @@ export default function ServicesList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         {/* Header */}
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
             <Title level={2} style={{ margin: 0 }}>
               <SettingOutlined style={{ marginRight: 10 }} />
-              Gestión de Servicios
+              Gestión de Prestaciones
             </Title>
             <Text type="secondary">
-              Configura y gestiona los servicios disponibles para tus alojamientos
+              Configura y gestiona las prestaciones disponibles para tus alojamientos
             </Text>
           </Col>
         </Row>

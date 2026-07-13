@@ -429,11 +429,8 @@ function AssignClientModal({ open, onClose, preselectedClient, shards, onSaved }
   );
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
-export default function SalShardsList() {
-  const { user, profile } = useAuth();
-  const userName = profile?.full_name || user?.email || "Superadmin";
-
+// ── Contenido reutilizable (sin V2Layout) ─────────────────────────────────────
+export function SalShardsContent() {
   const [shards, setShards]                   = useState([]);
   const [loading, setLoading]                 = useState(false);
   const [selectedShard, setSelectedShard]     = useState(null);
@@ -585,118 +582,107 @@ export default function SalShardsList() {
   ];
 
   return (
-    <V2Layout role="superadmin" userName={userName}>
-      <div style={{ padding: "24px 32px", maxWidth: 1100, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-          <div>
-            <Title level={4} style={{ margin: 0 }}>Pool de shards TTLock</Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Cuentas email TTLock propias de SmartRoom — cada shard agrupa varios clientes
-            </Text>
-          </div>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-              Actualizar
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => { setEditingShard(null); setFormModal(true); }}
-            >
-              Nuevo shard
-            </Button>
-            <Button
-              icon={<UserOutlined />}
-              onClick={() => { setPreselectedClient(null); setAssignModal(true); }}
-            >
-              Asignar cliente
-            </Button>
-          </Space>
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <Title level={4} style={{ margin: 0 }}><LockOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Pool de shards TTLock</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Cuentas email TTLock propias de SmartRoom — cada shard agrupa varios clientes
+          </Text>
         </div>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+            Actualizar
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => { setEditingShard(null); setFormModal(true); }}
+          >
+            Nuevo shard
+          </Button>
+          <Button
+            icon={<UserOutlined />}
+            onClick={() => { setPreselectedClient(null); setAssignModal(true); }}
+          >
+            Asignar cliente
+          </Button>
+        </Space>
+      </div>
 
-        {/* KPIs */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          {[
-            { label: "Shards activos",    value: activeShards,   color: "#059669" },
-            { label: "Shards totales",    value: shards.length,  color: "#1D4ED8" },
-            { label: "Cerraduras totales", value: totalLocks,    color: "#7C3AED" },
-            { label: "Clientes en SAL",   value: totalClients,   color: "#D97706" },
-          ].map((kpi) => (
-            <Col key={kpi.label} xs={12} md={6}>
-              <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E5E7EB", padding: "14px 18px" }}>
-                <Text style={{ fontSize: 11, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>
-                  {kpi.label}
-                </Text>
-                <Text style={{ fontSize: 26, fontWeight: 700, color: kpi.color }}>{kpi.value}</Text>
-              </div>
-            </Col>
-          ))}
-        </Row>
+      {/* KPIs */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        {[
+          { label: "Shards activos",     value: activeShards,  color: "#059669" },
+          { label: "Shards totales",     value: shards.length, color: "#1D4ED8" },
+          { label: "Cerraduras totales", value: totalLocks,    color: "#7C3AED" },
+          { label: "Clientes en SAL",    value: totalClients,  color: "#D97706" },
+        ].map((kpi) => (
+          <Col key={kpi.label} xs={12} md={6}>
+            <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #E5E7EB", padding: "14px 18px" }}>
+              <Text style={{ fontSize: 11, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>
+                {kpi.label}
+              </Text>
+              <Text style={{ fontSize: 26, fontWeight: 700, color: kpi.color }}>{kpi.value}</Text>
+            </div>
+          </Col>
+        ))}
+      </Row>
 
-        {/* Alerta si hay shards bloqueados */}
-        {shards.some((s) => s.is_blocked) && (
-          <Alert
-            type="error"
-            showIcon
-            icon={<ExclamationCircleOutlined />}
-            message={`${shards.filter((s) => s.is_blocked).length} shard(s) bloqueado(s) — operaciones rechazadas`}
-            description="Revisar el motivo del bloqueo y desbloquear cuando el incidente esté resuelto."
-            style={{ marginBottom: 16 }}
-          />
-        )}
-
-        {/* Alerta si shards al 70%+ */}
-        {shards.some((s) => s.max_locks > 0 && (s.current_locks_count ?? 0) / s.max_locks >= 0.7) && (
-          <Alert
-            type="warning"
-            showIcon
-            message="Uno o más shards al 70% o más de capacidad — considera crear un nuevo shard"
-            style={{ marginBottom: 16 }}
-          />
-        )}
-
-        {/* Tabla */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E5E7EB" }}>
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={shards}
-            loading={loading}
-            pagination={false}
-            size="middle"
-            locale={{ emptyText: "No hay shards configurados. Crea el primero." }}
-            onRow={(r) => ({ onClick: () => openDetail(r), style: { cursor: "pointer" } })}
-            scroll={{ x: true }}
-          />
-        </div>
-
-        {/* Nota Vault */}
+      {shards.some((s) => s.is_blocked) && (
         <Alert
-          type="info"
+          type="error"
           showIcon
-          style={{ marginTop: 20 }}
-          message="Las credenciales TTLock (client_secret, password_md5, access_token, refresh_token) se almacenan en Supabase Vault — no son visibles aquí por seguridad. Para configurar o rotar un token, accede directamente a Vault con service_role."
+          icon={<ExclamationCircleOutlined />}
+          message={`${shards.filter((s) => s.is_blocked).length} shard(s) bloqueado(s) — operaciones rechazadas`}
+          description="Revisar el motivo del bloqueo y desbloquear cuando el incidente esté resuelto."
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {shards.some((s) => s.max_locks > 0 && (s.current_locks_count ?? 0) / s.max_locks >= 0.7) && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Uno o más shards al 70% o más de capacidad — considera crear un nuevo shard"
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E5E7EB" }}>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={shards}
+          loading={loading}
+          pagination={false}
+          size="middle"
+          locale={{ emptyText: "No hay shards configurados. Crea el primero." }}
+          onRow={(r) => ({ onClick: () => openDetail(r), style: { cursor: "pointer" } })}
+          scroll={{ x: true }}
         />
       </div>
 
-      {/* Drawer de clientes del shard */}
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginTop: 20 }}
+        message="Las credenciales TTLock (client_secret, password_md5, access_token, refresh_token) se almacenan en Supabase Vault — no son visibles aquí por seguridad. Para configurar o rotar un token, accede directamente a Vault con service_role."
+      />
+
       <ShardClientsDrawer
         shard={selectedShard}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onReassign={handleReassign}
       />
-
-      {/* Modal crear/editar shard */}
       <ShardFormModal
         open={formModal}
         onClose={() => setFormModal(false)}
         shard={editingShard}
         onSaved={load}
       />
-
-      {/* Modal asignar cliente a shard */}
       <AssignClientModal
         open={assignModal}
         onClose={() => setAssignModal(false)}
@@ -704,6 +690,20 @@ export default function SalShardsList() {
         shards={shards}
         onSaved={load}
       />
+    </div>
+  );
+}
+
+// ── Página standalone (con V2Layout) ─────────────────────────────────────────
+export default function SalShardsList() {
+  const { user, profile } = useAuth();
+  const userName = profile?.full_name || user?.email || "Superadmin";
+
+  return (
+    <V2Layout role="superadmin" userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 4px" }}>
+        <SalShardsContent />
+      </div>
     </V2Layout>
   );
 }

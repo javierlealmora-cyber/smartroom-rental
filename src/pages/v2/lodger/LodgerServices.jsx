@@ -55,12 +55,12 @@ export default function LodgerServices() {
       if (lErr || !lodger) { setServices([]); return; }
 
       const { data, error: sErr } = await supabase
-        .from("lodger_services")
+        .from("benefits_lodger")
         .select(`
           *,
-          accommodation_service:accommodation_services(
+          accommodation_service:benefits_accommodation(
             id,
-            service:services_catalog(id, name, description, unit, unit_price, is_recurring)
+            service:benefits_catalog(id, name, description, unit, unit_price, is_recurring)
           )
         `)
         .eq("lodger_id", lodger.id)
@@ -79,6 +79,7 @@ export default function LodgerServices() {
 
   return (
     <V2Layout role="lodger" companyBranding={companyBranding} userName={user?.email || "Inquilino"}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title level={2} style={{ margin: 0 }}>
@@ -158,6 +159,7 @@ export default function LodgerServices() {
           })}
         </Row>
       )}
+      </div>
     </V2Layout>
   );
 }

@@ -4,10 +4,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Alert, Button, Card, Col, Divider, Form, Input, InputNumber,
+  Alert, Button, Card, Col, Form, Input, InputNumber,
   Row, Select, Space, Steps, Table, Typography,
 } from "antd";
-import { HomeOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, ArrowRightOutlined, HomeOutlined, SaveOutlined } from "@ant-design/icons";
 
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -168,31 +168,27 @@ export default function AccommodationCreate() {
     },
   ];
 
-  const cardTitleStyle = {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#374151",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    borderLeft: "3px solid #0071E3",
-    paddingLeft: 8,
-  };
-
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              <HomeOutlined style={{ marginRight: 10 }} />
-              Nuevo Alojamiento
-            </Title>
-            <Text type="secondary">
-              {currentStep === 0 ? "Paso 1 de 2: Datos del alojamiento" : "Paso 2 de 2: Configurar habitaciones"}
-            </Text>
-          </Col>
-        </Row>
+        {/* ── Botón Volver ─────────────────────────────────────────────── */}
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate("/v2/admin/alojamientos")}
+          style={{ paddingLeft: 0, marginBottom: 16, color: "#6B7280", fontSize: 14 }}
+        >
+          Alojamientos
+        </Button>
+
+        {/* ── Título con icono ─────────────────────────────────────────── */}
+        <div style={{ marginBottom: 6 }}>
+          <Title level={2} style={{ margin: 0 }}><HomeOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Nuevo Alojamiento</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            {currentStep === 0 ? "Paso 1 de 2: Datos del alojamiento" : "Paso 2 de 2: Configurar habitaciones"}
+          </Text>
+        </div>
 
         {/* ── Steps ────────────────────────────────────────────────────── */}
         <Steps
@@ -204,9 +200,8 @@ export default function AccommodationCreate() {
         {/* ── Paso 1: Datos básicos ────────────────────────────────────── */}
         {currentStep === 0 && (
           <Card
-            loading={loadingEntities}
-            title={<span style={cardTitleStyle}>Datos del alojamiento</span>}
-            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            style={{ borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
+            bodyStyle={{ padding: 28 }}
           >
             {!loadingEntities && ownerEntities.length === 0 && (
               <Alert
@@ -223,11 +218,8 @@ export default function AccommodationCreate() {
               />
             )}
             <Form form={form} layout="vertical" onFinish={onStep1Finish}>
-              {/* Información general */}
-              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280", marginTop: 0 }}>
-                Información general
-              </Divider>
               <Row gutter={[16, 0]}>
+                {/* Entidad Propietaria — PRIMER CAMPO OBLIGATORIO según jerarquía del sistema */}
                 <Col xs={24}>
                   <Form.Item
                     label="Entidad Propietaria"
@@ -263,13 +255,6 @@ export default function AccommodationCreate() {
                     <InputNumber style={{ width: "100%" }} min={1} max={100} placeholder="8" />
                   </Form.Item>
                 </Col>
-              </Row>
-
-              {/* Dirección */}
-              <Divider orientation="left" style={{ fontSize: 12, color: "#6B7280" }}>
-                Dirección
-              </Divider>
-              <Row gutter={[16, 0]}>
                 <Col xs={24} sm={14}>
                   <Form.Item label="Calle" name="street">
                     <Input placeholder="Calle Gran Vía, Av. de la Constitución..." />
@@ -291,7 +276,7 @@ export default function AccommodationCreate() {
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
-                  <Form.Item label="Bloque / Escalera" name="address_block">
+                  <Form.Item label="Bloque / Escalera (opcional)" name="address_block">
                     <Input placeholder="Bloque B, Escalera 2..." />
                   </Form.Item>
                 </Col>
@@ -319,11 +304,10 @@ export default function AccommodationCreate() {
                   </Form.Item>
                 </Col>
               </Row>
-
-              <Row justify="end" style={{ marginTop: 16 }}>
+              <Row justify="end" style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
                 <Space>
-                  <Button onClick={() => navigate("/v2/admin/alojamientos")}>Volver</Button>
-                  <Button type="primary" htmlType="submit">Continuar</Button>
+                  <Button onClick={() => navigate("/v2/admin/alojamientos")}>Cancelar</Button>
+                  <Button type="primary" htmlType="submit" icon={<ArrowRightOutlined />}>Continuar</Button>
                 </Space>
               </Row>
             </Form>
@@ -333,15 +317,17 @@ export default function AccommodationCreate() {
         {/* ── Paso 2: Habitaciones ─────────────────────────────────────── */}
         {currentStep === 1 && (
           <Card
+            style={{ borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
+            bodyStyle={{ padding: 28 }}
             title={
-              <span style={cardTitleStyle}>
-                {step1Values?.name} · {rooms.length} habitaciones
-              </span>
+              <Space>
+                <Text strong>{step1Values?.name}</Text>
+                <Text type="secondary">· {rooms.length} habitaciones</Text>
+              </Space>
             }
-            style={{ borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            extra={<Button icon={<ArrowLeftOutlined />} onClick={() => setCurrentStep(0)}>Volver</Button>}
           >
             {saveError && <Alert type="error" message={saveError} showIcon style={{ marginBottom: 16 }} />}
-
             <Table
               dataSource={rooms}
               columns={roomColumns}
@@ -350,10 +336,10 @@ export default function AccommodationCreate() {
               size="small"
               style={{ marginBottom: 24 }}
             />
-            <Row justify="end" style={{ marginTop: 16 }}>
+            <Row justify="end">
               <Space>
-                <Button onClick={() => setCurrentStep(0)}>Volver</Button>
-                <Button type="primary" loading={saving} onClick={handleSubmit}>
+                <Button onClick={() => navigate("/v2/admin/alojamientos")}>Cancelar</Button>
+                <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSubmit}>
                   Crear Alojamiento
                 </Button>
               </Space>

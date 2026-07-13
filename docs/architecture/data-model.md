@@ -168,29 +168,29 @@ client_accounts
 
 ---
 
-### Servicios
+### Prestaciones (Benefits)
 
-#### `services_catalog`
+#### `benefits_catalog`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | uuid PK | Identificador único |
 | entity_id | uuid FK | → entities.id (type=owner) |
-| name | text | Nombre del servicio |
+| name | text | Nombre de la prestación |
 | description | text | Descripción |
 | base_price | numeric | Precio base |
 | billing_type | text | one_time / monthly / per_use |
 | status | text | active / inactive |
 
-#### `accommodation_services`
+#### `benefits_accommodation`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | uuid PK | Identificador único |
 | accommodation_id | uuid FK | → accommodations.id |
-| service_id | uuid FK | → services_catalog.id |
+| service_id | uuid FK | → benefits_catalog.id |
 | custom_price | numeric | Precio personalizado (opcional) |
 | status | text | active / inactive |
 
-#### `lodger_services`
+#### `benefits_lodger`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | uuid PK | Identificador único |
@@ -307,15 +307,15 @@ lodger (1) ──< lodger_room_assignments (N)
 
 ### 2. Servicios
 
-**Definición:** Por Entidad Propietaria (catálogo de servicios)  
-**Aplicación:** Al Alojamiento (servicios activos)  
+**Definición:** Por Entidad Propietaria (catálogo de prestaciones)  
+**Aplicación:** Al Alojamiento (prestaciones activas)  
 **Contratación:** Por Inquilino (consumo/uso)
 
 ```
 entities (owner)
-  └── services_catalog (servicios definidos por entidad)
-        └── accommodation_services (servicios activos en alojamiento)
-              └── lodger_services (consumo/contratación por inquilino)
+  └── benefits_catalog (prestaciones definidas por entidad)
+        └── benefits_accommodation (prestaciones activas en alojamiento)
+              └── benefits_lodger (consumo/contratación por inquilino)
 ```
 
 ---

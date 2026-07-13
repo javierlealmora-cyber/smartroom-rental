@@ -8,7 +8,7 @@ import {
 } from "antd";
 import {
   SaveOutlined, ReloadOutlined, UserOutlined,
-  BgColorsOutlined, CrownOutlined, InfoCircleOutlined, BankOutlined, HomeOutlined,
+  BgColorsOutlined, CrownOutlined, InfoCircleOutlined, BankOutlined, HomeOutlined, SettingOutlined,
 } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../../hooks/useAdminLayout";
@@ -826,10 +826,10 @@ export default function AdminSettings() {
         </Form>
       </Modal>
 
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
-            <Title level={2} style={{ margin: 0 }}>⚙️ Configuración</Title>
+            <Title level={2} style={{ margin: 0 }}><SettingOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Configuración</Title>
             <Text type="secondary">Gestiona los datos de tu cuenta, plan y personalización</Text>
           </Col>
         </Row>

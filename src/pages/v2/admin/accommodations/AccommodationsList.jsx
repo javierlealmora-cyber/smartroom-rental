@@ -70,8 +70,8 @@ export default function AccommodationsList() {
       result = result.filter(
         (a) =>
           a.name?.toLowerCase().includes(s) ||
-          (a.address_street || a.address_line1)?.toLowerCase().includes(s) ||
-          (a.address_city || a.city)?.toLowerCase().includes(s) ||
+          a.address_street?.toLowerCase().includes(s) ||
+          a.address_city?.toLowerCase().includes(s) ||
           a.owner_entity?.legal_name?.toLowerCase().includes(s)
       );
     }
@@ -115,10 +115,11 @@ export default function AccommodationsList() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 12 }}>
         <div>
-          <Title level={2} style={{ margin: 0 }}>Alojamientos</Title>
+          <Title level={2} style={{ margin: 0 }}><HomeOutlined style={{ marginRight: 10, color: "#1D1D1F" }} />Alojamientos</Title>
           <Text type="secondary">
             {loading ? "Cargando..." : `${filtered.length} alojamiento${filtered.length !== 1 ? "s" : ""}`}
           </Text>
@@ -230,6 +231,7 @@ export default function AccommodationsList() {
           </Row>
         </div>
       ))}
+      </div>
     </V2Layout>
   );
 }

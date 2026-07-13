@@ -5,6 +5,9 @@
 // Tipo legal, datos fiscales, direccion, contacto
 // =============================================================================
 
+import { Card } from "antd";
+import { BankOutlined } from "@ant-design/icons";
+
 const LEGAL_TYPES = [
   { value: "autonomo", label: "Autonomo" },
   { value: "persona_fisica", label: "Persona Fisica" },
@@ -16,11 +19,16 @@ export default function StepEntidadPagadora({ formData, errors, onChange }) {
   const isPersona = formData.payer_type === "persona_fisica" || formData.payer_type === "autonomo";
 
   return (
-    <div>
-      <h2 style={styles.sectionTitle}>Entidad Pagadora</h2>
-      <p style={styles.sectionDescription}>
-        Datos fiscales y de facturacion de la entidad responsable del pago. Se creara exactamente una entidad pagadora por cuenta.
-      </p>
+    <Card
+      style={{ borderRadius: 10 }}
+      title={
+        <span style={{ fontWeight: 700 }}>
+          <BankOutlined style={{ marginRight: 8, color: "#3B82F6" }} />
+          Entidad Pagadora
+        </span>
+      }
+      extra={<span style={{ fontSize: 13, color: "#6B7280" }}>Datos fiscales y de facturación</span>}
+    >
 
       {/* Tipo de entidad */}
       <div style={styles.formGroup}>
@@ -291,17 +299,11 @@ export default function StepEntidadPagadora({ formData, errors, onChange }) {
           </div>
         </>
       )}
-    </div>
+    </Card>
   );
 }
 
 const styles = {
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
   sectionDescription: {
     fontSize: 14,
     color: "#6B7280",

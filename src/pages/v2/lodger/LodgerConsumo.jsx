@@ -276,13 +276,16 @@ export default function LodgerConsumo() {
   if (loading) {
     return (
       <V2Layout role="lodger" companyBranding={companyBranding}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Skeleton active paragraph={{ rows: 8 }} />
+        </div>
       </V2Layout>
     );
   }
 
   return (
     <V2Layout role="lodger" companyBranding={companyBranding} userName={lodger?.full_name || user?.email}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
       {error && (
         <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
@@ -317,16 +320,8 @@ export default function LodgerConsumo() {
                   <Text strong>{assignment.accommodation?.name || "-"}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Dirección">
-                  {/* Compatibilidad con ambos esquemas de dirección */}
-                  {(() => {
-                    const street = assignment.accommodation?.address_street || assignment.accommodation?.address_line1 || "";
-                    const number = assignment.accommodation?.address_number || "";
-                    const city = assignment.accommodation?.address_city || assignment.accommodation?.city || "";
-                    return [
-                      [street, number].filter(Boolean).join(" ") || "-",
-                      city && city !== (street || number) ? `, ${city}` : ""
-                    ].filter(Boolean).join("");
-                  })()}
+                  {[assignment.accommodation?.address_street, assignment.accommodation?.address_number].filter(Boolean).join(" ") || "-"}
+                  {assignment.accommodation?.address_city ? `, ${assignment.accommodation.address_city}` : ""}
                 </Descriptions.Item>
                 <Descriptions.Item label="Habitación">
                   <Tag color="geekblue">Hab. {assignment.room?.number}</Tag>
@@ -423,6 +418,7 @@ export default function LodgerConsumo() {
           </Card>
         </Col>
       </Row>
+      </div>
     </V2Layout>
   );
 }

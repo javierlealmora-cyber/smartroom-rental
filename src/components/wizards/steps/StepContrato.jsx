@@ -5,6 +5,8 @@
 // Fusiona: datos de cuenta (nombre, email, slug) + seleccion de plan + ciclo
 // =============================================================================
 
+import { Card } from "antd";
+import { FileTextOutlined } from "@ant-design/icons";
 import { mockPlans, getPlanByCode, formatCurrency, getPlanColor, getPlanLabel } from "../../../mocks/clientAccountsData";
 
 export default function StepContrato({ formData, errors, onChange, _mode, _onChangeField }) {
@@ -15,11 +17,16 @@ export default function StepContrato({ formData, errors, onChange, _mode, _onCha
   const selectedPlan = getPlanByCode(formData.plan_code);
 
   return (
-    <div>
-      <h2 style={styles.sectionTitle}>Datos del Contrato</h2>
-      <p style={styles.sectionDescription}>
-        Informacion basica de la cuenta y seleccion del plan de suscripcion
-      </p>
+    <Card
+      style={{ borderRadius: 10 }}
+      title={
+        <span style={{ fontWeight: 700 }}>
+          <FileTextOutlined style={{ marginRight: 8, color: "#3B82F6" }} />
+          Datos del Contrato
+        </span>
+      }
+      extra={<span style={{ fontSize: 13, color: "#6B7280" }}>Información básica de la cuenta y selección del plan</span>}
+    >
 
       {/* Datos basicos */}
       <div style={styles.subsection}>
@@ -259,22 +266,11 @@ export default function StepContrato({ formData, errors, onChange, _mode, _onCha
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
 const styles = {
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
-  },
   subsection: {
     marginBottom: 28,
   },

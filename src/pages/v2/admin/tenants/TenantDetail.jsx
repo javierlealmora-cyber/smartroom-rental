@@ -241,7 +241,7 @@ export default function TenantDetail() {
   // ─── Estados de carga ─────────────────────────────────────────────────────────
   if (loading) return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{maxWidth:900,margin:"0 auto"}}><Skeleton active paragraph={{rows:10}}/></div>
+      <div style={{maxWidth: 1100,margin:"0 auto"}}><Skeleton active paragraph={{rows:10}}/></div>
     </V2Layout>
   );
   if (error) return (
@@ -285,7 +285,7 @@ export default function TenantDetail() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         {/* ── HEADER ───────────────────────────────────────── */}
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>

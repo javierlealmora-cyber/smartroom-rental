@@ -1,13 +1,16 @@
 // =============================================================================
 // src/pages/v2/superadmin/plans/PlanCreate.jsx
-// =============================================================================
-// DBSU-PC-CR: Crear Plan de Cliente
-// Formulario completo para crear un nuevo plan con plantilla única
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// Crear Plan de Cliente — estilo Control Center estándar
 // =============================================================================
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button, Input, InputNumber, Select, Switch, message } from "antd";
+import {
+  ArrowLeftOutlined, SaveOutlined, FileAddOutlined,
+  TagOutlined, CalendarOutlined, DollarOutlined,
+  ControlOutlined, BgColorsOutlined, AppstoreOutlined, SettingOutlined,
+} from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
 import {
   PLAN_STATUS,
@@ -15,32 +18,94 @@ import {
   formatCurrency,
 } from "../../../../mocks/clientAccountsData";
 
+// ─── Paleta estándar ──────────────────────────────────────────────────────────
+const C = {
+  text:    "#1A2438",
+  muted:   "#8A9BB8",
+  light:   "#C0CCD8",
+  divider: "rgba(0,0,0,0.07)",
+  navy:    "#0B2E6D",
+  blue:    "#3B82F6",
+  red:     "#DC2626",
+};
+
+// ─── Componentes de formulario ────────────────────────────────────────────────
+function FieldGroup({ label, required, help, error, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
+        {label}{required && <span style={{ color: C.red, marginLeft: 3 }}>*</span>}
+      </label>
+      {children}
+      {error && <span style={{ fontSize: 11, color: C.red }}>{error}</span>}
+      {help && !error && <span style={{ fontSize: 11, color: C.muted }}>{help}</span>}
+    </div>
+  );
+}
+
+function SectionCard({ title, description, icon, children }) {
+  return (
+    <div style={{
+      background: "#fff",
+      border: "1px solid rgba(11,46,109,0.08)",
+      borderRadius: 12,
+      padding: "24px 28px",
+      boxShadow: "0 1px 4px rgba(11,46,109,0.04)",
+    }}>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: C.text, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          {icon && <span style={{ fontSize: 18, display: "flex" }}>{icon}</span>}
+          {title}
+        </h2>
+        {description && <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", paddingLeft: icon ? 26 : 0 }}>{description}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const SECTIONS = [
+  { id: "identity", label: "Identidad" },
+  { id: "status",   label: "Estado y Vigencia" },
+  { id: "pricing",  label: "Pricing" },
+  { id: "limits",   label: "Límites" },
+  { id: "branding", label: "Branding" },
+  { id: "services", label: "Servicios" },
+  { id: "rules",    label: "Reglas" },
+];
+
+// ─── Grid de 2 columnas ───────────────────────────────────────────────────────
+function Grid2({ children }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px" }}>
+      {children}
+    </div>
+  );
+}
+
+function FullRow({ children }) {
+  return <div style={{ gridColumn: "1 / -1" }}>{children}</div>;
+}
+
 export default function PlanCreate() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("identity");
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
-  // Estado del formulario - plantilla única para todos los planes
   const [formData, setFormData] = useState({
-    // 1. Identidad del plan
     name: "",
     code: "",
     description: "",
-
-    // 2. Estado y vigencia
     status: PLAN_STATUS.DRAFT,
     visible_for_new_accounts: false,
     start_date: new Date().toISOString().split("T")[0],
     end_date: "",
-
-    // 3. Pricing
     price_monthly: "",
     annual_discount_months: 2,
     price_annual: "",
     vat_applicable: true,
     vat_percentage: 21,
-
-    // 4. Límites del plan
     max_owners: 1,
     max_accommodations: 3,
     max_rooms: 20,
@@ -48,1000 +113,520 @@ export default function PlanCreate() {
     max_associated_admins: 0,
     max_api_users: 0,
     max_viewer_users: 0,
-
-    // 5. Branding habilitado
     branding_enabled: false,
     logo_allowed: false,
     theme_editable: false,
-
-    // 6. Servicios incluidos
     services_included: [],
-
-    // 7. Reglas funcionales
     allows_multi_owner: false,
     allows_owner_change: false,
     allows_receipt_upload: true,
   });
 
-  const handleChange = (field, value) => {
+  const set = (field, value) => {
     setFormData((prev) => {
-      const newData = { ...prev, [field]: value };
-
-      // Auto-calcular precio anual
+      const next = { ...prev, [field]: value };
       if (field === "price_monthly" || field === "annual_discount_months") {
-        const monthly = field === "price_monthly" ? parseFloat(value) || 0 : parseFloat(prev.price_monthly) || 0;
+        const monthly  = field === "price_monthly" ? parseFloat(value) || 0 : parseFloat(prev.price_monthly) || 0;
         const discount = field === "annual_discount_months" ? parseInt(value) || 0 : prev.annual_discount_months;
-        newData.price_annual = (monthly * (12 - discount)).toFixed(2);
+        next.price_annual = (monthly * (12 - discount)).toFixed(2);
       }
-
-      // Si no permite multi-owner, max_owners debe ser 1
-      if (field === "allows_multi_owner" && !value) {
-        newData.max_owners = 1;
-      }
-
-      // Generar código automático
+      if (field === "allows_multi_owner" && !value) next.max_owners = 1;
       if (field === "name" && !prev.code) {
-        newData.code = value
-          .toLowerCase()
-          .normalize("NFD")
+        next.code = value.toLowerCase().normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "_")
-          .replace(/_+/g, "_")
-          .trim();
+          .replace(/[^a-z0-9\s]/g, "")
+          .replace(/\s+/g, "_").trim();
       }
-
-      return newData;
+      return next;
     });
-
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: null }));
   };
 
-  const handleServiceToggle = (serviceId) => {
-    setFormData((prev) => {
-      const services = prev.services_included.includes(serviceId)
-        ? prev.services_included.filter((s) => s !== serviceId)
-        : [...prev.services_included, serviceId];
-      return { ...prev, services_included: services };
-    });
+  const toggleService = (id) => {
+    setFormData((prev) => ({
+      ...prev,
+      services_included: prev.services_included.includes(id)
+        ? prev.services_included.filter((s) => s !== id)
+        : [...prev.services_included, id],
+    }));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Validar identidad
-    if (!formData.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!formData.code.trim()) newErrors.code = "El código es obligatorio";
-    if (!/^[a-z0-9_]+$/.test(formData.code)) {
-      newErrors.code = "El código solo puede contener letras minúsculas, números y guiones bajos";
-    }
-
-    // Validar pricing
-    if (!formData.price_monthly || parseFloat(formData.price_monthly) < 0) {
-      newErrors.price_monthly = "El precio mensual es obligatorio y no puede ser negativo";
-    }
-
-    // Validar límites (no negativos)
-    if (formData.max_owners < -1 || formData.max_owners === 0) {
-      newErrors.max_owners = "El valor debe ser -1 (ilimitado) o mayor que 0";
-    }
-    if (formData.max_accommodations < -1) {
-      newErrors.max_accommodations = "El valor debe ser -1 (ilimitado) o mayor o igual a 0";
-    }
-    if (formData.max_rooms < -1) {
-      newErrors.max_rooms = "El valor debe ser -1 (ilimitado) o mayor o igual a 0";
-    }
-
-    // Si estado = active, start_date obligatorio
-    if (formData.status === PLAN_STATUS.ACTIVE && !formData.start_date) {
-      newErrors.start_date = "La fecha de inicio es obligatoria para planes activos";
-    }
-
-    // Si no permite multi-owner, max_owners debe ser 1
-    if (!formData.allows_multi_owner && formData.max_owners !== 1) {
-      newErrors.max_owners = "Si no permite multi-owner, el máximo debe ser 1";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = () => {
+    const e = {};
+    if (!formData.name.trim()) e.name = "El nombre es obligatorio";
+    if (!formData.code.trim()) e.code = "El código es obligatorio";
+    else if (!/^[a-z0-9_]+$/.test(formData.code)) e.code = "Solo minúsculas, números y guiones bajos";
+    if (!formData.price_monthly || parseFloat(formData.price_monthly) < 0)
+      e.price_monthly = "Precio mensual obligatorio y ≥ 0";
+    if (formData.max_owners < -1 || formData.max_owners === 0)
+      e.max_owners = "Debe ser -1 (ilimitado) o > 0";
+    if (formData.status === PLAN_STATUS.ACTIVE && !formData.start_date)
+      e.start_date = "Obligatoria para planes activos";
+    if (!formData.allows_multi_owner && formData.max_owners !== 1)
+      e.max_owners = "Sin multi-owner, el máximo debe ser 1";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      // Ir a la sección con el primer error
-      const errorFields = Object.keys(errors);
-      if (errorFields.some((f) => ["name", "code", "description"].includes(f))) {
-        setActiveSection("identity");
-      } else if (errorFields.some((f) => ["status", "start_date", "end_date"].includes(f))) {
-        setActiveSection("status");
-      } else if (errorFields.some((f) => ["price_monthly", "price_annual", "vat_percentage"].includes(f))) {
-        setActiveSection("pricing");
-      } else if (errorFields.some((f) => f.startsWith("max_"))) {
-        setActiveSection("limits");
-      }
+  const handleSubmit = async () => {
+    if (!validate()) {
+      const ef = Object.keys(errors);
+      if (ef.some(f => ["name","code","description"].includes(f))) setActiveSection("identity");
+      else if (ef.some(f => ["status","start_date","end_date"].includes(f))) setActiveSection("status");
+      else if (ef.some(f => f.startsWith("price") || f === "vat_percentage")) setActiveSection("pricing");
+      else if (ef.some(f => f.startsWith("max_"))) setActiveSection("limits");
       return;
     }
-
-    console.log("Crear plan:", formData);
-    alert("Plan creado correctamente (mock)");
-    navigate("/v2/superadmin/planes");
+    setSaving(true);
+    try {
+      // TODO: conectar a plans.service.createPlan(formData)
+      console.log("Crear plan:", formData);
+      message.success("Plan creado correctamente");
+      navigate("/v2/superadmin/planes");
+    } catch (err) {
+      message.error(err.message || "Error al crear el plan");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const sections = [
-    { id: "identity", label: "Identidad", icon: "🏷️" },
-    { id: "status", label: "Estado y Vigencia", icon: "📅" },
-    { id: "pricing", label: "Pricing", icon: "💰" },
-    { id: "limits", label: "Límites", icon: "📊" },
-    { id: "branding", label: "Branding", icon: "🎨" },
-    { id: "services", label: "Servicios", icon: "⚡" },
-    { id: "rules", label: "Reglas", icon: "⚙️" },
-  ];
+  const currentIdx = SECTIONS.findIndex(s => s.id === activeSection);
 
   return (
     <V2Layout role="superadmin" userName="Administrador">
-      {/* Header con acciones */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Nuevo Plan de Cliente</h1>
-          <p style={styles.subtitle}>Configure todos los parámetros del nuevo plan</p>
-        </div>
-        <div style={styles.headerActions}>
-          <button
-            style={styles.cancelButton}
-            onClick={() => navigate("/v2/superadmin/planes")}
-          >
-            Cancelar
-          </button>
-          <button style={styles.submitButton} onClick={handleSubmit}>
-            Crear Plan
-          </button>
-        </div>
-      </div>
+      <div style={{ background: "#fff", minHeight: "100%", paddingBottom: 40 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 4px" }}>
 
-      <div style={styles.content}>
-        {/* Sidebar de secciones */}
-        <div style={styles.sidebar}>
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              style={{
-                ...styles.sectionButton,
-                ...(activeSection === section.id ? styles.sectionButtonActive : {}),
-              }}
-              onClick={() => setActiveSection(section.id)}
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 28, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: C.text, margin: 0, letterSpacing: "-0.4px", display: "flex", alignItems: "center", gap: 10 }}>
+              <FileAddOutlined style={{ fontSize: 22, color: "#7C3AED" }} />
+              Nuevo Plan de Cliente
+            </h1>
+            <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0" }}>
+              Configura todos los parámetros del nuevo plan
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/v2/superadmin/planes")}>
+              Cancelar
+            </Button>
+            <Button
+              type="primary" icon={<SaveOutlined />}
+              loading={saving} onClick={handleSubmit}
+              style={{ background: C.navy, borderColor: C.navy }}
             >
-              <span style={styles.sectionIcon}>{section.icon}</span>
-              <span>{section.label}</span>
-            </button>
-          ))}
+              Crear Plan
+            </Button>
+          </div>
         </div>
 
-        {/* Formulario */}
-        <form style={styles.form} onSubmit={handleSubmit}>
-          {/* DBSU-PC-CR: Sección 1 - Identidad del Plan */}
-          {activeSection === "identity" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Identidad del Plan</h2>
-              <p style={styles.sectionDescription}>
-                Información básica que identifica este plan
-              </p>
+        {/* ── Layout: sidebar + contenido ─────────────────────────────── */}
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
 
-              <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Nombre <span style={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    style={{ ...styles.input, ...(errors.name ? styles.inputError : {}) }}
-                    placeholder="Ej: Business Pro"
-                  />
-                  {errors.name && <span style={styles.errorText}>{errors.name}</span>}
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Código <span style={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => handleChange("code", e.target.value.toLowerCase())}
-                    style={{ ...styles.input, ...(errors.code ? styles.inputError : {}) }}
-                    placeholder="business_pro"
-                  />
-                  {errors.code && <span style={styles.errorText}>{errors.code}</span>}
-                  <span style={styles.helpText}>
-                    Identificador único. Solo minúsculas, números y guiones bajos.
+          {/* Sidebar de secciones */}
+          <div style={{
+            width: 180, flexShrink: 0,
+            background: "#fff",
+            border: "1px solid rgba(11,46,109,0.08)",
+            borderRadius: 12,
+            padding: "8px 0",
+            boxShadow: "0 1px 4px rgba(11,46,109,0.04)",
+          }}>
+            {SECTIONS.map((s, idx) => {
+              const isActive = s.id === activeSection;
+              const hasError = Object.keys(errors).some(f =>
+                (s.id === "identity" && ["name","code","description"].includes(f)) ||
+                (s.id === "status"   && ["status","start_date","end_date"].includes(f)) ||
+                (s.id === "pricing"  && f.startsWith("price")) ||
+                (s.id === "limits"   && f.startsWith("max_"))
+              );
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", textAlign: "left",
+                    padding: "10px 16px",
+                    background: isActive ? "rgba(11,46,109,0.06)" : "transparent",
+                    border: "none",
+                    borderLeft: isActive ? `3px solid ${C.navy}` : "3px solid transparent",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: isActive ? 700 : 400,
+                    color: hasError ? C.red : isActive ? C.navy : C.text,
+                    transition: "all 0.12s",
+                  }}
+                >
+                  <span style={{
+                    width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                    background: isActive ? C.navy : "#F1F5F9",
+                    color: isActive ? "#fff" : C.muted,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700,
+                  }}>
+                    {idx + 1}
                   </span>
-                </div>
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
 
-                <div style={{ ...styles.formGroup, gridColumn: "1 / -1" }}>
-                  <label style={styles.label}>Descripción</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
-                    style={styles.textarea}
-                    placeholder="Descripción del plan y sus características principales..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Contenido del paso activo */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* DBSU-PC-CR: Sección 2 - Estado y Vigencia */}
-          {activeSection === "status" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Estado y Vigencia</h2>
-              <p style={styles.sectionDescription}>
-                Configure el estado inicial y las fechas de vigencia del plan
-              </p>
+            {/* ── Identidad ─────────────────────────────────────────── */}
+            {activeSection === "identity" && (
+              <SectionCard title="Identidad del Plan" description="Información básica que identifica este plan" icon={<TagOutlined style={{ color: "#2563EB" }} />}>
+                <Grid2>
+                  <FieldGroup label="Nombre" required error={errors.name}>
+                    <Input
+                      value={formData.name}
+                      onChange={e => set("name", e.target.value)}
+                      placeholder="Ej: Business Pro"
+                      status={errors.name ? "error" : ""}
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Código" required error={errors.code} help="Solo minúsculas, números y guiones bajos">
+                    <Input
+                      value={formData.code}
+                      onChange={e => set("code", e.target.value.toLowerCase())}
+                      placeholder="business_pro"
+                      status={errors.code ? "error" : ""}
+                      style={{ fontFamily: "monospace" }}
+                    />
+                  </FieldGroup>
+                  <FullRow>
+                    <FieldGroup label="Descripción">
+                      <Input.TextArea
+                        value={formData.description}
+                        onChange={e => set("description", e.target.value)}
+                        placeholder="Descripción del plan y sus características principales..."
+                        rows={3}
+                      />
+                    </FieldGroup>
+                  </FullRow>
+                </Grid2>
+              </SectionCard>
+            )}
 
-              <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Estado inicial</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleChange("status", e.target.value)}
-                    style={styles.select}
+            {/* ── Estado y Vigencia ─────────────────────────────────── */}
+            {activeSection === "status" && (
+              <SectionCard title="Estado y Vigencia" description="Estado inicial y fechas de vigencia del plan" icon={<CalendarOutlined style={{ color: "#059669" }} />}>
+                <Grid2>
+                  <FieldGroup label="Estado inicial" help="Los planes en borrador no son visibles para nuevas altas">
+                    <Select
+                      value={formData.status}
+                      onChange={v => set("status", v)}
+                      options={[
+                        { value: PLAN_STATUS.DRAFT,  label: "Borrador" },
+                        { value: PLAN_STATUS.ACTIVE, label: "Activo" },
+                      ]}
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Visible para nuevas altas">
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 4 }}>
+                      <Switch
+                        checked={formData.visible_for_new_accounts}
+                        onChange={v => set("visible_for_new_accounts", v)}
+                        disabled={formData.status === PLAN_STATUS.DRAFT}
+                      />
+                      <span style={{ fontSize: 13, color: C.text }}>
+                        {formData.visible_for_new_accounts ? "Sí" : "No"}
+                      </span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup
+                    label="Fecha inicio vigencia"
+                    required={formData.status === PLAN_STATUS.ACTIVE}
+                    error={errors.start_date}
                   >
-                    <option value={PLAN_STATUS.DRAFT}>Borrador</option>
-                    <option value={PLAN_STATUS.ACTIVE}>Activo</option>
-                  </select>
-                  <span style={styles.helpText}>
-                    Los planes en borrador no son visibles para nuevas altas
-                  </span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Visible para nuevas altas</label>
-                  <div style={styles.toggleWrapper}>
-                    <input
-                      type="checkbox"
-                      checked={formData.visible_for_new_accounts}
-                      onChange={(e) => handleChange("visible_for_new_accounts", e.target.checked)}
-                      style={styles.checkbox}
-                      disabled={formData.status === PLAN_STATUS.DRAFT}
+                    <Input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={e => set("start_date", e.target.value)}
+                      status={errors.start_date ? "error" : ""}
                     />
-                    <span>{formData.visible_for_new_accounts ? "Sí" : "No"}</span>
+                  </FieldGroup>
+                  <FieldGroup label="Fecha fin vigencia" help="Dejar vacío si no caduca">
+                    <Input
+                      type="date"
+                      value={formData.end_date}
+                      onChange={e => set("end_date", e.target.value)}
+                    />
+                  </FieldGroup>
+                </Grid2>
+              </SectionCard>
+            )}
+
+            {/* ── Pricing ───────────────────────────────────────────── */}
+            {activeSection === "pricing" && (
+              <SectionCard title="Pricing" description="Precios y descuentos del plan" icon={<DollarOutlined style={{ color: "#D97706" }} />}>
+                <Grid2>
+                  <FieldGroup label="Precio mensual (EUR)" required error={errors.price_monthly}>
+                    <InputNumber
+                      value={formData.price_monthly}
+                      onChange={v => set("price_monthly", v)}
+                      min={0} step={0.01} precision={2}
+                      placeholder="29.99"
+                      status={errors.price_monthly ? "error" : ""}
+                      style={{ width: "100%" }}
+                      addonAfter="€"
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Meses gratis (descuento anual)" help="Meses gratis al pagar anualmente (por defecto 2)">
+                    <InputNumber
+                      value={formData.annual_discount_months}
+                      onChange={v => set("annual_discount_months", v)}
+                      min={0} max={6}
+                      style={{ width: "100%" }}
+                    />
+                  </FieldGroup>
+                  <FieldGroup
+                    label="Precio anual (EUR)"
+                    help={`Auto-calculado: ${formData.price_monthly ? formatCurrency((parseFloat(formData.price_monthly) || 0) * (12 - formData.annual_discount_months)) : "—"}`}
+                  >
+                    <InputNumber
+                      value={formData.price_annual}
+                      onChange={v => set("price_annual", v)}
+                      min={0} step={0.01} precision={2}
+                      placeholder="Auto-calculado"
+                      style={{ width: "100%" }}
+                      addonAfter="€"
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="IVA aplicable">
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 4 }}>
+                      <Switch checked={formData.vat_applicable} onChange={v => set("vat_applicable", v)} />
+                      <span style={{ fontSize: 13, color: C.text }}>{formData.vat_applicable ? "Sí" : "No"}</span>
+                    </div>
+                  </FieldGroup>
+                  {formData.vat_applicable && (
+                    <FieldGroup label="% IVA">
+                      <InputNumber
+                        value={formData.vat_percentage}
+                        onChange={v => set("vat_percentage", v)}
+                        min={0} max={100}
+                        style={{ width: "100%" }}
+                        addonAfter="%"
+                      />
+                    </FieldGroup>
+                  )}
+                </Grid2>
+
+                {/* Resumen */}
+                <div style={{
+                  marginTop: 20, padding: "16px 20px",
+                  background: "#F8FAFC", borderRadius: 10,
+                  border: `1px solid ${C.divider}`,
+                  display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px",
+                }}>
+                  <div style={{ gridColumn: "1 / -1", fontSize: 12, fontWeight: 700, color: C.light, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+                    Resumen de precios
                   </div>
+                  {[
+                    { l: "Mensual (sin IVA)", v: formatCurrency(parseFloat(formData.price_monthly) || 0) },
+                    { l: "Anual (sin IVA)",   v: formatCurrency(parseFloat(formData.price_annual)  || 0) },
+                    ...(formData.vat_applicable ? [
+                      { l: `Mensual (+${formData.vat_percentage}% IVA)`, v: formatCurrency((parseFloat(formData.price_monthly)||0) * (1 + formData.vat_percentage/100)) },
+                      { l: `Anual (+${formData.vat_percentage}% IVA)`,   v: formatCurrency((parseFloat(formData.price_annual) ||0) * (1 + formData.vat_percentage/100)) },
+                    ] : []),
+                  ].map(({ l, v }) => (
+                    <div key={l} style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: C.muted }}>{l}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{v}</span>
+                    </div>
+                  ))}
                 </div>
+              </SectionCard>
+            )}
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Fecha inicio vigencia {formData.status === PLAN_STATUS.ACTIVE && <span style={styles.required}>*</span>}
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => handleChange("start_date", e.target.value)}
-                    style={{ ...styles.input, ...(errors.start_date ? styles.inputError : {}) }}
-                  />
-                  {errors.start_date && <span style={styles.errorText}>{errors.start_date}</span>}
+            {/* ── Límites ───────────────────────────────────────────── */}
+            {activeSection === "limits" && (
+              <SectionCard title="Límites del Plan" description="Límites de recursos. Usa -1 para ilimitado." icon={<ControlOutlined style={{ color: "#DC2626" }} />}>
+                <Grid2>
+                  {[
+                    { field: "max_owners",           label: "Max Entidades Propietarias", min: -1, disabled: !formData.allows_multi_owner, help: "-1 = ilimitado", error: errors.max_owners },
+                    { field: "max_accommodations",   label: "Max Alojamientos",           min: -1, error: errors.max_accommodations },
+                    { field: "max_rooms",            label: "Max Habitaciones",           min: -1, error: errors.max_rooms },
+                    { field: "max_admin_users",      label: "Max Usuarios Admin",         min: 1, max: 3, help: "Máximo 3 por cuenta" },
+                    { field: "max_associated_admins",label: "Max Usuarios Asociados",     min: 0, max: 2, help: "0-2 típicamente" },
+                    { field: "max_api_users",        label: "Max Usuarios API",           min: -1 },
+                    { field: "max_viewer_users",     label: "Max Usuarios Viewer",        min: -1 },
+                  ].map(({ field, label, min, max, disabled, help, error }) => (
+                    <FieldGroup key={field} label={label} help={help} error={error}>
+                      <InputNumber
+                        value={formData[field]}
+                        onChange={v => set(field, v)}
+                        min={min} max={max}
+                        disabled={disabled}
+                        status={error ? "error" : ""}
+                        style={{ width: "100%" }}
+                      />
+                    </FieldGroup>
+                  ))}
+                </Grid2>
+              </SectionCard>
+            )}
+
+            {/* ── Branding ──────────────────────────────────────────── */}
+            {activeSection === "branding" && (
+              <SectionCard title="Branding" description="Opciones de personalización visual para este plan" icon={<BgColorsOutlined style={{ color: "#EC4899" }} />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {[
+                    { field: "branding_enabled", label: "Branding editable",  help: "Permite al cliente personalizar colores y estilos", disabled: false },
+                    { field: "logo_allowed",     label: "Logo permitido",      help: "Permite subir un logotipo personalizado",           disabled: !formData.branding_enabled },
+                    { field: "theme_editable",   label: "Tema editable",       help: "Permite editar la paleta de colores del portal",     disabled: !formData.branding_enabled },
+                  ].map(({ field, label, help, disabled }) => (
+                    <div key={field} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "14px 16px",
+                      background: "#F8FAFC", borderRadius: 8,
+                      border: `1px solid ${C.divider}`,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: disabled ? C.light : C.text }}>{label}</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{help}</div>
+                      </div>
+                      <Switch
+                        checked={formData[field]}
+                        onChange={v => set(field, v)}
+                        disabled={disabled}
+                      />
+                    </div>
+                  ))}
                 </div>
+              </SectionCard>
+            )}
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Fecha fin vigencia (opcional)</label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => handleChange("end_date", e.target.value)}
-                    style={styles.input}
-                  />
-                  <span style={styles.helpText}>
-                    Dejar vacío si el plan no tiene fecha de caducidad
-                  </span>
+            {/* ── Servicios ─────────────────────────────────────────── */}
+            {activeSection === "services" && (
+              <SectionCard title="Servicios Incluidos" description="Selecciona los servicios disponibles en este plan" icon={<AppstoreOutlined style={{ color: "#0891B2" }} />}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {(AVAILABLE_SERVICES || []).map((svc) => {
+                    const selected = formData.services_included.includes(svc.id);
+                    return (
+                      <div
+                        key={svc.id}
+                        onClick={() => toggleService(svc.id)}
+                        style={{
+                          padding: "14px 16px",
+                          border: `1px solid ${selected ? C.navy : C.divider}`,
+                          borderRadius: 10,
+                          background: selected ? "rgba(11,46,109,0.04)" : "#fff",
+                          cursor: "pointer",
+                          transition: "all 0.12s",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{
+                            width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                            border: `2px solid ${selected ? C.navy : C.light}`,
+                            background: selected ? C.navy : "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {selected && <svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,2" stroke="#fff" strokeWidth="1.5" fill="none"/></svg>}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: selected ? C.navy : C.text }}>{svc.name}</span>
+                        </div>
+                        {svc.description && (
+                          <p style={{ fontSize: 11, color: C.muted, margin: "6px 0 0 26px" }}>{svc.description}</p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* DBSU-PC-CR: Sección 3 - Pricing */}
-          {activeSection === "pricing" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Pricing</h2>
-              <p style={styles.sectionDescription}>
-                Configure los precios y descuentos del plan
-              </p>
-
-              <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Precio mensual (EUR) <span style={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price_monthly}
-                    onChange={(e) => handleChange("price_monthly", e.target.value)}
-                    style={{ ...styles.input, ...(errors.price_monthly ? styles.inputError : {}) }}
-                    placeholder="29.99"
-                  />
-                  {errors.price_monthly && <span style={styles.errorText}>{errors.price_monthly}</span>}
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Meses gratis (descuento anual)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="6"
-                    value={formData.annual_discount_months}
-                    onChange={(e) => handleChange("annual_discount_months", e.target.value)}
-                    style={styles.input}
-                  />
-                  <span style={styles.helpText}>
-                    Número de meses gratis al pagar anualmente (por defecto 2)
-                  </span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Precio anual (EUR)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price_annual}
-                    onChange={(e) => handleChange("price_annual", e.target.value)}
-                    style={styles.input}
-                    placeholder="Auto-calculado"
-                  />
-                  <span style={styles.helpText}>
-                    Auto-calculado: {formData.price_monthly ? formatCurrency((parseFloat(formData.price_monthly) || 0) * (12 - formData.annual_discount_months)) : "-"}
-                  </span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>IVA aplicable</label>
-                  <div style={styles.toggleWrapper}>
-                    <input
-                      type="checkbox"
-                      checked={formData.vat_applicable}
-                      onChange={(e) => handleChange("vat_applicable", e.target.checked)}
-                      style={styles.checkbox}
-                    />
-                    <span>{formData.vat_applicable ? "Sí" : "No"}</span>
-                  </div>
-                </div>
-
-                {formData.vat_applicable && (
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>% IVA</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.vat_percentage}
-                      onChange={(e) => handleChange("vat_percentage", e.target.value)}
-                      style={styles.input}
-                    />
+                {formData.services_included.length > 0 && (
+                  <div style={{ marginTop: 14, fontSize: 12, color: C.muted }}>
+                    <strong style={{ color: C.text }}>{formData.services_included.length} seleccionados: </strong>
+                    {formData.services_included.map(id => (AVAILABLE_SERVICES || []).find(s => s.id === id)?.name).filter(Boolean).join(", ")}
                   </div>
                 )}
+              </SectionCard>
+            )}
 
-                {/* Resumen de precios */}
-                <div style={{ ...styles.formGroup, gridColumn: "1 / -1" }}>
-                  <div style={styles.pricingSummary}>
-                    <h4 style={styles.summaryTitle}>Resumen de precios</h4>
-                    <div style={styles.summaryGrid}>
-                      <div style={styles.summaryItem}>
-                        <span style={styles.summaryLabel}>Mensual (sin IVA)</span>
-                        <span style={styles.summaryValue}>{formatCurrency(parseFloat(formData.price_monthly) || 0)}</span>
+            {/* ── Reglas ────────────────────────────────────────────── */}
+            {activeSection === "rules" && (
+              <SectionCard title="Reglas Funcionales" description="Reglas de negocio específicas de este plan" icon={<SettingOutlined style={{ color: "#64748B" }} />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[
+                    {
+                      field: "allows_multi_owner",
+                      label: "Permite multi-owner",
+                      desc: "Múltiples entidades propietarias. Si desactivado, max_owners = 1.",
+                      disabled: false,
+                    },
+                    {
+                      field: "allows_owner_change",
+                      label: "Permite cambio de owner",
+                      desc: "Reasignar alojamientos entre propietarios. Solo planes tipo Agencia.",
+                      disabled: !formData.allows_multi_owner,
+                    },
+                    {
+                      field: "allows_receipt_upload",
+                      label: "Permite subir resguardo",
+                      desc: "Subir resguardos de pago para cobros externos o transferencias.",
+                      disabled: false,
+                    },
+                  ].map(({ field, label, desc, disabled }) => (
+                    <div key={field} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "14px 16px",
+                      background: "#F8FAFC", borderRadius: 8,
+                      border: `1px solid ${C.divider}`,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: disabled ? C.light : C.text }}>{label}</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{desc}</div>
                       </div>
-                      <div style={styles.summaryItem}>
-                        <span style={styles.summaryLabel}>Anual (sin IVA)</span>
-                        <span style={styles.summaryValue}>{formatCurrency(parseFloat(formData.price_annual) || 0)}</span>
-                      </div>
-                      {formData.vat_applicable && (
-                        <>
-                          <div style={styles.summaryItem}>
-                            <span style={styles.summaryLabel}>Mensual (con {formData.vat_percentage}% IVA)</span>
-                            <span style={styles.summaryValue}>
-                              {formatCurrency((parseFloat(formData.price_monthly) || 0) * (1 + formData.vat_percentage / 100))}
-                            </span>
-                          </div>
-                          <div style={styles.summaryItem}>
-                            <span style={styles.summaryLabel}>Anual (con {formData.vat_percentage}% IVA)</span>
-                            <span style={styles.summaryValue}>
-                              {formatCurrency((parseFloat(formData.price_annual) || 0) * (1 + formData.vat_percentage / 100))}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* DBSU-PC-CR: Sección 4 - Límites del Plan */}
-          {activeSection === "limits" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Límites del Plan</h2>
-              <p style={styles.sectionDescription}>
-                Configure los límites de recursos para este plan. Use -1 para ilimitado.
-              </p>
-
-              <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Entidades Propietarias (owners)</label>
-                  <input
-                    type="number"
-                    min="-1"
-                    value={formData.max_owners}
-                    onChange={(e) => handleChange("max_owners", parseInt(e.target.value))}
-                    style={{ ...styles.input, ...(errors.max_owners ? styles.inputError : {}) }}
-                    disabled={!formData.allows_multi_owner}
-                  />
-                  {errors.max_owners && <span style={styles.errorText}>{errors.max_owners}</span>}
-                  <span style={styles.helpText}>-1 = ilimitado</span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Alojamientos</label>
-                  <input
-                    type="number"
-                    min="-1"
-                    value={formData.max_accommodations}
-                    onChange={(e) => handleChange("max_accommodations", parseInt(e.target.value))}
-                    style={{ ...styles.input, ...(errors.max_accommodations ? styles.inputError : {}) }}
-                  />
-                  {errors.max_accommodations && <span style={styles.errorText}>{errors.max_accommodations}</span>}
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Habitaciones</label>
-                  <input
-                    type="number"
-                    min="-1"
-                    value={formData.max_rooms}
-                    onChange={(e) => handleChange("max_rooms", parseInt(e.target.value))}
-                    style={{ ...styles.input, ...(errors.max_rooms ? styles.inputError : {}) }}
-                  />
-                  {errors.max_rooms && <span style={styles.errorText}>{errors.max_rooms}</span>}
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Usuarios Admin</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="3"
-                    value={formData.max_admin_users}
-                    onChange={(e) => handleChange("max_admin_users", parseInt(e.target.value))}
-                    style={styles.input}
-                  />
-                  <span style={styles.helpText}>Máximo 3 por cuenta</span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Usuarios Asociados</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="2"
-                    value={formData.max_associated_admins}
-                    onChange={(e) => handleChange("max_associated_admins", parseInt(e.target.value))}
-                    style={styles.input}
-                  />
-                  <span style={styles.helpText}>0-2 típicamente</span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Usuarios API</label>
-                  <input
-                    type="number"
-                    min="-1"
-                    value={formData.max_api_users}
-                    onChange={(e) => handleChange("max_api_users", parseInt(e.target.value))}
-                    style={styles.input}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Max Usuarios Viewer</label>
-                  <input
-                    type="number"
-                    min="-1"
-                    value={formData.max_viewer_users}
-                    onChange={(e) => handleChange("max_viewer_users", parseInt(e.target.value))}
-                    style={styles.input}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* DBSU-PC-CR: Sección 5 - Branding Habilitado */}
-          {activeSection === "branding" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Branding Habilitado</h2>
-              <p style={styles.sectionDescription}>
-                Configure qué opciones de personalización visual tendrá este plan
-              </p>
-
-              <div style={styles.formGrid}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Branding editable</label>
-                  <div style={styles.toggleWrapper}>
-                    <input
-                      type="checkbox"
-                      checked={formData.branding_enabled}
-                      onChange={(e) => handleChange("branding_enabled", e.target.checked)}
-                      style={styles.checkbox}
-                    />
-                    <span>{formData.branding_enabled ? "Sí" : "No"}</span>
-                  </div>
-                  <span style={styles.helpText}>
-                    Permite al cliente personalizar colores y estilos
-                  </span>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Logo permitido</label>
-                  <div style={styles.toggleWrapper}>
-                    <input
-                      type="checkbox"
-                      checked={formData.logo_allowed}
-                      onChange={(e) => handleChange("logo_allowed", e.target.checked)}
-                      style={styles.checkbox}
-                      disabled={!formData.branding_enabled}
-                    />
-                    <span>{formData.logo_allowed ? "Sí" : "No"}</span>
-                  </div>
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Tema editable</label>
-                  <div style={styles.toggleWrapper}>
-                    <input
-                      type="checkbox"
-                      checked={formData.theme_editable}
-                      onChange={(e) => handleChange("theme_editable", e.target.checked)}
-                      style={styles.checkbox}
-                      disabled={!formData.branding_enabled}
-                    />
-                    <span>{formData.theme_editable ? "Sí" : "No"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* DBSU-PC-CR: Sección 6 - Servicios Incluidos */}
-          {activeSection === "services" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Servicios Incluidos</h2>
-              <p style={styles.sectionDescription}>
-                Seleccione los servicios que estarán disponibles en este plan
-              </p>
-
-              <div style={styles.servicesGrid}>
-                {AVAILABLE_SERVICES.map((service) => (
-                  <div
-                    key={service.id}
-                    style={{
-                      ...styles.serviceCard,
-                      ...(formData.services_included.includes(service.id) ? styles.serviceCardSelected : {}),
-                    }}
-                    onClick={() => handleServiceToggle(service.id)}
-                  >
-                    <div style={styles.serviceHeader}>
-                      <input
-                        type="checkbox"
-                        checked={formData.services_included.includes(service.id)}
-                        onChange={() => {}}
-                        style={styles.serviceCheckbox}
+                      <Switch
+                        checked={formData[field]}
+                        onChange={v => set(field, v)}
+                        disabled={disabled}
                       />
-                      <span style={styles.serviceName}>{service.name}</span>
                     </div>
-                    <p style={styles.serviceDescription}>{service.description}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div style={styles.selectedServices}>
-                <strong>Servicios seleccionados:</strong>{" "}
-                {formData.services_included.length === 0
-                  ? "Ninguno"
-                  : formData.services_included
-                      .map((id) => AVAILABLE_SERVICES.find((s) => s.id === id)?.name)
-                      .join(", ")}
-              </div>
-            </div>
-          )}
-
-          {/* DBSU-PC-CR: Sección 7 - Reglas Funcionales */}
-          {activeSection === "rules" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Reglas Funcionales</h2>
-              <p style={styles.sectionDescription}>
-                Configure las reglas de negocio específicas de este plan
-              </p>
-
-              <div style={styles.rulesGrid}>
-                <div style={styles.ruleCard}>
-                  <div style={styles.ruleHeader}>
-                    <input
-                      type="checkbox"
-                      checked={formData.allows_multi_owner}
-                      onChange={(e) => handleChange("allows_multi_owner", e.target.checked)}
-                      style={styles.checkbox}
-                    />
-                    <span style={styles.ruleName}>Permite multi-owner</span>
-                  </div>
-                  <p style={styles.ruleDescription}>
-                    Permite tener múltiples entidades propietarias (owners) en la cuenta.
-                    Si está desactivado, max_owners será forzado a 1.
-                  </p>
+                  ))}
                 </div>
+              </SectionCard>
+            )}
 
-                <div style={styles.ruleCard}>
-                  <div style={styles.ruleHeader}>
-                    <input
-                      type="checkbox"
-                      checked={formData.allows_owner_change}
-                      onChange={(e) => handleChange("allows_owner_change", e.target.checked)}
-                      style={styles.checkbox}
-                      disabled={!formData.allows_multi_owner}
-                    />
-                    <span style={styles.ruleName}>Permite cambio de owner</span>
-                  </div>
-                  <p style={styles.ruleDescription}>
-                    Permite reasignar alojamientos a diferentes propietarios.
-                    Requiere fecha efectiva y registro de traspaso. Solo para planes tipo Agencia.
-                  </p>
-                </div>
-
-                <div style={styles.ruleCard}>
-                  <div style={styles.ruleHeader}>
-                    <input
-                      type="checkbox"
-                      checked={formData.allows_receipt_upload}
-                      onChange={(e) => handleChange("allows_receipt_upload", e.target.checked)}
-                      style={styles.checkbox}
-                    />
-                    <span style={styles.ruleName}>Permite subir resguardo</span>
-                  </div>
-                  <p style={styles.ruleDescription}>
-                    Permite subir resguardos de pago para cobros externos.
-                    Útil para pagos manuales o transferencias bancarias.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Botones de navegación entre secciones */}
-          <div style={styles.sectionNavigation}>
-            {sections.findIndex((s) => s.id === activeSection) > 0 && (
-              <button
-                type="button"
-                style={styles.navButton}
-                onClick={() => {
-                  const currentIndex = sections.findIndex((s) => s.id === activeSection);
-                  setActiveSection(sections[currentIndex - 1].id);
-                }}
+            {/* ── Navegación entre pasos ────────────────────────────── */}
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 4 }}>
+              <Button
+                disabled={currentIdx === 0}
+                onClick={() => setActiveSection(SECTIONS[currentIdx - 1].id)}
               >
                 ← Anterior
-              </button>
-            )}
-            {sections.findIndex((s) => s.id === activeSection) < sections.length - 1 && (
-              <button
-                type="button"
-                style={styles.navButtonPrimary}
-                onClick={() => {
-                  const currentIndex = sections.findIndex((s) => s.id === activeSection);
-                  setActiveSection(sections[currentIndex + 1].id);
-                }}
-              >
-                Siguiente →
-              </button>
-            )}
+              </Button>
+              {currentIdx < SECTIONS.length - 1 ? (
+                <Button
+                  type="primary"
+                  style={{ background: C.navy, borderColor: C.navy }}
+                  onClick={() => setActiveSection(SECTIONS[currentIdx + 1].id)}
+                >
+                  Siguiente →
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={saving}
+                  onClick={handleSubmit}
+                  style={{ background: C.navy, borderColor: C.navy }}
+                >
+                  Crear Plan
+                </Button>
+              )}
+            </div>
+
           </div>
-        </form>
+        </div>
+
+      </div>
       </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  headerActions: {
-    display: "flex",
-    gap: 12,
-  },
-  cancelButton: {
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "500",
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#374151",
-  },
-  submitButton: {
-    padding: "12px 24px",
-    fontSize: 14,
-    fontWeight: "600",
-    backgroundColor: "#111827",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#FFFFFF",
-  },
-  content: {
-    display: "flex",
-    gap: 24,
-  },
-  sidebar: {
-    width: 200,
-    flexShrink: 0,
-  },
-  sectionButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-    padding: "10px 14px",
-    marginBottom: 6,
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 13,
-    color: "#374151",
-    textAlign: "left",
-    transition: "all 0.2s ease",
-  },
-  sectionButtonActive: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    borderColor: "#111827",
-  },
-  sectionIcon: {
-    fontSize: 16,
-  },
-  form: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 32,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
-  },
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 20,
-  },
-  formGroup: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: 6,
-  },
-  required: {
-    color: "#DC2626",
-  },
-  input: {
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-  },
-  inputError: {
-    borderColor: "#DC2626",
-  },
-  select: {
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    backgroundColor: "#FFFFFF",
-    cursor: "pointer",
-  },
-  textarea: {
-    padding: "10px 14px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    resize: "vertical",
-    fontFamily: "inherit",
-  },
-  errorText: {
-    fontSize: 12,
-    color: "#DC2626",
-    marginTop: 4,
-  },
-  helpText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginTop: 4,
-  },
-  toggleWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    cursor: "pointer",
-  },
-  pricingSummary: {
-    backgroundColor: "#F9FAFB",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 8,
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
-    margin: "0 0 12px 0",
-  },
-  summaryGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-  },
-  summaryItem: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  summaryValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  servicesGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
-    gap: 12,
-  },
-  serviceCard: {
-    padding: 16,
-    border: "2px solid #E5E7EB",
-    borderRadius: 12,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  serviceCardSelected: {
-    borderColor: "#111827",
-    backgroundColor: "#F9FAFB",
-  },
-  serviceHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-  },
-  serviceCheckbox: {
-    width: 18,
-    height: 18,
-    pointerEvents: "none",
-  },
-  serviceName: {
-    fontWeight: "600",
-    color: "#111827",
-  },
-  serviceDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-    margin: 0,
-    paddingLeft: 28,
-  },
-  selectedServices: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-    fontSize: 13,
-    color: "#374151",
-  },
-  rulesGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-  },
-  ruleCard: {
-    padding: 16,
-    border: "1px solid #E5E7EB",
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
-  },
-  ruleHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-  },
-  ruleName: {
-    fontWeight: "600",
-    color: "#111827",
-    fontSize: 15,
-  },
-  ruleDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-    margin: 0,
-    paddingLeft: 28,
-  },
-  sectionNavigation: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: 32,
-    paddingTop: 24,
-    borderTop: "1px solid #E5E7EB",
-  },
-  navButton: {
-    padding: "10px 20px",
-    fontSize: 14,
-    backgroundColor: "#F3F4F6",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#374151",
-  },
-  navButtonPrimary: {
-    padding: "10px 20px",
-    fontSize: 14,
-    backgroundColor: "#111827",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#FFFFFF",
-    marginLeft: "auto",
-  },
-};

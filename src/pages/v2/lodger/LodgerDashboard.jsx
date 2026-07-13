@@ -74,8 +74,8 @@ export default function LodgerDashboard() {
           .order("period_start", { ascending: false })
           .limit(5),
         supabase
-          .from("lodger_services")
-          .select("id, status, start_date, service:services_catalog(id,name,price,billing_type)")
+          .from("benefits_lodger")
+          .select("id, status, start_date, service:benefits_catalog(id,name,price,billing_type)")
           .eq("lodger_id", lodgerData.id)
           .eq("status", "active"),
       ]);
@@ -100,13 +100,16 @@ export default function LodgerDashboard() {
   if (loading) {
     return (
       <V2Layout role="lodger" companyBranding={companyBranding}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Skeleton active paragraph={{ rows: 8 }} />
+        </div>
       </V2Layout>
     );
   }
 
   return (
     <V2Layout role="lodger" companyBranding={companyBranding} userName={fullName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
       {error && (
         <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }}
@@ -301,6 +304,7 @@ export default function LodgerDashboard() {
         </Col>
       </Row>
 
+      </div>
     </V2Layout>
   );
 }

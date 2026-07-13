@@ -5,6 +5,9 @@
 // Admin titular (obligatorio) + 2 asociados (opcionales)
 // =============================================================================
 
+import { Card } from "antd";
+import { TeamOutlined } from "@ant-design/icons";
+
 export default function StepUsuariosAdmin({ formData, errors, onAdminsChange }) {
   const admins = formData.admins;
 
@@ -19,11 +22,16 @@ export default function StepUsuariosAdmin({ formData, errors, onAdminsChange }) 
   };
 
   return (
-    <div>
-      <h2 style={styles.sectionTitle}>Usuarios Admin Inicial</h2>
-      <p style={styles.sectionDescription}>
-        Configure los usuarios que tendrán acceso de administración a la cuenta (máximo 3)
-      </p>
+    <Card
+      style={{ borderRadius: 10 }}
+      title={
+        <span style={{ fontWeight: 700 }}>
+          <TeamOutlined style={{ marginRight: 8, color: "#3B82F6" }} />
+          Usuarios Administradores
+        </span>
+      }
+      extra={<span style={{ fontSize: 13, color: "#6B7280" }}>Máximo 3 usuarios admin por cuenta</span>}
+    >
 
       {/* Error global de duplicados */}
       {errors.admins_duplicate && (
@@ -192,17 +200,11 @@ export default function StepUsuariosAdmin({ formData, errors, onAdminsChange }) 
         <span style={styles.infoIcon}>ℹ️</span>
         <span>Si el usuario ya esta registrado, se vinculara a esta cuenta. Si es nuevo, se le enviara un email de invitacion para crear su contrasena.</span>
       </div>
-    </div>
+    </Card>
   );
 }
 
 const styles = {
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#111827",
-    margin: "0 0 8px 0",
-  },
   sectionDescription: {
     fontSize: 14,
     color: "#6B7280",

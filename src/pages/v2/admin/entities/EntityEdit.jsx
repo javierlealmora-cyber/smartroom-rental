@@ -148,7 +148,7 @@ export default function EntityEdit() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
           <Col>
             <Typography.Title level={2} style={{ margin: 0 }}>

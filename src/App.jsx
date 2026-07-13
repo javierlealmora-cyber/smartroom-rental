@@ -92,6 +92,10 @@ import AccommodationDetailV2 from "./pages/v2/admin/accommodations/Accommodation
 import ServicesListAdminV2 from "./pages/v2/admin/services/ServicesList";
 import ServiceCreateV2 from "./pages/v2/admin/services/ServiceCreate";
 import ServiceEditV2 from "./pages/v2/admin/services/ServiceEdit";
+import ServicesCatalogListV2 from "./pages/v2/admin/catalogo/ServicesCatalogList";
+import ServiceCatalogDetailV2 from "./pages/v2/admin/catalogo/ServiceCatalogDetail";
+import ServiciosGestionV2 from "./pages/v2/admin/gestion-servicios/ServiciosGestion";
+import ServicioDetailV2 from "./pages/v2/admin/gestion-servicios/ServicioDetail";
 
 // v2 - Admin Energía
 import EnergyBillsListV2 from "./pages/v2/admin/energy/EnergyBillsList";
@@ -124,13 +128,15 @@ import PlanCreateV2 from "./pages/v2/superadmin/plans/PlanCreate";
 import PlanDetailV2 from "./pages/v2/superadmin/plans/PlanDetail";
 
 // v2 - Superadmin Services (DBSU-GS)
-import ServicesListV2 from "./pages/v2/superadmin/services/ServicesList";
+import ServicesListV2    from "./pages/v2/superadmin/services/ServicesList";
+import ServiceDetailV2   from "./pages/v2/superadmin/services/ServiceDetail";
+import ServiceCreateV2SA from "./pages/v2/superadmin/services/ServiceCreate";
 
 // v2 - Superadmin SAL (REQ-014)
 import SaasServicesListV2 from "./pages/v2/superadmin/saas-services/SaasServicesList";
 import SaasServiceDetailV2 from "./pages/v2/superadmin/saas-services/SaasServiceDetail";
 import ClientSalActivationV2 from "./pages/v2/superadmin/client-sal/ClientSalActivation";
-import SalShardsListV2 from "./pages/v2/superadmin/sal-shards/SalShardsList";
+import SuperadminSettingsV2 from "./pages/v2/superadmin/SuperadminSettings";
 
 // v2 - Admin Smart Access Lock (REQ-014 §15)
 import SalGestion from "./pages/v2/admin/services/smart-access/SalGestion";
@@ -287,13 +293,16 @@ export default function App() {
               <Route path="/v2/superadmin/planes/:id/editar" element={<PlanDetailV2 />} />
 
               {/* v2 - Superadmin Services (DBSU-GS) */}
-              <Route path="/v2/superadmin/servicios" element={<ServicesListV2 />} />
+              <Route path="/v2/superadmin/servicios"              element={<ServicesListV2 />} />
+              <Route path="/v2/superadmin/servicios/nuevo"        element={<ServiceCreateV2SA />} />
+              <Route path="/v2/superadmin/servicios/:id"          element={<ServiceDetailV2 />} />
+              <Route path="/v2/superadmin/servicios/:id/editar"   element={<ServiceDetailV2 />} />
 
               {/* v2 - Superadmin SAL (REQ-014) */}
               <Route path="/v2/superadmin/saas-servicios" element={<SaasServicesListV2 />} />
               <Route path="/v2/superadmin/saas-servicios/:id" element={<SaasServiceDetailV2 />} />
               <Route path="/v2/superadmin/cuentas/:id/smart-access" element={<ClientSalActivationV2 />} />
-              <Route path="/v2/superadmin/sal-shards" element={<SalShardsListV2 />} />
+              <Route path="/v2/superadmin/settings" element={<SuperadminSettingsV2 />} />
             </Route>
           </Route>
 
@@ -323,6 +332,10 @@ export default function App() {
               <Route path="/v2/admin/servicios" element={<ServicesListAdminV2 />} />
               <Route path="/v2/admin/servicios/nuevo" element={<ServiceCreateV2 />} />
               <Route path="/v2/admin/servicios/:id/editar" element={<ServiceEditV2 />} />
+              <Route path="/v2/admin/gestion-servicios" element={<ServiciosGestionV2 />} />
+              <Route path="/v2/admin/gestion-servicios/:id" element={<ServicioDetailV2 />} />
+              <Route path="/v2/admin/catalogo" element={<ServicesCatalogListV2 />} />
+              <Route path="/v2/admin/catalogo/:serviceId" element={<ServiceCatalogDetailV2 />} />
               <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
               <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
               <Route path="/v2/admin/energia/facturas/:id" element={<EnergyBillDetailV2 />} />

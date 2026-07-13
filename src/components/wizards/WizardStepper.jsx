@@ -1,169 +1,79 @@
 // =============================================================================
 // src/components/wizards/WizardStepper.jsx
 // =============================================================================
-// Barra horizontal de progreso tipo wizard con estados por paso
+// Barra de progreso del wizard usando Ant Design Steps.
 // Estados: inactive | current | complete | error
+// El paso "current" muestra un halo verde si no tiene errores de validación,
+// indicando al usuario que puede avanzar.
 // =============================================================================
 
+import { ConfigProvider, Steps } from "antd";
+import { CheckCircleFilled } from "@ant-design/icons";
+
+// Mapa de estados wizard → estados AntD Steps
+const STATUS_MAP = {
+  complete:  "finish",
+  error:     "error",
+  current:   "process",
+  inactive:  "wait",
+};
+
 export default function WizardStepper({ steps, currentStep, stepStatuses, onStepClick }) {
+  const items = steps.map((step, index) => {
+    const status    = stepStatuses[index] || "inactive";
+    const antStatus = STATUS_MAP[status] ?? "wait";
+
+    // El paso actual con datos válidos muestra ícono verde (sin errores)
+    const isCurrentValid = status === "current";
+    const isComplete     = status === "complete";
+    const isClickable    = index < currentStep || isComplete || status === "error";
+
+    return {
+      key:    step.id,
+      title:  step.label,
+      status: antStatus,
+      // Ícono personalizado: completo → check verde lleno
+      icon: isComplete ? (
+        <CheckCircleFilled style={{ color: "#10B981", fontSize: 28 }} />
+      ) : undefined,
+      // Paso clicable si ya fue visitado/completado
+      onClick: isClickable ? () => onStepClick(index) : undefined,
+      style:   { cursor: isClickable ? "pointer" : "default" },
+    };
+  });
+
   return (
-    <div style={styles.container}>
-      {steps.map((step, index) => {
-        const status = stepStatuses[index] || "inactive";
-        const isClickable = index < currentStep || status === "complete" || status === "error";
-
-        return (
-          <div key={step.id} style={styles.stepWrapper}>
-            {/* Línea conectora (antes del círculo, excepto el primero) */}
-            {index > 0 && (
-              <div
-                style={{
-                  ...styles.connector,
-                  backgroundColor:
-                    status === "complete" || status === "current"
-                      ? "#111827"
-                      : status === "error"
-                        ? "#DC2626"
-                        : "#E5E7EB",
-                }}
-              />
-            )}
-
-            {/* Círculo + Label */}
-            <div
-              style={{
-                ...styles.stepItem,
-                cursor: isClickable ? "pointer" : "default",
-              }}
-              onClick={() => isClickable && onStepClick(index)}
-            >
-              <div
-                style={{
-                  ...styles.circle,
-                  ...(status === "current" ? styles.circleCurrent : {}),
-                  ...(status === "complete" ? styles.circleComplete : {}),
-                  ...(status === "error" ? styles.circleError : {}),
-                  ...(status === "inactive" ? styles.circleInactive : {}),
-                }}
-              >
-                {status === "complete" ? (
-                  <span style={styles.checkIcon}>✓</span>
-                ) : status === "error" ? (
-                  <span style={styles.errorIcon}>!</span>
-                ) : (
-                  <span style={styles.stepNumber}>{index + 1}</span>
-                )}
-              </div>
-              <span
-                style={{
-                  ...styles.label,
-                  ...(status === "current" ? styles.labelCurrent : {}),
-                  ...(status === "complete" ? styles.labelComplete : {}),
-                  ...(status === "error" ? styles.labelError : {}),
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <ConfigProvider
+      theme={{
+        components: {
+          Steps: {
+            // Paso activo: círculo negro (brand superadmin)
+            colorPrimary:        "#111827",
+            // Paso completo: verde
+            colorSuccess:        "#10B981",
+            // Fondo del paso completo
+            finishIconBgColor:   "#D1FAE5",
+            finishIconBorderColor: "#10B981",
+          },
+        },
+      }}
+    >
+      <div
+        style={{
+          background:   "#FFFFFF",
+          borderRadius: 12,
+          boxShadow:    "0 1px 3px rgba(0,0,0,0.08)",
+          padding:      "20px 32px",
+          marginBottom: 28,
+        }}
+      >
+        <Steps
+          current={currentStep}
+          items={items}
+          size="default"
+          style={{ width: "100%" }}
+        />
+      </div>
+    </ConfigProvider>
   );
 }
-
-const styles = {
-  container: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    padding: "24px 0",
-    marginBottom: 32,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
-  stepWrapper: {
-    display: "flex",
-    alignItems: "flex-start",
-    flex: 1,
-    position: "relative",
-  },
-  connector: {
-    position: "absolute",
-    top: 18,
-    left: 0,
-    right: "50%",
-    height: 2,
-    zIndex: 0,
-  },
-  stepItem: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    width: "100%",
-    position: "relative",
-    zIndex: 1,
-  },
-  circle: {
-    width: 36,
-    height: 36,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 14,
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    marginBottom: 8,
-    backgroundColor: "#E5E7EB",
-    color: "#6B7280",
-  },
-  circleCurrent: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    boxShadow: "0 0 0 4px rgba(17, 24, 39, 0.15)",
-  },
-  circleComplete: {
-    backgroundColor: "#059669",
-    color: "#FFFFFF",
-  },
-  circleError: {
-    backgroundColor: "#DC2626",
-    color: "#FFFFFF",
-  },
-  circleInactive: {
-    backgroundColor: "#E5E7EB",
-    color: "#9CA3AF",
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  checkIcon: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  errorIcon: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#9CA3AF",
-    textAlign: "center",
-    maxWidth: 100,
-    lineHeight: 1.3,
-  },
-  labelCurrent: {
-    color: "#111827",
-    fontWeight: "600",
-  },
-  labelComplete: {
-    color: "#059669",
-  },
-  labelError: {
-    color: "#DC2626",
-  },
-};

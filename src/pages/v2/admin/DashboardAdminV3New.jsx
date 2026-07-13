@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import V2Layout from "../../../layouts/V2Layout";
 import { useAdminLayout } from "../../../hooks/useAdminLayout";
+import { useAuth } from "../../../providers/AuthProvider";
 import { supabase } from "../../../services/supabaseClient";
 
 // ── Fallback dummy data ───────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ function KPICard({ label, value, subtitle, color = "#374151", loading }) {
 // ── OcupacionDonut ────────────────────────────────────────────────────────────
 function OcupacionDonut({ percent, title, loading }) {
   const pct  = loading ? 0 : Math.min(100, Math.max(0, Number(percent) || 0));
-  const r    = 52;
+  const r    = 38;
   const circ = 2 * Math.PI * r;
   const off  = circ - (pct / 100) * circ;
   const col  = pct > 80 ? "#DC2626" : pct > 50 ? "#F59E0B" : "#16A34A";
@@ -105,8 +106,8 @@ function OcupacionDonut({ percent, title, loading }) {
   return (
     <div style={{
       background: "#FFFFFF",
-      borderRadius: 16,
-      padding: "20px 16px",
+      borderRadius: 12,
+      padding: "12px 10px",
       border: "1px solid #E5E7EB",
       boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
       display: "flex",
@@ -115,24 +116,24 @@ function OcupacionDonut({ percent, title, loading }) {
       height: "100%",
       boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 16, alignSelf: "flex-start" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 8, alignSelf: "flex-start" }}>
         {title}
       </div>
-      <svg width={130} height={130} viewBox="0 0 130 130">
-        <circle cx={65} cy={65} r={r} fill="none" stroke="#E5E7EB" strokeWidth={13} />
+      <svg width={96} height={96} viewBox="0 0 96 96">
+        <circle cx={48} cy={48} r={r} fill="none" stroke="#E5E7EB" strokeWidth={10} />
         <circle
-          cx={65} cy={65} r={r} fill="none"
-          stroke={col} strokeWidth={13}
+          cx={48} cy={48} r={r} fill="none"
+          stroke={col} strokeWidth={10}
           strokeDasharray={circ}
           strokeDashoffset={off}
           strokeLinecap="round"
-          transform="rotate(-90 65 65)"
+          transform="rotate(-90 48 48)"
           style={{ transition: "stroke-dashoffset 0.6s ease" }}
         />
-        <text x={65} y={60} textAnchor="middle" style={{ fontSize: "22px", fontWeight: "900", fill: col }}>{pct}%</text>
-        <text x={65} y={78} textAnchor="middle" style={{ fontSize: "11px", fill: "#9CA3AF" }}>ocupación</text>
+        <text x={48} y={44} textAnchor="middle" style={{ fontSize: "16px", fontWeight: "900", fill: col }}>{pct}%</text>
+        <text x={48} y={58} textAnchor="middle" style={{ fontSize: "9px", fill: "#9CA3AF" }}>ocupación</text>
       </svg>
-      <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>del total de habitaciones</div>
+      <div style={{ fontSize: 10, color: "#6B7280", marginTop: 4 }}>del total de habitaciones</div>
     </div>
   );
 }
@@ -148,15 +149,15 @@ function GeneroDonut({ data, loading }) {
   const pct     = total > 0 ? Math.round((domVal / total) * 100) : 0;
   const col     = dominant === "male" ? "#4F46E5" : dominant === "female" ? "#EC4899" : "#10B981";
   const label   = dominant === "male" ? "Hombres" : dominant === "female" ? "Mujeres" : "Otro";
-  const r       = 52;
+  const r       = 38;
   const circ    = 2 * Math.PI * r;
   const off     = circ - (pct / 100) * circ;
 
   return (
     <div style={{
       background: "#FFFFFF",
-      borderRadius: 16,
-      padding: "20px 16px",
+      borderRadius: 12,
+      padding: "12px 10px",
       border: "1px solid #E5E7EB",
       boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
       display: "flex",
@@ -165,24 +166,24 @@ function GeneroDonut({ data, loading }) {
       height: "100%",
       boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 16, alignSelf: "flex-start" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 8, alignSelf: "flex-start" }}>
         Género
       </div>
-      <svg width={130} height={130} viewBox="0 0 130 130">
-        <circle cx={65} cy={65} r={r} fill="none" stroke="#E5E7EB" strokeWidth={13} />
+      <svg width={96} height={96} viewBox="0 0 96 96">
+        <circle cx={48} cy={48} r={r} fill="none" stroke="#E5E7EB" strokeWidth={10} />
         <circle
-          cx={65} cy={65} r={r} fill="none"
-          stroke={col} strokeWidth={13}
+          cx={48} cy={48} r={r} fill="none"
+          stroke={col} strokeWidth={10}
           strokeDasharray={circ}
           strokeDashoffset={loading ? circ : off}
           strokeLinecap="round"
-          transform="rotate(-90 65 65)"
+          transform="rotate(-90 48 48)"
           style={{ transition: "stroke-dashoffset 0.6s ease" }}
         />
-        <text x={65} y={60} textAnchor="middle" style={{ fontSize: "22px", fontWeight: "900", fill: loading ? "#D1D5DB" : col }}>{loading ? "—" : `${pct}%`}</text>
-        <text x={65} y={78} textAnchor="middle" style={{ fontSize: "11px", fill: "#9CA3AF" }}>{loading ? "" : label}</text>
+        <text x={48} y={44} textAnchor="middle" style={{ fontSize: "16px", fontWeight: "900", fill: loading ? "#D1D5DB" : col }}>{loading ? "—" : `${pct}%`}</text>
+        <text x={48} y={58} textAnchor="middle" style={{ fontSize: "9px", fill: "#9CA3AF" }}>{loading ? "" : label}</text>
       </svg>
-      <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>{total} inquilino{total !== 1 ? "s" : ""} total</div>
+      <div style={{ fontSize: 10, color: "#6B7280", marginTop: 4 }}>{total} inquilino{total !== 1 ? "s" : ""} total</div>
     </div>
   );
 }
@@ -195,8 +196,8 @@ function CheckInBarChart({ data, loading }) {
   return (
     <div style={{
       background: "#FFFFFF",
-      borderRadius: 16,
-      padding: "20px 16px",
+      borderRadius: 12,
+      padding: "12px 10px",
       border: "1px solid #E5E7EB",
       boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
       display: "flex",
@@ -204,33 +205,33 @@ function CheckInBarChart({ data, loading }) {
       height: "100%",
       boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 8 }}>
         Check-In / Check-Out
       </div>
-      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 20, minHeight: 80 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, minHeight: 60 }}>
         {items.map((d, i) => {
           const heightPct = loading ? 0 : (d.value / maxVal) * 100;
           return (
-            <div key={i} style={{ width: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: d.color }}>
+            <div key={i} style={{ width: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: d.color }}>
                 {loading ? "" : d.value}
               </div>
               <div style={{
                 width: "100%",
-                height: loading ? 8 : `${Math.max(heightPct * 0.8, 8)}px`,
-                maxHeight: 80,
+                height: loading ? 6 : `${Math.max(heightPct * 0.6, 6)}px`,
+                maxHeight: 60,
                 background: d.color,
-                borderRadius: "4px 4px 0 0",
+                borderRadius: "3px 3px 0 0",
                 transition: "height 0.4s ease",
               }} />
-              <div style={{ fontSize: 10, color: "#6B7280", fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
+              <div style={{ fontSize: 9, color: "#6B7280", fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
                 {d.name}
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center", marginTop: 8 }}>
+      <div style={{ fontSize: 9, color: "#9CA3AF", textAlign: "center", marginTop: 4 }}>
         Total anual
       </div>
     </div>
@@ -278,14 +279,12 @@ function ActividadReciente({ items, loading }) {
               border: "1px solid #E5E7EB",
             }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.4 }}>
-                  <span style={{ fontWeight: 700, color: "#10B981" }}>{getActionLabel(item.action)}</span>
-                  {" "}{getEntityLabel(item.entity_type)}
-                </div>
-                <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
-                  {item.actor_role || "Sistema"} · {timeAgo(item.created_at)}
-                </div>
+              <div style={{ fontSize: 12, color: "#374151", flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: 700, color: "#10B981" }}>{getActionLabel(item.action)}</span>
+                {" "}{getEntityLabel(item.entity_type)}
+              </div>
+              <div style={{ fontSize: 11, color: "#9CA3AF", whiteSpace: "nowrap", flexShrink: 0 }}>
+                {item.actor_role || "Sistema"} · {timeAgo(item.created_at)}
               </div>
             </div>
           ))}
@@ -298,12 +297,13 @@ function ActividadReciente({ items, loading }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function DashboardAdminV3New() {
   const { userName, companyBranding, clientAccountId } = useAdminLayout();
-  const _breakpoint = useBreakpoint();
+  const { role } = useAuth();
+  const breakpoint = useBreakpoint();
 
   const [loading,      setLoading]      = useState(true);
   const [stats,        setStats]        = useState(null);
   const [generoData,   setGeneroData]   = useState([]);
-  const [, setIngresosData] = useState([]);
+  const [ingresosData, setIngresosData] = useState([]);
   const [actividadData, setActividadData] = useState([]);
   const [checkinData,  setCheckinData]  = useState(CHECKIN_DATA);
 
@@ -417,96 +417,73 @@ export default function DashboardAdminV3New() {
 
   useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
 
+  const isMobile      = breakpoint === "mobile";
+  const isTabletSmall = breakpoint === "tablet-small";
+
   const s     = stats || DUMMY_STATS;
   const gData = generoData.length    > 0 ? generoData    : DUMMY_GENERO;
   const aData = actividadData.length > 0 ? actividadData : DUMMY_ACTIVIDAD;
 
-  // KPI grid: 5 cols desktop, 3 cols tablet/tablet-small, 2 cols mobile
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
-      {/* ── Media queries reales (más fiables que window.innerWidth) ── */}
-      <style>{`
-        .v3-outer       { padding: 5px 10%; }
-        .v3-title       { font-size: 30px; }
-        .v3-main-grid   { display: grid; grid-template-columns: minmax(300px,400px) 1fr; gap: 20px; align-items: start; }
-        .v3-left-col    { display: flex; flex-direction: column; gap: 16px; min-width: 0; order: 0; }
-        .v3-right-col   { display: flex; flex-direction: column; gap: 16px; padding-left: 80px; padding-right: 16px; order: 0; }
-        .v3-hero        { display: flex; align-items: center; justify-content: flex-start; overflow: visible; min-height: 190px; margin-top: -76px; }
-        .v3-hero img    { width: 507px; max-width: none; }
-        .v3-charts      { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
-        .v3-kpi-cols    { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+      <div style={{ background: "#FFFFFF", minHeight: "100%", paddingBottom: 40, boxSizing: "border-box" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-        @media (max-width: 1199px) {
-          .v3-outer      { padding: 5px 4%; }
-          .v3-right-col  { padding-left: 20px; padding-right: 0; }
-          .v3-kpi-cols   { grid-template-columns: repeat(3,1fr); }
-        }
-        @media (max-width: 767px) {
-          .v3-outer      { padding: 5px 4%; }
-          .v3-main-grid  { display: flex; flex-direction: column; gap: 14px; }
-          .v3-left-col   { order: 2; }
-          .v3-right-col  { order: 1; padding-left: 0; padding-right: 0; }
-          .v3-hero       { display: none; }
-          .v3-charts     { gap: 8px; }
-          .v3-kpi-cols   { grid-template-columns: repeat(2,1fr); gap: 6px; }
-          .v3-title      { font-size: 22px; }
-        }
-      `}</style>
-
-      <div className="v3-outer" style={{ maxWidth: 1400, margin: "0 auto", background: "#FFFFFF", minHeight: "100vh", overflowX: "hidden" }}>
-
-        {/* ── Header ── */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="v3-title" style={{ fontWeight: 900, color: "#1F2937", margin: 0, letterSpacing: "-0.5px" }}>
-            Panel de Control
-          </h1>
-          <p style={{ fontSize: 14, color: "#6B7280", margin: "4px 0 0" }}>
-            Buenas tardes, {userName || "Admin"}
-          </p>
-        </div>
-
-        {/* ── Layout: 2 columnas desktop | columna única mobile ── */}
-        <div className="v3-main-grid">
-
-          {/* ── COLUMNA IZQUIERDA: Imagen + 3 gráficos ── */}
-          <div className="v3-left-col">
-
-            {/* Imagen 3D (oculta en mobile vía CSS) */}
-            <div className="v3-hero">
-              <img
-                src="/images/Alojamiento Dashboard.png"
-                alt="Plano 3D del alojamiento"
-                style={{
-                  height: "auto",
-                  objectFit: "contain",
-                  filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15)) drop-shadow(0 20px 40px rgba(0,0,0,0.20))",
-                  transform: "perspective(1000px) rotateX(2deg)",
-                  display: "block",
-                  marginLeft: "-5%",
-                }}
-              />
+          {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: "#1F2937", margin: 0, letterSpacing: "-0.5px" }}>
+                Panel de Control
+              </h1>
+              <p style={{ fontSize: 13, color: "#6B7280", margin: "4px 0 0" }}>
+                Buenas tardes, {userName || "Admin"}
+              </p>
             </div>
-
-            {/* 3 gráficos en fila horizontal */}
-            <div className="v3-charts">
-              <OcupacionDonut percent={s.occRate} title="Ocupación Acumulada" loading={loading} />
-              <GeneroDonut data={gData} loading={loading} />
-              <CheckInBarChart data={checkinData} loading={loading} />
-            </div>
-
           </div>
 
-          {/* ── COLUMNA DERECHA: KPIs + Actividad Reciente ── */}
-          <div className="v3-right-col">
+          {/* ══ HERO: imagen (izq) + KPIs (der) ════════════════════════════════ */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile || isTabletSmall ? "1fr" : "55% 45%",
+            gap: 28,
+            alignItems: "start",
+            marginBottom: 28,
+          }}>
 
-            {/* KPI Grid 2 filas */}
-            <div>
-              {/* Fila 1 — Individuales */}
-              <div style={{ marginBottom: 10 }}>
+            {/* ── Columna izquierda: imagen 3D + 3 gráficos ── */}
+            <div style={{ minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column", gap: 12 }}>
+              {!isMobile && !isTabletSmall && (
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "flex-start", marginTop: -60, marginLeft: 8 }}>
+                  <img
+                    src="/images/Alojamiento Dashboard.png"
+                    alt="Plano 3D del alojamiento"
+                    style={{
+                      width: "80%",
+                      height: "auto",
+                      display: "block",
+                      filter: "drop-shadow(0 28px 18px rgba(0,0,0,0.22)) drop-shadow(0 16px 8px rgba(0,0,0,0.14))",
+                      transform: "perspective(1000px) rotateX(2deg)",
+                    }}
+                  />
+                </div>
+              )}
+              {/* 3 gráficos compactos debajo de la imagen */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 160px)", gap: 8 }}>
+                <OcupacionDonut percent={s.occRate} title="Ocupación Acumulada" loading={loading} />
+                <GeneroDonut data={gData} loading={loading} />
+                <CheckInBarChart data={checkinData} loading={loading} />
+              </div>
+            </div>
+
+            {/* ── Columna derecha: KPIs + Actividad ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginLeft: -80 }}>
+
+              {/* KPIs — Individuales */}
+              <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
                   Individuales
                 </div>
-                <div className="v3-kpi-cols">
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(5,1fr)", gap: 8 }}>
                   <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos"   color="#374151" loading={loading} />
                   <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"     color="#374151" loading={loading} />
                   <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas"  color="#DC2626" loading={loading} />
@@ -515,12 +492,12 @@ export default function DashboardAdminV3New() {
                 </div>
               </div>
 
-              {/* Fila 2 — Compartida */}
+              {/* KPIs — Compartida */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
                   Compartida
                 </div>
-                <div className="v3-kpi-cols">
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(5,1fr)", gap: 8 }}>
                   <KPICard label="Alojamientos" value={s.totalAccommodations} subtitle="activos"   color="#374151" loading={loading} />
                   <KPICard label="Hab. Totales"  value={s.totalRooms}          subtitle="total"     color="#374151" loading={loading} />
                   <KPICard label="Hab. Ocupadas" value={s.occupied}            subtitle="ocupadas"  color="#DC2626" loading={loading} />
@@ -528,15 +505,16 @@ export default function DashboardAdminV3New() {
                   <KPICard label="Ocupación"     value={`${s.occRate}%`}       subtitle="del total" color="#F59E0B" loading={loading} />
                 </div>
               </div>
+
+              {/* Actividad Reciente */}
+              <ActividadReciente items={aData} loading={loading} />
+
             </div>
-
-            {/* Actividad Reciente */}
-            <ActividadReciente items={aData} loading={loading} />
-
           </div>
 
-        </div>
 
+
+        </div>
       </div>
     </V2Layout>
   );

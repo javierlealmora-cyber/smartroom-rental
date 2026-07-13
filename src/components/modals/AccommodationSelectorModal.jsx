@@ -42,7 +42,7 @@ export default function AccommodationSelectorModal({ open, onCancel }) {
       const accs = await listAccommodations({ status: "active" });
       setAccommodations(accs);
       setFilteredAccommodations(accs);
-    } catch {
+    } catch (error) {
       setAccommodations([]);
       setFilteredAccommodations([]);
     } finally {
@@ -160,11 +160,7 @@ export default function AccommodationSelectorModal({ open, onCancel }) {
                   description={
                     <div style={{ fontSize: 12 }}>
                       <Text type="secondary">
-                        {/* Compatibilidad con ambos esquemas de dirección */}
-                        {(acc.address_street || acc.address_line1) || ""} {acc.address_number || ""}
-                        {((acc.address_street || acc.address_line1) || acc.address_number) && 
-                         ((acc.address_city || acc.city) || acc.address_postal_code || acc.postal_code) ? ", " : ""}
-                        {acc.address_postal_code || acc.postal_code || ""} {acc.address_city || acc.city || ""}
+                        {acc.address_street} {acc.address_number}, {acc.address_city}
                       </Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 11 }}>

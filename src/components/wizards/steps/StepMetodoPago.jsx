@@ -215,8 +215,8 @@ export default function StepMetodoPago({ formData, errors, onChange, mode, selec
               </label>
               <input
                 type="text"
-                value={formData.payer_address_city}
-                onChange={(e) => onChange("payer_address_city", e.target.value)}
+                value={formData.payer_city}
+                onChange={(e) => onChange("payer_city", e.target.value)}
                 style={{
                   ...styles.input,
                   ...(errors.payer_city ? styles.inputError : {}),

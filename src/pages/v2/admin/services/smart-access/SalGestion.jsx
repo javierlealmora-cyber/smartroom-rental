@@ -19,7 +19,6 @@
 import { useState, useEffect } from "react";
 import { Tabs } from "antd";
 import {
-  SafetyCertificateOutlined,
   SettingOutlined,
   LockOutlined,
   ApiOutlined,
@@ -30,7 +29,6 @@ import {
   FileProtectOutlined,
   HistoryOutlined,
 } from "@ant-design/icons";
-import SalSuscripcionTab from "./tabs/SalSuscripcionTab";
 import SmartAccessTab from "./tabs/SmartAccessTab";
 import SalZonasTab from "./tabs/SalZonasTab";
 import SalEstructuraTab from "./tabs/SalEstructuraTab";
@@ -44,12 +42,6 @@ import SalCredencialesTab from "./tabs/SalCredencialesTab";
 
 // ── Definición de sub-pestañas ────────────────────────────────────────────────
 const SAL_TABS = [
-  {
-    key: "suscripcion",
-    label: "Gestión de Suscripciones",
-    icon: <SafetyCertificateOutlined />,
-    children: <SalSuscripcionTab />,
-  },
   {
     key: "configuracion",
     label: "Configuración",
@@ -114,7 +106,7 @@ const SAL_TABS = [
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function SalGestion() {
-  const [activeTab, setActiveTab] = useState("suscripcion");
+  const [activeTab, setActiveTab] = useState("configuracion");
 
   // Escuchar el evento de navegación entre sub-pestañas
   useEffect(() => {

@@ -29,7 +29,6 @@ const ROOM_STATUS_BADGE = {
 };
 const ROOM_STATUS_LABEL = { free: "Libre", occupied: "Ocupada", pending_checkout: "Pend. baja", maintenance: "Mantenimiento", inactive: "Inactiva" };
 
-// eslint-disable-next-line no-unused-vars
 function extractEdgeError(result) {
   if (result?.error?.message) return result.error.message;
   if (result?.error) return JSON.stringify(result.error);
@@ -83,7 +82,6 @@ export default function AccommodationEdit() {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -95,13 +93,14 @@ export default function AccommodationEdit() {
       await updateAccommodation(id, {
         name: values.name,
         owner_entity_id: values.owner_entity_id,
-        address_street: values.address_street || null,
-        address_number: values.address_number || null,
-        address_floor: values.address_floor || null,
-        address_postal_code: values.address_postal_code || null,
-        address_city: values.address_city || null,
-        address_province: values.address_province || null,
-        address_country: values.address_country || null,
+        address_line1: values.address_line1 || null,
+        address_line2: values.address_line2 || null,
+        street_number: values.street_number || null,
+        floor: values.floor || null,
+        door: values.door || null,
+        postal_code: values.postal_code || null,
+        city: values.city || null,
+        province: values.province || null,
         notes: values.notes || null,
         status: values.status,
       });
@@ -267,6 +266,7 @@ export default function AccommodationEdit() {
 
   return (
     <V2Layout role="admin" companyBranding={companyBranding} userName={userName}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col flex="auto">
           <Title level={2} style={{ margin: 0 }}>Editar Alojamiento</Title>
@@ -323,46 +323,46 @@ export default function AccommodationEdit() {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={14}>
-                <Form.Item label="Calle" name="address_street"
+                <Form.Item label="Calle" name="address_line1"
                   rules={[{ max: 200, message: "Máximo 200 caracteres" }]}>
                   <Input placeholder="Calle Gran Vía, Av. de la Constitución..." maxLength={200} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={4}>
-                <Form.Item label="Número" name="address_number">
+                <Form.Item label="Número" name="street_number">
                   <Input placeholder="12" />
                 </Form.Item>
               </Col>
               <Col xs={12} sm={3}>
-                <Form.Item label="Piso" name="address_floor">
+                <Form.Item label="Piso" name="floor">
                   <Input placeholder="3" />
                 </Form.Item>
               </Col>
               <Col xs={12} sm={3}>
-                <Form.Item label="Puerta" name="address_door">
+                <Form.Item label="Puerta" name="door">
                   <Input placeholder="A" />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item label="Bloque / Escalera (opcional)" name="address_block"
+                <Form.Item label="Bloque / Escalera (opcional)" name="address_line2"
                   rules={[{ max: 200, message: "Máximo 200 caracteres" }]}>
                   <Input placeholder="Bloque B, Escalera 2..." maxLength={200} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={4}>
-                <Form.Item label="Código Postal" name="address_postal_code"
+                <Form.Item label="Código Postal" name="postal_code"
                   rules={[{ pattern: /^\d{5}$/, message: "Debe tener exactamente 5 dígitos" }]}>
                   <Input placeholder="28001" maxLength={5} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
-                <Form.Item label="Ciudad" name="address_city"
+                <Form.Item label="Ciudad" name="city"
                   rules={[{ max: 100, message: "Máximo 100 caracteres" }]}>
                   <Input placeholder="Madrid" maxLength={100} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item label="Provincia" name="address_province">
+                <Form.Item label="Provincia" name="province">
                   <Select
                     showSearch
                     placeholder="Seleccionar provincia..."
@@ -487,6 +487,7 @@ export default function AccommodationEdit() {
           locale={{ emptyText: "Sin habitaciones" }}
         />
       </Card>
+      </div>
     </V2Layout>
   );
 }

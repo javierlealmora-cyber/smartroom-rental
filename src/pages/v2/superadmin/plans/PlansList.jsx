@@ -1,646 +1,327 @@
 // =============================================================================
 // src/pages/v2/superadmin/plans/PlansList.jsx
-// =============================================================================
-// DBSU-PC-LI: Lista de Planes de Cliente
-// Pantalla para ver y gestionar todos los planes disponibles
-// NOTA: Esta es una rama paralela v2 - NO afecta a la estructura existente
+// Gestión de Planes — estilo Control Center estándar
 // =============================================================================
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { message } from "antd";
+import { Button, Input, Select, message } from "antd";
+import { PlusOutlined, ReloadOutlined, FileTextOutlined } from "@ant-design/icons";
 import V2Layout from "../../../../layouts/V2Layout";
-import {
-  getPlans,
-  PLAN_STATUS,
-} from "../../../../services/plans.service";
+import { getPlans, PLAN_STATUS } from "../../../../services/plans.service";
 
-// Helpers de formato
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
+// ─── Paleta estándar ──────────────────────────────────────────────────────────
+const C = {
+  text:    "#1A2438",
+  muted:   "#8A9BB8",
+  light:   "#C0CCD8",
+  divider: "rgba(0,0,0,0.07)",
+  navy:    "#0B2E6D",
+  blue:    "#3B82F6",
 };
 
-const formatDate = (date) => {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('es-ES');
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmtCurrency = (v) => new Intl.NumberFormat("es-ES", { style:"currency", currency:"EUR" }).format(v ?? 0);
+const fmtDate     = (d) => d ? new Date(d).toLocaleDateString("es-ES") : "—";
+const fmtLimit    = (v) => v === -1 ? "∞" : String(v ?? 0);
 
-const formatLimit = (value) => {
-  if (value === -1) return 'Ilimitado';
-  return value.toString();
-};
+const STATUS_COLOR = { draft:"#64748B", active:"#059669", deprecated:"#D97706", expired:"#DC2626", disabled:"#DC2626" };
+const STATUS_LABEL = { draft:"Borrador", active:"Activo", deprecated:"Obsoleto", expired:"Expirado", disabled:"Desactivado" };
+const getStatusColor = (s) => STATUS_COLOR[s] || "#64748B";
+const getStatusLabel = (s) => STATUS_LABEL[s] || s;
 
-const getPlanStatusLabel = (status) => {
-  const labels = {
-    draft: 'Borrador',
-    active: 'Activo',
-    deprecated: 'Obsoleto',
-    expired: 'Expirado',
-    disabled: 'Desactivado',
-  };
-  return labels[status] || status;
-};
-
-const getPlanStatusColor = (status) => {
-  const colors = {
-    draft: 'gray',
-    active: 'green',
-    deprecated: 'orange',
-    expired: 'red',
-    disabled: 'red',
-  };
-  return colors[status] || 'gray';
-};
+// ─── KPI Pill ─────────────────────────────────────────────────────────────────
+function KpiPill({ label, value, bg = "#F3F4F6", color = "#374151" }) {
+  return (
+    <div style={{
+      background: bg, borderRadius: 8, padding: "7px 14px",
+      border: "1px solid rgba(11,46,109,0.08)",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minWidth: 80,
+    }}>
+      <span style={{ fontSize: 9, fontWeight: 700, color: C.light, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "center", width: "100%" }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 18, fontWeight: 900, color, letterSpacing: "-0.5px", lineHeight: 1.1, textAlign: "center", width: "100%" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export default function PlansList() {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+
+  const [plans,         setPlans]         = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [searchTerm,    setSearchTerm]    = useState("");
+  const [filterStatus,  setFilterStatus]  = useState("");
   const [filterVisible, setFilterVisible] = useState("");
   const [filterVigente, setFilterVigente] = useState("");
 
-  // Cargar planes desde Supabase
-  useEffect(() => {
-    const loadPlans = async () => {
-      try {
-        const data = await getPlans();
-        setPlans(data);
-      } catch (error) {
-        console.error('Error al cargar planes:', error);
-        message.error('Error al cargar los planes');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadPlans = async () => {
+    setLoading(true);
+    try {
+      const data = await getPlans();
+      setPlans(data);
+    } catch (err) {
+      message.error("Error al cargar los planes");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadPlans();
-  }, []);
+  useEffect(() => { loadPlans(); }, []);
 
-  // Filtrar planes
   const filteredPlans = useMemo(() => {
     let result = [...plans];
-
-    // Filtrar por búsqueda (nombre o código)
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      result = result.filter(
-        (plan) =>
-          plan.name.toLowerCase().includes(search) ||
-          plan.code.toLowerCase().includes(search)
-      );
+      const q = searchTerm.toLowerCase();
+      result = result.filter(p => p.name?.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q));
     }
-
-    // Filtrar por estado
-    if (filterStatus) {
-      result = result.filter((plan) => plan.status === filterStatus);
-    }
-
-    // Filtrar por visible para nuevas altas
+    if (filterStatus)  result = result.filter(p => p.status === filterStatus);
     if (filterVisible !== "") {
-      const isVisible = filterVisible === "true";
-      result = result.filter((plan) => plan.visible_for_new_accounts === isVisible);
+      const b = filterVisible === "true";
+      result = result.filter(p => p.visible_for_new_accounts === b);
     }
-
-    // Filtrar por vigente hoy
     if (filterVigente !== "") {
       const today = new Date().toISOString().split("T")[0];
-      const isVigente = filterVigente === "true";
-      result = result.filter((plan) => {
-        const startOk = plan.start_date <= today;
-        const endOk = !plan.end_date || plan.end_date >= today;
-        return isVigente ? (startOk && endOk) : !(startOk && endOk);
+      const b = filterVigente === "true";
+      result = result.filter(p => {
+        const ok = p.start_date <= today && (!p.end_date || p.end_date >= today);
+        return b ? ok : !ok;
       });
     }
-
     return result;
   }, [plans, searchTerm, filterStatus, filterVisible, filterVigente]);
 
   const handleToggleVisible = async (plan) => {
     const action = plan.visible_for_new_accounts ? "ocultar" : "mostrar";
-    if (window.confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} el plan "${plan.name}" para nuevas altas?`)) {
-      try {
-        const { toggleVisibility } = await import('../../../../services/plans.service');
-        await toggleVisibility(plan.id);
-        message.success(`Plan "${plan.name}" ${plan.visible_for_new_accounts ? "ocultado" : "visible"} para nuevas altas`);
-        // Recargar planes
-        const data = await getPlans();
-        setPlans(data);
-      } catch (error) {
-        console.error('Error al cambiar visibilidad:', error);
-        message.error('Error al cambiar la visibilidad del plan');
-      }
-    }
+    if (!window.confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} el plan "${plan.name}" para nuevas altas?`)) return;
+    try {
+      const { toggleVisibility } = await import("../../../../services/plans.service");
+      await toggleVisibility(plan.id);
+      message.success(`Plan "${plan.name}" ${plan.visible_for_new_accounts ? "ocultado" : "visible"} para nuevas altas`);
+      await loadPlans();
+    } catch (err) { message.error("Error al cambiar visibilidad"); }
   };
 
   const handleDeactivate = async (plan) => {
-    if (window.confirm(`¿Desactivar el plan "${plan.name}"? Esta acción marcará el plan como desactivado.`)) {
-      try {
-        const { deactivatePlan } = await import('../../../../services/plans.service');
-        await deactivatePlan(plan.id);
-        message.success(`Plan "${plan.name}" desactivado`);
-        // Recargar planes
-        const data = await getPlans();
-        setPlans(data);
-      } catch (error) {
-        console.error('Error al desactivar plan:', error);
-        message.error('Error al desactivar el plan');
-      }
-    }
+    if (!window.confirm(`¿Desactivar el plan "${plan.name}"?`)) return;
+    try {
+      const { deactivatePlan } = await import("../../../../services/plans.service");
+      await deactivatePlan(plan.id);
+      message.success(`Plan "${plan.name}" desactivado`);
+      await loadPlans();
+    } catch (err) { message.error("Error al desactivar el plan"); }
   };
 
   const handleSetEndDate = async (plan) => {
-    const date = prompt("Fecha de fin de vigencia (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
-    if (date) {
-      try {
-        const { setEndDate } = await import('../../../../services/plans.service');
-        await setEndDate(plan.id, date);
-        message.success(`Fecha de fin establecida para "${plan.name}": ${date}`);
-        // Recargar planes
-        const data = await getPlans();
-        setPlans(data);
-      } catch (error) {
-        console.error('Error al establecer fecha de fin:', error);
-        message.error(error.message || 'Error al establecer fecha de fin');
-      }
-    }
+    const date = window.prompt("Fecha de fin de vigencia (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
+    if (!date) return;
+    try {
+      const { setEndDate } = await import("../../../../services/plans.service");
+      await setEndDate(plan.id, date);
+      message.success(`Fecha de fin establecida: ${date}`);
+      await loadPlans();
+    } catch (err) { message.error(err.message || "Error al establecer fecha de fin"); }
   };
 
-  if (loading) {
-    return (
-      <V2Layout role="superadmin" userName="Administrador">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p>Cargando planes...</p>
-        </div>
-      </V2Layout>
-    );
-  }
+  // KPIs
+  const kpis = {
+    total:      plans.length,
+    active:     plans.filter(p => p.status === "active").length,
+    draft:      plans.filter(p => p.status === "draft").length,
+    deprecated: plans.filter(p => p.status === "deprecated" || p.status === "disabled").length,
+    visible:    plans.filter(p => p.visible_for_new_accounts).length,
+  };
 
   return (
     <V2Layout role="superadmin" userName="Administrador">
-      {/* DBSU-PC-LI: Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Gestión de Planes de Cliente</h1>
-          <p style={styles.subtitle}>
-            {loading ? 'Cargando...' : `${filteredPlans.length} de ${plans.length} planes`}
-          </p>
-        </div>
-      </div>
+      <div style={{ background: "#fff", minHeight: "100%", paddingBottom: 40 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 4px" }}>
 
-      {/* Toolbar */}
-      <div style={styles.toolbar}>
-        <button
-          style={styles.toolbarButton}
-          onClick={() => navigate("/v2/superadmin/planes/nuevo")}
-        >
-          <span style={styles.toolbarIcon}>+</span>
-          <span>Nuevo</span>
-          <span style={styles.toolbarBold}>Plan</span>
-        </button>
-        <button
-          style={styles.toolbarButton}
-          onClick={() => {
-            setSearchTerm("");
-            setFilterStatus("");
-            setFilterVisible("");
-            setFilterVigente("");
-          }}
-        >
-          <span style={styles.toolbarIcon}>🔄</span>
-          <span>Limpiar Filtros</span>
-        </button>
-      </div>
+          {/* ── Header ──────────────────────────────────────────────────── */}
+          <div style={{ marginBottom: 22 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: C.text, margin: 0, letterSpacing: "-0.4px", display: "flex", alignItems: "center", gap: 10 }}>
+              <FileTextOutlined style={{ fontSize: 22, color: "#7C3AED" }} />
+              Planes de Cliente
+            </h1>
+            <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0" }}>
+              {loading ? "Cargando..." : `${filteredPlans.length} de ${plans.length} planes`}
+            </p>
+          </div>
 
-      {/* DBSU-PC-LI: Filtros */}
-      <div style={styles.filters}>
-        <input
-          type="text"
-          placeholder="Buscar por nombre o código..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={styles.searchInput}
-        />
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={styles.select}
-        >
-          <option value="">Todos los estados</option>
-          <option value={PLAN_STATUS.DRAFT}>Borrador</option>
-          <option value={PLAN_STATUS.ACTIVE}>Activo</option>
-          <option value={PLAN_STATUS.INACTIVE}>Inactivo</option>
-          <option value={PLAN_STATUS.DEPRECATED}>Obsoleto</option>
-          <option value={PLAN_STATUS.DEACTIVATED}>Desactivado</option>
-        </select>
-        <select
-          value={filterVisible}
-          onChange={(e) => setFilterVisible(e.target.value)}
-          style={styles.select}
-        >
-          <option value="">Visible (todos)</option>
-          <option value="true">Visible para nuevas altas</option>
-          <option value="false">Oculto para nuevas altas</option>
-        </select>
-        <select
-          value={filterVigente}
-          onChange={(e) => setFilterVigente(e.target.value)}
-          style={styles.select}
-        >
-          <option value="">Vigencia (todos)</option>
-          <option value="true">Vigente hoy</option>
-          <option value="false">No vigente</option>
-        </select>
-      </div>
+          {/* ── KPIs ─────────────────────────────────────────────────────── */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
+            <KpiPill value={kpis.total}      label="TOTAL"      bg="#F3F4F6" color="#374151" />
+            <KpiPill value={kpis.active}     label="ACTIVOS"    bg="#F0FDF4" color="#16A34A" />
+            <KpiPill value={kpis.draft}      label="BORRADOR"   bg="#EFF6FF" color="#0071E3" />
+            <KpiPill value={kpis.deprecated} label="OBSOLETOS"  bg="#FFFBEB" color="#D97706" />
+            <KpiPill value={kpis.visible}    label="VISIBLES"   bg="#F0FDF4" color="#059669" />
+          </div>
 
-      {/* DBSU-PC-LI: Tabla de Planes */}
-      <div style={styles.tableCard}>
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                {/* Columnas 1: Nombre, Código */}
-                <th style={styles.th}>Plan</th>
-                {/* Columnas 2: Estado, Visible */}
-                <th style={styles.th}>Estado</th>
-                <th style={styles.th}>Visible</th>
-                {/* Columnas 3: Fechas */}
-                <th style={styles.th}>Vigencia</th>
-                {/* Columnas 5: Precios */}
-                <th style={styles.th}>Pricing</th>
-                {/* Columnas 6: Límites */}
-                <th style={styles.th}>Límites</th>
+          {/* ── Filtros + Acciones ───────────────────────────────────────── */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+            <Input.Search
+              placeholder="Buscar por nombre o código..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ maxWidth: 300 }}
+              allowClear
+            />
+            <Select
+              placeholder="Estado"
+              value={filterStatus || undefined}
+              onChange={setFilterStatus}
+              allowClear style={{ width: 160 }}
+              options={[
+                { value: PLAN_STATUS.DRAFT,        label: "Borrador" },
+                { value: PLAN_STATUS.ACTIVE,       label: "Activo" },
+                { value: PLAN_STATUS.DEPRECATED,   label: "Obsoleto" },
+                { value: PLAN_STATUS.DEACTIVATED,  label: "Desactivado" },
+              ]}
+            />
+            <Select
+              placeholder="Visibilidad"
+              value={filterVisible || undefined}
+              onChange={setFilterVisible}
+              allowClear style={{ width: 200 }}
+              options={[
+                { value: "true",  label: "Visible para nuevas altas" },
+                { value: "false", label: "Oculto para nuevas altas" },
+              ]}
+            />
+            <Select
+              placeholder="Vigencia"
+              value={filterVigente || undefined}
+              onChange={setFilterVigente}
+              allowClear style={{ width: 160 }}
+              options={[
+                { value: "true",  label: "Vigente hoy" },
+                { value: "false", label: "No vigente" },
+              ]}
+            />
+            <div style={{ flex: 1 }} />
+            <Button icon={<ReloadOutlined />} onClick={loadPlans} loading={loading}>
+              Actualizar
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/v2/superadmin/planes/nuevo")}
+              style={{ background: C.navy, borderColor: C.navy }}
+            >
+              Nuevo Plan
+            </Button>
+          </div>
+
+          {/* ── Tabla ────────────────────────────────────────────────────── */}
+          <div style={{
+            background: "#fff",
+            border: "1px solid rgba(11,46,109,0.08)",
+            borderRadius: 12,
+            overflow: "hidden",
+            boxShadow: "0 1px 4px rgba(11,46,109,0.04)",
+          }}>
+            {/* Cabecera */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1.4fr 90px 70px 160px 200px 180px 120px",
+              padding: "10px 18px",
+              borderBottom: `1px solid ${C.divider}`,
+              background: "#F8FAFC",
+            }}>
+              {["Plan", "Estado", "Visible", "Vigencia", "Pricing", "Límites", "Acciones"].map(h => (
+                <div key={h} style={{ fontSize: 10, fontWeight: 700, color: C.light, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  {h}
+                </div>
+              ))}
+            </div>
+
+            {/* Cuerpo */}
+            {loading ? (
+              <div style={{ padding: "32px 18px", color: C.muted, fontSize: 13, textAlign: "center" }}>Cargando planes...</div>
+            ) : filteredPlans.length === 0 ? (
+              <div style={{ padding: "32px 18px", color: C.muted, fontSize: 13, textAlign: "center" }}>Sin resultados</div>
+            ) : filteredPlans.map((plan, i) => (
+              <div
+                key={plan.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.4fr 90px 70px 160px 200px 180px 120px",
+                  padding: "12px 18px",
+                  borderBottom: i < filteredPlans.length - 1 ? `1px solid ${C.divider}` : "none",
+                  alignItems: "center",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+              >
+                {/* Plan */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{plan.name}</div>
+                  <div style={{ fontSize: 11, color: C.muted }}>{plan.code}</div>
+                </div>
+                {/* Estado */}
+                <div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 5,
+                    background: `${getStatusColor(plan.status)}15`,
+                    color: getStatusColor(plan.status),
+                    border: `1px solid ${getStatusColor(plan.status)}40`,
+                  }}>
+                    {getStatusLabel(plan.status)}
+                  </span>
+                </div>
+                {/* Visible */}
+                <div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 5,
+                    background: plan.visible_for_new_accounts ? "#DCFCE7" : "#FEE2E2",
+                    color:      plan.visible_for_new_accounts ? "#166534" : "#991B1B",
+                  }}>
+                    {plan.visible_for_new_accounts ? "Sí" : "No"}
+                  </span>
+                </div>
+                {/* Vigencia */}
+                <div style={{ fontSize: 11, color: C.text }}>
+                  <div><span style={{ color: C.muted }}>Inicio: </span>{fmtDate(plan.start_date)}</div>
+                  <div><span style={{ color: C.muted }}>Fin: </span>{plan.end_date ? fmtDate(plan.end_date) : "—"}</div>
+                  {plan.deactivated_at && (
+                    <div style={{ color: "#DC2626" }}><span>Baja: </span>{fmtDate(plan.deactivated_at)}</div>
+                  )}
+                </div>
+                {/* Pricing */}
+                <div style={{ fontSize: 11, color: C.text }}>
+                  <div><span style={{ color: C.muted }}>Mensual: </span>{fmtCurrency(plan.monthly_price)}</div>
+                  <div><span style={{ color: C.muted }}>Anual: </span>{fmtCurrency(plan.annual_price)}</div>
+                  <div style={{ color: C.muted }}>{plan.vat_applicable ? `+${plan.vat_percentage}% IVA` : "IVA incluido"}</div>
+                </div>
+                {/* Límites */}
+                <div style={{ fontSize: 11, color: C.text, display: "flex", flexDirection: "column", gap: 1 }}>
+                  <span><span style={{ color: C.muted }}>Owners: </span>{fmtLimit(plan.max_owners)}</span>
+                  <span><span style={{ color: C.muted }}>Aloj.: </span>{fmtLimit(plan.max_accommodations)}</span>
+                  <span><span style={{ color: C.muted }}>Hab.: </span>{fmtLimit(plan.max_rooms)}</span>
+                  <span><span style={{ color: C.muted }}>Users: </span>{fmtLimit((plan.max_admin_users ?? 0) + (plan.max_associated_admins ?? 0))}</span>
+                </div>
                 {/* Acciones */}
-                <th style={styles.th}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlans.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={styles.emptyState}>
-                    No se encontraron planes con los filtros aplicados
-                  </td>
-                </tr>
-              ) : (
-                filteredPlans.map((plan) => (
-                  <tr key={plan.id} style={styles.tr}>
-                    {/* Plan Info */}
-                    <td style={styles.td}>
-                      <div style={styles.planCell}>
-                        <div style={styles.planName}>{plan.name}</div>
-                        <div style={styles.planCode}>{plan.code}</div>
-                      </div>
-                    </td>
-                    {/* Estado */}
-                    <td style={styles.td}>
-                      <span
-                        style={{
-                          ...styles.badge,
-                          backgroundColor: `${getPlanStatusColor(plan.status)}15`,
-                          color: getPlanStatusColor(plan.status),
-                          border: `1px solid ${getPlanStatusColor(plan.status)}40`,
-                        }}
-                      >
-                        {getPlanStatusLabel(plan.status)}
-                      </span>
-                    </td>
-                    {/* Visible */}
-                    <td style={styles.td}>
-                      <span
-                        style={{
-                          ...styles.visibleBadge,
-                          backgroundColor: plan.visible_for_new_accounts ? "#DCFCE7" : "#FEE2E2",
-                          color: plan.visible_for_new_accounts ? "#166534" : "#991B1B",
-                        }}
-                      >
-                        {plan.visible_for_new_accounts ? "Sí" : "No"}
-                      </span>
-                    </td>
-                    {/* Vigencia */}
-                    <td style={styles.td}>
-                      <div style={styles.datesCell}>
-                        <div style={styles.dateRow}>
-                          <span style={styles.dateLabel}>Inicio:</span>
-                          <span>{formatDate(plan.start_date)}</span>
-                        </div>
-                        <div style={styles.dateRow}>
-                          <span style={styles.dateLabel}>Fin:</span>
-                          <span>{plan.end_date ? formatDate(plan.end_date) : "-"}</span>
-                        </div>
-                        {plan.deactivated_at && (
-                          <div style={styles.dateRow}>
-                            <span style={styles.dateLabelWarning}>Baja:</span>
-                            <span style={styles.dateWarning}>{formatDate(plan.deactivated_at)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    {/* Pricing */}
-                    <td style={styles.td}>
-                      <div style={styles.pricingCell}>
-                        <div style={styles.priceRow}>
-                          <span style={styles.priceLabel}>Mensual:</span>
-                          <span style={styles.priceValue}>{formatCurrency(plan.monthly_price)}</span>
-                        </div>
-                        <div style={styles.priceRow}>
-                          <span style={styles.priceLabel}>Anual:</span>
-                          <span style={styles.priceValue}>{formatCurrency(plan.annual_price)}</span>
-                        </div>
-                        <div style={styles.ivaText}>
-                          {plan.vat_applicable ? `+${plan.vat_percentage}% IVA` : "IVA incluido"}
-                        </div>
-                      </div>
-                    </td>
-                    {/* Límites */}
-                    <td style={styles.td}>
-                      <div style={styles.limitsCell}>
-                        <span style={styles.limitItem} title="Max Owners">
-                          {formatLimit(plan.max_owners)} owners
-                        </span>
-                        <span style={styles.limitItem} title="Max Alojamientos">
-                          {formatLimit(plan.max_accommodations)} aloj.
-                        </span>
-                        <span style={styles.limitItem} title="Max Habitaciones">
-                          {formatLimit(plan.max_rooms)} hab.
-                        </span>
-                        <span style={styles.limitItem} title="Max Usuarios">
-                          {plan.max_admin_users + plan.max_associated_admins} usuarios
-                        </span>
-                      </div>
-                    </td>
-                    {/* Acciones */}
-                    <td style={styles.td}>
-                      <div style={styles.actions}>
-                        <button
-                          style={styles.actionButton}
-                          onClick={() => navigate(`/v2/superadmin/planes/${plan.id}`)}
-                          title="Ver detalle"
-                        >
-                          👁
-                        </button>
-                        <button
-                          style={styles.actionButton}
-                          onClick={() => navigate(`/v2/superadmin/planes/${plan.id}/editar`)}
-                          title="Editar"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          style={{
-                            ...styles.actionButton,
-                            color: plan.visible_for_new_accounts ? "#F59E0B" : "#059669",
-                          }}
-                          onClick={() => handleToggleVisible(plan)}
-                          title={plan.visible_for_new_accounts ? "Ocultar para nuevas altas" : "Mostrar para nuevas altas"}
-                        >
-                          {plan.visible_for_new_accounts ? "🔒" : "🔓"}
-                        </button>
-                        <button
-                          style={styles.actionButton}
-                          onClick={() => handleSetEndDate(plan)}
-                          title="Programar caducidad"
-                        >
-                          📅
-                        </button>
-                        {plan.status !== PLAN_STATUS.DEACTIVATED && (
-                          <button
-                            style={{ ...styles.actionButton, color: "#DC2626" }}
-                            onClick={() => handleDeactivate(plan)}
-                            title="Desactivar"
-                          >
-                            🗑
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Button size="small" onClick={() => navigate(`/v2/superadmin/planes/${plan.id}`)}>Ver</Button>
+                  <Button size="small" onClick={() => navigate(`/v2/superadmin/planes/${plan.id}/editar`)}>Editar</Button>
+                  <Button size="small" onClick={() => handleToggleVisible(plan)} title={plan.visible_for_new_accounts ? "Ocultar" : "Mostrar"}>
+                    {plan.visible_for_new_accounts ? "🔒" : "🔓"}
+                  </Button>
+                  <Button size="small" onClick={() => handleSetEndDate(plan)} title="Programar caducidad">📅</Button>
+                  {plan.status !== PLAN_STATUS.DEACTIVATED && (
+                    <Button size="small" danger onClick={() => handleDeactivate(plan)} title="Desactivar">🗑</Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
     </V2Layout>
   );
 }
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  toolbar: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 20,
-  },
-  toolbarButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "10px 20px",
-    backgroundColor: "#FFFFFF",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  toolbarIcon: {
-    fontSize: 16,
-  },
-  toolbarBold: {
-    fontWeight: "700",
-    color: "#111827",
-  },
-  filters: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 24,
-    flexWrap: "wrap",
-    alignItems: "center",
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: 200,
-    maxWidth: 300,
-    padding: "10px 16px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-  },
-  select: {
-    padding: "10px 16px",
-    fontSize: 14,
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    outline: "none",
-    backgroundColor: "#FFFFFF",
-    cursor: "pointer",
-    minWidth: 160,
-  },
-  clearButton: {
-    padding: "10px 16px",
-    fontSize: 14,
-    backgroundColor: "#F3F4F6",
-    border: "1px solid #E5E7EB",
-    borderRadius: 8,
-    cursor: "pointer",
-    color: "#374151",
-  },
-  tableCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    overflow: "hidden",
-  },
-  tableContainer: {
-    overflowX: "auto",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px 16px",
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    backgroundColor: "#F9FAFB",
-    borderBottom: "1px solid #E5E7EB",
-    whiteSpace: "nowrap",
-  },
-  tr: {
-    borderBottom: "1px solid #F3F4F6",
-  },
-  td: {
-    padding: "16px",
-    fontSize: 14,
-    color: "#374151",
-    verticalAlign: "top",
-  },
-  planCell: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 2,
-  },
-  planName: {
-    fontWeight: "600",
-    color: "#111827",
-  },
-  planCode: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontFamily: "monospace",
-  },
-  badge: {
-    display: "inline-block",
-    padding: "4px 12px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  visibleBadge: {
-    display: "inline-block",
-    padding: "4px 10px",
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  datesCell: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-    fontSize: 13,
-  },
-  dateRow: {
-    display: "flex",
-    gap: 6,
-  },
-  dateLabel: {
-    color: "#9CA3AF",
-    minWidth: 40,
-  },
-  dateLabelWarning: {
-    color: "#DC2626",
-    minWidth: 40,
-  },
-  dateWarning: {
-    color: "#DC2626",
-  },
-  pricingCell: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  priceRow: {
-    display: "flex",
-    gap: 6,
-    fontSize: 13,
-  },
-  priceLabel: {
-    color: "#9CA3AF",
-    minWidth: 60,
-  },
-  priceValue: {
-    fontWeight: "500",
-    color: "#111827",
-  },
-  ivaText: {
-    fontSize: 11,
-    color: "#9CA3AF",
-    marginTop: 2,
-  },
-  limitsCell: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  limitItem: {
-    fontSize: 12,
-    color: "#6B7280",
-    padding: "2px 0",
-  },
-  actions: {
-    display: "flex",
-    gap: 4,
-    flexWrap: "wrap",
-  },
-  actionButton: {
-    padding: "6px 10px",
-    backgroundColor: "transparent",
-    border: "1px solid #E5E7EB",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontSize: 14,
-    transition: "all 0.2s ease",
-  },
-  emptyState: {
-    padding: 48,
-    textAlign: "center",
-    color: "#6B7280",
-    fontSize: 14,
-  },
-};
