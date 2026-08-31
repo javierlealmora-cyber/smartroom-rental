@@ -1,0 +1,83 @@
+{
+  "contract_id": "SC-WF-30-LISTINGS",
+  "workflow": "SC-WF-30-listings",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el flujo de publicaciones. Complemento externo de conv-wf30-listings.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "session_id",
+    "message_id",
+    "channel",
+    "service_code",
+    "identity_level",
+    "safe_summary",
+    "case_id",
+    "interest_type"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token",
+    "service_role_key"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "safe_text",
+    "safe_listing_refs",
+    "conv_case_id",
+    "lead_ref",
+    "stub_active"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Crear leads directamente en Core",
+      "Escribir directamente en conv_cases",
+      "Recibir contacto en claro (phone, email, profile_id)",
+      "Publicar conv_lead_created (NO existe — solo como ejemplo histórico)",
+      "Asignar identity_level directamente",
+      "Introducir estados nuevos no definidos"
+    ],
+    "n8n_can_do": [
+      "Orquestar búsqueda de publicaciones disponibles vía EF",
+      "Pasar safe_summary, interest_type sin PII",
+      "Devolver safe_listing_refs (IDs de publicaciones, sin datos de arrendador)",
+      "Asignar UNVERIFIED_LEAD solo como contexto de flujo (vía EF)"
+    ]
+  },
+  "valid_response_types": [
+    "listing_results",
+    "contact_registered",
+    "visit_scheduled",
+    "identity_required",
+    "stub_response"
+  ],
+  "valid_interest_types": [
+    "search_listing",
+    "leave_contact",
+    "request_visit"
+  ],
+  "notes": {
+    "UNVERIFIED_LEAD": "Asignado por EF conv-wf30-listings cuando usuario no es IDENTIFIED_LEVELS. n8n recibe el nivel resultante pero NO lo decide.",
+    "conv_lead_created": "NO existe este evento. El registro de lead se hace vía EF conv-core-register-lead."
+  }
+}

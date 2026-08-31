@@ -1,0 +1,81 @@
+{
+  "contract_id": "SC-WF-40-HELP",
+  "workflow": "SC-WF-40-help",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el flujo de ayuda y soporte. Complemento externo de conv-wf40-help.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "session_id",
+    "message_id",
+    "channel",
+    "service_code",
+    "identity_level",
+    "safe_summary",
+    "case_id"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token",
+    "service_role_key"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "safe_text",
+    "conv_case_id",
+    "escalation_reason",
+    "kb_confidence",
+    "stub_active"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key",
+    "conv_help_escalated"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Crear conv_help_escalated (NO EXISTE — usar conv_case_escalated vía EF)",
+      "Escribir directamente en conv_cases",
+      "Recibir PII del usuario",
+      "Acceder a datos de cuenta sin identidad verificada",
+      "Decidir si escalar directamente (lo decide conv-escalate-case EF)",
+      "Introducir estados nuevos no definidos"
+    ],
+    "n8n_can_do": [
+      "Orquestar consulta a base de conocimiento vía EF",
+      "Pasar safe_summary sin PII",
+      "Devolver safe_text con respuesta de FAQ cuando confidence >= 0.80",
+      "Solicitar escalado vía EF conv-escalate-case (no directo)"
+    ]
+  },
+  "valid_response_types": [
+    "help_answer",
+    "help_escalated",
+    "admin_requested",
+    "ticket_created",
+    "stub_response"
+  ],
+  "kb_threshold": 0.80,
+  "notes": {
+    "help_answer_no_case": "FAQ confidence >= 0.80 devuelve help_answer SIN crear conv_case.",
+    "escalation_event": "Usar conv_case_escalated. conv_help_escalated NO existe y NO debe introducirse.",
+    "escalation_reasons": ["no_kb_match", "admin_requested"],
+    "UNVERIFIED_LEAD": "WF-40 no usa UNVERIFIED_LEAD. Solo STRONG_MATCH_ACTIVE y PARTIAL_MATCH_ACTIVE son IDENTIFIED_LEVELS."
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "SC-WF-C00-reconcile",
+  "active": false,
+  "meta": {
+    "description": "SmartConversations — Reconciliación operativa y auditoría de estados. STUB/INACTIVO.",
+    "version": "1.0.0-stub",
+    "phase": "9C-preparation",
+    "status": "stub-only",
+    "notes": "No activar hasta que se especifique la Fase de reconciliación. No ejecutar reconciliación real. No tocar BD. No enviar mensajes reales. No activar cron real. No usar secrets reales."
+  },
+  "tags": ["smartconversations", "reconcile", "cron", "stub", "inactive"],
+  "nodes": [
+    {
+      "id": "trigger-c00-stub",
+      "name": "Manual Trigger (Stub — No Cron Real)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [250, 300],
+      "parameters": {}
+    },
+    {
+      "id": "validate-input-c00",
+      "name": "Validate Reconcile Input",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "received.client_account_id", "type": "string", "value": "={{ $json.client_account_id ?? '' }}" },
+            { "id": "f2", "name": "received.reconcile_scope",   "type": "string", "value": "={{ $json.reconcile_scope ?? 'none' }}" },
+            { "id": "stub_note", "name": "stub_note", "type": "string",
+              "value": "STUB: NO reconciliación real. NO toca BD. NO envía mensajes. NO cron real." }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mock-response-c00",
+      "name": "Mock Response SC-WF-C00",
+      "type": "n8n-nodes-base.set",
+      "position": [650, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "wf", "name": "workflow_code",    "type": "string",  "value": "SC-WF-C00-reconcile" },
+            { "id": "st", "name": "status",           "type": "string",  "value": "stub_response" },
+            { "id": "rt", "name": "response_type",    "type": "string",  "value": "reconcile_skipped" },
+            { "id": "rs", "name": "reason",           "type": "string",  "value": "stub_inactive" },
+            { "id": "sa", "name": "stub_active",      "type": "boolean", "value": false },
+            { "id": "md", "name": "metadata",         "type": "object",  "value": { "processed": 0, "skipped": 0, "errors": 0 } }
+          ]
+        }
+      }
+    },
+    {
+      "id": "no-op-c00",
+      "name": "No-Op (Stub End)",
+      "type": "n8n-nodes-base.noOp",
+      "position": [850, 300],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Manual Trigger (Stub — No Cron Real)": { "main": [[{ "node": "Validate Reconcile Input", "type": "main", "index": 0 }]] },
+    "Validate Reconcile Input":             { "main": [[{ "node": "Mock Response SC-WF-C00",  "type": "main", "index": 0 }]] },
+    "Mock Response SC-WF-C00":             { "main": [[{ "node": "No-Op (Stub End)",          "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "_stub_security": {
+    "no_credentials": true, "no_api_keys": true, "no_service_role": true,
+    "no_real_urls": true, "no_pii_fields": true, "no_cron": true, "active": false
+  }
+}

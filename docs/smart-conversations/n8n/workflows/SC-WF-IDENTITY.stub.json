@@ -1,0 +1,80 @@
+{
+  "name": "SC-WF-IDENTITY",
+  "active": false,
+  "meta": {
+    "description": "SmartConversations — Flujo guiado de verificación de identidad. STUB/INACTIVO.",
+    "version": "1.0.0-stub",
+    "phase": "9C-preparation",
+    "status": "stub-only",
+    "notes": "No activar hasta Fase 10. n8n NO decide identidad final. NO recibe phone ni profile_id. Validación final siempre en conv-core-validate-identity. NO devuelve UNVERIFIED_LEAD. NO introduce WEAK_MATCH."
+  },
+  "tags": ["smartconversations", "identity", "stub", "inactive"],
+  "nodes": [
+    {
+      "id": "webhook-sc-identity",
+      "name": "Webhook SC-WF-IDENTITY (Mock)",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": { "path": "sc-wf-identity-stub", "responseMode": "responseNode" },
+      "webhookId": "sc-wf-identity-stub"
+    },
+    {
+      "id": "validate-input-identity",
+      "name": "Validate Input (No PII — No phone No profile_id)",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "received.client_account_id",  "type": "string", "value": "={{ $json.client_account_id }}" },
+            { "id": "f2", "name": "received.session_id",         "type": "string", "value": "={{ $json.session_id }}" },
+            { "id": "f3", "name": "received.channel",            "type": "string", "value": "={{ $json.channel }}" },
+            { "id": "f4", "name": "received.identity_level",     "type": "string", "value": "={{ $json.identity_level }}" },
+            { "id": "f5", "name": "received.identity_attempts",  "type": "number", "value": "={{ $json.identity_attempts ?? 0 }}" },
+            { "id": "f6", "name": "received.requested_field",    "type": "string", "value": "={{ $json.requested_field ?? '' }}" },
+            { "id": "stub_note", "name": "stub_note", "type": "string",
+              "value": "STUB: NO phone. NO profile_id. NO identity_data. Decisión final en conv-core-validate-identity. NO WEAK_MATCH. NO UNVERIFIED standalone." }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mock-response-identity",
+      "name": "Mock Response SC-WF-IDENTITY",
+      "type": "n8n-nodes-base.set",
+      "position": [650, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "wf", "name": "workflow_code",   "type": "string",  "value": "SC-WF-IDENTITY" },
+            { "id": "st", "name": "status",          "type": "string",  "value": "stub_response" },
+            { "id": "rt", "name": "response_type",   "type": "string",  "value": "identity_more_input_required" },
+            { "id": "nf", "name": "next_field",      "type": "string",  "value": "reference_code" },
+            { "id": "tx", "name": "safe_text",       "type": "string",  "value": "Por favor, comparte tu código de referencia (mock)." },
+            { "id": "sa", "name": "stub_active",     "type": "boolean", "value": false }
+          ]
+        }
+      }
+    },
+    {
+      "id": "respond-identity",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [850, 300],
+      "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify($json) }}" }
+    }
+  ],
+  "connections": {
+    "Webhook SC-WF-IDENTITY (Mock)":               { "main": [[{ "node": "Validate Input (No PII — No phone No profile_id)", "type": "main", "index": 0 }]] },
+    "Validate Input (No PII — No phone No profile_id)": { "main": [[{ "node": "Mock Response SC-WF-IDENTITY", "type": "main", "index": 0 }]] },
+    "Mock Response SC-WF-IDENTITY":                { "main": [[{ "node": "Respond to Webhook",            "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "_stub_security": {
+    "no_credentials": true, "no_api_keys": true, "no_service_role": true,
+    "no_real_urls": true, "no_pii_fields": true, "active": false
+  }
+}

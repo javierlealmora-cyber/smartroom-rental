@@ -1,0 +1,328 @@
+openapi: "3.1.0"
+info:
+  title: SmartConversations → Listings/Leads Add-on (Consumer Proposal)
+  description: |
+    Propuesta de contrato consumer-driven desde SmartConversations hacia el add-on de publicaciones.
+    Versión: 1.0
+    Estado: DEV_CONFIGURATION_PENDING
+
+    Restricciones absolutas:
+    - actor.type 'unverified_lead' es el tipo permitido — NUNCA el enum interno UNVERIFIED_LEAD.
+    - Resultados de búsqueda sin: owner_id, owner_phone, owner_email, tenant_ids, private_address.
+    - No se usa SUPABASE_SERVICE_ROLE_KEY — autenticación B2B con LISTINGS_ADDON_SERVICE_TOKEN.
+    - No hay claves foráneas entre proyectos.
+  version: "1.0.0"
+
+servers:
+  - url: "{LISTINGS_ADDON_BASE_URL}"
+    description: Entorno DEV (configurar LISTINGS_ADDON_BASE_URL)
+
+security:
+  - BearerToken: []
+
+paths:
+  /health:
+    get:
+      operationId: listingsAddonHealth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /listings/search:
+    post:
+      operationId: searchListings
+      summary: Buscar publicaciones disponibles
+      description: |
+        Operación READ — shadow_allowed: true.
+        No enviar datos PII ni enums internos de identidad.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchListingsRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchListingsResponse"
+        "400":
+          description: Query inválida — no reintentar
+        "401":
+          description: Token inválido
+        "429":
+          description: Rate limiting
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+        "500":
+          description: Error del servidor (retryable)
+
+  /leads:
+    post:
+      operationId: createLead
+      summary: Crear lead de un prospecto o residente interesado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeadRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLeadResponse"
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLeadResponse"
+        "409":
+          description: Replay idempotente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLeadResponse"
+        "429":
+          description: Rate limiting
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+        "500":
+          description: Error del servidor (retryable)
+
+components:
+  securitySchemes:
+    BearerToken:
+      type: http
+      scheme: bearer
+      description: LISTINGS_ADDON_SERVICE_TOKEN (no exponer en frontend)
+
+  schemas:
+    CanonicalActor:
+      oneOf:
+        - $ref: "#/components/schemas/UnverifiedLeadActor"
+        - $ref: "#/components/schemas/TenantProfileActor"
+        - $ref: "#/components/schemas/SystemServiceActor"
+      description: |
+        Actor canónico. NUNCA: identity_level, STRONG_MATCH_ACTIVE, sender_ref, phone, email, wa_jid.
+        'unverified_lead' es el type string (NO el enum interno UNVERIFIED_LEAD).
+
+    UnverifiedLeadActor:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [unverified_lead]
+
+    TenantProfileActor:
+      type: object
+      required: [type, profile_id, verified, verified_at]
+      properties:
+        type:
+          type: string
+          enum: [tenant_profile]
+        profile_id:
+          type: string
+        verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+
+    SystemServiceActor:
+      type: object
+      required: [type, service_name]
+      properties:
+        type:
+          type: string
+          enum: [system_service]
+        service_name:
+          type: string
+
+    SearchListingsRequest:
+      type: object
+      required: [contract_version, client_account_id, request_id, correlation_id, filters, pagination]
+      properties:
+        contract_version:
+          type: string
+          enum: ["1.0"]
+        client_account_id:
+          type: string
+        request_id:
+          type: string
+        correlation_id:
+          type: string
+        filters:
+          type: object
+          properties:
+            location:
+              type: string
+              nullable: true
+            price_min:
+              type: number
+              nullable: true
+            price_max:
+              type: number
+              nullable: true
+            room_type:
+              type: string
+              nullable: true
+            move_in_date:
+              type: string
+              format: date
+              nullable: true
+            preferences:
+              type: array
+              items:
+                type: string
+        pagination:
+          type: object
+          required: [limit]
+          properties:
+            cursor:
+              type: string
+              nullable: true
+              description: Opaco — no inferir estructura
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 50
+
+    SearchListingsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingItem"
+        next_cursor:
+          type: string
+          nullable: true
+
+    ListingItem:
+      type: object
+      required: [listing_id, title, public_location, price]
+      properties:
+        listing_id:
+          type: string
+          description: Opaco — SC lo usa para crear lead
+        reference:
+          type: string
+        title:
+          type: string
+        public_location:
+          type: string
+          description: Solo zona/ciudad pública — sin dirección exacta
+        price:
+          type: object
+          required: [amount, currency]
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        room_type:
+          type: string
+        available_from:
+          type: string
+          format: date
+          nullable: true
+        public_features:
+          type: array
+          items:
+            type: string
+      # PROHIBIDO en cada item: owner_id, owner_phone, owner_email,
+      # tenant_ids, private_address, financial_data, internal_notes
+
+    CreateLeadRequest:
+      type: object
+      required:
+        - contract_version
+        - client_account_id
+        - request_id
+        - correlation_id
+        - idempotency_key
+        - source
+        - actor
+        - lead
+      properties:
+        contract_version:
+          type: string
+          enum: ["1.0"]
+        client_account_id:
+          type: string
+        request_id:
+          type: string
+        correlation_id:
+          type: string
+        idempotency_key:
+          type: string
+          description: "Scope: client_account_id × idempotency_key"
+        source:
+          type: string
+          enum: [smart_conversations]
+        actor:
+          $ref: "#/components/schemas/CanonicalActor"
+        lead:
+          type: object
+          properties:
+            listing_id:
+              type: string
+              nullable: true
+            search_context:
+              type: object
+              additionalProperties:
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+                  - type: "null"
+            contact_preferences:
+              type: object
+              additionalProperties:
+                oneOf:
+                  - type: string
+                  - type: boolean
+                  - type: "null"
+            message_summary:
+              type: string
+              nullable: true
+              maxLength: 1000
+              description: Sanitizado en SC antes de enviar
+
+    CreateLeadResponse:
+      type: object
+      required: [lead_id]
+      properties:
+        lead_id:
+          type: string
+          description: Referencia opaca — SC solo guarda esto
+        lead_reference:
+          type: string
+          nullable: true
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        idempotent_replay:
+          type: boolean
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string

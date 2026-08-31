@@ -1,0 +1,84 @@
+{
+  "name": "SC-WF-20-incidents",
+  "active": false,
+  "meta": {
+    "description": "SmartConversations — Gestión de incidencias. Orquestador externo de conv-wf20-incidents. STUB/INACTIVO.",
+    "version": "1.0.0-stub",
+    "phase": "9C-preparation",
+    "status": "stub-only",
+    "notes": "No activar hasta Fase 10. No crea incidencias directamente. No escribe conv_cases. No recibe profile_id ni room_id."
+  },
+  "tags": ["smartconversations", "incidents", "stub", "inactive"],
+  "nodes": [
+    {
+      "id": "webhook-sc-wf20",
+      "name": "Webhook SC-WF-20 (Mock)",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "sc-wf20-incidents-stub",
+        "responseMode": "responseNode"
+      },
+      "webhookId": "sc-wf20-incidents-stub"
+    },
+    {
+      "id": "validate-input-wf20",
+      "name": "Validate Input (No PII)",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "received.client_account_id", "type": "string", "value": "={{ $json.client_account_id }}" },
+            { "id": "f2", "name": "received.session_id",        "type": "string", "value": "={{ $json.session_id }}" },
+            { "id": "f3", "name": "received.message_id",        "type": "string", "value": "={{ $json.message_id }}" },
+            { "id": "f4", "name": "received.channel",           "type": "string", "value": "={{ $json.channel }}" },
+            { "id": "f5", "name": "received.service_code",      "type": "string", "value": "={{ $json.service_code }}" },
+            { "id": "f6", "name": "received.identity_level",    "type": "string", "value": "={{ $json.identity_level }}" },
+            { "id": "f7", "name": "received.safe_summary",      "type": "string", "value": "={{ $json.safe_summary ?? '' }}" },
+            { "id": "f8", "name": "received.case_id",           "type": "string", "value": "={{ $json.case_id ?? '' }}" },
+            { "id": "stub_note", "name": "stub_note",           "type": "string", "value": "STUB: NO crea incidencia. NO escribe conv_cases. NO recibe profile_id ni room_id." }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mock-response-wf20",
+      "name": "Mock Response SC-WF-20",
+      "type": "n8n-nodes-base.set",
+      "position": [650, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "wf", "name": "workflow_code",  "type": "string",  "value": "SC-WF-20-incidents" },
+            { "id": "st", "name": "status",         "type": "string",  "value": "stub_response" },
+            { "id": "rt", "name": "response_type",  "type": "string",  "value": "pending_input" },
+            { "id": "tx", "name": "safe_text",      "type": "string",  "value": "Tu incidencia está siendo procesada (mock)." },
+            { "id": "ca", "name": "case_action",    "type": "string",  "value": "none" },
+            { "id": "sa", "name": "stub_active",    "type": "boolean", "value": false }
+          ]
+        }
+      }
+    },
+    {
+      "id": "respond-wf20",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [850, 300],
+      "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify($json) }}" }
+    }
+  ],
+  "connections": {
+    "Webhook SC-WF-20 (Mock)":  { "main": [[{ "node": "Validate Input (No PII)", "type": "main", "index": 0 }]] },
+    "Validate Input (No PII)":  { "main": [[{ "node": "Mock Response SC-WF-20", "type": "main", "index": 0 }]] },
+    "Mock Response SC-WF-20":   { "main": [[{ "node": "Respond to Webhook",     "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "_stub_security": {
+    "no_credentials": true, "no_api_keys": true, "no_service_role": true,
+    "no_real_urls": true, "no_pii_fields": true, "active": false
+  }
+}

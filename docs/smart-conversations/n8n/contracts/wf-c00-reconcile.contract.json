@@ -1,0 +1,74 @@
+{
+  "contract_id": "SC-WF-C00-RECONCILE",
+  "workflow": "SC-WF-C00-reconcile",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el flujo de reconciliación operativa y auditoría de estados. STUB. No activar hasta fase específica de reconciliación.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "reconcile_scope",
+    "dry_run"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token",
+    "service_role_key"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "reason",
+    "stub_active",
+    "metadata"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Ejecutar reconciliación real sin activación explícita",
+      "Tocar tablas de base de datos directamente",
+      "Enviar mensajes reales a usuarios",
+      "Activar cron real sin especificación de fase",
+      "Recibir o procesar PII",
+      "Acceder a tablas Core directamente"
+    ],
+    "n8n_can_do": [
+      "En fase futura: orquestar consulta de mensajes stuck via EF",
+      "En fase futura: solicitar reintento de mensajes fallidos vía EF",
+      "En fase futura: generar reporte de auditoría sin PII"
+    ]
+  },
+  "valid_response_types": [
+    "reconcile_skipped",
+    "reconcile_dry_run",
+    "reconcile_completed",
+    "stub_response"
+  ],
+  "valid_reconcile_scopes": [
+    "stuck_messages",
+    "failed_outbounds",
+    "open_cases_audit"
+  ],
+  "notes": {
+    "activation_gate": "Este workflow NO debe activarse hasta que se defina una Fase de Reconciliación específica con requisitos aprobados.",
+    "no_cron": "El trigger es manual en el stub. No activar cron hasta especificación formal.",
+    "idempotency": "La reconciliación debe ser idempotente: ejecutar dos veces produce el mismo resultado."
+  }
+}

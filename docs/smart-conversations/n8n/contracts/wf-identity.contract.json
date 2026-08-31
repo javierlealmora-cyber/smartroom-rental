@@ -1,0 +1,78 @@
+{
+  "contract_id": "SC-WF-IDENTITY",
+  "workflow": "SC-WF-IDENTITY",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el flujo guiado de verificación de identidad. n8n orquesta el diálogo pero la decisión final es del EF conv-core-validate-identity.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "session_id",
+    "channel",
+    "identity_level",
+    "identity_attempts",
+    "requested_field"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token",
+    "service_role_key"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "next_field",
+    "safe_text",
+    "stub_active"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key",
+    "WEAK_MATCH"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Decidir la identidad final del usuario",
+      "Asignar identity_level directamente (lo hace conv-core-validate-identity EF)",
+      "Recibir phone, email ni profile_id del usuario",
+      "Introducir WEAK_MATCH como nivel de identidad",
+      "Asignar UNVERIFIED_LEAD de forma autónoma",
+      "Acceder a tablas Core directamente",
+      "Almacenar datos de identidad"
+    ],
+    "n8n_can_do": [
+      "Guiar el diálogo de verificación (preguntar campos seguros)",
+      "Pasar identity_attempts y requested_field sin PII",
+      "Llamar a EF conv-core-validate-identity con respuesta del usuario",
+      "Devolver safe_text con la siguiente pregunta"
+    ]
+  },
+  "valid_identity_levels": [
+    "UNKNOWN",
+    "UNVERIFIED_LEAD",
+    "PARTIAL_MATCH_ACTIVE",
+    "STRONG_MATCH_ACTIVE"
+  ],
+  "prohibited_identity_levels": [
+    "WEAK_MATCH"
+  ],
+  "notes": {
+    "decision_authority": "conv-core-validate-identity EF toma la decisión final de identity_level. n8n solo orquesta el diálogo.",
+    "NO_WEAK_MATCH": "WEAK_MATCH no es un nivel válido en este sistema. Nunca introducir.",
+    "NO_PII_IN_FLOW": "El flujo de identidad NO debe pasar phone, profile_id ni identity_data entre nodos."
+  }
+}

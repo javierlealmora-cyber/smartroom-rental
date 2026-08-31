@@ -1,0 +1,67 @@
+{
+  "contract_id": "SC-WF-10-ROUTING",
+  "workflow": "SC-WF-10-routing",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el orquestador de enrutamiento de mensajes.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "session_id",
+    "message_id",
+    "channel",
+    "service_code",
+    "identity_level",
+    "safe_summary"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "routed_to",
+    "safe_text",
+    "stub_active"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Decidir la identidad final del usuario",
+      "Escribir directamente en tablas Core (properties, units, tenants, etc.)",
+      "Escribir directamente en conv_* tables",
+      "Recibir o procesar PII (phone, email, profile_id, identity_data)",
+      "Ejecutar transacciones de base de datos directas",
+      "Validar permisos de acceso"
+    ],
+    "n8n_can_do": [
+      "Orquestar llamadas a Edge Functions via HTTP",
+      "Enrutar mensajes al WF correcto según service_code",
+      "Pasar safe_summary sin PII",
+      "Registrar métricas de enrutamiento (sin PII)"
+    ]
+  },
+  "routing_map": {
+    "conv_incidencias": "conv-wf20-incidents",
+    "conv_publicaciones": "conv-wf30-listings",
+    "conv_ayuda": "conv-wf40-help"
+  }
+}

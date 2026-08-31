@@ -1,0 +1,270 @@
+openapi: "3.1.0"
+info:
+  title: SmartConversations → Incidents Add-on (Consumer Proposal v1.0)
+  description: |
+    Propuesta de contrato consumer-driven desde SmartConversations hacia el add-on de incidencias.
+    Versión: 1.0
+    Estado: DEV_CONFIGURATION_PENDING
+
+    Actualizado en Fase 11C5E-IMPLEMENTATION para alinear con contrato provider v1.0:
+    - source_system y source_channel añadidos (anteriormente faltaban)
+    - requester_profile_id añadido en incident (resuelto server-side en EF, nunca desde n8n)
+    - title añadido en incident (5–120 chars, generado en EF)
+    - urgency_proposal reemplazado por priority: 'normal'|'urgent'
+    - actor simplificado: solo { type: 'system' } para fuentes conversacionales
+    - external_request_reference: null (nunca conv_case_id en claro)
+
+    Restricciones absolutas:
+    - SC nunca envía identity_level, STRONG_MATCH_ACTIVE, sender_ref, phone, email, wa_jid en el actor.
+    - El add-on nunca devuelve conv_session_id, conv_case_id, profile_id en la respuesta.
+    - Autenticación B2B exclusivamente con INCIDENTS_ADDON_SERVICE_TOKEN (nunca usar clave de servicio de base de datos).
+    - No hay claves foráneas entre proyectos.
+    - requester_profile_id es resuelto server-side en el EF, nunca enviado por WF-20/n8n.
+    - title: max 120 chars (no 255), 'Incidencia registrada' PROHIBIDO como valor.
+    - priority: solo 'normal'|'urgent' — valores desconocidos abortan la invocación.
+
+  version: "1.0.0"
+  contact:
+    name: SmartConversations Team
+
+servers:
+  - url: "{INCIDENTS_ADDON_BASE_URL}"
+    description: Entorno DEV (configurar INCIDENTS_ADDON_BASE_URL)
+
+security:
+  - BearerToken: []
+
+paths:
+  /health:
+    get:
+      operationId: incidentsAddonHealth
+      summary: Health check del add-on de incidencias
+      responses:
+        "200":
+          description: Add-on disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /incidents:
+    post:
+      operationId: createIncident
+      summary: Crear incidente desde SmartConversations (provider v1.0)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            minLength: 16
+            maxLength: 128
+          description: "Scope: client_account_id × idempotency_key. SC usa CONSUMER_IDEMPOTENCY_HASH_DERIVED."
+        - in: header
+          name: X-Correlation-Id
+          required: false
+          schema:
+            type: string
+          description: Correlación de logs entre SC y el add-on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIncidentRequest"
+      responses:
+        "200":
+          description: Incidente encontrado (replay idempotente)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateIncidentResponse"
+        "201":
+          description: Incidente creado nuevo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateIncidentResponse"
+        "400":
+          description: Comando inválido (error del cliente — no reintentar)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Token de servicio inválido o ausente
+        "409":
+          description: |
+            Conflicto de idempotencia — clave ya usada con un payload diferente.
+            ok = false; error_code = IDEMPOTENCY_CONFLICT; retryable = false.
+            No confundir con replay exitoso (HTTP 200 + idempotent_replay = true en body).
+        "429":
+          description: Rate limiting — usar Retry-After
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos a esperar antes de reintentar
+        "500":
+          description: Error del servidor (retryable — máx 2 reintentos)
+
+components:
+  securitySchemes:
+    BearerToken:
+      type: http
+      scheme: bearer
+      description: INCIDENTS_ADDON_SERVICE_TOKEN (no exponer en frontend, solo server-side)
+
+  schemas:
+    SmartIncidentsActor:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [system]
+          description: |
+            Para fuentes conversacionales (WhatsApp / WebChat), SC siempre envía { type: 'system' }.
+            El provider actor es derivado del CanonicalActor SC (system_service).
+            NUNCA incluir: profile_id, identity_level, STRONG_MATCH_ACTIVE, PARTIAL_MATCH_ACTIVE,
+            MATCH_INACTIVE, NO_MATCH, sender_ref, phone, email, jid, wa_jid, webchat_token.
+
+    CreateIncidentRequest:
+      type: object
+      required:
+        - contract_version
+        - client_account_id
+        - request_id
+        - correlation_id
+        - idempotency_key
+        - source_system
+        - source_channel
+        - external_request_reference
+        - actor
+        - requester_profile_id
+        - incident
+      properties:
+        contract_version:
+          type: string
+          enum: ["1.0"]
+        client_account_id:
+          type: string
+          description: Identificador del tenant (aislamiento multi-tenant)
+        request_id:
+          type: string
+          description: UUID único de esta request técnica (cambia en cada reintento)
+        correlation_id:
+          type: string
+          description: Estable para la operación. Correlaciona logs entre SC y el add-on.
+        idempotency_key:
+          type: string
+          minLength: 16
+          maxLength: 128
+          description: |
+            Clave de idempotencia opaca derivada con HMAC-SHA256 (server-side secret).
+            Scope: client_account_id × idempotency_key.
+            No contiene identificadores internos en claro. Estable para la misma operación.
+            Estrategia: IMPLEMENTED_DERIVED_OPAQUE + CONSUMER_IDEMPOTENCY_PERSISTENCE_PENDING.
+        source_system:
+          type: string
+          enum: [smart_conversations]
+          description: Origen del incidente — siempre 'smart_conversations' desde SC
+        source_channel:
+          type: string
+          enum: [whatsapp, webchat]
+          description: Canal conversacional de origen
+        external_request_reference:
+          type: "null"
+          description: |
+            RAÍZ del request — siempre null.
+            Nunca contiene conv_case_id en claro ni hashes reversibles.
+            Nunca está dentro de incident.
+        actor:
+          $ref: "#/components/schemas/SmartIncidentsActor"
+        requester_profile_id:
+          type: string
+          description: |
+            RAÍZ del request — resuelto server-side en el EF (identity_level = STRONG_MATCH_ACTIVE).
+            NUNCA enviado por WF-20/n8n — resuelto exclusivamente en el EF.
+            Nunca está dentro de incident.
+        incident:
+          type: object
+          additionalProperties: false
+          required:
+            - accommodation_id
+            - category
+            - title
+            - description
+            - priority
+          properties:
+            accommodation_id:
+              type: string
+              description: Resuelto server-side en el EF desde conv_sessions/identity_data
+            room_id:
+              type: string
+              nullable: true
+              description: Habitación (nullable — resuelto server-side)
+            category:
+              type: string
+              enum: [maintenance, noise, security, billing, other]
+              description: Categoría canónica SI (mapeada desde incident_type SC)
+            title:
+              type: string
+              minLength: 5
+              maxLength: 120
+              description: |
+                Generado en el EF (determinista). Mínimo 5, máximo 120 chars.
+                Sin HTML, sin control chars, Unicode NFC.
+                'Incidencia registrada' PROHIBIDO como valor.
+                Prohibido: requester_profile_id, external_request_reference dentro de incident.
+            description:
+              type: string
+              minLength: 10
+              maxLength: 4000
+              description: Texto sanitizado en SC antes de enviar
+            priority:
+              type: string
+              enum: [normal, urgent]
+              description: |
+                Mapeado desde urgency_proposal: low|medium|null → 'normal', high → 'urgent'.
+                Valores desconocidos abortan la invocación (no se mapean a 'normal').
+                'critical' NO está en el contrato v1.0.
+
+    CreateIncidentResponse:
+      type: object
+      required: [incident_id, status]
+      properties:
+        incident_id:
+          type: string
+          description: Referencia opaca — SC solo guarda esto
+        incident_reference:
+          type: string
+          nullable: true
+          description: Referencia visible opcional
+        status:
+          type: string
+          enum: [new]
+          description: Estado inicial del incidente (SC valida que sea 'new')
+        created_at:
+          type: string
+          format: date-time
+        idempotent_replay:
+          type: boolean
+      # PROHIBIDO en respuesta: profile_id, phone, email, identity_data,
+      # authorization, service_role, api_key, conv_session_id, conv_case_id
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        error_message:
+          type: string

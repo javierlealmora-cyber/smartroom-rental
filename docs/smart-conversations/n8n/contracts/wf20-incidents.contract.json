@@ -1,0 +1,78 @@
+{
+  "contract_id": "SC-WF-20-INCIDENTS",
+  "workflow": "SC-WF-20-incidents",
+  "version": "1.0.0",
+  "description": "Contrato de interfaz para el flujo de gestión de incidencias. Complemento externo de conv-wf20-incidents.",
+  "allowed_input_fields": [
+    "client_account_id",
+    "session_id",
+    "message_id",
+    "channel",
+    "service_code",
+    "identity_level",
+    "safe_summary",
+    "case_id"
+  ],
+  "prohibited_input_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "room_id",
+    "password",
+    "token",
+    "service_role_key"
+  ],
+  "allowed_output_fields": [
+    "workflow_code",
+    "status",
+    "response_type",
+    "safe_text",
+    "case_action",
+    "conv_case_id",
+    "stub_active"
+  ],
+  "prohibited_output_fields": [
+    "phone",
+    "email",
+    "profile_id",
+    "sender_ref",
+    "message_text",
+    "identity_data",
+    "raw_payload",
+    "service_role_key",
+    "api_key"
+  ],
+  "boundaries": {
+    "n8n_cannot_do": [
+      "Crear incidencias directamente en Core (incidents table)",
+      "Escribir directamente en conv_cases",
+      "Recibir profile_id ni room_id",
+      "Recibir phone, email ni message_text",
+      "Decidir si el usuario tiene acceso",
+      "Asignar UNVERIFIED_LEAD (no aplica a incidencias)",
+      "Introducir estados nuevos no definidos (NO next_retry_at, NO attempt_count)"
+    ],
+    "n8n_can_do": [
+      "Orquestar enriquecimiento de contexto via EF",
+      "Pasar safe_summary y case_id sin PII",
+      "Registrar notificación administrativa (vía EF conv-core-publish-activity)",
+      "Confirmar respuesta textual segura al usuario"
+    ]
+  },
+  "valid_response_types": [
+    "pending_input",
+    "identity_required",
+    "case_created",
+    "case_updated",
+    "admin_notified",
+    "stub_response"
+  ],
+  "identity_levels_required_for_case": [
+    "STRONG_MATCH_ACTIVE",
+    "PARTIAL_MATCH_ACTIVE"
+  ]
+}

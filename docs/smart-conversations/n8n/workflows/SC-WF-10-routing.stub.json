@@ -1,0 +1,156 @@
+{
+  "name": "SC-WF-10-routing",
+  "active": false,
+  "meta": {
+    "description": "SmartConversations — Routing de intención. Complemento de conv-routing-engine. STUB/INACTIVO.",
+    "version": "1.0.0-stub",
+    "phase": "9C-preparation",
+    "status": "stub-only",
+    "notes": "No activar hasta Fase 10. No conectar a servicios reales. No reemplaza conv-routing-engine."
+  },
+  "tags": ["smartconversations", "routing", "stub", "inactive"],
+  "nodes": [
+    {
+      "id": "webhook-sc-wf10",
+      "name": "Webhook SC-WF-10 (Mock)",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "parameters": {
+        "path": "sc-wf10-routing-stub",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "webhookId": "sc-wf10-routing-stub"
+    },
+    {
+      "id": "validate-input-wf10",
+      "name": "Validate Input (No PII)",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "allowed_client_account_id",
+              "name": "received.client_account_id",
+              "type": "string",
+              "value": "={{ $json.client_account_id }}"
+            },
+            {
+              "id": "allowed_session_id",
+              "name": "received.session_id",
+              "type": "string",
+              "value": "={{ $json.session_id }}"
+            },
+            {
+              "id": "allowed_channel",
+              "name": "received.channel",
+              "type": "string",
+              "value": "={{ $json.channel }}"
+            },
+            {
+              "id": "allowed_identity_level",
+              "name": "received.identity_level",
+              "type": "string",
+              "value": "={{ $json.identity_level }}"
+            },
+            {
+              "id": "allowed_safe_summary",
+              "name": "received.safe_summary",
+              "type": "string",
+              "value": "={{ $json.safe_summary ?? '' }}"
+            },
+            {
+              "id": "stub_note",
+              "name": "stub_note",
+              "type": "string",
+              "value": "STUB: este nodo valida que no llegan campos PII"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "mock-response-wf10",
+      "name": "Mock Response SC-WF-10",
+      "type": "n8n-nodes-base.set",
+      "position": [650, 300],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "workflow_code",
+              "name": "workflow_code",
+              "type": "string",
+              "value": "SC-WF-10-routing"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "stub_response"
+            },
+            {
+              "id": "response_type",
+              "name": "response_type",
+              "type": "string",
+              "value": "menu"
+            },
+            {
+              "id": "safe_text",
+              "name": "safe_text",
+              "type": "string",
+              "value": "¿En qué puedo ayudarte? (mock)"
+            },
+            {
+              "id": "stub_active",
+              "name": "stub_active",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "respond-wf10",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [850, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook SC-WF-10 (Mock)": {
+      "main": [[{ "node": "Validate Input (No PII)", "type": "main", "index": 0 }]]
+    },
+    "Validate Input (No PII)": {
+      "main": [[{ "node": "Mock Response SC-WF-10", "type": "main", "index": 0 }]]
+    },
+    "Mock Response SC-WF-10": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "_stub_security": {
+    "no_credentials": true,
+    "no_api_keys": true,
+    "no_service_role": true,
+    "no_real_urls": true,
+    "no_pii_fields": true,
+    "active": false
+  }
+}
