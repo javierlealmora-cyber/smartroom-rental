@@ -69,6 +69,8 @@ npm run test:coverage
 
 ## Convenciones de IDs
 
+Catálogo completo de dominios (con código y documentación asociada) en `docs/requirements/domain-index.md`, gobernado por `docs/_commons/rules/rules-04-functional-domain-catalog.md`.
+
 | Módulo           | Prefijo req | Prefijo test  |
 |------------------|-------------|---------------|
 | Autenticación    | AUTH-xx     | unit/logic o guards |
@@ -77,8 +79,14 @@ npm run test:coverage
 | Alojamientos     | ACC-xx      | unit/services/accommodations |
 | Inquilinos       | TEN-xx      | unit/logic + unit/services/lodgers |
 | Energía/Facturas | ENE-xx      | unit/logic/energy + unit/services/energy |
+| Dashboard        | DASH-xx     | pendiente |
+| Planes           | PLAN-xx     | pendiente |
+| Catálogo SaaS de servicios | SVC-xx | pendiente |
 | Seguridad        | SEC-xx      | unit/security |
 | Rendimiento      | PERF-xx     | unit/performance |
+| SmartLock (add-on) | SAL-xx    | pendiente (ver `docs/smart-lock/tests/`) |
+| SmartConversations (add-on) | SC-xx | `tests/regression/smart-conversations/` |
+| SmartIncidents (add-on) | SI-xx | pendiente |
 
 ## Reglas
 

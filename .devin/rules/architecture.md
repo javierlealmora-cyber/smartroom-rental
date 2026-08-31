@@ -489,6 +489,9 @@ Antes de dar por cerrado un módulo/feature:
 
 ## 17. Referencias fuente
 
+- `docs/_commons/rules/rules-01-document-authoring-standard.md` — estándar de redacción documental
+- `docs/_commons/rules/rules-02-project-structure-and-addons.md` — estructura de add-ons/módulos
+- `docs/_commons/rules/rules-03-repository-file-placement.md` — ubicación de ficheros en el repositorio (raíz, tests, scripts, salidas de agentes de IA)
 - `docs/architecture/overview.md`
 - `docs/arquitectura.md`
 - `docs/estructura-sistema.md`

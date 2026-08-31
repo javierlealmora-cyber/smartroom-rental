@@ -7,7 +7,7 @@ Este documento declara que el módulo `smart-incidents` hereda el estándar glob
 La fuente de verdad del estándar global es:
 
 ```
-docs/project-rules/rules-01-document-authoring-standard.md
+docs/_commons/rules/rules-01-document-authoring-standard.md
 ```
 
 Este documento no redefine, no sustituye ni contradice el estándar global. Únicamente:
@@ -33,7 +33,7 @@ Aplica tanto a documentos nuevos como a reescrituras importantes de documentos e
 
 ## 3. Decisiones no negociables
 
-1. El estándar global (`docs/project-rules/rules-01-document-authoring-standard.md`) prevalece siempre en materia de clasificación, idioma, nomenclatura, precedencia y plantillas.
+1. El estándar global (`docs/_commons/rules/rules-01-document-authoring-standard.md`) prevalece siempre en materia de clasificación, idioma, nomenclatura, precedencia y plantillas.
 
 2. Ningún documento de este módulo puede redefinir plantillas, convenciones de nombres, política de idioma ni reglas transversales del estándar global.
 
@@ -135,7 +135,7 @@ Un documento de categoría inferior no puede contradecir ni redefinir lo estable
 
 ## 9. Dependencias
 
-- `docs/project-rules/rules-01-document-authoring-standard.md` — estándar global (fuente de verdad); este documento lo hereda sin modificarlo
+- `docs/_commons/rules/rules-01-document-authoring-standard.md` — estándar global (fuente de verdad); este documento lo hereda sin modificarlo
 
 ---
 

@@ -488,6 +488,28 @@ El warning de `useForm` es secundario y benigno: `form.setFieldsValue()` se llam
 
 ---
 
+### BUG-RST-01 [MEDIA] — RST-01 falla: `20260716000002_smart_lock_plan_features_seed.sql` existe como UNTRACKED
+
+**Módulo:** `supabase/migrations/20260716000002_smart_lock_plan_features_seed.sql` (UNTRACKED)
+**Test que detecta:** `tests/regression/smart-conversations/suites/webchat-realtime/webchat-realtime.spec.ts` > RST-01
+**Detectado:** 2026-07-27 (Fase 11C5E-CONTRACT-INTEGRITY-CHECK)
+**Bloqueante para:** `npm run test:sc:regression` (1 test falla en la suite completa)
+
+**Comportamiento observado:**
+RST-01 comprueba que no existan migraciones con prefijo `20260716000002` (Fase 10F SmartLock). El archivo `20260716000002_smart_lock_plan_features_seed.sql` existe en `supabase/migrations/` pero no está commiteado (UNTRACKED). La check `readdirSync(MIGRATIONS_DIR)` lo detecta en disco y el test falla.
+
+**Causa raíz:**
+Migración de seed de Fase 10F (SmartLock plan features) generada localmente pero nunca añadida al índice git. El test de restricción de webchat-realtime no discrimina entre archivos tracked y untracked.
+
+**Fix requerido (Cascade):**
+- Opción A: eliminar el archivo untracked (`supabase/migrations/20260716000002_smart_lock_plan_features_seed.sql`) si no es necesario aplicarlo.
+- Opción B: añadirlo a `.gitignore` o moverlo a `agent-work/` si pertenece a trabajo en progreso de Cascade.
+- Opción C: actualizar RST-01 para que solo cuente archivos tracked (`git ls-files`).
+
+**Estado:** ABIERTO — no introducido en la sesión actual (pre-existente, detectable antes de Fase 11C5E).
+
+---
+
 ### BUG-050 [CRÍTICO] — AccommodationDetail: error al guardar — columna `prevision_fund_electricity` no existe en la BD ✅ CERRADO
 
 **Cerrado:** 2026-04-05  

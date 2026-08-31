@@ -1,54 +1,39 @@
-\# SmartConversations — Canonical Documentation
+# SmartRoom Rental — Claude Documentation Pointer
 
+## Lectura obligatoria (always-on)
 
+Antes de crear, mover o clasificar cualquier fichero, lee siempre, en este orden:
 
-The source of truth for SmartConversations documentation is:
+1. `docs/_commons/rules/rules-01-document-authoring-standard.md` — cómo se escribe cualquier documento del repo
+2. `docs/_commons/rules/rules-02-project-structure-and-addons.md` — dónde vive el código y la documentación de un add-on/módulo
+3. `docs/_commons/rules/rules-03-repository-file-placement.md` — dónde vive todo lo demás (raíz, tests, scripts, salidas de agentes de IA)
+4. `.devin/rules/architecture.md` — arquitectura técnica canónica (stack, multi-tenant, Edge-first, RLS, storage, anti-patrones)
 
+Estos documentos tienen precedencia sobre cualquier otra fuente si hay conflicto.
 
+## Documentación según el módulo en el que trabajes
 
-\- /docs/smart-conversations/rules/\*.md
+- Núcleo del producto (auth, entidades, alojamientos, habitaciones, inquilinos, energía, dashboard): `docs/requirements/current/`, `docs/architecture/`, `docs/database/`, `docs/qa/`
+- SmartConversations (WhatsApp/Webchat/IA conversacional): `docs/smart-conversations/{rules,contracts,skills,diagrams}/*.md`
+- SmartAccessLock / TTLock: `docs/smart-lock/{rules,contracts,skills,tests,diagrams}/*.md`
+- SmartIncidents: `docs/smart-incidents/rules/*.md`
+- Habitaciones compartidas: `docs/smart-shared-rooms/shared-rooms.md`
+- DevOps / deployment: `docs/devops/`
 
-\- /docs/smart-conversations/contracts/\*.md
+Lee todos los markdown de la carpeta del módulo relevante para la tarea, no solo el fichero que parezca más obvio.
 
-\- /docs/smart-conversations/skills/\*.md
+## Precedencia entre categorías documentales
 
-\- /docs/smart-conversations/diagrams/\*.md
+`rules` > `contracts` > `skills` > `tests` > `diagrams` (ver `rules-01` §3).
 
+## Reglas no negociables (resumen; ver la rule completa para el detalle)
 
+- No llamar a Supabase directo desde el frontend para lógica de negocio: todo pasa por Edge Functions (`invokeWithAuth`).
+- No sustituir Wasender como canal de WhatsApp en SmartConversations.
+- No saltarse la Integration API para que un add-on acceda a datos del core.
+- No debilitar los requisitos de validación de identidad.
+- Antes de crear un fichero nuevo, verifica su ubicación contra `rules-03` — no lo coloques en la raíz del repo ni en una carpeta genérica sin namespace.
 
-Read all markdown files in those folders.
+## Informes y auditorías generados por Claude
 
-
-
-Precedence order when documents overlap or conflict:
-
-1\. rules
-
-2\. contracts
-
-3\. skills
-
-4\. diagrams
-
-
-
-Mandatory interpretation rules:
-
-\- Treat rules as non-negotiable constraints.
-
-\- Treat contracts as the formal interfaces and payload definitions.
-
-\- Treat skills as implementation guides that must respect rules and contracts.
-
-\- Treat diagrams as explanatory aids, never as the primary source if they conflict with rules or contracts.
-
-
-
-Do not invent alternative architectures if the documentation already defines one.
-
-Do not replace Wasender for the WhatsApp channel.
-
-Do not bypass the Integration API to access SmartRoom Core data.
-
-Do not weaken identity-validation requirements.
-
+Cualquier informe, auditoría o propuesta que generes (no documentación canónica del producto) va en `agent-work/claude/`, nunca en la raíz ni suelto en `docs/`.

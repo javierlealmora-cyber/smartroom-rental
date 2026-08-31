@@ -62,7 +62,7 @@ Esta rule aplica a:
 8. Cuando exista código específico de un add-on en frontend, debe vivir bajo una carpeta `addons`.
 9. Los artefactos no frontend del add-on deben permanecer en sus carpetas técnicas naturales, conservando namespace coherente.
 10. Cuando exista documentación específica de un add-on, debe vivir bajo una carpeta de documentación propia del módulo.
-11. Los workflows del add-on deben organizarse bajo la carpeta `automations_n8n/`.
+11. Los workflows del add-on deben organizarse bajo la carpeta `automation_n8n/`.
 12. No deben existir estructuras ad hoc distintas para cada add-on sin justificación arquitectónica fuerte.
 
 ## 4. Reglas obligatorias
@@ -122,7 +122,7 @@ La estructura conceptual obligatoria de un add-on es:
 - frontend: `src/addons/<addon-name>/...`
 - edge functions: `supabase/functions/...`
 - base de datos: `supabase/migrations/...`
-- automatizaciones: `automations_n8n/<addon-name>/...`
+- automatizaciones: `automation_n8n/<addon-name>/...`
 - documentación: `docs/<addon-name>/...`
 
 Por tanto, BBDD, Edge Functions y n8n no deben meterse dentro de `src/addons/<addon-name>/`, porque no pertenecen al runtime del frontend.
@@ -209,7 +209,7 @@ Está prohibido crear migraciones sin referencia clara al módulo funcional cuan
 
 Los workflows, automatizaciones y artefactos de orquestación del add-on deben vivir bajo:
 
-- `automations_n8n/<addon-name>/`
+- `automation_n8n/<addon-name>/`
 
 Está prohibido:
 
@@ -217,7 +217,7 @@ Está prohibido:
 - usar una carpeta genérica ambigua para automatizaciones del add-on
 - guardar los workflows dentro de `src/`
 
-La carpeta `automations_n8n/` se considera la ubicación oficial de workflows n8n del proyecto.
+La carpeta `automation_n8n/` se considera la ubicación oficial de workflows n8n del proyecto.
 
 ### 4.9 Regla para documentación
 
@@ -274,7 +274,7 @@ Se permite:
   - `mappers`
 - mantener edge functions en `supabase/functions/` con namespace coherente
 - mantener migraciones en `supabase/migrations/` con naming del add-on
-- mantener workflows en `automations_n8n/<addon-name>/`
+- mantener workflows en `automation_n8n/<addon-name>/`
 - tener documentación específica del add-on en su carpeta propia
 - exportar una API pública mínima del add-on si el core la necesita
 - tener puntos mínimos de integración en el core
@@ -291,7 +291,7 @@ Está prohibido:
 - usar una carpeta plana para workflows de múltiples módulos
 - colocar documentación específica del add-on fuera de su carpeta de módulo
 - definir estructuras distintas para cada add-on sin justificación fuerte
-- guardar workflows n8n del add-on fuera de `automations_n8n/`
+- guardar workflows n8n del add-on fuera de `automation_n8n/`
 
 ## 7. Impacto en diseño
 
@@ -318,7 +318,7 @@ Cuando Claude, Devin u otros agentes generen código de un add-on, deben colocar
 - frontend → `src/addons/<addon-name>/`
 - edge functions → `supabase/functions/`
 - migraciones → `supabase/migrations/`
-- workflows → `automations_n8n/<addon-name>/`
+- workflows → `automation_n8n/<addon-name>/`
 - documentación → `docs/<addon-name>/`
 
 salvo los puntos explícitos de integración global.
@@ -347,7 +347,7 @@ Antes de aceptar la estructura de un add-on, verificar:
 - [ ] Los hooks del add-on no están dispersos en `src/hooks/` sin namespace
 - [ ] Las edge functions mantienen namespace coherente
 - [ ] Las migraciones de BBDD mantienen naming del add-on
-- [ ] Los workflows viven bajo `automations_n8n/<addon-name>/`
+- [ ] Los workflows viven bajo `automation_n8n/<addon-name>/`
 - [ ] La documentación del add-on está en su carpeta propia
 - [ ] Existen puntos mínimos de integración con el core
 - [ ] El core no depende de detalles internos del add-on

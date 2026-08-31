@@ -2,6 +2,11 @@
 
 Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funcional operativa, ver también [qa/COVERAGE.md](../../qa/COVERAGE.md).
 
+**Jerarquía documental** (para no competir como fuentes de verdad divergentes):
+1. [docs/requirements/domain-index.md](../requirements/domain-index.md) — nivel dominio (REQ → código → doc-módulo → prefijo test)
+2. Este documento — nivel REQ (REQ → código → migración → test)
+3. [qa/COVERAGE.md](../../qa/COVERAGE.md) — nivel test-ID (ID de caso → fichero de test)
+
 **Última actualización:** 2026-04-12 (rev24)
 
 ---
@@ -32,7 +37,7 @@ Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funciona
 | Código principal | `src/providers/AuthProvider.jsx`, `src/router/RequireAuth.jsx`, `src/router/RequireRole.jsx` | ✅ Implementado |
 | Migraciones | `00000000000001_baseline_schema.sql` (profiles), `00000000000003_baseline_rls.sql` | ✅ Aplicadas |
 | Tests unitarios | `qa/unit/components/guards/RequireAuth.test.jsx` (AUTH-04), `qa/unit/components/guards/RequireRole.test.jsx` (AUTH-05) | ✅ Cubierto |
-| Tests E2E | `qa/e2e/specs/auth.spec.js` (AUTH-01..06), `tests/e2e/specs/smoke.spec.js` | ⚠️ Parcial (AUTH-03, AUTH-06 requieren credenciales) |
+| Tests E2E | `qa/e2e/specs/auth.spec.js` (AUTH-01..06), `qa/e2e/specs/smoke.spec.js` | ⚠️ Parcial (AUTH-03, AUTH-06 requieren credenciales) |
 | Cobertura | AUTH-04, AUTH-05 ✅ · AUTH-01, AUTH-02 ⚠️ · AUTH-03, AUTH-06 🚧 | 33% completa, 50% parcial |
 
 ---
@@ -45,7 +50,7 @@ Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funciona
 | Código principal | `src/pages/v2/admin/tenants/TenantsList.jsx`, `src/services/lodgers.service.js`, `src/utils/lodgerStatus.js` | ✅ Implementado |
 | Migraciones | `00000000000001_baseline_schema.sql`, `20260317120000_add_lodger_fields_to_profiles.sql`, `20260323100000_add_address_fields_to_profiles.sql`, `20260325140000_add_checkout_notes_to_assignments.sql` | ✅ Aplicadas |
 | Tests unitarios | `qa/unit/logic/lodgerStatus.test.js` (TEN-01..04), `qa/unit/services/lodgers.service.test.js` (TEN-06..08) | ✅ Cubierto |
-| Tests E2E | `tests/e2e/specs/tenants.spec.js` (TEN-05/06 — **bloqueado por BUG-033**) | ❌ Bloqueado |
+| Tests E2E | `qa/e2e/specs/tenants.spec.js` (TEN-05/06 — **bloqueado por BUG-033**) | ❌ Bloqueado |
 | Tests seguridad | `qa/unit/security/multi-tenant-isolation.test.js` (SEC-01..04) | ✅ Cubierto |
 | Fix BUG-052 | `TenantDetail`: `photoBottom` usa imagen libre si sin asignación activa | ✅ 2026-04-07 |
 | Fix BUG-053 | `TenantsList`: botón "Ver Consumos" `disabled` si `getLodgerStatus === "invited"` | ✅ 2026-04-07 |
@@ -67,7 +72,7 @@ Conecta requisitos, código, migraciones SQL y tests. Para la cobertura funciona
 | Rutas unificadas | `/editar` y `/habitaciones` redirigen al mismo `AccommodationDetail`; botón "Editar" en lista navega a `/habitaciones` | ✅ 2026-03-29 |
 | Migraciones | `20260325150000_remove_status_from_assignments.sql`, `20260325150100_remove_status_from_rooms.sql`, `20260327000001_add_no_overlap_constraint.sql` | ✅ Aplicadas |
 | Tests unitarios | `qa/unit/logic/roomStatus.test.js` (ACC-01..04, ACC-13..18) | ✅ Cubierto |
-| Tests E2E | `tests/e2e/specs/accommodations.spec.js`, `tests/e2e/specs/room-status-and-checkout.spec.js` | ⚠️ Parcial |
+| Tests E2E | `qa/e2e/specs/accommodations.spec.js`, `qa/e2e/specs/room-status-and-checkout.spec.js` | ⚠️ Parcial |
 | Gap crítico | Constraint de no solapamiento (`20260408000001`) sin test de integración | ❌ FALTA |
 | Gap UI | ACC-09: `billing_start_date` siempre visible en RoomAssignmentForm; ACC-10: botón "Editar" navega a `/habitaciones` | 🚧 Tests pendientes |
 | Cobertura | ACC-01..04 ✅ · ACC-13..17 ✅ · CHG-01..05 ✅ · ACC-05 ⚠️ · ACC-06/09/10/18 · CHG-06..11 🚧 | 68% completa |
@@ -344,7 +349,7 @@ completo, los valores son iguales — esto es correcto y esperado (no es un bug 
 | Migración | REQ/CHG | Tests | Estado |
 |-----------|---------|-------|--------|
 | `20260317120000_add_lodger_fields_to_profiles.sql` | REQ-002 | Indirecto en TEN-xx | ✅ |
-| `20260323100000_add_address_fields_to_profiles.sql` | REQ-002 | `tests/e2e/specs/tenant-address-fields.spec.js` ✅ | ✅ |
+| `20260323100000_add_address_fields_to_profiles.sql` | REQ-002 | `qa/e2e/specs/tenant-address-fields.spec.js` ✅ | ✅ |
 | `20260325150000_remove_status_from_assignments.sql` | REQ-003 | Indirecto en lodgerStatus.test.js | ✅ |
 | `20260325150100_remove_status_from_rooms.sql` | REQ-003 | Indirecto en roomStatus.test.js | ✅ |
 | `20260327000000_add_consumptions_table.sql` | REQ-004, CHG | ENE-xx tests | ✅ |
@@ -397,13 +402,13 @@ completo, los valores son iguales — esto es correcto y esperado (no es un bug 
 
 | Test | REQ | Estado | Notas |
 |------|-----|--------|-------|
-| `tests/e2e/specs/smoke.spec.js` | REQ-001..003 | ✅ Activo | Sin credenciales |
-| `tests/e2e/specs/admin-basic.spec.js` | REQ-001..003 | ✅ Activo | Requiere credenciales |
-| `tests/e2e/specs/entities.spec.js` | REQ-002 | ⚠️ Parcial | BUG-031, BUG-032 bloquean algunos |
-| `tests/e2e/specs/accommodations.spec.js` | REQ-003 | ⚠️ Parcial | — |
-| `tests/e2e/specs/tenants.spec.js` | REQ-002 | ❌ Bloqueado | BUG-033 |
-| `tests/e2e/specs/room-status-and-checkout.spec.js` | REQ-003 | ⚠️ Parcial | BUG-036 |
-| `tests/e2e/specs/tenant-address-fields.spec.js` | REQ-002 | ✅ Activo | — |
+| `qa/e2e/specs/smoke.spec.js` | REQ-001..003 | ✅ Activo | Sin credenciales |
+| `qa/e2e/specs/admin-basic.spec.js` | REQ-001..003 | ✅ Activo | Requiere credenciales |
+| `qa/e2e/specs/entities.spec.js` | REQ-002 | ⚠️ Parcial | BUG-031, BUG-032 bloquean algunos |
+| `qa/e2e/specs/accommodations.spec.js` | REQ-003 | ⚠️ Parcial | — |
+| `qa/e2e/specs/tenants.spec.js` | REQ-002 | ❌ Bloqueado | BUG-033 |
+| `qa/e2e/specs/room-status-and-checkout.spec.js` | REQ-003 | ⚠️ Parcial | BUG-036 |
+| `qa/e2e/specs/tenant-address-fields.spec.js` | REQ-002 | ✅ Activo | — |
 | `qa/e2e/specs/auth.spec.js` | REQ-001 | ⚠️ Parcial | AUTH-03/06 requieren credenciales |
 | `qa/e2e/specs/energy.spec.js` | REQ-004 | ⚠️ Parcial | ENE-08/09 requieren TEST_ACC_ID |
 

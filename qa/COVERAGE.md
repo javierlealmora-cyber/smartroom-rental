@@ -1,4 +1,6 @@
-# Matriz de Trazabilidad — SmartRent QA
+# Cobertura de Tests — SmartRent QA
+
+Nivel test-ID (ID de caso → fichero de test). Para el nivel dominio, ver [docs/requirements/domain-index.md](../docs/requirements/domain-index.md); para el nivel REQ → código → migración → test, ver [docs/qa/TRACEABILITY-MATRIX.md](../docs/qa/TRACEABILITY-MATRIX.md).
 
 Última actualización: 2026-04-12
 
