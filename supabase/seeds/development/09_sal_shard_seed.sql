@@ -6,7 +6,7 @@
 --   Crea todo lo necesario para probar el módulo SAL en desarrollo sin
 --   hardware físico ni app móvil:
 --
---   1. Shard de desarrollo (provider_account_pools)
+--   1. Shard de desarrollo (lock_provider_pools)
 --   2. Servicio SAL en catálogo (saas_services)
 --   3. Plan SAL básico (saas_service_plans)
 --   4. Suscripción SAL para Business Housing 1
@@ -14,7 +14,7 @@
 --   6. Integración TTLock conectada (lock_integrations)
 --   7. Gateway de prueba (status='active', is_online=true)
 --   8. Cerradura de prueba (status='active', installation_complete=true)
---   9. Vínculo gateway ↔ lock (gateway_lock_links, validated)
+--   9. Vínculo gateway ↔ lock (lock_gateway_links, validated)
 --  10. Actualización de contadores en lock_integrations
 --
 -- IDEMPOTENTE: se puede ejecutar múltiples veces sin duplicar datos.
@@ -23,7 +23,7 @@
 
 -- ─── 1. Shard de desarrollo ───────────────────────────────────────────────────
 
-INSERT INTO public.provider_account_pools (
+INSERT INTO public.lock_provider_pools (
   shard_code,
   provider,
   ttlock_email,
@@ -122,7 +122,7 @@ ON CONFLICT (client_account_id, saas_service_id) DO UPDATE SET
 
 -- ─── 5. Asignación del cliente al shard de desarrollo ────────────────────────
 
-INSERT INTO public.provider_account_assignments (
+INSERT INTO public.lock_provider_pool_assignments (
   client_account_id,
   pool_id,
   provider,
@@ -130,7 +130,7 @@ INSERT INTO public.provider_account_assignments (
   notes
 ) VALUES (
   (SELECT id FROM public.client_accounts     WHERE slug       = 'business-housing-1'),
-  (SELECT id FROM public.provider_account_pools WHERE shard_code = 'shard-dev-001'),
+  (SELECT id FROM public.lock_provider_pools WHERE shard_code = 'shard-dev-001'),
   'ttlock',
   'active',
   'Asignado por seed de desarrollo.'
@@ -164,7 +164,7 @@ INSERT INTO public.lock_integrations (
   'connected',
   'test@ttlock.dev',
   'DEV_CLIENT_ID',
-  (SELECT id FROM public.provider_account_pools WHERE shard_code = 'shard-dev-001'),
+  (SELECT id FROM public.lock_provider_pools WHERE shard_code = 'shard-dev-001'),
   'eu',
   'operativa',
   'ok',
@@ -188,7 +188,7 @@ ON CONFLICT (client_account_id, provider) DO UPDATE SET
 -- pairing_source='imported': indica que no se emparejó por BLE (es un registro
 -- de prueba creado directamente en BD, no desde la app móvil).
 
-INSERT INTO public.gateways (
+INSERT INTO public.lock_gateways (
   client_account_id,
   pool_id,
   provider_gateway_id,
@@ -203,7 +203,7 @@ INSERT INTO public.gateways (
 )
 SELECT
   ca.id,
-  (SELECT id FROM public.provider_account_pools WHERE shard_code = 'shard-dev-001'),
+  (SELECT id FROM public.lock_provider_pools WHERE shard_code = 'shard-dev-001'),
   'GW-DEV-001',
   'Gateway Prueba Dev',
   (SELECT id FROM public.accommodations
@@ -255,11 +255,11 @@ SELECT
   true,
   85,
   true,
-  (SELECT id FROM public.provider_account_pools WHERE shard_code = 'shard-dev-001'),
+  (SELECT id FROM public.lock_provider_pools WHERE shard_code = 'shard-dev-001'),
   'active',
   'synced',
   true,
-  (SELECT id FROM public.gateways
+  (SELECT id FROM public.lock_gateways
    WHERE  client_account_id  = ca.id
      AND  provider_gateway_id = 'GW-DEV-001'),
   'validated'
@@ -277,11 +277,11 @@ ON CONFLICT (lock_integration_id, provider_lock_id) DO UPDATE SET
   gateway_id                = EXCLUDED.gateway_id,
   gateway_validation_status = 'validated';
 
--- ─── 9. Vínculo gateway ↔ lock (gateway_lock_links) ──────────────────────────
+-- ─── 9. Vínculo gateway ↔ lock (lock_gateway_links) ──────────────────────────
 -- Inserta solo si no existe ya un vínculo activo para esta lock.
 -- La invariante del sistema es: máximo 1 vínculo activo por lock.
 
-INSERT INTO public.gateway_lock_links (
+INSERT INTO public.lock_gateway_links (
   gateway_id,
   lock_id,
   client_account_id,
@@ -302,13 +302,13 @@ JOIN public.lock_integrations li
 JOIN public.locks l
   ON  l.lock_integration_id  = li.id
   AND l.provider_lock_id     = 'LOCK-DEV-001'
-JOIN public.gateways g
+JOIN public.lock_gateways g
   ON  g.client_account_id   = ca.id
   AND g.provider_gateway_id = 'GW-DEV-001'
 WHERE ca.slug = 'business-housing-1'
   AND NOT EXISTS (
         SELECT 1
-        FROM   public.gateway_lock_links gll
+        FROM   public.lock_gateway_links gll
         WHERE  gll.lock_id   = l.id
           AND  gll.is_active = true
       );
@@ -324,7 +324,7 @@ WITH target AS (
   FROM   public.locks                l
   JOIN   public.lock_integrations    li  ON li.id  = l.lock_integration_id
   JOIN   public.client_accounts      ca  ON ca.id  = l.client_account_id
-  JOIN   public.gateway_lock_links   gll ON gll.lock_id = l.id AND gll.is_active = true
+  JOIN   public.lock_gateway_links   gll ON gll.lock_id = l.id AND gll.is_active = true
   WHERE  l.provider_lock_id   = 'LOCK-DEV-001'
     AND  ca.slug              = 'business-housing-1'
     AND  l.gateway_link_id    IS NULL
@@ -345,7 +345,7 @@ SELECT
   sss.status                           AS suscripcion,
   li.status                            AS integracion,
   li.installation_status,
-  (SELECT COUNT(*) FROM public.gateways g
+  (SELECT COUNT(*) FROM public.lock_gateways g
    WHERE g.client_account_id = ca.id AND g.status = 'active')
                                        AS gateways_activos,
   (SELECT COUNT(*) FROM public.locks lk
@@ -353,8 +353,8 @@ SELECT
    WHERE li2.client_account_id = ca.id AND lk.status = 'active')
                                        AS locks_activas
 FROM public.client_accounts ca
-JOIN public.provider_account_assignments paa ON paa.client_account_id = ca.id
-JOIN public.provider_account_pools       pap ON pap.id                = paa.pool_id
+JOIN public.lock_provider_pool_assignments paa ON paa.client_account_id = ca.id
+JOIN public.lock_provider_pools       pap ON pap.id                = paa.pool_id
 JOIN public.saas_service_subscriptions   sss ON sss.client_account_id = ca.id
 JOIN public.saas_services                ss  ON ss.id                 = sss.saas_service_id
                                             AND ss.code               = 'smart_access_lock'

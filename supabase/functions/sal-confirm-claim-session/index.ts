@@ -189,7 +189,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (accommodationId) {
     const { data: gateway } = await supabase
-      .from("gateways")
+      .from("lock_gateways")
       .select("id")
       .eq("client_account_id", client_account_id)
       .eq("accommodation_id", accommodationId)
@@ -242,7 +242,7 @@ async function activateLock(
       .eq("id", lockId)
       .single();
 
-    await supabase.from("gateway_lock_links").insert({
+    await supabase.from("lock_gateway_links").insert({
       gateway_id:                gatewayId,
       lock_id:                   lockId,
       client_account_id:         lockRow?.client_account_id ?? null,

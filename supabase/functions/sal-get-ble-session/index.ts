@@ -66,7 +66,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 1. Leer shard asignado ────────────────────────────────────────────────────
   const { data: assignment } = await supabase
-    .from("provider_account_assignments")
+    .from("lock_provider_pool_assignments")
     .select("id, pool_id, status")
     .eq("client_account_id", client_account_id)
     .eq("provider", "ttlock")
@@ -79,7 +79,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 2. Verificar que el shard está operativo ──────────────────────────────────
   const { data: pool } = await supabase
-    .from("provider_account_pools")
+    .from("lock_provider_pools")
     .select("id, shard_code, status, is_blocked, ttlock_email, vault_key_ref, region")
     .eq("id", assignment.pool_id)
     .single();

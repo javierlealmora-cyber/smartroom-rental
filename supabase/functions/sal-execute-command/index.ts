@@ -98,7 +98,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 2. Verificar shard ───────────────────────────────────────────────────────
   const { data: pool } = await supabase
-    .from("provider_account_pools")
+    .from("lock_provider_pools")
     .select("id, status, is_blocked, ttlock_email, provider_client_id, vault_key_ref")
     .eq("id", command.pool_id)
     .maybeSingle();

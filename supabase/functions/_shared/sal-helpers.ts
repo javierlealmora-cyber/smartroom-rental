@@ -124,30 +124,70 @@ export async function resolveSalContext(
   };
 }
 
+export type SalActiveSubscription = {
+  subscriptionId: string;
+  planId: string;
+  saasServiceId: string;
+  status: string;
+};
+
 /**
- * Verifica que el client_account tenga la suscripción SAL activa.
- * Lanza 403 si no está activa (salvo para sal-activate-subscription).
+ * Devuelve la suscripción SAL activa del client_account, o null si no la hay.
+ * Filtra estrictamente por service_code = 'smart_access_lock' (nunca confundir
+ * con suscripciones activas a otros servicios SaaS del cliente).
+ */
+export async function fetchActiveSalSubscription(
+  supabase: SupabaseClient,
+  clientAccountId: string
+): Promise<SalActiveSubscription | null> {
+  const { data: service } = await supabase
+    .from("saas_services")
+    .select("id")
+    .eq("code", "smart_access_lock")
+    .maybeSingle();
+
+  if (!service) return null;
+
+  const { data: sub } = await supabase
+    .from("saas_service_subscriptions")
+    .select("id, saas_service_plan_id, status")
+    .eq("client_account_id", clientAccountId)
+    .eq("saas_service_id", service.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!sub) return null;
+
+  return {
+    subscriptionId: sub.id,
+    planId: sub.saas_service_plan_id,
+    saasServiceId: service.id,
+    status: sub.status,
+  };
+}
+
+/**
+ * Gating de suscripción SAL para uso en Edge Functions.
+ * Devuelve Response de error 403 si NO hay suscripción activa del servicio
+ * smart_access_lock. Devuelve null en caso satisfactorio.
+ *
+ * Uso (compatible con las 17 EFs existentes):
+ *   const subErr = await assertSalSubscriptionActive(supabase, client_account_id);
+ *   if (subErr) return subErr;
  */
 export async function assertSalSubscriptionActive(
   supabase: SupabaseClient,
   clientAccountId: string
 ): Promise<Response | null> {
-  const { data } = await supabase
-    .from("saas_service_subscriptions")
-    .select("id, status")
-    .eq("client_account_id", clientAccountId)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (!data) {
+  const sub = await fetchActiveSalSubscription(supabase, clientAccountId);
+  if (!sub) {
     return err(
       ERROR_CODES.FORBIDDEN,
       "SmartAccessLock subscription is not active for this account",
       403
     );
   }
-
-  return null; // sin error
+  return null;
 }
 
 /**

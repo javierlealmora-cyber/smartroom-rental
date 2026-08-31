@@ -3,7 +3,7 @@
  *
  * Transiciona una lock de 'ready_for_activation' a 'active'.
  * Requiere que haya un gateway activo y online asignado al alojamiento.
- * Crea el vínculo gateway_lock_links con physical_validation_status='not_validated'.
+ * Crea el vínculo lock_gateway_links con physical_validation_status='not_validated'.
  *
  * Llamada por:
  *  - sal-confirm-claim-session (interno, cuando hay gateway disponible)
@@ -109,7 +109,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 3. Verificar el gateway ──────────────────────────────────────────────────
   const { data: gateway } = await supabase
-    .from("gateways")
+    .from("lock_gateways")
     .select("id, status, is_online, client_account_id")
     .eq("id", gateway_id)
     .maybeSingle();
@@ -132,14 +132,14 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 4. Desactivar vínculo anterior si existe ─────────────────────────────────
   await supabase
-    .from("gateway_lock_links")
+    .from("lock_gateway_links")
     .update({ is_active: false })
     .eq("lock_id", lock_id)
     .eq("is_active", true);
 
-  // ── 5. Crear vínculo gateway_lock_links ──────────────────────────────────────
+  // ── 5. Crear vínculo lock_gateway_links ──────────────────────────────────────
   const { error: linkErr } = await supabase
-    .from("gateway_lock_links")
+    .from("lock_gateway_links")
     .insert({
       gateway_id,
       lock_id,
@@ -171,7 +171,7 @@ async function handleRequest(req: Request): Promise<Response> {
   if (lockErr) {
     // Revertir el vínculo creado
     await supabase
-      .from("gateway_lock_links")
+      .from("lock_gateway_links")
       .delete()
       .eq("lock_id", lock_id)
       .eq("gateway_id", gateway_id)

@@ -103,7 +103,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 1. Verificar que el shard no está bloqueado ──────────────────────────────
   const { data: pool } = await supabase
-    .from("provider_account_pools")
+    .from("lock_provider_pools")
     .select("id, status, is_blocked")
     .eq("id", pool_id)
     .maybeSingle();

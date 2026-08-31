@@ -118,7 +118,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 2. Desactivar vínculos gateway activos ────────────────────────────────────
   await supabase
-    .from("gateway_lock_links")
+    .from("lock_gateway_links")
     .update({ is_active: false })
     .eq("lock_id", lock_id)
     .eq("is_active", true);

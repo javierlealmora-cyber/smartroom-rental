@@ -107,7 +107,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 3. Leer shard asignado ────────────────────────────────────────────────────
   const { data: assignment } = await supabase
-    .from("provider_account_assignments")
+    .from("lock_provider_pool_assignments")
     .select("pool_id")
     .eq("client_account_id", client_account_id)
     .eq("provider", "ttlock")

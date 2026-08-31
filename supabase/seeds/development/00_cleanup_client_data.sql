@@ -16,8 +16,8 @@
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'public' AND table_name = 'gateway_lock_links') THEN
-    DELETE FROM public.gateway_lock_links;
+             WHERE table_schema = 'public' AND table_name = 'lock_gateway_links') THEN
+    DELETE FROM public.lock_gateway_links;
   END IF;
 END $$;
 
@@ -120,16 +120,16 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'public' AND table_name = 'gateway_claim_sessions') THEN
-    DELETE FROM public.gateway_claim_sessions;
+             WHERE table_schema = 'public' AND table_name = 'lock_gateway_claim_sessions') THEN
+    DELETE FROM public.lock_gateway_claim_sessions;
   END IF;
 END $$;
 
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'public' AND table_name = 'gateways') THEN
-    DELETE FROM public.gateways;
+             WHERE table_schema = 'public' AND table_name = 'lock_gateways') THEN
+    DELETE FROM public.lock_gateways;
   END IF;
 END $$;
 
@@ -152,8 +152,8 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'public' AND table_name = 'provider_account_assignments') THEN
-    DELETE FROM public.provider_account_assignments;
+             WHERE table_schema = 'public' AND table_name = 'lock_provider_pool_assignments') THEN
+    DELETE FROM public.lock_provider_pool_assignments;
   END IF;
 END $$;
 

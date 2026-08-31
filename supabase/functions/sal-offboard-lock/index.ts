@@ -4,7 +4,7 @@
  * Gestiona el offboarding completo de una cerradura:
  *  1. status → 'offboarding'
  *  2. Revocar todos los grants activos (con revocación en TTLock)
- *  3. Desactivar vínculo gateway_lock_links
+ *  3. Desactivar vínculo lock_gateway_links
  *  4. status → 'offboarded'
  *
  * IMPORTANTE: sal-offboard-lock NO puede transferir la lock de vuelta al cliente.
@@ -156,7 +156,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 4. Desactivar vínculos gateway ────────────────────────────────────────────
   await supabase
-    .from("gateway_lock_links")
+    .from("lock_gateway_links")
     .update({ is_active: false })
     .eq("lock_id", lock_id)
     .eq("is_active", true);

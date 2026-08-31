@@ -72,7 +72,7 @@ async function handleRequest(req: Request): Promise<Response> {
   const subErr = await assertSalSubscriptionActive(supabase, client_account_id);
   if (subErr) return subErr;
 
-  const table = session_type === "lock" ? "lock_claim_sessions" : "gateway_claim_sessions";
+  const table = session_type === "lock" ? "lock_claim_sessions" : "lock_gateway_claim_sessions";
   const providerField = session_type === "lock" ? "provider_lock_id" : "provider_gateway_id";
 
   // ── 1. Invariante §15.14.1 — provider_id no puede estar activo en otro tenant ──
@@ -122,7 +122,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 3. Leer shard asignado ────────────────────────────────────────────────────
   const { data: assignment } = await supabase
-    .from("provider_account_assignments")
+    .from("lock_provider_pool_assignments")
     .select("pool_id")
     .eq("client_account_id", client_account_id)
     .eq("provider", "ttlock")

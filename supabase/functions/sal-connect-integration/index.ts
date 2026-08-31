@@ -5,7 +5,7 @@
  * NO crea cuentas TTLock (eso era la arquitectura fbfge_* descartada).
  * NO pide credenciales TTLock al admin del cliente.
  *
- * El shard ya fue asignado por el superadmin en provider_account_assignments.
+ * El shard ya fue asignado por el superadmin en lock_provider_pool_assignments.
  * Esta EF solo activa la integración y vincula lock_integrations al shard.
  *
  * POST body: { client_account_id: string }
@@ -54,7 +54,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 1. Leer shard asignado al cliente ────────────────────────────────────────
   const { data: assignment } = await supabase
-    .from("provider_account_assignments")
+    .from("lock_provider_pool_assignments")
     .select("id, pool_id, status")
     .eq("client_account_id", client_account_id)
     .eq("provider", "ttlock")
@@ -69,7 +69,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   // ── 2. Verificar que el shard está operativo ──────────────────────────────────
   const { data: pool } = await supabase
-    .from("provider_account_pools")
+    .from("lock_provider_pools")
     .select("id, shard_code, status, is_blocked, ttlock_email, vault_key_ref")
     .eq("id", assignment.pool_id)
     .single();
