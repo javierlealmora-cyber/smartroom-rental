@@ -262,11 +262,95 @@ jobs:
             echo "✅ Bundle size $BUNDLE_SIZE KB is acceptable"
           fi
 
-  # Job 8: Summary
+  # Job 8: SmartConversations Hardening Baseline
+  sc-hardening-baseline:
+    name: SmartConversations Baseline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run hardening-baseline tests
+        run: npm run test:sc:hardening-baseline
+
+      - name: Validate release readiness
+        run: npm run validate:sc:release-readiness
+
+      - name: Run SC regression suite
+        run: npm run test:sc:regression
+
+      - name: Run webchat integration tests
+        run: npm run test:webchat
+
+      - name: Run security-baseline tests
+        run: npm run test:sc:security-baseline
+
+      - name: Validate security baseline
+        run: npm run validate:sc:security-baseline
+
+      - name: Run security-remediation-design tests
+        run: npm run test:sc:security-remediation-design
+
+      - name: Run security-remediation-implementation tests
+        run: npm run test:sc:security-remediation-implementation
+
+      - name: Run security-http-privacy tests (Fase 11B3)
+        run: npm run test:sc:security-http-privacy
+
+      - name: Run security-adversarial tests (Fase 11B4, offline only)
+        run: npm run test:sc:security-adversarial
+
+      - name: Run integrations-dev tests (Fase 11C1, offline only)
+        run: npm run test:sc:integrations-dev
+
+      - name: Validate dev integrations (Fase 11C1, offline only)
+        run: npm run validate:sc:dev-integrations
+
+      - name: Run core-integration-dev tests (Fase 11C2, offline only)
+        run: npm run test:sc:core-integration-dev
+
+      - name: Validate core-dev-integration (Fase 11C2, offline only)
+        run: npm run validate:sc:core-dev-integration
+
+      - name: Run ai-integration-dev tests (Fase 11C3, offline only)
+        run: npm run test:sc:ai-integration-dev
+
+      - name: Validate ai-dev-integration (Fase 11C3, offline only)
+        run: npm run validate:sc:ai-dev-integration
+
+      - name: Run n8n-integration-dev tests (Fase 11C4, offline only)
+        run: npm run test:sc:n8n-integration-dev
+
+      - name: Validate n8n-dev-integration (Fase 11C4, offline only)
+        run: npm run validate:sc:n8n-dev-integration
+
+      - name: Run addons-integration-dev tests (Fase 11C5, offline only)
+        run: npm run test:sc:addons-integration-dev
+
+      - name: Validate addons-dev-integration (Fase 11C5, offline only)
+        run: npm run validate:sc:addons-dev-integration
+
+      - name: Run offline smoke — incidents add-on (Fase 11C5)
+        run: npm run test:smoke:offline:incidents-addon
+
+      - name: Run offline smoke — listings add-on (Fase 11C5)
+        run: npm run test:smoke:offline:listings-addon
+
+  # Job 9: Summary
   pr-summary:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [build, unit-tests, bdd-tests, e2e-smoke, security]
+    needs: [build, unit-tests, bdd-tests, e2e-smoke, security, sc-hardening-baseline]
     if: always()
     
     steps:

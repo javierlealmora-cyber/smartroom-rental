@@ -68,7 +68,8 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\src\\\\pages\\\\v2\\\\admin\" -File -Recurse | Select-Object -ExpandProperty FullName | Sort-Object | % { $_ -replace [regex]::Escape\\('c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\'\\), '' })",
       "Bash(Get-ChildItem \"c:\\\\Users\\\\javie\\\\SmartRoom-Rental\\\\Proyecto\\\\smartroom-rental\\\\docs\\\\smart-conversations\" -Recurse -Filter \"*.md\")",
       "Bash(Select-Object FullName)",
-      "Bash(Format-List)"
+      "Bash(Format-List)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); Object.entries\\(p.scripts\\).filter\\(\\([k]\\)=>k.startsWith\\('test'\\)\\).forEach\\(\\([k,v]\\)=>console.log\\(k+' -> '+v\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\javie\\.claude\\plans"

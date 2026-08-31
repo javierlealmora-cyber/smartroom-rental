@@ -37,7 +37,7 @@ export default [
   
   // Node.js scripts
   {
-    files: ['scripts/**/*.js', 'supabase/scripts/**/*.js', '*.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'supabase/scripts/**/*.js', '*.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       globals: {
