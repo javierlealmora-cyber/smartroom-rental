@@ -97,7 +97,7 @@ export default function ClientSalActivation() {
 
       // Cargar asignación de shard activa
       const { data: assignment } = await supabase
-        .from("provider_account_assignments")
+        .from("lock_provider_pool_assignments")
         .select(`
           id, status, assigned_at, notes,
           pool:pool_id ( id, shard_code, ttlock_email, status, is_blocked,
@@ -111,7 +111,7 @@ export default function ClientSalActivation() {
 
       // Cargar shards disponibles para asignar
       const { data: poolData } = await supabase
-        .from("provider_account_pools")
+        .from("lock_provider_pools")
         .select("id, shard_code, ttlock_email, status, is_blocked, current_clients_count, max_clients")
         .eq("provider", "ttlock")
         .order("shard_code");
@@ -176,13 +176,13 @@ export default function ClientSalActivation() {
       // Desactivar asignación activa previa
       if (shardAssignment) {
         await supabase
-          .from("provider_account_assignments")
+          .from("lock_provider_pool_assignments")
           .update({ status: "migrated" })
           .eq("id", shardAssignment.id);
       }
       // Crear nueva asignación
       const { error } = await supabase
-        .from("provider_account_assignments")
+        .from("lock_provider_pool_assignments")
         .insert({
           client_account_id: clientAccountId,
           pool_id:           selectedShardId,

@@ -41,7 +41,7 @@ function featLabel(feat) {
 }
 
 // ── Vista tarjeta comercial ───────────────────────────────────────────────────
-function PlanCard({ plan, features, subscription, isDeprecated, isHighlight }) {
+function PlanCard({ plan, features, subscription, isDeprecated, isHighlight, serviceId }) {
   const isCurrentPlan = subscription?.saas_service_plan_id === plan.id
     || subscription?.saas_service_plans?.id === plan.id;
   const price  = plan.price_amount != null ? Number(plan.price_amount) : null;
@@ -118,14 +118,14 @@ function PlanCard({ plan, features, subscription, isDeprecated, isHighlight }) {
       </div>
 
       <div style={{ padding: "16px 24px 24px" }}>
-        <PlanAction plan={plan} subscription={subscription} isCurrentPlan={isCurrentPlan} isDeprecated={isDeprecated} isHighlight={isHighlight} block />
+        <PlanAction plan={plan} subscription={subscription} isCurrentPlan={isCurrentPlan} isDeprecated={isDeprecated} isHighlight={isHighlight} serviceId={serviceId} block />
       </div>
     </div>
   );
 }
 
 // ── Vista lista ───────────────────────────────────────────────────────────────
-function PlanRow({ plan, features, subscription, isDeprecated }) {
+function PlanRow({ plan, features, subscription, isDeprecated, serviceId }) {
   const isCurrentPlan = subscription?.saas_service_plan_id === plan.id
     || subscription?.saas_service_plans?.id === plan.id;
   const price = plan.price_amount != null ? Number(plan.price_amount) : null;
@@ -190,14 +190,14 @@ function PlanRow({ plan, features, subscription, isDeprecated }) {
 
       {/* Acción */}
       <div style={{ flex: "0 0 180px" }}>
-        <PlanAction plan={plan} subscription={subscription} isCurrentPlan={isCurrentPlan} isDeprecated={isDeprecated} isHighlight={false} block={false} />
+        <PlanAction plan={plan} subscription={subscription} isCurrentPlan={isCurrentPlan} isDeprecated={isDeprecated} isHighlight={false} serviceId={serviceId} block={false} />
       </div>
     </div>
   );
 }
 
 // ── Botón de acción compartido ────────────────────────────────────────────────
-function PlanAction({ plan, subscription, isCurrentPlan, isDeprecated, isHighlight, block }) {
+function PlanAction({ plan, subscription, isCurrentPlan, isDeprecated, isHighlight, block, serviceId }) {
   const navigate = useNavigate();
   if (isCurrentPlan) {
     return (
@@ -208,7 +208,9 @@ function PlanAction({ plan, subscription, isCurrentPlan, isDeprecated, isHighlig
   }
   if (subscription) {
     return (
-      <Button block={block} size="large" style={{ borderRadius: 10, height: 48, fontSize: 15, fontWeight: 700, borderColor: "#2563EB", color: "#2563EB" }}>
+      <Button block={block} size="large"
+        onClick={() => navigate(`/v2/admin/catalogo/${serviceId}/checkout/${plan.id}`)}
+        style={{ borderRadius: 10, height: 48, fontSize: 15, fontWeight: 700, borderColor: "#2563EB", color: "#2563EB" }}>
         Cambiar a este plan
       </Button>
     );
@@ -226,6 +228,7 @@ function PlanAction({ plan, subscription, isCurrentPlan, isDeprecated, isHighlig
     <Button
       block={block} type="primary" size="large"
       icon={<ShoppingOutlined />}
+      onClick={() => navigate(`/v2/admin/catalogo/${serviceId}/checkout/${plan.id}`)}
       style={{
         borderRadius: 10, height: 48, fontSize: 15, fontWeight: 700,
         background: isHighlight
@@ -391,6 +394,7 @@ export default function ServiceCatalogDetail() {
                       subscription={subscription}
                       isDeprecated={isDeprecated}
                       isHighlight={idx === highlightIdx && plans.length > 1}
+                      serviceId={serviceId}
                     />
                   </Col>
                 ))}
@@ -404,6 +408,7 @@ export default function ServiceCatalogDetail() {
                     features={featMap[plan.id] ?? []}
                     subscription={subscription}
                     isDeprecated={isDeprecated}
+                    serviceId={serviceId}
                   />
                 ))}
               </div>

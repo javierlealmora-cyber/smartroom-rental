@@ -78,7 +78,7 @@ export default function SmartAccessTab() {
 
   // ── Conectar / activar integración ─────────────────────────────────────────
   // sal-connect-integration lee el shard asignado por el superadmin en
-  // provider_account_assignments. No crea cuentas TTLock — solo vincula
+  // lock_provider_pool_assignments. No crea cuentas TTLock — solo vincula
   // lock_integrations al shard.
   const handleConnect = async () => {
     setConnecting(true);

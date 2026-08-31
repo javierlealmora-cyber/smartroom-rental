@@ -55,7 +55,7 @@ const SAL_TABS = [
     children: <SalLocksTab />,
   },
   {
-    key: "gateways",
+    key: "lock_gateways",
     label: "Gateways",
     icon: <ApiOutlined />,
     children: <SalGatewaysTab />,

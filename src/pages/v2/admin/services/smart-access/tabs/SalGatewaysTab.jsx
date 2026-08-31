@@ -1,5 +1,5 @@
 // src/pages/v2/admin/services/smart-access/tabs/SalGatewaysTab.jsx
-// Listado de gateways TTLock registrados para el cliente.
+// Listado de lock_gateways TTLock registrados para el cliente.
 //
 // Columnas: nombre, estado (ciclo de vida), conexión, alojamiento, WiFi, cerraduras vinculadas
 // Click en fila → drawer de detalle
@@ -66,7 +66,7 @@ function GatewayDetailDrawer({ gateway, open, onClose }) {
     if (!gateway?.id) return;
     setLoadingLocks(true);
     const { data } = await supabase
-      .from("gateway_lock_links")
+      .from("lock_gateway_links")
       .select(`
         id, is_active, physical_validation_status,
         lock:lock_id ( id, name, status, is_online, battery_level )
@@ -203,7 +203,7 @@ export default function SalGatewaysTab() {
     setLoading(true);
     try {
       const { data: gwData } = await supabase
-        .from("gateways")
+        .from("lock_gateways")
         .select("id, name, provider_gateway_id, status, is_online, last_seen_at, wifi_ssid, firmware_version, pairing_source, paired_at, accommodation_id")
         .eq("client_account_id", clientAccountId)
         .order("name");
@@ -223,7 +223,7 @@ export default function SalGatewaysTab() {
 
       // Contar cerraduras vinculadas activas por gateway
       const { data: links } = await supabase
-        .from("gateway_lock_links")
+        .from("lock_gateway_links")
         .select("gateway_id")
         .eq("client_account_id", clientAccountId)
         .eq("is_active", true);
@@ -357,7 +357,7 @@ export default function SalGatewaysTab() {
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
         locale={{
           emptyText: (
-            <Empty description="No hay gateways registrados. Los gateways se añaden desde la app móvil SmartAccess." />
+            <Empty description="No hay lock_gateways registrados. Los lock_gateways se añaden desde la app móvil SmartAccess." />
           ),
         }}
         onRow={(r) => ({ onClick: () => openDetail(r), style: { cursor: "pointer" } })}

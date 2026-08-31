@@ -71,7 +71,7 @@ function ShardClientsDrawer({ shard, open, onClose, onReassign }) {
     if (!shard?.id) return;
     setLoading(true);
     const { data } = await supabase
-      .from("provider_account_assignments")
+      .from("lock_provider_pool_assignments")
       .select(`
         id, status, assigned_at, notes,
         client_account:client_account_id ( id, name, last_name1 )
@@ -215,14 +215,14 @@ function ShardFormModal({ open, onClose, shard, onSaved }) {
 
       if (isEdit) {
         const { error } = await supabase
-          .from("provider_account_pools")
+          .from("lock_provider_pools")
           .update(payload)
           .eq("id", shard.id);
         if (error) throw error;
         message.success("Shard actualizado");
       } else {
         const { error } = await supabase
-          .from("provider_account_pools")
+          .from("lock_provider_pools")
           .insert(payload);
         if (error) throw error;
         message.success("Shard creado. Recuerda configurar las credenciales en Vault.");
@@ -338,7 +338,7 @@ function AssignClientModal({ open, onClose, preselectedClient, shards, onSaved }
     try {
       // Desactivar asignación activa previa (si existe)
       await supabase
-        .from("provider_account_assignments")
+        .from("lock_provider_pool_assignments")
         .update({ status: "migrated" })
         .eq("client_account_id", values.client_account_id)
         .eq("provider", "ttlock")
@@ -346,7 +346,7 @@ function AssignClientModal({ open, onClose, preselectedClient, shards, onSaved }
 
       // Crear nueva asignación
       const { error } = await supabase
-        .from("provider_account_assignments")
+        .from("lock_provider_pool_assignments")
         .insert({
           client_account_id: values.client_account_id,
           pool_id:           values.pool_id,
@@ -445,7 +445,7 @@ export function SalShardsContent() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("provider_account_pools")
+        .from("lock_provider_pools")
         .select("*")
         .order("shard_code");
       if (error) throw error;
@@ -463,7 +463,7 @@ export function SalShardsContent() {
     setTogglingBlock(shard.id);
     try {
       const { error } = await supabase
-        .from("provider_account_pools")
+        .from("lock_provider_pools")
         .update({ is_blocked: !shard.is_blocked })
         .eq("id", shard.id);
       if (error) throw error;

@@ -4,10 +4,13 @@
 // Layout v2 — Top navigation bar (Apple style) + breadcrumbs + content
 // =============================================================================
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useSalSubscription } from "../hooks/useSalSubscription";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../providers/AuthProvider";
 import { useTenant } from "../providers/TenantProvider";
+import { getWebchatConfig } from "../features/webchat/utils/webchat-config.js";
+import { WebChatWidget }    from "../features/webchat/components/WebChatWidget.jsx";
 import { MenuOutlined, CloseOutlined, SettingOutlined } from "@ant-design/icons";
 import {
   Icon3DDashboard, Icon3DEntidades, Icon3DAlojamientos, Icon3DInquilinos,
@@ -27,7 +30,6 @@ const ADMIN_NAV = [
   { label: "Prestaciones",  path: "/v2/admin/servicios",             Icon: Icon3DServicios },
   { label: "Servicios",     path: "/v2/admin/gestion-servicios",      Icon: Icon3DServicios },
   { label: "Catálogo",      path: "/v2/admin/catalogo",               Icon: Icon3DCatalogo },
-  { label: "Acceso",        path: "/v2/admin/smart-access",          Icon: Icon3DSmartAccess },
 ];
 
 const SUPERADMIN_NAV = [
@@ -299,10 +301,27 @@ export default function V2Layout({
   const location = useLocation();
   const { user } = useAuth();
   const { branding: tenantBranding } = useTenant();
+  const salSubscription = useSalSubscription();
   const userEmail = user?.email || null;
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = getNavItems(role);
+  // Menú base por rol + inserción condicional de SmartAccess si el tenant
+  // tiene suscripción activa (rules-20 §4.1). El superadmin siempre lo ve
+  // para inspección multi-tenant.
+  const navItems = React.useMemo(() => {
+    const items = [...getNavItems(role)];
+    if (role !== "lodger") {
+      const showSmartAccess = role === "superadmin" || salSubscription.isActive;
+      if (showSmartAccess && !items.some((it) => it.path === "/v2/admin/smart-access")) {
+        items.push({
+          label: "Smart Access",
+          path: "/v2/admin/smart-access",
+          Icon: Icon3DSmartAccess,
+        });
+      }
+    }
+    return items;
+  }, [role, salSubscription.isActive]);
 
   // Para superadmin: usa el branding del TenantProvider (cargado desde platform_settings)
   // Para otros roles: usa companyBranding pasado por props (del tenant)
@@ -579,6 +598,11 @@ export default function V2Layout({
         {/* ── Content ── */}
         <main className="v2-main">{children}</main>
       </div>
+
+      {/* ── WebChat Widget (deshabilitado por defecto) ── */}
+      {getWebchatConfig().enabled && (
+        <WebChatWidget config={getWebchatConfig()} />
+      )}
     </>
   );
 }

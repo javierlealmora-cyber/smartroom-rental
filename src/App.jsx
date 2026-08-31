@@ -4,6 +4,7 @@ import AppLayout from "./layouts/AppLayout";
 import RequireAuth from "./router/RequireAuth";
 import RequireRole from "./router/RequireRole";
 import RequireTenant from "./router/RequireTenant";
+import RequireSalSubscription from "./router/RequireSalSubscription";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Logout from "./pages/auth/Logout";
 
@@ -94,6 +95,7 @@ import ServiceCreateV2 from "./pages/v2/admin/services/ServiceCreate";
 import ServiceEditV2 from "./pages/v2/admin/services/ServiceEdit";
 import ServicesCatalogListV2 from "./pages/v2/admin/catalogo/ServicesCatalogList";
 import ServiceCatalogDetailV2 from "./pages/v2/admin/catalogo/ServiceCatalogDetail";
+import ServiceCheckoutV2 from "./pages/v2/admin/catalogo/ServiceCheckout";
 import ServiciosGestionV2 from "./pages/v2/admin/gestion-servicios/ServiciosGestion";
 import ServicioDetailV2 from "./pages/v2/admin/gestion-servicios/ServicioDetail";
 
@@ -336,6 +338,7 @@ export default function App() {
               <Route path="/v2/admin/gestion-servicios/:id" element={<ServicioDetailV2 />} />
               <Route path="/v2/admin/catalogo" element={<ServicesCatalogListV2 />} />
               <Route path="/v2/admin/catalogo/:serviceId" element={<ServiceCatalogDetailV2 />} />
+              <Route path="/v2/admin/catalogo/:serviceId/checkout/:planId" element={<ServiceCheckoutV2 />} />
               <Route path="/v2/admin/energia/facturas" element={<EnergyBillsListV2 />} />
               <Route path="/v2/admin/energia/facturas/nueva" element={<EnergyBillCreateV2 />} />
               <Route path="/v2/admin/energia/facturas/:id" element={<EnergyBillDetailV2 />} />
@@ -346,8 +349,10 @@ export default function App() {
               <Route path="/v2/admin/inquilinos/servicios" element={<LodgerServicesListV2 />} />
               <Route path="/v2/admin/inquilinos/servicios/nuevo" element={<LodgerServiceCreateV2 />} />
               <Route path="/v2/admin/settings" element={<AdminSettingsV2 />} />
-              <Route path="/v2/admin/smart-access" element={<SalGestion />} />
-              <Route path="/v2/admin/smart-access/:tab" element={<SalGestion />} />
+              <Route element={<RequireSalSubscription />}>
+                <Route path="/v2/admin/smart-access" element={<SalGestion />} />
+                <Route path="/v2/admin/smart-access/:tab" element={<SalGestion />} />
+              </Route>
             </Route>
           </Route>
 
